@@ -16,27 +16,23 @@
 }
 
 body {
-  background:
-    radial-gradient(1100px 560px at 12% -8%, rgba(16, 185, 129, 0.17), transparent 62%),
-    radial-gradient(900px 520px at 100% 8%, rgba(139, 92, 246, 0.13), transparent 60%),
-    radial-gradient(900px 600px at 50% 118%, rgba(34, 211, 238, 0.10), transparent 60%),
-    #030907;
-  background-attachment: fixed;
+  background: #030907;
 }
 
-/* faint holographic grid behind everything */
+/* fixed world layer: colour glows + faint holographic grid (a fixed pseudo-element
+   scrolls for free, unlike background-attachment: fixed) */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgba(52, 211, 153, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(52, 211, 153, 0.05) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 75%);
+  background:
+    linear-gradient(rgba(52, 211, 153, 0.045) 1px, transparent 1px) 0 0 / 56px 56px,
+    linear-gradient(90deg, rgba(52, 211, 153, 0.045) 1px, transparent 1px) 0 0 / 56px 56px,
+    radial-gradient(1100px 560px at 12% -8%, rgba(16, 185, 129, 0.17), transparent 62%),
+    radial-gradient(900px 520px at 100% 8%, rgba(139, 92, 246, 0.13), transparent 60%),
+    radial-gradient(900px 600px at 50% 118%, rgba(34, 211, 238, 0.10), transparent 60%);
 }
 
 .scrollbar-none {
@@ -53,7 +49,6 @@ body::before {
   border: 1px solid rgba(52, 211, 153, 0.22);
   border-radius: 14px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 0 34px -14px rgba(52, 211, 153, 0.45);
-  backdrop-filter: blur(6px);
 }
 .hud-panel::before,
 .hud-panel::after {
@@ -146,17 +141,21 @@ body::before {
   background: #10b981;
 }
 
+/* Static glow + opacity pulse (animating filter: drop-shadow repaints the whole SVG every frame) */
 @keyframes pulseGlow {
-  0%, 100% {
-    filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.35));
-  }
-  50% {
-    filter: drop-shadow(0 0 25px rgba(16, 185, 129, 0.7));
-  }
+  0%, 100% { opacity: 0.86; }
+  50% { opacity: 1; }
 }
 
 .plant-glow {
+  filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.55));
   animation: pulseGlow 4s infinite ease-in-out;
+}
+
+/* Perf: the 30-plant room runs ~300 SVG animations that repaint on the main thread.
+   Only the selected (or hovered) plant animates; the rest hold their pose. */
+.group\/plant:not(.is-selected):not(:hover) * {
+  animation-play-state: paused !important;
 }
 
 /* Organic Cannabis Fan Leaf Wind Sway */
@@ -289,7 +288,6 @@ body::before {
   50% {
     opacity: 1;
     transform: scale(1.3);
-    filter: drop-shadow(0 0 4px #ffffff);
   }
 }
 
@@ -304,7 +302,6 @@ body::before {
   }
   50% {
     opacity: 1;
-    filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.4));
   }
 }
 

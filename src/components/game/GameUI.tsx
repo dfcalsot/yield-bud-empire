@@ -112,8 +112,21 @@ export const ParticleField: React.FC = () => {
     let w = 0;
     let h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const COUNT = 46;
+    const COUNT = 28;
     const palette = ['110,231,183', '34,211,238', '232,121,249'];
+    // Pre-render one soft glow sprite per colour: drawImage is far cheaper than shadowBlur per frame
+    const sprites = palette.map((c) => {
+      const s = document.createElement('canvas');
+      s.width = s.height = 32;
+      const g = s.getContext('2d')!;
+      const grd = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+      grd.addColorStop(0, `rgba(${c},1)`);
+      grd.addColorStop(0.35, `rgba(${c},0.45)`);
+      grd.addColorStop(1, `rgba(${c},0)`);
+      g.fillStyle = grd;
+      g.fillRect(0, 0, 32, 32);
+      return s;
+    });
     const spores = Array.from({ length: COUNT }, () => ({
       x: Math.random(),
       y: Math.random(),
@@ -121,7 +134,7 @@ export const ParticleField: React.FC = () => {
       vy: 0.008 + Math.random() * 0.025,
       vx: (Math.random() - 0.5) * 0.01,
       phase: Math.random() * Math.PI * 2,
-      c: palette[Math.floor(Math.random() * palette.length)],
+      c: Math.floor(Math.random() * palette.length),
     }));
 
     const resize = () => {
@@ -145,13 +158,9 @@ export const ParticleField: React.FC = () => {
         if (s.y < -0.02) { s.y = 1.02; s.x = Math.random(); }
         if (s.x < -0.02) s.x = 1.02;
         if (s.x > 1.02) s.x = -0.02;
-        const alpha = 0.25 + 0.25 * Math.sin(now / 900 + s.phase);
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(${s.c},${alpha})`;
-        ctx.shadowColor = `rgba(${s.c},0.8)`;
-        ctx.shadowBlur = 8;
-        ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.globalAlpha = 0.45 + 0.4 * Math.sin(now / 900 + s.phase);
+        const size = s.r * 9;
+        ctx.drawImage(sprites[s.c], s.x * w - size / 2, s.y * h - size / 2, size, size);
       }
       raf = requestAnimationFrame(frame);
     };

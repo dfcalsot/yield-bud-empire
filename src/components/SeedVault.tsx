@@ -282,6 +282,18 @@ const Vial: React.FC<VialProps> = ({ item, owned, position, selected, onSelect }
   );
 };
 
+/** Renders on demand at a fixed rate instead of every display refresh (60–144 Hz): halves GPU/CPU cost. */
+const FrameLimiter: React.FC<{ fps: number; active: boolean }> = ({ fps, active }) => {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    if (!active) return;
+    invalidate();
+    const id = window.setInterval(() => invalidate(), 1000 / fps);
+    return () => window.clearInterval(id);
+  }, [fps, active, invalidate]);
+  return null;
+};
+
 const CameraRig: React.FC<{ rows: number }> = ({ rows }) => {
   const { camera, size, pointer } = useThree();
   useFrame((_, dt) => {
@@ -323,7 +335,7 @@ const ChamberScene: React.FC<{
   const dotTex = useMemo(() => makeSoftSprite('rgba(255,255,255,1)', 'rgba(255,255,255,0)', 64), []);
 
   const flakes = useMemo(() => {
-    const n = 240;
+    const n = 140;
     const arr = new Float32Array(n * 3);
     const r = rng(4242);
     for (let i = 0; i < n; i++) {
@@ -671,6 +683,24 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
     setPlaying(false);
   }, [selectedId]);
 
+  // Stop both WebGL render loops while the vault is scrolled out of view or the tab is hidden
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(true);
+  const [tabVisible, setTabVisible] = useState(!document.hidden);
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { rootMargin: '120px' });
+    io.observe(el);
+    const onVis = () => setTabVisible(!document.hidden);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      io.disconnect();
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+  const onScreen = inView && tabVisible;
+
   const drag = useRef({ x: 0, y: 0 });
   const lastPointer = useRef<{ x: number; y: number } | null>(null);
 
@@ -682,7 +712,7 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
     : 'Plántula lista';
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+    <div ref={rootRef} className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
       {/* ── 3D cold chamber ── */}
       <HudPanel
         title={<><ColdChamber className="w-4 h-4 text-cyan-300" /> Cámara fría 01 · Bóveda genética</>}
@@ -694,12 +724,13 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
       >
         <div className="relative mx-3 mb-3 aspect-[3/2] sm:aspect-[16/10] rounded-xl overflow-hidden border border-cyan-300/15 bg-[#04100f]">
           <Canvas
-            dpr={[1, 1.75]}
+            dpr={[1, 1.25]}
+            frameloop="demand"
             camera={{ fov: 38, position: [0, 0, 9], near: 0.1, far: 60 }}
-            gl={{ antialias: true, alpha: false }}
-            onPointerMissed={() => undefined}
+            gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
           >
             <color attach="background" args={['#04100f']} />
+            <FrameLimiter fps={30} active={onScreen} />
             <ChamberScene items={seeds} inventory={inventory} selectedId={selectedId} onSelect={setSelectedId} tempRef={tempRef} />
           </Canvas>
           <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-cyan-200/80">
@@ -775,7 +806,13 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
                   }}
                   onPointerUp={() => { lastPointer.current = null; }}
                 >
-                  <Canvas dpr={[1, 1.75]} camera={{ fov: 32, position: [0, 0, 4.6] }} gl={{ antialias: true, alpha: true }}>
+                  <Canvas
+                    dpr={[1, 1.5]}
+                    frameloop="demand"
+                    camera={{ fov: 32, position: [0, 0, 4.6] }}
+                    gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+                  >
+                    <FrameLimiter fps={30} active={onScreen} />
                     <InspectorScene tint={tint} germ={germ} drag={drag} tempRef={tempRef} />
                   </Canvas>
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/50 to-transparent" />

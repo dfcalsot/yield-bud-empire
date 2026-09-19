@@ -399,7 +399,7 @@ export const IndoorRoomVisualizer: React.FC<IndoorRoomVisualizerProps> = () => {
                                   onClick={() => selectPlant(overallIndex)}
                                   className={`relative p-1.5 rounded-xl border flex flex-col items-center justify-center transition cursor-pointer text-center group/plant ${
                                     isSelected
-                                      ? 'bg-emerald-950/60 border-emerald-400 ring-2 ring-emerald-500/60 scale-[1.03] shadow-lg shadow-emerald-950'
+                                      ? 'is-selected bg-emerald-950/60 border-emerald-400 ring-2 ring-emerald-500/60 scale-[1.03] shadow-lg shadow-emerald-950'
                                       : isReady
                                       ? 'bg-amber-950/40 border-amber-500/60 hover:border-amber-400'
                                       : 'bg-neutral-900/90 hover:bg-neutral-850 border-neutral-800 hover:border-neutral-700'
@@ -538,7 +538,7 @@ export const IndoorRoomVisualizer: React.FC<IndoorRoomVisualizerProps> = () => {
                                     {/* Progress micro-bar */}
                                     <div className="w-full h-1 bg-neutral-800 rounded-full mt-1 overflow-hidden">
                                       <div 
-                                        className={`h-full rounded-full transition-all duration-300 ${
+                                        className={`h-full rounded-full ${
                                           isReady ? 'bg-amber-400' : 'bg-gradient-to-r from-emerald-500 to-emerald-400'
                                         }`}
                                         style={{ width: `${p.progressPercent}%` }}
