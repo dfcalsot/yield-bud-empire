@@ -190,3 +190,11 @@
 .animate-led-shimmer {
   animation: ledShimmer 3s ease-in-out infinite;
 }
+
+/* Hide scrollbar on horizontally scrolling rows (nav tabs) */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

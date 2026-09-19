@@ -1,6 +1,21 @@
 import React, { useState } from 'react';
-import { PlantInGrow } from '../types';
+import { PlantInGrow, TerpeneProfile } from '../types';
 import { Eye, Sun, Sparkles, AlertCircle, Droplet, Wind, Flame, Gauge, Zap } from 'lucide-react';
+
+const TERPENE_LABELS: Record<string, string> = {
+  myrcene: 'Mirceno',
+  limonene: 'Limoneno',
+  caryophyllene: 'Cariofileno',
+  pinene: 'Pineno',
+  linalool: 'Linalool',
+};
+
+const topTerpenes = (terpenes: TerpeneProfile): string =>
+  Object.entries(terpenes)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([key]) => TERPENE_LABELS[key] ?? key)
+    .join(', ');
 
 interface PlantVisualizerProps {
   plant: PlantInGrow | null;
@@ -119,7 +134,7 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
               {plant.strain.name}
             </h3>
             <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-neutral-800 text-neutral-400">
-              THC: ~{plant.strain.thcPercent}%
+              THC: ~{plant.strain.thcPercentage}%
             </span>
           </div>
         </div>
@@ -549,7 +564,7 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
                   : '⏳ Glándulas en expansión: Aumentar PPFD y mantener CO2 alto para engorde de cálices.'}
               </p>
               <div className="flex items-center justify-between text-[9px] text-neutral-400 border-t border-neutral-800 pt-1">
-                <span>Terpenos: {plant.strain.primaryTerpenes?.join(', ') || 'Mirceno, Limoneno, Cariofileno'}</span>
+                <span>Terpenos: {topTerpenes(plant.strain.terpenes)}</span>
               </div>
             </div>
           </div>

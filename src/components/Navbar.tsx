@@ -56,15 +56,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   const netConfig = SOLANA_NETWORKS[solanaNetwork];
 
   const navItems = [
-    { id: 'cultivo', label: 'Cultivo F2P', icon: Sprout, badge: null },
-    { id: 'semillas', label: 'Banco Semillas', icon: Layers, badge: 'Genomas' },
-    { id: 'market', label: 'Grow Market', icon: ShoppingBag, badge: 'Hardware' },
-    { id: 'nutrientes', label: 'Tablas Nutrición', icon: FlaskConical, badge: 'Marcas' },
-    { id: 'extraccion', label: 'Lab Extracción', icon: Sparkles, badge: 'Desgaste' },
-    { id: 'genetica', label: 'Madres & Patentes', icon: Dna, badge: 'Solana' },
-    { id: 'dispensario', label: 'Dispensario & V2P', icon: Store, badge: 'E-com' },
-    { id: 'tokenomica', label: 'Tokenómica', icon: BarChart3, badge: 'Deflación' },
-    { id: 'whitepaper', label: 'Libro Blanco', icon: FileText, badge: 'v1.0' }
+    { id: 'cultivo', label: 'Cultivo', icon: Sprout },
+    { id: 'semillas', label: 'Semillas', icon: Layers },
+    { id: 'market', label: 'Market', icon: ShoppingBag },
+    { id: 'nutrientes', label: 'Nutrición', icon: FlaskConical },
+    { id: 'extraccion', label: 'Extracción', icon: Sparkles },
+    { id: 'genetica', label: 'Genética', icon: Dna },
+    { id: 'dispensario', label: 'Dispensario', icon: Store },
+    { id: 'tokenomica', label: 'Tokenómica', icon: BarChart3 },
+    { id: 'whitepaper', label: 'Libro Blanco', icon: FileText }
   ];
 
   return (
@@ -113,63 +113,34 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Main Bar */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3">
         {/* Logo & Identity */}
-        <div 
-          onClick={() => setCurrentTab('cultivo')} 
-          className="flex items-center gap-2.5 cursor-pointer select-none group"
+        <div
+          onClick={() => setCurrentTab('cultivo')}
+          className="flex items-center gap-2.5 cursor-pointer select-none group shrink-0"
         >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 via-emerald-800 to-neutral-950 p-0.5 shadow-lg shadow-emerald-950/50 flex items-center justify-center border border-emerald-500/30 group-hover:border-emerald-400 transition">
             <div className="w-full h-full bg-neutral-950/80 rounded-[10px] flex items-center justify-center">
               <Sprout className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
             </div>
           </div>
-          <div>
+          <div className="hidden sm:block">
             <div className="flex items-center gap-1.5">
               <span className="text-lg font-bold tracking-tight text-white font-serif">
                 CHRONO<span className="text-emerald-400">FLORA</span>
               </span>
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 text-neutral-300 rounded">
+              <span className="hidden md:inline text-[10px] uppercase font-mono px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 text-neutral-300 rounded">
                 Solana
               </span>
             </div>
-            <p className="text-[11px] text-neutral-400 hidden sm:block">
+            <p className="text-[11px] text-neutral-400 hidden xl:block">
               Multiverso Botánico Descentralizado
             </p>
           </div>
         </div>
 
-        {/* Navigation Tabs (Desktop) */}
-        <nav className="hidden lg:flex items-center gap-1 bg-neutral-900/60 p-1 rounded-xl border border-neutral-800">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setCurrentTab(item.id)}
-                className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-                  isActive
-                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm'
-                    : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-neutral-500'}`} />
-                <span>{item.label}</span>
-                {item.badge && (
-                  <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
-                    isActive ? 'bg-emerald-500/30 text-emerald-200' : 'bg-neutral-800 text-neutral-400'
-                  }`}>
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
         {/* User Balances & Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
           {/* FLORA Balance */}
           <div className="flex items-center gap-1.5 bg-emerald-950/30 border border-emerald-500/30 px-2.5 py-1.5 rounded-lg text-emerald-300">
             <Coins className="w-4 h-4 text-emerald-400" />
@@ -180,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* SOL Balance */}
-          <div className="hidden sm:flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 px-2.5 py-1.5 rounded-lg text-neutral-300">
+          <div className="hidden md:flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 px-2.5 py-1.5 rounded-lg text-neutral-300">
             <div className="w-4 h-4 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-[9px] font-bold text-white">
               S
             </div>
@@ -191,7 +162,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Cultivator Level */}
-          <div className="hidden md:flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 px-2.5 py-1.5 rounded-lg text-neutral-300" title={`Rango: ${rankTitle}`}>
+          <div className="hidden lg:flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 px-2.5 py-1.5 rounded-lg text-neutral-300" title={`Rango: ${rankTitle}`}>
             <Award className="w-4 h-4 text-amber-400" />
             <div className="text-right">
               <span className="text-[10px] text-neutral-400 block leading-none font-semibold">NIVEL</span>
@@ -216,7 +187,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 border border-emerald-500/30 px-2 sm:px-2.5 py-1.5 rounded-lg text-neutral-200 transition cursor-pointer"
             >
               <span className="text-base leading-none">{currentUser.avatar}</span>
-              <div className="hidden sm:block text-left">
+              <div className="hidden lg:block text-left">
                 <span className="text-xs font-bold text-white block leading-tight truncate max-w-[85px]">
                   {currentUser.displayName}
                 </span>
@@ -245,34 +216,36 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="hidden lg:inline text-[9px] px-1 py-0.2 rounded bg-neutral-800 text-neutral-400 font-mono">
               {netConfig.badgeLabel}
             </span>
-            <span className="hidden sm:inline">
+            <span className="hidden lg:inline">
               {isWalletConnected ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : 'Wallet'}
             </span>
           </button>
         </div>
       </div>
 
-      {/* Navigation for Mobile Screens */}
-      <div className="lg:hidden flex overflow-x-auto px-3 py-1.5 bg-neutral-900/80 border-t border-neutral-800/60 gap-1 scrollbar-none">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setCurrentTab(item.id)}
-              className={`flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition ${
-                isActive
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                  : 'text-neutral-400 hover:text-neutral-200 bg-neutral-950/40'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Navigation Tabs: own row on every screen size, scrolls sideways if it ever runs out of room */}
+      <nav className="border-t border-neutral-800/60 bg-neutral-900/60">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-1.5 flex overflow-x-auto gap-1 lg:justify-center scrollbar-none">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setCurrentTab(item.id)}
+                className={`flex items-center gap-2 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
+                  isActive
+                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm'
+                    : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60 border border-transparent'
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-neutral-500'}`} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </header>
   );
 };

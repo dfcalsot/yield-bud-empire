@@ -731,7 +731,7 @@ export const IndoorRoomVisualizer: React.FC<IndoorRoomVisualizerProps> = () => {
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                 <div className="bg-neutral-900 p-2.5 rounded-xl border border-neutral-800">
                   <span className="text-neutral-500 block text-[10px]">THC Estimado</span>
-                  <span className="text-sm font-bold text-white">~{selectedPlant.strain.thcPercent}%</span>
+                  <span className="text-sm font-bold text-white">~{selectedPlant.strain.thcPercentage}%</span>
                 </div>
                 <div className="bg-neutral-900 p-2.5 rounded-xl border border-neutral-800">
                   <span className="text-neutral-500 block text-[10px]">Humedad Sustrato</span>
