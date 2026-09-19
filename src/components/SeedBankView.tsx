@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { 
   Sparkles, 
@@ -16,7 +16,8 @@ import {
   Layers
 } from 'lucide-react';
 import { SeedBankItem } from '../types';
-import { SeedVault } from './SeedVault';
+// three.js is heavy: only fetch it when the Seed Bank tab is opened
+const SeedVault = lazy(() => import('./SeedVault').then((m) => ({ default: m.SeedVault })));
 
 interface SeedBankViewProps {
   onNavigateToCultivation?: () => void;
@@ -124,14 +125,22 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
       </div>
 
       {/* 3D cold-storage vault: seeds in vials, thermostat, seed inspector + germination */}
-      <SeedVault
-        seeds={seedBank}
-        inventory={seedInventory}
-        onPlant={(id) => {
-          const success = plantFromSeedBank(id);
-          if (success && onNavigateToCultivation) onNavigateToCultivation();
-        }}
-      />
+      <Suspense
+        fallback={
+          <div className="hud-panel h-72 flex items-center justify-center text-xs font-mono text-cyan-200/70 animate-pulse">
+            Enfriando cámara…
+          </div>
+        }
+      >
+        <SeedVault
+          seeds={seedBank}
+          inventory={seedInventory}
+          onPlant={(id) => {
+            const success = plantFromSeedBank(id);
+            if (success && onNavigateToCultivation) onNavigateToCultivation();
+          }}
+        />
+      </Suspense>
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-3">
