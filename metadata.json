@@ -1,0 +1,6 @@
+{
+  "name": "ChronoFlora: El Multiverso Botánico Descentralizado",
+  "description": "Simulador de cultivo botánico, microclimas, laboratorio de extracción y economía deflacionaria en Solana con genéticas on-chain y tiendas V2P.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
