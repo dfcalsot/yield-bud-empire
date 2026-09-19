@@ -15,32 +15,53 @@ import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { NotificationToast } from './components/NotificationToast';
 import { QuestProgressBar } from './components/QuestProgressBar';
-import { Sprout, Shield, Cpu, ExternalLink } from 'lucide-react';
+import { Dock } from './components/Dock';
+import { SubTabs } from './components/SubTabs';
+import { ParticleField } from './components/game/GameUI';
+import { NAV_GROUPS, groupOfTab } from './nav';
 
 function ChronoFloraApp() {
   const [currentTab, setCurrentTab] = useState<string>('cultivo');
   const [isWalletModalOpen, setIsWalletModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  // Remember the last sub-tab visited in each dock group
+  const [lastTabByGroup, setLastTabByGroup] = useState<Record<string, string>>({});
+
+  const goToTab = (tab: string) => {
+    setCurrentTab(tab);
+    setLastTabByGroup((prev) => ({ ...prev, [groupOfTab(tab).id]: tab }));
+  };
+
+  const goToGroup = (groupId: string) => {
+    const group = NAV_GROUPS.find((g) => g.id === groupId);
+    if (!group) return;
+    if (group.tabs.includes(currentTab as never)) return;
+    goToTab(lastTabByGroup[groupId] ?? group.tabs[0]);
+  };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-neutral-950">
-      {/* Top Header & Navigation */}
+    <div className="relative z-10 min-h-screen text-neutral-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-neutral-950">
+      <ParticleField />
+
+      {/* Top HUD */}
       <Navbar 
-        currentTab={currentTab} 
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={goToTab}
         onOpenWalletModal={() => setIsWalletModalOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 pb-32 space-y-6">
         {/* Gaming Quest & Level Progression Bar */}
         <QuestProgressBar />
 
+        {/* Sub-sections of the active dock group */}
+        <SubTabs currentTab={currentTab} setCurrentTab={goToTab} />
+
         {currentTab === 'cultivo' && <CultivationView />}
-        {currentTab === 'semillas' && <SeedBankView onNavigateToCultivation={() => setCurrentTab('cultivo')} />}
+        {currentTab === 'semillas' && <SeedBankView onNavigateToCultivation={() => goToTab('cultivo')} />}
         {currentTab === 'market' && <GrowMarketView />}
         {currentTab === 'nutrientes' && <NutrientTablesView />}
         {currentTab === 'extraccion' && <ExtractionLabView />}
@@ -83,46 +104,14 @@ function ChronoFloraApp() {
         }}
       />
 
-      {/* Footer & Compliance Bar */}
-      <footer className="mt-12 border-t border-neutral-900 bg-neutral-950/80 py-8 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
-          <div className="flex items-center gap-2">
-            <Sprout className="w-4 h-4 text-emerald-400" />
-            <span className="font-semibold text-neutral-300 font-serif">
-              ChronoFlora: El Multiverso Botánico Descentralizado
-            </span>
-            <span>•</span>
-            <span>Solana SPL Token & Anchor Program</span>
-          </div>
-
-          <div className="flex items-center gap-4 text-[11px] font-mono">
-            <button 
-              onClick={() => setCurrentTab('whitepaper')}
-              className="hover:text-neutral-300 transition cursor-pointer"
-            >
-              Libro Blanco v1.0
-            </button>
-            <span>•</span>
-            <button 
-              onClick={() => setCurrentTab('tokenomica')}
-              className="hover:text-neutral-300 transition cursor-pointer"
-            >
-              Tokenómica $FLORA
-            </button>
-            <span>•</span>
-            <button 
-              onClick={() => setIsWalletModalOpen(true)}
-              className="text-emerald-400 hover:text-emerald-300 transition cursor-pointer"
-            >
-              Solana Devnet Faucet
-            </button>
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto mt-4 pt-4 border-t border-neutral-900/60 text-[11px] text-neutral-600 text-center leading-relaxed">
-          Simulación agronómica digital enfocada en la ciencia de microclimas, fitoquímica botánica y economía deflacionaria on-chain. Todos los activos genéticos están asegurados en la red Solana.
-        </div>
+      {/* Footer */}
+      <footer className="relative z-10 mb-24 px-4 text-center text-[11px] text-neutral-600">
+        <span className="font-serif text-neutral-400">ChronoFlora</span> · Solana SPL &amp; Anchor · Simulación agronómica educativa ·{' '}
+        <button onClick={() => goToTab('whitepaper')} className="hover:text-emerald-300 transition cursor-pointer">Libro Blanco</button>
       </footer>
+
+      {/* Bottom dock */}
+      <Dock currentTab={currentTab} onSelectGroup={goToGroup} />
     </div>
   );
 }

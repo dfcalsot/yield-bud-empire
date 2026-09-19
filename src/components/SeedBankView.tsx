@@ -16,6 +16,7 @@ import {
   Layers
 } from 'lucide-react';
 import { SeedBankItem } from '../types';
+import { SeedVault } from './SeedVault';
 
 interface SeedBankViewProps {
   onNavigateToCultivation?: () => void;
@@ -121,6 +122,16 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
           </div>
         </div>
       </div>
+
+      {/* 3D cold-storage vault: seeds in vials, thermostat, seed inspector + germination */}
+      <SeedVault
+        seeds={seedBank}
+        inventory={seedInventory}
+        onPlant={(id) => {
+          const success = plantFromSeedBank(id);
+          if (success && onNavigateToCultivation) onNavigateToCultivation();
+        }}
+      />
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-3">

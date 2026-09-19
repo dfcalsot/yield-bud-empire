@@ -1,38 +1,28 @@
 import React from 'react';
 import { useGame } from '../context/GameContext';
-import { 
-  Flame, 
-  Coins, 
-  Sprout, 
-  FlaskConical, 
-  Dna, 
-  Store, 
-  BarChart3, 
-  FileText, 
-  Volume2, 
-  VolumeX, 
-  Sparkles, 
-  Wallet, 
+import {
+  Flame,
+  Volume2,
+  VolumeX,
+  Sparkles,
+  Wallet,
   Cpu,
   Award,
-  ShoppingBag,
-  Layers,
-  User,
-  Globe
+  User
 } from 'lucide-react';
+import { CannabisLeaf, LeafCoin } from './icons/CannabisIcons';
 import { SOLANA_NETWORKS } from '../utils/solana';
 
 interface NavbarProps {
-  currentTab: string;
   setCurrentTab: (tab: string) => void;
   onOpenWalletModal: () => void;
   onOpenAuthModal: () => void;
   onOpenProfileModal: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ 
-  currentTab, 
-  setCurrentTab, 
+/** Top HUD: identity, balances and wallet. Section navigation lives in the bottom Dock. */
+export const Navbar: React.FC<NavbarProps> = ({
+  setCurrentTab,
   onOpenWalletModal,
   onOpenAuthModal,
   onOpenProfileModal
@@ -55,20 +45,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const netConfig = SOLANA_NETWORKS[solanaNetwork];
 
-  const navItems = [
-    { id: 'cultivo', label: 'Cultivo', icon: Sprout },
-    { id: 'semillas', label: 'Semillas', icon: Layers },
-    { id: 'market', label: 'Market', icon: ShoppingBag },
-    { id: 'nutrientes', label: 'Nutrición', icon: FlaskConical },
-    { id: 'extraccion', label: 'Extracción', icon: Sparkles },
-    { id: 'genetica', label: 'Genética', icon: Dna },
-    { id: 'dispensario', label: 'Dispensario', icon: Store },
-    { id: 'tokenomica', label: 'Tokenómica', icon: BarChart3 },
-    { id: 'whitepaper', label: 'Libro Blanco', icon: FileText }
-  ];
-
   return (
-    <header className="sticky top-0 z-50 bg-neutral-950/90 backdrop-blur-md border-b border-neutral-800">
+    <header className="sticky top-0 z-50 bg-neutral-950/85 backdrop-blur-xl border-b border-emerald-400/15">
       {/* Top micro-bar with Solana Network Stats & Burn Banner */}
       <div className="bg-neutral-900/90 px-3 sm:px-6 py-1 border-b border-neutral-800/80 flex flex-wrap items-center justify-between text-xs text-neutral-400 gap-2">
         <div className="flex items-center gap-3">
@@ -121,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 via-emerald-800 to-neutral-950 p-0.5 shadow-lg shadow-emerald-950/50 flex items-center justify-center border border-emerald-500/30 group-hover:border-emerald-400 transition">
             <div className="w-full h-full bg-neutral-950/80 rounded-[10px] flex items-center justify-center">
-              <Sprout className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <CannabisLeaf className="w-6 h-6 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)] group-hover:scale-110 transition-transform" />
             </div>
           </div>
           <div className="hidden sm:block">
@@ -143,7 +121,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
           {/* FLORA Balance */}
           <div className="flex items-center gap-1.5 bg-emerald-950/30 border border-emerald-500/30 px-2.5 py-1.5 rounded-lg text-emerald-300">
-            <Coins className="w-4 h-4 text-emerald-400" />
+            <LeafCoin className="w-5 h-5 text-emerald-400" />
             <div className="text-right">
               <span className="text-[10px] text-emerald-500 block leading-none font-semibold">BALANCE</span>
               <span className="font-mono text-sm font-bold leading-tight">{floraBalance.toLocaleString()} $FLORA</span>
@@ -222,30 +200,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Navigation Tabs: own row on every screen size, scrolls sideways if it ever runs out of room */}
-      <nav className="border-t border-neutral-800/60 bg-neutral-900/60">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-1.5 flex overflow-x-auto gap-1 lg:justify-center scrollbar-none">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setCurrentTab(item.id)}
-                className={`flex items-center gap-2 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-                  isActive
-                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm'
-                    : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60 border border-transparent'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-neutral-500'}`} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
     </header>
   );
 };
