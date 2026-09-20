@@ -53,12 +53,14 @@ function ChronoFloraApp() {
       />
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 pb-32 space-y-6">
-        {/* Gaming Quest & Level Progression Bar */}
-        <QuestProgressBar />
-
-        {/* Sub-sections of the active dock group */}
-        <SubTabs currentTab={currentTab} setCurrentTab={goToTab} />
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 pb-32 space-y-6">
+        {/* Quest / level bar and the sub-sections of the active dock group share one row */}
+        <div className="flex flex-wrap items-start gap-3">
+          <SubTabs currentTab={currentTab} setCurrentTab={goToTab} />
+          <div className="flex-1 min-w-[300px]">
+            <QuestProgressBar />
+          </div>
+        </div>
 
         {currentTab === 'cultivo' && <CultivationView />}
         {currentTab === 'semillas' && <SeedBankView onNavigateToCultivation={() => goToTab('cultivo')} />}
@@ -105,7 +107,7 @@ function ChronoFloraApp() {
       />
 
       {/* Footer */}
-      <footer className="relative z-10 mb-24 px-4 text-center text-[11px] text-neutral-600">
+      <footer className="mb-24 px-4 text-center text-[11px] text-neutral-600">
         <span className="font-serif text-neutral-400">ChronoFlora</span> · Solana SPL &amp; Anchor · Simulación agronómica educativa ·{' '}
         <button onClick={() => goToTab('whitepaper')} className="hover:text-emerald-300 transition cursor-pointer">Libro Blanco</button>
       </footer>
