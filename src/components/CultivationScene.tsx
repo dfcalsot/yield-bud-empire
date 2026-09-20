@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { Droplet, Scissors, Flame, Zap, Crown, Layers, Grid3X3, SlidersHorizontal, ChevronDown, Sprout } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { GROW_ROOMS_CONFIG } from '../data/initialData';
-import { CannabisPlant } from './CannabisPlant';
+import { PlantView } from './PlantView';
 import { NutrientBottle, FlaskLeaf, CannabisLeaf } from './icons/CannabisIcons';
 import { StatBar } from './game/GameUI';
 import type { GrowStage } from '../types';
@@ -222,7 +222,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
       {/* ── the plant ── */}
       <div className={`absolute inset-x-0 top-[12%] bottom-[34%] ${canHarvest ? 'sm:bottom-[19%]' : 'sm:bottom-[12%]'} flex items-end justify-center pointer-events-none transition-all duration-500`}>
         {activePlant ? (
-          <CannabisPlant
+          <PlantView
             className="h-full w-full max-w-[560px] drop-shadow-[0_18px_28px_rgba(0,0,0,0.85)]"
             seedKey={`${activePlant.id ?? ''}${activePlant.strain.id}${selectedPlantIndex}`}
             stage={activePlant.stage}
