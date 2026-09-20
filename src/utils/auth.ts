@@ -112,3 +112,32 @@ export function saveUserData(userId: string, data: Partial<UserAccountData>): vo
     console.error('Error saving user data for', userId, err);
   }
 }
+
+export interface LocalSaveSummary { id: string; name: string; plots: number; plants: number; flora: number; sol: number; level: number; savedAt: number }
+
+/** Partidas guardadas en ESTE navegador que no son de la cuenta activa (p. ej. las de antes de existir las cuentas de servidor).
+ *  Solo las que tienen progreso real y no fueron ya traídas a otra cuenta. */
+export function listLocalSaves(exceptId: string): LocalSaveSummary[] {
+  const out: LocalSaveSummary[] = [];
+  try {
+    const profiles = getStoredUserProfiles();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(STORAGE_USER_DATA_PREFIX)) continue;
+      const id = key.slice(STORAGE_USER_DATA_PREFIX.length);
+      if (id === exceptId) continue;
+      const d = loadUserData(id);
+      if (!d || d.migratedTo) continue;
+      const plots = Array.isArray(d.plots) ? d.plots.length : 0;
+      const plants = (Array.isArray(d.indoorPlants) && d.indoorPlants.length > 0 ? d.indoorPlants.length : d.activePlant ? 1 : 0)
+        + (Array.isArray(d.plots) ? d.plots.reduce((n, p) => n + (p.plants?.length ?? 0), 0) : 0);
+      const level = typeof d.playerLevel === 'number' ? d.playerLevel : 1;
+      if (plots === 0 && plants === 0 && level <= 1) continue;
+      out.push({
+        id, name: d.profile?.displayName ?? profiles.find((u) => u.id === id)?.displayName ?? id, plots, plants,
+        flora: Math.round(d.floraBalance ?? 0), sol: Number((d.solBalance ?? 0).toFixed(2)), level, savedAt: d.savedAt ?? 0,
+      });
+    }
+  } catch { /* storage unavailable */ }
+  return out.sort((a, b) => b.plots - a.plots || b.savedAt - a.savedAt);
+}

@@ -5,6 +5,7 @@ import { Navbar } from './components/Navbar';
 import { CultivationView } from './components/CultivationView';
 import { PlanetView } from './components/planet/PlanetView';
 import { ProfileView } from './components/profile/ProfileView';
+import { LocalSavesBanner } from './components/profile/LocalSaves';
 import { AuthGate } from './auth/AuthGate';
 import { SeedBankView } from './components/SeedBankView';
 import { GrowMarketView } from './components/GrowMarketView';
@@ -83,6 +84,8 @@ function ChronoFloraApp() {
             <QuestProgressBar />
           </div>
         </div>
+
+        <LocalSavesBanner onOpenProfile={() => goToTab('perfil')} />
 
         {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && <ResourceBar onOpenMarket={openMarket} />}
 

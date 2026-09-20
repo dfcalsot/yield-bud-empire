@@ -119,6 +119,7 @@ interface GameContextType {
   registerUser: (profile: Omit<UserProfile, 'id' | 'createdAt'>) => boolean;
   loginWithSolanaWallet: () => boolean;
   switchUserAccount: (userId: string) => boolean;
+  importLocalSave: (fromUserId: string) => boolean;
   logoutUser: () => void;
   updateUserProfile: (updates: Partial<UserProfile>) => void;
 
@@ -930,6 +931,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showNotification(`Sesión cambiada a: ${targetUser.displayName} (${targetUser.role})`, 'success');
     return true;
   }, [currentUser, allUserProfiles, saveCurrentUserDataForUser, loadUserDataForUser, showNotification]);
+
+  /** Bring a save that lives in this browser (another local profile) into the active account. The original stays as a hidden backup. */
+  const importLocalSave = useCallback((fromUserId: string): boolean => {
+    if (!currentUser?.id || fromUserId === currentUser.id) return false;
+    const saved = loadUserData(fromUserId);
+    if (!saved || saved.migratedTo) return false;
+    saveUserData(currentUser.id, { ...saved, profile: currentUser, migratedTo: undefined });
+    loadUserDataForUser(currentUser.id, false);
+    saveUserData(fromUserId, { ...saved, migratedTo: currentUser.id });
+    showNotification(`Partida recuperada: ${saved.plots?.length ?? 0} parcela(s), ${Math.round(saved.floraBalance ?? 0)} $FLORA, nivel ${saved.playerLevel ?? 1}`, 'success');
+    return true;
+  }, [currentUser, loadUserDataForUser, showNotification]);
 
   const loginUser = useCallback((usernameOrEmail: string): boolean => {
     const clean = usernameOrEmail.trim().toLowerCase();
@@ -2742,6 +2755,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         registerUser,
         loginWithSolanaWallet,
         switchUserAccount,
+        importLocalSave,
         logoutUser,
         updateUserProfile,
 

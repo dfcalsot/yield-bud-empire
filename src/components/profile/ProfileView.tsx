@@ -5,6 +5,7 @@ import { useGame } from '../../context/GameContext';
 import { Avatar, AvatarArt, fileToAvatarDataUrl, RARITY_COLOR, RARITY_LABEL } from './AvatarArt';
 import { Npc, useNpc } from '../npc/Npc';
 import { Bump } from '../ResourceBar';
+import { LocalSavesPanel } from './LocalSaves';
 import { CHESTS, DESIGNS, DESIGN_BY_ID, RARITIES, SEASONS, daysLeftInSeason, seasonOf, validNick, type AvatarDesign, type ChestDef, type ChestId, type SeasonId } from '../../sim/avatars';
 
 const EMOJIS = ['🌱', '🌿', '🍃', '🌵', '🌴', '🪴', '🧑‍🌾', '👩‍🔬', '🧬', '🐝', '🦎', '🦉', '🔥', '⚡', '🌙', '👑'];
@@ -117,6 +118,8 @@ export const ProfileView: React.FC<{ onOpenAccountModal: () => void }> = ({ onOp
     <div className="pl-stage animate-fade-in">
       <div className="pl-stars" />
       <div className="relative z-10 p-4 sm:p-6 space-y-5">
+        <LocalSavesPanel />
+
         {/* hero */}
         <div className="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)] items-center">
           <div className="pf-frame mx-auto lg:mx-0"><Avatar profile={currentUser} size={132} /></div>
