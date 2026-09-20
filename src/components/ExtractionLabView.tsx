@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { LabVisualizer } from './LabVisualizer';
+import { LabFloor } from './lab/LabFloor';
 import { 
   FlaskConical, 
   Wrench, 
@@ -31,7 +32,7 @@ export const ExtractionLabView: React.FC = () => {
     rankTitle
   } = useGame();
 
-  const [activeTab, setActiveTab] = useState<'arcade' | 'batch' | 'machinery'>('arcade');
+  const [activeTab, setActiveTab] = useState<'planta' | 'arcade' | 'batch' | 'machinery'>('planta');
   const [selectedMachineCategory, setSelectedMachineCategory] = useState<'press' | 'extractor' | 'dryer'>('press');
   const [selectedProcess, setSelectedProcess] = useState<'live_rosin' | 'cured_flower' | 'full_spec_oil' | 'pure_terpenes'>('live_rosin');
   const [gramsToProcess, setGramsToProcess] = useState<number>(25);
@@ -120,6 +121,18 @@ export const ExtractionLabView: React.FC = () => {
       <div className="flex items-center justify-between border-b border-neutral-800 pb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2 flex-wrap">
           <button
+            onClick={() => setActiveTab('planta')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold font-mono transition cursor-pointer ${
+              activeTab === 'planta'
+                ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/50 shadow-sm'
+                : 'bg-neutral-900/60 text-neutral-400 hover:text-neutral-200 border border-neutral-800'
+            }`}
+          >
+            <FlaskConical className="w-4 h-4 text-cyan-300" />
+            <span>Planta Industrial (7 estaciones)</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('arcade')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold font-mono transition cursor-pointer ${
               activeTab === 'arcade'
@@ -161,7 +174,10 @@ export const ExtractionLabView: React.FC = () => {
         </span>
       </div>
 
-      {/* VIEW MODE 1: ARCADE INTERACTIVE LAB (DEFAULT) */}
+      {/* VIEW MODE 0: ANIMATED INDUSTRIAL PLANT (DEFAULT) */}
+      {activeTab === 'planta' && <LabFloor />}
+
+      {/* VIEW MODE 1: ARCADE INTERACTIVE LAB */}
       {activeTab === 'arcade' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Main Visualizer Stage (7 cols) */}

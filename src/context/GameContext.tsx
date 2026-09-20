@@ -6,6 +6,7 @@ import {
   MachineEquipment,
   PlantInGrow,
   ProcessedProduct,
+  LabRunSpec,
   GenomicPatent,
   VirtualBrand,
   SolanaTransaction,
@@ -150,6 +151,8 @@ interface GameContextType {
   processedProducts: ProcessedProduct[];
   machines: MachineEquipment[];
   processRawFlower: (type: 'cured_flower' | 'live_rosin' | 'full_spec_oil' | 'pure_terpenes', gramsInput: number) => boolean;
+  runLabProcess: (spec: LabRunSpec) => ProcessedProduct | null;
+  certifyProduct: (productId: string, feeFlora?: number) => ProcessedProduct | null;
   repairMachine: (machineId: string) => boolean;
 
   // Genetics & Patents
@@ -574,7 +577,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (type === 'BURN_SPEEDUP') {
       setBurnStats(prev => ({ ...prev, speedUp: prev.speedUp + amount }));
-    } else if (type === 'BURN_REPAIR') {
+    } else if (type === 'BURN_REPAIR' || type === 'BURN_PROCESS') {
       setBurnStats(prev => ({ ...prev, repairs: prev.repairs + amount }));
     } else if (type === 'BURN_PATENT') {
       setBurnStats(prev => ({ ...prev, patents: prev.patents + amount }));
@@ -1766,6 +1769,113 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
+
+  // Industrial lab cycle: consumes flower/trim, burns a $FLORA fee (deflationary sink), wears the machine
+  // and mints a product batch. Used by the animated Planta Industrial stations.
+  const runLabProcess = (spec: LabRunSpec): ProcessedProduct | null => {
+    const stock = spec.inputKind === 'flower' ? rawFlowerGrams : trimGrams;
+    if (spec.grams <= 0 || stock < spec.grams) {
+      showNotification(`No tienes suficiente ${spec.inputKind === 'flower' ? 'flor seca' : 'biomasa trim'} (requiere ${spec.grams}g)`, 'info');
+      return null;
+    }
+    const machine = machines.find(m => m.id === spec.machineId);
+    if (machine && machine.wearPercentage <= 15) {
+      showNotification(`${machine.name} está averiada (desgaste crítico). ¡Repárala primero quemando $FLORA!`, 'info');
+      return null;
+    }
+    if (floraBalance < spec.feeFlora) {
+      showNotification(`Saldo insuficiente: el ciclo quema ${spec.feeFlora} $FLORA`, 'info');
+      return null;
+    }
+
+    playClickSound();
+    if (spec.inputKind === 'flower') setRawFlowerGrams(prev => Math.max(0, Number((prev - spec.grams).toFixed(2))));
+    else setTrimGrams(prev => Math.max(0, Number((prev - spec.grams).toFixed(2))));
+    recordBurnTransaction('BURN_PROCESS', spec.feeFlora, `ChronoFlora Lab: ${spec.label} (${spec.grams}g)`);
+
+    const wear = machine?.wearPercentage ?? 100;
+    setMachines(prev => prev.map(m => {
+      if (m.id !== spec.machineId) return m;
+      const next = Math.max(0, m.wearPercentage - m.wearRatePerCycle);
+      return { ...m, wearPercentage: next, status: next <= 20 ? 'averiado' : (next <= 40 ? 'mantenimiento_requerido' : 'operativo') };
+    }));
+
+    // worn machines lose yield and quality
+    const wearFactor = wear > 60 ? 1 : wear > 40 ? 0.93 : 0.85;
+    const strainName = activePlant?.strain.name || strains[0].name;
+    const outGrams = Number((spec.grams * spec.yieldRatio * wearFactor).toFixed(2));
+    const quality = Math.min(100, Math.round((90 + Math.random() * 9) * (wear > 40 ? 1 : 0.94)));
+    const value = Math.round(outGrams * spec.pricePerGram * (0.9 + quality / 500));
+
+    const prod: ProcessedProduct = {
+      id: `prod-lab-${Date.now()}`,
+      name: `${strainName} · ${spec.label}`,
+      type: spec.type,
+      strainOrigin: strainName,
+      quantityGrams: outGrams,
+      potency: spec.potency,
+      qualityScore: quality,
+      marketValueFlora: value,
+      createdAt: Date.now(),
+      batchHash: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`
+    };
+    setProcessedProducts(prev => [prod, ...prev]);
+    addXp(spec.xp ?? 90, 'Laboratorio Industrial');
+    showNotification(`Lote acuñado: ${outGrams}g de ${spec.label} (valor ${value} $FLORA, calidad ${quality}%). Se quemaron ${spec.feeFlora} $FLORA.`, 'success');
+    return prod;
+  };
+
+  // HPLC certification: burns a fee and stamps a certificate of analysis (+18% market value) on a batch
+  const certifyProduct = (productId: string, feeFlora: number = 15): ProcessedProduct | null => {
+    const prod = processedProducts.find(p => p.id === productId);
+    if (!prod || prod.certified) return null;
+    const machine = machines.find(m => m.id === 'hplc_analyzer');
+    if (machine && machine.wearPercentage <= 15) {
+      showNotification('El cromatógrafo está averiado. ¡Repáralo primero quemando $FLORA!', 'info');
+      return null;
+    }
+    if (floraBalance < feeFlora) {
+      showNotification(`Saldo insuficiente: el análisis quema ${feeFlora} $FLORA`, 'info');
+      return null;
+    }
+    recordBurnTransaction('BURN_PROCESS', feeFlora, `ChronoFlora Lab: Análisis HPLC de ${prod.name}`);
+    setMachines(prev => prev.map(m => {
+      if (m.id !== 'hplc_analyzer') return m;
+      const next = Math.max(0, m.wearPercentage - m.wearRatePerCycle);
+      return { ...m, wearPercentage: next, status: next <= 20 ? 'averiado' : (next <= 40 ? 'mantenimiento_requerido' : 'operativo') };
+    }));
+
+    // realistic cannabinoid fingerprint per product family (deterministic-ish jitter)
+    const jitter = (base: number, spread: number) => Number((base + (Math.random() - 0.5) * spread).toFixed(1));
+    const family: Record<string, { thc: number; cbd: number; cbn: number; cbg: number; terpenes: number }> = {
+      cured_flower: { thc: 23, cbd: 0.6, cbn: 0.2, cbg: 0.9, terpenes: 2.8 },
+      preroll: { thc: 22, cbd: 0.6, cbn: 0.3, cbg: 0.8, terpenes: 2.4 },
+      cigar: { thc: 30, cbd: 0.5, cbn: 0.3, cbg: 1.0, terpenes: 2.6 },
+      live_rosin: { thc: 78, cbd: 1.8, cbn: 0.6, cbg: 2.1, terpenes: 7.4 },
+      bubble_hash: { thc: 62, cbd: 1.2, cbn: 0.5, cbg: 1.6, terpenes: 5.2 },
+      kief: { thc: 52, cbd: 1.0, cbn: 0.4, cbg: 1.4, terpenes: 3.9 },
+      terpene_sauce: { thc: 68, cbd: 1.4, cbn: 0.4, cbg: 1.8, terpenes: 11.5 },
+      rso: { thc: 76, cbd: 2.2, cbn: 1.6, cbg: 2.4, terpenes: 1.1 },
+      full_spec_oil: { thc: 58, cbd: 4.5, cbn: 0.8, cbg: 2.0, terpenes: 2.2 },
+      gummies: { thc: 8, cbd: 0.3, cbn: 0.1, cbg: 0.2, terpenes: 0.2 },
+      pure_terpenes: { thc: 0.1, cbd: 0, cbn: 0, cbg: 0, terpenes: 97 },
+    };
+    const base = family[prod.type] ?? family.cured_flower;
+    const coa = { thc: jitter(base.thc, 3), cbd: jitter(base.cbd, 0.4), cbn: jitter(base.cbn, 0.2), cbg: jitter(base.cbg, 0.3), terpenes: jitter(base.terpenes, 0.8) };
+    const updated: ProcessedProduct = {
+      ...prod,
+      certified: true,
+      coa,
+      coaHash: `COA-${Math.random().toString(16).substring(2, 8).toUpperCase()}-${Math.random().toString(16).substring(2, 6).toUpperCase()}`,
+      qualityScore: Math.min(100, prod.qualityScore + 2),
+      marketValueFlora: Math.round(prod.marketValueFlora * 1.18),
+    };
+    setProcessedProducts(prev => prev.map(p => (p.id === productId ? updated : p)));
+    addXp(70, 'Análisis de Laboratorio');
+    showNotification(`Certificado ${updated.coaHash} emitido: THC ${coa.thc}%, CBD ${coa.cbd}% (+18% valor, quema ${feeFlora} $FLORA)`, 'success');
+    return updated;
+  };
+
   // Manual interactive arcade press from LabVisualizer
   const executeManualRosinPress = (yieldBonus: number, quality: number, isCritical: boolean) => {
     const gramsInput = 20;
@@ -2051,6 +2161,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         processedProducts,
         machines,
         processRawFlower,
+        runLabProcess,
+        certifyProduct,
         repairMachine,
 
         patents,

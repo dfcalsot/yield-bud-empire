@@ -193,3 +193,61 @@ export const ColdThermometer: IconComponent = (props) => (
     <path d="M17.5 6h3M17.5 9h2M17.5 12h3" />
   </Svg>
 );
+
+/** Bubble-hash washer: drum with a round window and rising bubbles. */
+export const BubbleWasher: IconComponent = (props) => (
+  <Svg {...props}>
+    <rect x="4" y="3" width="16" height="18" rx="3" />
+    <circle cx="12" cy="13" r="5" />
+    <circle cx="10.4" cy="14.2" r="0.9" />
+    <circle cx="13.4" cy="12" r="0.7" />
+    <circle cx="12.6" cy="15" r="0.5" />
+    <path d="M7 6.2h.01M10 6.2h4" />
+  </Svg>
+);
+
+/** Terpene soup: beaker with a wave and a crystal. */
+export const TerpeneJar: IconComponent = (props) => (
+  <Svg {...props}>
+    <path d="M8 3h8M9 3v6.4L5 19a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-4-9.6V3" />
+    <path d="M7.4 15.5c1.4-1.2 2.6 1.2 4.6 0s3.2 1.2 4.6 0" />
+    <path d="M12 18.4 13.4 20 12 21.6 10.6 20z" />
+  </Svg>
+);
+
+/** Kief sifter: framed mesh with falling powder. */
+export const KiefSifter: IconComponent = (props) => (
+  <Svg {...props}>
+    <rect x="3" y="4" width="18" height="6" rx="1.5" />
+    <path d="M6 7h12M8 4v6M12 4v6M16 4v6" strokeWidth={1} />
+    <path d="M7 13v.01M10 15.5v.01M12 13.5v.01M14.5 16v.01M17 13v.01M9 19v.01M13 20v.01M16 18.5v.01" strokeWidth={2.4} />
+  </Svg>
+);
+
+/** Rolling machine: two rollers with a cigar between them. */
+export const RollingMachine: IconComponent = (props) => (
+  <Svg {...props}>
+    <rect x="2.5" y="6" width="19" height="12" rx="2.5" />
+    <circle cx="8" cy="12" r="3" />
+    <circle cx="16" cy="12" r="3" />
+    <path d="M5.5 12h13" strokeWidth={2.4} />
+  </Svg>
+);
+
+/** Rotavap: round flask, neck and condenser coil. */
+export const Rotavap: IconComponent = (props) => (
+  <Svg {...props}>
+    <circle cx="15" cy="16" r="5" />
+    <path d="M12 12.4 6 6.5" />
+    <path d="M4 3.5c1.4-.8 2.4.6 1.6 2s.6 2.6 2 1.8 2.6.4 1.8 1.8" />
+    <path d="M3 21h18" />
+  </Svg>
+);
+
+/** HPLC chromatograph: instrument with a peak trace. */
+export const Chromatograph: IconComponent = (props) => (
+  <Svg {...props}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M6 16.5h2l1.4-6 1.6 8 1.4-11 1.4 9 1-4h3.2" />
+  </Svg>
+);

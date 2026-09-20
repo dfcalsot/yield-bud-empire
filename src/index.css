@@ -256,8 +256,77 @@ body::before {
 @keyframes nftTurn { 0% { transform: rotateY(0deg); } 50% { transform: rotateY(90deg); } 100% { transform: rotateY(0deg); } }
 .nft-turn { animation: nftTurn 0.35s ease-in-out; }
 
+
+/* Industrial lab stations (StationScenes.tsx): .lb-run only moves while the wrapper has .is-run */
+.lb-scene .lb-run { animation-play-state: paused; }
+.lb-scene.is-run .lb-run { animation-play-state: running; }
+.lb-scene:not(.is-run) .lb-fall,
+.lb-scene:not(.is-run) .lb-steam { animation: none !important; }
+.lb-scene .lb-on { opacity: 0; transition: opacity 0.5s; }
+.lb-scene.is-run .lb-on { opacity: 1; }
+.lb-tb { transform-box: fill-box; transform-origin: center; }
+.lb-tbb { transform-box: fill-box; transform-origin: 50% 100%; }
+.lb-tbl { transform-box: fill-box; transform-origin: 0% 50%; }
+
+@keyframes lbSpin { to { transform: rotate(360deg); } }
+.lb-spin { animation: lbSpin 2s linear infinite; }
+
+@keyframes lbFall {
+  0% { transform: translateY(0); opacity: 0; }
+  12% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(var(--fall, 60px)); opacity: 0; }
+}
+.lb-fall, .lb-rise { animation: lbFall 1.3s ease-in infinite; }
+
+@keyframes lbSteam {
+  0% { transform: translateY(0) scale(0.85); opacity: 0; }
+  25% { opacity: 0.6; }
+  100% { transform: translateY(-46px) scale(1.25); opacity: 0; }
+}
+.lb-steam { animation: lbSteam 2.4s ease-out infinite; }
+
+@keyframes lbPress {
+  0%, 8% { transform: translateY(0); }
+  38%, 62% { transform: translateY(48px); }
+  92%, 100% { transform: translateY(0); }
+}
+.lb-press { animation: lbPress 3.2s ease-in-out infinite; }
+
+@keyframes lbNeedle { 0%, 100% { transform: rotate(-58deg); } 50% { transform: rotate(62deg); } }
+.lb-needle { animation: lbNeedle 2.6s ease-in-out infinite; }
+
+@keyframes lbShake { 0%, 100% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
+.lb-shake { animation: lbShake 0.16s ease-in-out infinite; }
+
+@keyframes lbPaddle { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(-1); } }
+.lb-paddle { transform-box: fill-box; transform-origin: center; animation: lbPaddle 0.9s ease-in-out infinite; }
+
+@keyframes lbBob {
+  0%, 100% { transform: translateY(-5px) rotate(-7deg); }
+  50% { transform: translateY(5px) rotate(7deg); }
+}
+.lb-bob { transform-box: fill-box; transform-origin: center; animation: lbBob 1.9s ease-in-out infinite; }
+
+@keyframes lbWave { to { transform: translateX(-86px); } }
+.lb-wave { animation: lbWave 1.6s linear infinite; }
+
+@keyframes lbDash { to { stroke-dashoffset: -24; } }
+.lb-dash { stroke-dasharray: 6 8; animation: lbDash 0.9s linear infinite; }
+
+@keyframes lbBlink { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+.lb-blink { animation: lbBlink 1.6s ease-in-out infinite; }
+
+@keyframes lbArm {
+  0%, 100% { transform: translate(0, 0); }
+  30% { transform: translate(64px, 0); }
+  50% { transform: translate(64px, 22px); }
+  70% { transform: translate(64px, 0); }
+}
+.lb-arm { animation: lbArm 3.4s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .sa-float, .sa-roll, .sa-shake, .sa-radicle, .sa-coty, .sa-orbit, .sa-halo, .nft-turn, .cf-float-in, .mint-reveal, .mint-burst, .mint-spin, .mint-ring, .frost-breath, .cf-sway, .cf-breeze, .cf-wind, .cf-twinkle, .cf-spore, .cf-ring { animation: none; }
+  .lb-run, .lb-blink, .sa-float, .sa-roll, .sa-shake, .sa-radicle, .sa-coty, .sa-orbit, .sa-halo, .nft-turn, .cf-float-in, .mint-reveal, .mint-burst, .mint-spin, .mint-ring, .frost-breath, .cf-sway, .cf-breeze, .cf-wind, .cf-twinkle, .cf-spore, .cf-ring { animation: none; }
   .rarity-frame, .rarity-frame::after { transition: none; }
 }
 

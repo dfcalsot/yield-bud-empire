@@ -8,6 +8,7 @@ const TYPE_INFO: Record<SolanaTransaction['type'], { label: string; color: strin
   BURN_SPEEDUP: { label: 'Quema · Aceleración', color: '#fbbf24' },
   BURN_REPAIR: { label: 'Quema · Reparación', color: '#fb923c' },
   BURN_PATENT: { label: 'Quema · Genética', color: '#f59e0b' },
+  BURN_PROCESS: { label: 'Quema · Laboratorio', color: '#f97316' },
   AIRDROP: { label: 'Airdrop', color: '#34d399' },
   V2P_CLAIM: { label: 'Canje V2P', color: '#22d3ee' },
   DISPENSARY_SALE: { label: 'Venta dispensario', color: '#c084fc' },

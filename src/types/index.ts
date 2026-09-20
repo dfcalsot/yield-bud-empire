@@ -40,7 +40,7 @@ export interface GrowFacility {
 export interface MachineEquipment {
   id: string;
   name: string;
-  category: 'press' | 'extractor' | 'dryer' | 'lighting';
+  category: 'press' | 'extractor' | 'dryer' | 'lighting' | 'washer' | 'sifter' | 'roller' | 'reactor' | 'analyzer';
   wearPercentage: number; // 100% = pristine, 0% = broken
   wearRatePerCycle: number; // how much it degrades
   repairCostFlora: number;
@@ -196,7 +196,9 @@ export interface MotherFatherPlant {
 export interface ProcessedProduct {
   id: string;
   name: string;
-  type: 'cured_flower' | 'live_rosin' | 'full_spec_oil' | 'pure_terpenes' | 'v2p_merch';
+  type:
+    | 'cured_flower' | 'live_rosin' | 'full_spec_oil' | 'pure_terpenes' | 'v2p_merch'
+    | 'bubble_hash' | 'terpene_sauce' | 'kief' | 'preroll' | 'cigar' | 'rso' | 'gummies';
   strainOrigin: string;
   quantityGrams: number;
   potency: string;
@@ -204,6 +206,24 @@ export interface ProcessedProduct {
   marketValueFlora: number;
   createdAt: number;
   batchHash: string;
+  /** set by the HPLC station: lab-verified certificate of analysis */
+  certified?: boolean;
+  coaHash?: string;
+  coa?: { thc: number; cbd: number; cbn: number; cbg: number; terpenes: number };
+}
+
+/** One industrial lab cycle (see runLabProcess in GameContext). */
+export interface LabRunSpec {
+  machineId: string;
+  inputKind: 'flower' | 'trim';
+  grams: number;
+  type: ProcessedProduct['type'];
+  label: string;          // product name without the strain
+  yieldRatio: number;     // output grams per input gram (before machine wear)
+  potency: string;
+  pricePerGram: number;   // $FLORA market value per output gram
+  feeFlora: number;       // burned on every cycle (deflationary sink)
+  xp?: number;
 }
 
 export interface GenomicPatent {
@@ -235,7 +255,7 @@ export interface VirtualBrand {
 export interface SolanaTransaction {
   id: string;
   signature: string;
-  type: 'BURN_SPEEDUP' | 'BURN_REPAIR' | 'BURN_PATENT' | 'AIRDROP' | 'V2P_CLAIM' | 'DISPENSARY_SALE';
+  type: 'BURN_SPEEDUP' | 'BURN_REPAIR' | 'BURN_PATENT' | 'BURN_PROCESS' | 'AIRDROP' | 'V2P_CLAIM' | 'DISPENSARY_SALE';
   amountFlora: number;
   amountSol?: number;
   timestamp: number;

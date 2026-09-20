@@ -166,6 +166,61 @@ export const INITIAL_MACHINES: MachineEquipment[] = [
     status: 'operativo'
   },
   {
+    id: 'bubble_washer',
+    name: 'Lavadora Bubble Hash de Agua-Hielo (3 mallas)',
+    category: 'washer',
+    wearPercentage: 94,
+    wearRatePerCycle: 5,
+    repairCostFlora: 60,
+    efficiencyBonus: 1.2,
+    description: 'Agitador con bolsas de 190/120/73 micras que separa las cabezas de tricoma con agua helada, sin solventes.',
+    status: 'operativo'
+  },
+  {
+    id: 'terp_reactor',
+    name: 'Reactor de Sopa de Terpenos (Live Resin & THCa)',
+    category: 'reactor',
+    wearPercentage: 90,
+    wearRatePerCycle: 7,
+    repairCostFlora: 85,
+    efficiencyBonus: 1.35,
+    description: 'Reactor con agitador magnético y placa térmica que cristaliza diamantes de THCa dentro de una salsa rica en terpenos.',
+    status: 'operativo'
+  },
+  {
+    id: 'kief_sifter',
+    name: 'Tamizadora Vibratoria de Kief (150 µm)',
+    category: 'sifter',
+    wearPercentage: 97,
+    wearRatePerCycle: 3,
+    repairCostFlora: 35,
+    efficiencyBonus: 1.1,
+    description: 'Malla de acero inoxidable con motor excéntrico que desprende el polvo de tricomas seco sin dañarlo.',
+    status: 'operativo'
+  },
+  {
+    id: 'rolling_machine',
+    name: 'Enrolladora Industrial de Conos y Puros',
+    category: 'roller',
+    wearPercentage: 91,
+    wearRatePerCycle: 4,
+    repairCostFlora: 45,
+    efficiencyBonus: 1.15,
+    description: 'Rodillos de precisión que llenan y enrollan pre-rolls cónicos y puros de flor con papel de cáñamo.',
+    status: 'operativo'
+  },
+  {
+    id: 'hplc_analyzer',
+    name: 'Cromatógrafo Líquido HPLC-UV (Análisis de Cannabinoides)',
+    category: 'analyzer',
+    wearPercentage: 98,
+    wearRatePerCycle: 2,
+    repairCostFlora: 120,
+    efficiencyBonus: 1.0,
+    description: 'Separa e identifica THC, CBD, CBN, CBG y terpenos; emite el certificado de análisis (COA) del lote on-chain.',
+    status: 'operativo'
+  },
+  {
     id: 'quantum_led_system',
     name: 'Matriz Quantum Board UV & Far-Red',
     category: 'lighting',
