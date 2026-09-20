@@ -68,6 +68,7 @@ import {
 
 import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
 import { siteConditions, plotOffer, terroirOf, REGION_BY_ID, PLOT_SIZE, type PlotOffer } from '../sim/terroir';
+import { CHESTS, DUPLICATE_REFUND, EMPTY_PITY, DESIGN_BY_ID, rollChest, seasonOf, type AvatarDesign, type ChestId, type OwnedAvatar, type PityMap } from '../sim/avatars';
 import {
   CATALOG_BY_ID, OwnedAsset, USE, newAsset, starterAssets, equipStatsOf, stockOf, spendResource, bestFeedBonus, repairCostOf,
   ownsStation, EquipStats, pestStock, spendPest, gardenerLevelOf, garbageOf, starterPestKit,
@@ -200,6 +201,12 @@ interface GameContextType {
   plotEta: (plot: OwnedPlot, plant: PlantInGrow) => number;
   /** pull up the revealed males of the room (no plotId) or of a plot */
   removeMales: (plotId?: string) => void;
+  // Profile: collectible NFT avatars minted by opening chests
+  avatars: OwnedAvatar[];
+  chestPity: PityMap;
+  showNotification: (message: string, type: 'success' | 'burn' | 'info') => void;
+  openChest: (id: ChestId, currency?: 'FLORA' | 'SOL') => { design: AvatarDesign; isNew: boolean; refund: number; owned: OwnedAvatar } | null;
+  equipAvatar: (designId: string | null) => void;
   /** keep a male of a plot as a pollen donor in the Sanctuary of mothers & fathers */
   keepMaleAsFather: (plotId: string, slot: number) => void;
 
@@ -398,6 +405,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // gardener rating (0–100): falls with neglect and garbage, rises when the room is cleaned / garbage recycled
   const [care, setCare] = useState<{ rating: number; lastCleanAt: number }>({ rating: 100, lastCleanAt: 0 });
   const [plots, setPlots] = useState<OwnedPlot[]>([]);
+  const [avatars, setAvatars] = useState<OwnedAvatar[]>([]);
+  const [chestPity, setChestPity] = useState<PityMap>(EMPTY_PITY);
   const plotsRef = useRef<OwnedPlot[]>(plots);
   plotsRef.current = plots;
   const [autoWaterActive, setAutoWaterActive] = useState<boolean>(false);
@@ -684,6 +693,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       assets,
       care,
       plots,
+      avatars,
+      chestPity,
       savedAt: Date.now()
     });
   }, [
@@ -711,7 +722,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     autoClimateActive,
     assets,
     care,
-    plots
+    plots,
+    avatars,
+    chestPity
   ]);
 
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
@@ -749,6 +762,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAssets(Array.isArray(saved.assets) && !saved.care ? [...loadedAssets, ...starterPestKit()] : loadedAssets);
       if (saved.care) setCare(saved.care);
       setPlots(Array.isArray(saved.plots) ? saved.plots : []);
+      setAvatars(Array.isArray(saved.avatars) ? saved.avatars : []);
+      setChestPity(saved.chestPity ?? EMPTY_PITY);
       lastSimRef.current = saved.lastSimAt ?? saved.savedAt ?? Date.now();
     } else if (seedIfMissing) {
       // Seed preset demo data
@@ -1973,6 +1988,39 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const plotEta = (plot: OwnedPlot, plant: PlantInGrow) => plotEtaSeconds(plant, plot.region, plot.ratings);
 
+  // --- PROFILE: chests that mint seasonal NFT avatars ---
+  const openChest = (id: ChestId, currency: 'FLORA' | 'SOL' = 'FLORA'): { design: AvatarDesign; isNew: boolean; refund: number; owned: OwnedAvatar } | null => {
+    const chest = CHESTS[id];
+    if (currency === 'FLORA') {
+      if (floraBalance < chest.priceFlora) { showNotification(`Saldo insuficiente: el ${chest.name} cuesta ${chest.priceFlora} $FLORA`, 'info'); return null; }
+      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `ChronoFlora: ${chest.name} (mint de avatar NFT)`);
+    } else {
+      if (solBalance < chest.priceSol) { showNotification(`Saldo insuficiente: el ${chest.name} cuesta ${chest.priceSol} SOL`, 'info'); return null; }
+      setSolBalance(prev => Number(Math.max(0, prev - chest.priceSol).toFixed(3)));
+      setTransactions(prev => [{ id: `tx-chest-${Date.now()}`, signature: generateSolanaSignature(), type: 'BURN_PURCHASE', amountFlora: 0, amountSol: chest.priceSol, timestamp: Date.now(), status: 'confirmed', blockSlot: 248928000 + Math.floor(Math.random() * 5000), memo: `ChronoFlora: ${chest.name}` }, ...prev.slice(0, 24)]);
+    }
+    // fair randomness: the browser's cryptographic generator, not Math.random
+    const rng = () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
+    const { design, pity } = rollChest(chest, chestPity[id], seasonOf(new Date()), rng);
+    setChestPity(prev => ({ ...prev, [id]: pity }));
+    const have = avatars.find(a => a.designId === design.id);
+    const refund = have ? DUPLICATE_REFUND[design.rarity] : 0;
+    const owned: OwnedAvatar = have
+      ? { ...have, count: have.count + 1 }
+      : { designId: design.id, count: 1, firstAt: Date.now(), mint: generateSolanaSignature().slice(0, 44), serial: 1000 + Math.floor(rng() * 9000) };
+    setAvatars(prev => (have ? prev.map(a => (a.designId === design.id ? owned : a)) : [...prev, owned]));
+    if (refund) setFloraBalance(prev => prev + refund);
+    playLevelUpSound();
+    addXp(design.rarity === 'legendary' ? 200 : design.rarity === 'epic' ? 80 : 30, 'Cofre de avatar');
+    return { design, isNew: !have, refund, owned };
+  };
+
+  const equipAvatar = (designId: string | null) => {
+    if (designId && !avatars.some(a => a.designId === designId)) return;
+    updateUserProfile({ avatarNft: designId ?? undefined });
+    showNotification(designId ? `Avatar equipado: ${DESIGN_BY_ID[designId]?.name ?? designId}` : 'Avatar NFT desequipado.', 'success');
+  };
+
   const removeMales = (plotId?: string) => {
     if (plotId) {
       const plot = plots.find(pl => pl.id === plotId);
@@ -2730,6 +2778,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         harvestPlot,
         plotEta,
         removeMales,
+        avatars,
+        chestPity,
+        showNotification,
+        openChest,
+        equipAvatar,
         keepMaleAsFather,
         treatPests,
         cleanRoom,

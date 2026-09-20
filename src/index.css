@@ -851,3 +851,38 @@ body::before {
 .pl-badge--male { right: -1px; bottom: 1px; width: 13px; height: 13px; display: grid; place-items: center; border-radius: 50%; background: #38bdf8; color: #04121c; font-size: 10px; font-weight: 900; }
 .pl-badge--bee { left: -1px; bottom: 0; }
 .care-btn--male { border-color: rgba(56, 189, 248, 0.55); background: rgba(14, 165, 233, 0.12); color: #bae6fd; }
+
+/* ───────── profile: chests & avatars ───────── */
+.pf-frame { padding: 5px; border-radius: 50%; background: conic-gradient(from 0deg, #34d399, #38bdf8, #c084fc, #fbbf24, #34d399); box-shadow: 0 0 34px -6px rgba(52, 211, 153, 0.6); animation: pfSpin 8s linear infinite; }
+.pf-frame > * { display: block; border-radius: 50%; background: #04121c; animation: pfSpin 8s linear infinite reverse; }
+@keyframes pfSpin { to { transform: rotate(360deg); } }
+.pf-tile { position: relative; padding: 8px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--rc) 45%, transparent); background: linear-gradient(170deg, color-mix(in srgb, var(--rc) 12%, #07130f), #050c0a); cursor: pointer; text-align: center; transition: transform 0.15s, box-shadow 0.2s; }
+.pf-tile:hover:not(:disabled) { transform: translateY(-4px) scale(1.03); box-shadow: 0 10px 24px -10px var(--rc); }
+.pf-tile:disabled { cursor: default; }
+.pf-tile.is-eq { box-shadow: 0 0 0 2px var(--rc), 0 0 26px -4px var(--rc); }
+.pf-locked { filter: grayscale(1) brightness(0.28); }
+.pf-lock { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); color: #94a3b8; }
+.pf-eq { position: absolute; left: 50%; top: -8px; transform: translateX(-50%); padding: 1px 7px; border-radius: 8px; background: var(--rc); color: #04121c; font: 800 8px/1.5 ui-monospace, monospace; letter-spacing: 0.1em; }
+.av-rays { transform-box: view-box; transform-origin: 50px 50px; animation: pfSpin 14s linear infinite; }
+.av-spark { transform-box: fill-box; transform-origin: center; animation: mkSparkS 2s ease-in-out infinite; }
+
+.cs-chest { overflow: visible; }
+.cs-float { animation: mkFloatY 3.2s ease-in-out infinite; }
+.cs-lid { transition: transform 0.5s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.cs-open .cs-lid { transform: rotate(-108deg); }
+.cs-glow { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.cs-open .cs-glow { opacity: 0.95; animation: csGlow 1s ease-out forwards; }
+@keyframes csGlow { from { transform: scale(0.4); opacity: 1; } to { transform: scale(2.4); opacity: 0; } }
+.cs-shake { animation: csShake 0.28s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes csShake { 0%, 100% { transform: rotate(-4deg) translateX(-2px); } 50% { transform: rotate(4deg) translateX(2px); } }
+.cs-overlay { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; background: rgba(2, 8, 12, 0.88); animation: shopSwap 0.25s ease-out; }
+.cs-stage { position: relative; display: grid; justify-items: center; }
+.cs-burst { position: absolute; left: 50%; top: 38%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; background: radial-gradient(circle, #fff, var(--rc) 40%, transparent 70%); animation: csBurst 0.8s ease-out forwards; pointer-events: none; }
+@keyframes csBurst { from { transform: scale(0.4); opacity: 1; } to { transform: scale(22); opacity: 0; } }
+.cs-reveal { animation: csPop 0.6s cubic-bezier(0.2, 1.5, 0.4, 1); }
+@keyframes csPop { from { transform: scale(0.3) rotate(-8deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.cs-card { width: min(92vw, 22rem); display: grid; justify-items: center; gap: 10px; padding: 22px 18px 16px; text-align: center; border-radius: 22px; border: 2px solid var(--rc); background: linear-gradient(170deg, color-mix(in srgb, var(--rc) 22%, #07130f), #050c0a); box-shadow: 0 0 60px -6px var(--rc), inset 0 0 40px rgba(0, 0, 0, 0.5); }
+.cs-avatar { width: 9.5rem; height: 9.5rem; animation: mkFloatY 3s ease-in-out infinite; filter: none; }
+.cs-new { padding: 2px 14px; border-radius: 999px; background: var(--rc); color: #04121c; font: 900 12px/1.6 ui-monospace, monospace; letter-spacing: 0.2em; animation: mkBump 0.7s ease-out infinite alternate; }
+@keyframes mkBump { from { transform: scale(1); } to { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .pf-frame, .pf-frame > *, .av-rays, .av-spark, .cs-float, .cs-shake, .cs-avatar, .cs-new { animation: none !important; } }

@@ -374,6 +374,10 @@ export interface UserProfile {
   createdAt: number;
   experienceLevel: number;
   facilityName: string;
+  /** uploaded picture (re-encoded 256×256 data URL) */
+  avatarImage?: string;
+  /** equipped NFT avatar design id (see sim/avatars.ts) */
+  avatarNft?: string;
 }
 
 export interface UserAccountData {
@@ -408,5 +412,8 @@ export interface UserAccountData {
   care?: { rating: number; lastCleanAt: number };
   /** land plots the player owns, with the plants growing on them */
   plots?: OwnedPlot[];
+  /** collectible NFT avatars and the chest pity counters */
+  avatars?: import('../sim/avatars').OwnedAvatar[];
+  chestPity?: import('../sim/avatars').PityMap;
 }
 

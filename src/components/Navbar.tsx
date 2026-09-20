@@ -11,6 +11,7 @@ import {
   User
 } from 'lucide-react';
 import { CannabisLeaf, LeafCoin } from './icons/CannabisIcons';
+import { Avatar } from './profile/AvatarArt';
 import { SOLANA_NETWORKS } from '../utils/solana';
 
 interface NavbarProps {
@@ -160,11 +161,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* User Account / Profile Button */}
           {isAuthenticated && currentUser ? (
             <button
-              onClick={onOpenProfileModal}
+              onClick={() => setCurrentTab('perfil')}
               title={`Perfil: ${currentUser.displayName} (@${currentUser.username}) - ${currentUser.role}`}
               className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 border border-emerald-500/30 px-2 sm:px-2.5 py-1.5 rounded-lg text-neutral-200 transition cursor-pointer"
             >
-              <span className="text-base leading-none">{currentUser.avatar}</span>
+              <Avatar profile={currentUser} size={26} />
               <div className="hidden lg:block text-left">
                 <span className="text-xs font-bold text-white block leading-tight truncate max-w-[85px]">
                   {currentUser.displayName}

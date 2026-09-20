@@ -12,6 +12,7 @@ import {
   BookLeaf,
   IconComponent,
   PlanetGlobe,
+  ProfileBadge,
 } from './components/icons/CannabisIcons';
 
 export type TabId =
@@ -24,7 +25,8 @@ export type TabId =
   | 'genetica'
   | 'dispensario'
   | 'tokenomica'
-  | 'whitepaper';
+  | 'whitepaper'
+  | 'perfil';
 
 export interface NavTab {
   id: TabId;
@@ -50,6 +52,7 @@ export const NAV_TABS: Record<TabId, NavTab> = {
   dispensario: { id: 'dispensario', label: 'Dispensario', icon: Dispensary },
   tokenomica: { id: 'tokenomica', label: 'Tokenómica', icon: LeafCoin },
   whitepaper: { id: 'whitepaper', label: 'Libro Blanco', icon: BookLeaf },
+  perfil: { id: 'perfil', label: 'Perfil', icon: ProfileBadge },
 };
 
 /** The five dock entries. Groups with several tabs show a sub-tab bar in the shell. */
@@ -59,6 +62,7 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: 'laboratorio', label: 'Laboratorio', icon: FlaskLeaf, tabs: ['extraccion', 'genetica'] },
   { id: 'mercado', label: 'Mercado', icon: CuringJar, tabs: ['market', 'dispensario'] },
   { id: 'cripto', label: 'Cripto', icon: LeafCoin, tabs: ['tokenomica', 'whitepaper'] },
+  { id: 'perfil', label: 'Perfil', icon: ProfileBadge, tabs: ['perfil'] },
 ];
 
 export const groupOfTab = (tab: string): NavGroup =>

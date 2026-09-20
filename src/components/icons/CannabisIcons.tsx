@@ -260,3 +260,11 @@ export const PlanetGlobe: IconComponent = (props) => (
     <path d="M4.6 7.4c2.2 1.2 4.7 1.8 7.4 1.8s5.2-.6 7.4-1.8M4.6 16.6c2.2-1.2 4.7-1.8 7.4-1.8s5.2.6 7.4 1.8" opacity=".6" />
   </Svg>
 );
+
+export const ProfileBadge: IconComponent = (props) => (
+  <Svg {...props}>
+    <circle cx="12" cy="8.4" r="4.1" />
+    <path d="M4.2 20.6c.5-4 3.8-6.4 7.8-6.4s7.3 2.4 7.8 6.4" />
+    <path d="M17.6 3.2c1.6.2 2.8 1.3 3.2 2.9-1.6.1-2.9-.6-3.2-2.9Z" opacity=".7" />
+  </Svg>
+);

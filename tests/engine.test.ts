@@ -1,5 +1,6 @@
 import { advancePlant, advanceWorld, cycleSecondsOf, etaSeconds, hoursUntilMoisture, pestCount, sexFor, POLLINATED_YIELD, SimEnv } from '../src/sim/engine';
 import type { PlantInGrow, RegionId } from '../src/types';
+import { CHESTS, DESIGNS, EMPTY_PITY, rollChest, seasonOf, daysLeftInSeason, validNick, SEASONS, type PityState, type SeasonId } from '../src/sim/avatars';
 import { plotOffer, REGION_BY_ID, REGIONS, siteConditions, terroirOf, weatherOn, regionDistance, WeatherKind } from '../src/sim/terroir';
 
 let failed = 0;
@@ -189,6 +190,30 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
   ok('polinización: un macho joven (<55 %) todavía no poliniza', !young[1].pollinated);
   const twice = advanceWorld(room, 600, env({ autoWater: true }));
   ok('polinización: no se aplica dos veces', twice.find((p) => p.id === 'f1')!.estimatedDryYieldGrams === by('f1').estimatedDryYieldGrams);
+}
+// 17 · profile avatars: seasons, catalogue, chests (odds + pity), nickname rules
+{
+  const mulberry = (a: number) => () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  ok('temporadas: septiembre es otoño, enero invierno, abril primavera, julio verano', seasonOf(new Date(2026, 8, 20)) === 'otono' && seasonOf(new Date(2026, 0, 5)) === 'invierno' && seasonOf(new Date(2026, 3, 1)) === 'primavera' && seasonOf(new Date(2026, 6, 1)) === 'verano');
+  ok('temporadas: quedan días positivos hasta el cambio', daysLeftInSeason(new Date(2026, 8, 20)) > 0 && daysLeftInSeason(new Date(2026, 8, 20)) <= 92, `(${daysLeftInSeason(new Date(2026, 8, 20))} d)`);
+  ok('catálogo: 36 diseños; cada temporada tiene las 4 rarezas', DESIGNS.length === 36 && (['primavera', 'verano', 'otono', 'invierno'] as SeasonId[]).every((s) => ['common', 'rare', 'epic', 'legendary'].every((r) => DESIGNS.some((d) => d.season === s && d.rarity === r))), `(${DESIGNS.length})`);
+  ok('catálogo: ids únicos', new Set(DESIGNS.map((d) => d.id)).size === DESIGNS.length);
+  ok('cofres: las probabilidades suman 100 %', Object.values(CHESTS).every((c) => Object.values(c.odds).reduce((a, b) => a + b, 0) === 100));
+  // 20 000 openings of the season chest
+  let pity: PityState = { ...EMPTY_PITY.season }; const rng = mulberry(42); const count = { common: 0, rare: 0, epic: 0, legendary: 0 }; let worstEpic = 0, worstLegend = 0, sinceE = 0, sinceL = 0;
+  for (let i = 0; i < 20000; i++) {
+    const r = rollChest(CHESTS.season, pity, 'otono', rng); pity = r.pity; count[r.design.rarity]++;
+    const epicPlus = r.design.rarity === 'epic' || r.design.rarity === 'legendary';
+    sinceE = epicPlus ? 0 : sinceE + 1; sinceL = r.design.rarity === 'legendary' ? 0 : sinceL + 1; worstEpic = Math.max(worstEpic, sinceE); worstLegend = Math.max(worstLegend, sinceL);
+  }
+  ok('cofre de temporada: nunca pasa de 7 aperturas sin épico o mejor (garantía 8)', worstEpic <= 7, `(peor racha ${worstEpic})`);
+  ok('cofre de temporada: nunca pasa de 39 sin legendario (garantía 40)', worstLegend <= 39, `(peor racha ${worstLegend})`);
+  ok('cofre de temporada: comunes ≈ 50–62 %, legendarios 2–5 %', count.common / 200 > 45 && count.common / 200 < 62 && count.legendary / 200 >= 2 && count.legendary / 200 <= 5, `(${(count.common / 200).toFixed(1)} % comunes, ${(count.legendary / 200).toFixed(2)} % legendarios)`);
+  ok('cofre de temporada: solo sale de la temporada actual y de los clásicos', (() => { let p2: PityState = { ...EMPTY_PITY.season }; const r2 = mulberry(7); for (let i = 0; i < 500; i++) { const r = rollChest(CHESTS.season, p2, 'invierno', r2); p2 = r.pity; if (r.design.season !== 'invierno' && r.design.season !== 'classic') return false; } return true; })());
+  const prem = Array.from({ length: 300 }, (_, i) => rollChest(CHESTS.premium, { ...EMPTY_PITY.premium }, 'verano', mulberry(i + 1)).design.rarity);
+  ok('cofre premium: nunca da un común', prem.every((r) => r !== 'common'));
+  ok('apodo: 3–20 caracteres, letras con tilde y dígitos; rechaza símbolos raros', validNick('Ana_Grower') && validNick('José Ñandú') && validNick('THC.420') && !validNick('ab') && !validNick('<script>') && !validNick('x'.repeat(21)) && validNick('  hola  ') && !validNick('..ab..'));
+  ok('temporadas: hay un nombre para cada una', Object.keys(SEASONS).length === 5);
 }
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 process.exit(failed ? 1 : 0);

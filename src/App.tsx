@@ -4,6 +4,7 @@ import { isThirsty } from './sim/engine';
 import { Navbar } from './components/Navbar';
 import { CultivationView } from './components/CultivationView';
 import { PlanetView } from './components/planet/PlanetView';
+import { ProfileView } from './components/profile/ProfileView';
 import { SeedBankView } from './components/SeedBankView';
 import { GrowMarketView } from './components/GrowMarketView';
 import { NutrientTablesView } from './components/NutrientTablesView';
@@ -85,6 +86,7 @@ function ChronoFloraApp() {
         {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && <ResourceBar onOpenMarket={openMarket} />}
 
         {currentTab === 'cultivo' && <CultivationView onOpenMarket={openMarket} onOpenPlanet={() => goToTab('planeta')} />}
+        {currentTab === 'perfil' && <ProfileView onOpenAccountModal={() => setIsProfileModalOpen(true)} />}
         {currentTab === 'planeta' && <PlanetView onOpenSeedBank={() => goToTab('semillas')} onOpenMarket={openMarket} />}
         {currentTab === 'semillas' && <SeedBankView onNavigateToCultivation={() => goToTab('cultivo')} />}
         {currentTab === 'market' && <GrowMarketView initialCat={marketCat} />}
