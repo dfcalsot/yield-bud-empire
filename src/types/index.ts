@@ -82,6 +82,8 @@ export interface PlantInGrow {
   lastWatered: number;
   lastFed: number;
   estimatedDryYieldGrams: number;
+  /** full-precision copy of progress / moisture / EC / health kept by the real-time engine (visible fields are rounded) */
+  sim?: { progress: number; moisture: number; ec: number; health: number };
 }
 
 export type GrowRoomId = 'germination' | 'vegetative' | 'flowering' | 'mothers_fathers';
@@ -358,5 +360,11 @@ export interface UserAccountData {
   trimGrams: number;
   brand: VirtualBrand;
   savedAt: number;
+  /** real-time engine bookkeeping (offline catch-up) and lab/automation state */
+  lastSimAt?: number;
+  machines?: MachineEquipment[];
+  processedProducts?: ProcessedProduct[];
+  autoWaterActive?: boolean;
+  autoClimateActive?: boolean;
 }
 

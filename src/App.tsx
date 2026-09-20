@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { GameProvider } from './context/GameContext';
+import React, { useEffect, useState } from 'react';
+import { GameProvider, useGame } from './context/GameContext';
+import { isThirsty } from './sim/engine';
 import { Navbar } from './components/Navbar';
 import { CultivationView } from './components/CultivationView';
 import { SeedBankView } from './components/SeedBankView';
@@ -28,6 +29,13 @@ function ChronoFloraApp() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   // Remember the last sub-tab visited in each dock group
   const [lastTabByGroup, setLastTabByGroup] = useState<Record<string, string>>({});
+
+  // tab title flags plants that need water (this is a real-time game: the player has to come back)
+  const { indoorPlants } = useGame();
+  useEffect(() => {
+    const thirsty = indoorPlants.filter(isThirsty).length;
+    document.title = `${thirsty ? `(💧${thirsty}) ` : ''}ChronoFlora: El Multiverso Botánico Descentralizado`;
+  }, [indoorPlants]);
 
   const goToTab = (tab: string) => {
     setCurrentTab(tab);

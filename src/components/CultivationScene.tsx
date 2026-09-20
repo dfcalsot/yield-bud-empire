@@ -6,6 +6,7 @@ import { CannabisPlant } from './CannabisPlant';
 import { NutrientBottle, FlaskLeaf, CannabisLeaf } from './icons/CannabisIcons';
 import { StatBar } from './game/GameUI';
 import type { GrowStage } from '../types';
+import { formatDuration, hoursUntilMoisture, isHungry, isThirsty } from '../sim/engine';
 
 interface CultivationSceneProps {
   onOpenSeedModal: () => void;
@@ -115,7 +116,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const {
     activePlant, indoorPlants, selectedPlantIndex, selectPlant,
     waterPlant, feedNutrients, trainPlant, speedUpGrowth, harvestPlant, saveCurrentPlantAsMotherOrFather,
-    currentRoom, switchGrowRoom, currentFacility, rawFlowerGrams, trimGrams, co2Ppm,
+    currentRoom, switchGrowRoom, currentFacility, rawFlowerGrams, trimGrams, co2Ppm, getPlantEta,
   } = useGame();
 
   const [roomMenu, setRoomMenu] = useState(false);
@@ -144,6 +145,15 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   );
 
   const readyCount = indoorPlants.filter((p) => p.stage === 'ready_harvest').length;
+  const thirstyCount = indoorPlants.filter(isThirsty).length;
+  const eta = activePlant ? getPlantEta(activePlant) : Infinity;
+  const nextWaterH = activePlant ? hoursUntilMoisture(activePlant, 40) : Infinity;
+  const thirsty = !!activePlant && isThirsty(activePlant);
+  const hungry = !!activePlant && isHungry(activePlant);
+  const clockRows = activePlant ? [
+    { icon: '⏱', text: activePlant.stage === 'ready_harvest' ? '¡Lista para cosechar!' : isFinite(eta) ? `Cosecha en ${formatDuration(eta)}` : 'Crecimiento en pausa', warn: !isFinite(eta) && activePlant.stage !== 'ready_harvest' },
+    { icon: '💧', text: activePlant.stage === 'ready_harvest' ? 'Sin riego pendiente' : thirsty ? '¡Necesita agua ya!' : `Regar en ~${formatDuration(nextWaterH * 3600)}`, warn: thirsty },
+  ] : [];
   const canHarvest = !!activePlant && activePlant.progressPercent >= 80;
 
   return (
@@ -285,6 +295,18 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
               {STAGE_LABEL[activePlant.stage]} · #{selectedPlantIndex + 1} · THC {activePlant.strain.thcPercentage}%
             </div>
             <StatBar value={activePlant.health} valueLabel={`${activePlant.health}%`} label="Salud" color={activePlant.health > 70 ? '#34d399' : activePlant.health > 45 ? '#fbbf24' : '#f87171'} />
+            <div className="mt-1.5 flex justify-between gap-3 text-[10px] font-mono">
+              {clockRows.map((r) => (
+                <span key={r.icon} className={r.warn ? 'text-amber-300' : 'text-neutral-300'}>{r.icon} {r.text}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {activePlant && (
+          <div className="md:hidden absolute top-[8.6rem] left-1/2 -translate-x-1/2 z-30 flex gap-3 px-3 py-1 rounded-full bg-neutral-950/85 border border-emerald-400/25 text-[10px] font-mono whitespace-nowrap">
+            {clockRows.map((r) => (
+              <span key={r.icon} className={r.warn ? 'text-amber-300' : 'text-neutral-300'}>{r.icon} {r.text}</span>
+            ))}
           </div>
         )}
 
@@ -296,7 +318,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
           </div>
           <div className="flex gap-1.5">
             <button onClick={onShowRoom} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-neutral-600/40 text-[11px] font-semibold text-neutral-200 hover:border-emerald-300/50 cursor-pointer transition" title="Ver las 30 plantas de la sala">
-              <Grid3X3 className="w-3.5 h-3.5 text-emerald-300" /> Sala{readyCount > 0 && <span className="px-1 rounded bg-amber-400 text-neutral-950 text-[9px] font-black">{readyCount}</span>}
+              <Grid3X3 className="w-3.5 h-3.5 text-emerald-300" /> Sala{thirstyCount > 0 && <span className="px-1 rounded bg-cyan-400 text-neutral-950 text-[9px] font-black" title="Plantas con sed">💧{thirstyCount}</span>}{readyCount > 0 && <span className="px-1 rounded bg-amber-400 text-neutral-950 text-[9px] font-black">{readyCount}</span>}
             </button>
             <button onClick={onOpenPanel} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-neutral-600/40 text-[11px] font-semibold text-neutral-200 hover:border-cyan-300/50 cursor-pointer transition" title="Clima, luz, CO₂ e instrumental completo">
               <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-300" /> Panel
@@ -308,10 +330,10 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
       {/* ── action rail ── */}
       {activePlant && (
         <div className="absolute z-30 flex gap-2 left-2 right-2 overflow-x-auto scrollbar-none bottom-[10.6rem] sm:right-auto sm:overflow-visible sm:left-3 sm:bottom-[5.3rem] sm:top-[9.4rem] sm:flex-col sm:justify-center sm:gap-1.5 pointer-events-none [&>*]:pointer-events-auto">
-          <SkillButton label="Regar" sub={`Hum ${activePlant.soilMoisture}%`} tone="cyan" onClick={() => { waterPlant(); pop('+ Riego', '#22d3ee'); }}>
+          <SkillButton label="Regar" sub={`Hum ${activePlant.soilMoisture}%`} tone="cyan" pulse={thirsty || activePlant.soilMoisture < 55} onClick={() => { waterPlant(); pop('+ Riego', '#22d3ee'); }}>
             <Droplet className="w-5 h-5" />
           </SkillButton>
-          <SkillButton label="Abonar N-P-K" sub={`EC ${activePlant.ecLevel}`} tone="emerald" onClick={() => { feedNutrients(); pop('+ N-P-K', '#34d399'); }}>
+          <SkillButton label="Abonar N-P-K" sub={`EC ${activePlant.ecLevel}`} tone="emerald" pulse={hungry} onClick={() => { feedNutrients(); pop('+ N-P-K', '#34d399'); }}>
             <NutrientBottle className="w-5 h-5" />
           </SkillButton>
           <SkillButton label="Entrenamiento LST" sub="LST +12%" tone="purple" onClick={() => { trainPlant('Topping & LST'); pop('LST +12%', '#e879f9'); }}>
@@ -393,7 +415,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
                 style={{
                   background: STAGE_DOT[p.stage],
                   opacity: p.health < 50 ? 0.55 : 1,
-                  outline: i === selectedPlantIndex ? '2px solid #fff' : p.stage === 'ready_harvest' ? '1px solid #fbbf24' : 'none',
+                  outline: i === selectedPlantIndex ? '2px solid #fff' : isThirsty(p) ? '1.5px solid #22d3ee' : p.stage === 'ready_harvest' ? '1px solid #fbbf24' : 'none',
                   outlineOffset: 1,
                   boxShadow: i === selectedPlantIndex ? '0 0 8px #fff' : undefined,
                 }}

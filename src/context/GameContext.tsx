@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import {
   Strain,
@@ -63,15 +63,9 @@ import {
   setSoundEnabled
 } from '../utils/audio';
 
-// Calculate Vapor Pressure Deficit (VPD) in kPa
-export function calculateVpd(tempC: number, rhPercent: number): number {
-  // Saturation Vapor Pressure (Tetens formula)
-  const svp = 0.61078 * Math.exp((17.27 * tempC) / (tempC + 237.3));
-  // Actual Vapor Pressure
-  const avp = svp * (rhPercent / 100);
-  const vpd = svp - avp;
-  return Math.max(0.1, Number(vpd.toFixed(2)));
-}
+import { advanceWorld, calculateVpd, etaSeconds, formatDuration, SimEnv } from '../sim/engine';
+import { BALANCE } from '../sim/balance';
+export { calculateVpd };
 
 // Generate realistic Solana signature
 export function generateSolanaSignature(): string {
@@ -152,6 +146,8 @@ interface GameContextType {
   machines: MachineEquipment[];
   processRawFlower: (type: 'cured_flower' | 'live_rosin' | 'full_spec_oil' | 'pure_terpenes', gramsInput: number) => boolean;
   runLabProcess: (spec: LabRunSpec) => ProcessedProduct | null;
+  /** real seconds until a plant is ready to harvest at its current conditions (Infinity if stalled) */
+  getPlantEta: (plant: PlantInGrow) => number;
   certifyProduct: (productId: string, feeFlora?: number) => ProcessedProduct | null;
   repairMachine: (machineId: string) => boolean;
 
@@ -586,6 +582,23 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  // --- REAL-TIME SIMULATION (src/sim/engine.ts) ---
+  const lastSimRef = useRef<number>(Date.now());
+  const indoorRef = useRef<PlantInGrow[]>(indoorPlants);
+  indoorRef.current = indoorPlants;
+  const simEnvRef = useRef<SimEnv>(null as unknown as SimEnv);
+  simEnvRef.current = {
+    autoWater: autoWaterActive,
+    autoClimate: autoClimateActive,
+    facilityBonus: currentFacility.environmentBonus,
+    co2Ppm,
+    lightOn: 1,
+    getRoomTarget: (roomId) => {
+      const r = GROW_ROOMS_CONFIG.find(x => x.id === (roomId || currentRoom));
+      return r ? { tempC: r.targetTempC, rh: r.targetRhPercent } : undefined;
+    },
+  };
+
   // --- USER DATA RESTORATION & PERSISTENCE ---
   const saveCurrentUserDataForUser = useCallback((userId: string) => {
     if (!userId) return;
@@ -611,6 +624,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       rawFlowerGrams,
       trimGrams,
       brand,
+      lastSimAt: lastSimRef.current,
+      machines,
+      processedProducts,
+      autoWaterActive,
+      autoClimateActive,
       savedAt: Date.now()
     });
   }, [
@@ -631,10 +649,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playerXp,
     rawFlowerGrams,
     trimGrams,
-    brand
+    brand,
+    machines,
+    processedProducts,
+    autoWaterActive,
+    autoClimateActive
   ]);
 
-  const loadUserDataForUser = useCallback((userId: string) => {
+  const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
     const saved = loadUserData(userId);
     if (saved) {
       if (typeof saved.floraBalance === 'number') setFloraBalance(saved.floraBalance);
@@ -659,7 +681,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (typeof saved.rawFlowerGrams === 'number') setRawFlowerGrams(saved.rawFlowerGrams);
       if (typeof saved.trimGrams === 'number') setTrimGrams(saved.trimGrams);
       if (saved.brand) setBrand(saved.brand);
-    } else {
+      if (Array.isArray(saved.machines)) setMachines(INITIAL_MACHINES.map(m => saved.machines!.find(x => x.id === m.id) ?? m));
+      if (Array.isArray(saved.processedProducts)) setProcessedProducts(saved.processedProducts);
+      if (typeof saved.autoWaterActive === 'boolean') setAutoWaterActive(saved.autoWaterActive);
+      if (typeof saved.autoClimateActive === 'boolean') setAutoClimateActive(saved.autoClimateActive);
+      lastSimRef.current = saved.lastSimAt ?? saved.savedAt ?? Date.now();
+    } else if (seedIfMissing) {
       // Seed preset demo data
       if (userId === 'usr-satoshi') {
         setFloraBalance(12500);
@@ -960,103 +987,67 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showNotification('Perfil de cultivador actualizado con éxito.', 'success');
   }, [currentUser, showNotification]);
 
-  // Real-time ticking simulation loop for all 30 indoor room plants (3 rows of 10 in pairs of 2)
+  // Real-time world clock: advances every plant by the *real* time elapsed (also after being away).
+  const runTick = useCallback((extraSeconds: number = 0) => {
+    const now = Date.now();
+    const dt = (now - lastSimRef.current) / 1000 + extraSeconds;
+    lastSimRef.current = now;
+    if (dt < 0.5) return;
+    const env = simEnvRef.current;
+    if (dt > 1800) {
+      // welcome-back summary for long absences
+      const before = indoorRef.current;
+      const after = advanceWorld(before, dt, env);
+      const avg = (arr: PlantInGrow[], f: (p: PlantInGrow) => number) => arr.reduce((a, p) => a + f(p), 0) / Math.max(1, arr.length);
+      const grew = avg(after, p => p.progressPercent) - avg(before, p => p.progressPercent);
+      const thirsty = after.filter(p => p.stage !== 'ready_harvest' && p.soilMoisture < BALANCE.thirstyBelow).length;
+      const ready = after.filter(p => p.stage === 'ready_harvest').length;
+      showNotification(
+        `Han pasado ${formatDuration(Math.min(dt, BALANCE.maxCatchUpSeconds))}: tus plantas crecieron +${grew.toFixed(1)}%${ready ? ` (${ready} listas para cosechar)` : ''}${thirsty ? `. ¡${thirsty} necesitan agua!` : '.'}`,
+        thirsty ? 'info' : 'success'
+      );
+    }
+    setIndoorPlants(prev => advanceWorld(prev, dt, env));
+  }, [showNotification]);
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIndoorPlants(currentPlants => {
-        return currentPlants.map(current => {
-          if (current.stage === 'ready_harvest') return current;
+    const id = window.setInterval(() => runTick(), BALANCE.liveTickSeconds * 1000);
+    const onVisible = () => { if (!document.hidden) runTick(); };
+    document.addEventListener('visibilitychange', onVisible);
+    // DEV: window.__cfWarp(seconds) fast-forwards the world clock (days of play in one call)
+    if (import.meta.env.DEV) (window as unknown as { __cfWarp?: (s: number) => void }).__cfWarp = (s: number) => runTick(s);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [runTick]);
 
-          // Soil moisture decreases slightly, replenished by auto-drip if enabled
-          let newSoilMoisture = Math.max(10, current.soilMoisture - 0.25);
-          if (autoWaterActive && newSoilMoisture < 45) {
-            newSoilMoisture = 85;
-          }
+  // Restore the saved game when the page opens (the game used to start from scratch on every reload)
+  useEffect(() => {
+    if (!currentUser) return;
+    if (loadUserData(currentUser.id)) {
+      loadUserDataForUser(currentUser.id, false);
+      runTick(); // offline catch-up right away
+    } else {
+      lastSimRef.current = Date.now();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-          // Auto climate regulation towards room target if active
-          let currentTemp = current.temperatureC;
-          let currentRh = current.relativeHumidity;
-          if (autoClimateActive) {
-            const roomConf = GROW_ROOMS_CONFIG.find(r => r.id === (current.currentRoom || currentRoom));
-            if (roomConf) {
-              if (Math.abs(currentTemp - roomConf.targetTempC) > 0.2) {
-                currentTemp += currentTemp < roomConf.targetTempC ? 0.2 : -0.2;
-              }
-              if (Math.abs(currentRh - roomConf.targetRhPercent) > 0.4) {
-                currentRh += currentRh < roomConf.targetRhPercent ? 0.4 : -0.4;
-              }
-            }
-          }
-          
-          // Growth progression rate influenced by facility bonus, VPD, moisture, and CO2
-          const vpd = calculateVpd(currentTemp, currentRh);
-          const isVpdOptimal = vpd >= 0.8 && vpd <= 1.4;
-          const moistureFactor = newSoilMoisture > 40 ? 1.0 : 0.4;
-          const healthFactor = current.health / 100;
-          const co2Multiplier = (current.co2Ppm || co2Ppm) >= 1100 ? 1.35 : ((current.co2Ppm || co2Ppm) >= 800 ? 1.18 : 1.0);
-          
-          const growthIncrement = (100 / (current.strain.cycleDurationSeconds * 2.5)) 
-            * currentFacility.environmentBonus 
-            * (isVpdOptimal ? 1.2 : 0.8) 
-            * moistureFactor 
-            * healthFactor
-            * co2Multiplier;
-
-          const newProgress = Math.min(100, current.progressPercent + growthIncrement);
-          
-          // Stage transitions
-          let newStage: GrowStage = current.stage;
-          if (newProgress < 15) {
-            newStage = 'seedling';
-          } else if (newProgress < 50) {
-            newStage = 'vegetative';
-          } else if (newProgress < 95) {
-            newStage = 'flowering';
-          } else {
-            newStage = 'ready_harvest';
-          }
-
-          // Trichome maturity shifts in flowering stage
-          let clear = 90;
-          let milky = 10;
-          let amber = 0;
-          if (newStage === 'flowering') {
-            const flowerProgress = (newProgress - 50) / 45; // 0 to 1
-            clear = Math.max(5, Math.round(90 - flowerProgress * 75));
-            milky = Math.round(flowerProgress * 70);
-            amber = Math.max(0, Math.round(flowerProgress * 25));
-          } else if (newStage === 'ready_harvest') {
-            clear = 5;
-            milky = 65;
-            amber = 30;
-          }
-
-          // Health adjustments if dry or out of VPD
-          let newHealth = current.health;
-          if (newSoilMoisture < 25) {
-            newHealth = Math.max(30, newHealth - 0.2);
-          } else if (isVpdOptimal && newHealth < 100) {
-            newHealth = Math.min(100, newHealth + 0.1);
-          }
-
-          return {
-            ...current,
-            progressPercent: Number(newProgress.toFixed(1)),
-            stage: newStage,
-            soilMoisture: Number(newSoilMoisture.toFixed(1)),
-            temperatureC: Number(currentTemp.toFixed(1)),
-            relativeHumidity: Number(currentRh.toFixed(1)),
-            luxLumens: Math.round(current.ppfdLightIntensity * 54),
-            health: Math.round(newHealth),
-            vpdKpa: vpd,
-            trichomeMaturity: { clear, milky, amber }
-          };
-        });
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [currentFacility, autoWaterActive, autoClimateActive, currentRoom, co2Ppm]);
+  // Autosave: every 20 s, when the tab is hidden and when it closes
+  const saveNowRef = useRef<() => void>(() => {});
+  saveNowRef.current = () => { if (currentUser?.id) saveCurrentUserDataForUser(currentUser.id); };
+  useEffect(() => {
+    const save = () => saveNowRef.current();
+    const id = window.setInterval(save, 20000);
+    const onHide = () => { if (document.hidden) save(); };
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', save);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', save);
+    };
+  }, []);
 
   // Actions on active plant & room-wide batch actions
   const waterPlant = () => {
@@ -1065,7 +1056,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (idx !== selectedPlantIndex) return p;
       return {
         ...p,
-        soilMoisture: Math.min(100, p.soilMoisture + 40),
+        soilMoisture: Math.min(100, p.soilMoisture + 55),
         health: Math.min(100, p.health + 5),
         lastWatered: Date.now()
       };
@@ -1079,7 +1070,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playWaterSound();
     setIndoorPlants(prev => prev.map(p => ({
       ...p,
-      soilMoisture: Math.min(100, p.soilMoisture + 40),
+      soilMoisture: Math.min(100, p.soilMoisture + 55),
       health: Math.min(100, p.health + 5),
       lastWatered: Date.now()
     })));
@@ -2162,6 +2153,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         machines,
         processRawFlower,
         runLabProcess,
+        getPlantEta: (plant: PlantInGrow) => etaSeconds(plant, simEnvRef.current),
         certifyProduct,
         repairMachine,
 
