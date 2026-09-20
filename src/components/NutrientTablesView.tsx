@@ -31,7 +31,7 @@ export const NutrientTablesView: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-emerald-950/70 via-neutral-900 to-neutral-950 border border-emerald-500/20 rounded-2xl p-5 sm:p-7 relative overflow-hidden">
+      <div className="hud-panel p-5 sm:p-7 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -164,7 +164,7 @@ export const NutrientTablesView: React.FC = () => {
           {currentBrand.stages.map((stage, idx) => (
             <div
               key={idx}
-              className="bg-neutral-900/70 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-lg hover:border-neutral-700 transition"
+              className="hud-panel p-5 flex flex-col justify-between space-y-4 shadow-lg hover:border-neutral-700 transition"
             >
               {/* Header */}
               <div className="space-y-1">
@@ -239,7 +239,7 @@ export const NutrientTablesView: React.FC = () => {
       </div>
 
       {/* Advanced Agronomy: N-P-K & Nutrient Lockout Explanation */}
-      <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-6 space-y-4">
+      <div className="hud-panel p-6 space-y-4">
         <div className="flex items-center gap-2 text-white font-serif text-lg font-bold">
           <Info className="w-5 h-5 text-cyan-400" />
           Fundamentos Científicos de Nutrición y Bloqueo de Minerales

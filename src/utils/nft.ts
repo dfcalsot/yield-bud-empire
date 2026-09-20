@@ -1,4 +1,4 @@
-import type { GenomicPatent, SeedBankItem, Strain } from '../types';
+import type { GenomicPatent, MotherFatherPlant, SeedBankItem, Strain } from '../types';
 import type { Rarity } from '../components/game/GameUI';
 
 /**
@@ -133,4 +133,26 @@ export const cardFromPatent = (pat: GenomicPatent, strain?: Strain): GeneticCard
       ],
     }
   );
+};
+
+/** Mother / father plants as collectible cards (id keeps the serial + mint unique per individual). */
+export const cardFromDonor = (d: MotherFatherPlant): GeneticCardData => {
+  const base = cardFromStrain(d.strain, 'hybrid');
+  const isMother = d.role.startsWith('Madre');
+  const thc = d.thcPercentage ?? d.strain.thcPercentage;
+  return {
+    ...base,
+    id: d.id,
+    name: d.strainName ?? d.name,
+    tag: `${isMother ? 'Madre' : d.role.startsWith('Padre') ? 'Donante' : 'Hembra rev.'} #${d.generation ?? 1}`,
+    thc,
+    stats: [
+      { label: 'THC', value: pct(thc, 32), text: `${thc}%`, color: '#34d399' },
+      { label: 'Vigor', value: pct((d.vigorRating ?? 5) * 10, 100), text: `${d.vigorRating ?? 5}/10`, color: '#c084fc' },
+      { label: 'Salud', value: d.health, text: `${d.health}%`, color: '#22d3ee' },
+      isMother
+        ? { label: 'Esquejes', value: pct(d.clonesHarvested ?? d.clonesCutCount, 20), text: `${d.clonesHarvested ?? d.clonesCutCount}`, color: '#fbbf24' }
+        : { label: 'Polen', value: pct(d.pollenGramsCollected ?? 0, 20), text: `${d.pollenGramsCollected ?? 0}g`, color: '#fbbf24' },
+    ],
+  };
 };

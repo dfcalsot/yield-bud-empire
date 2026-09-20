@@ -484,7 +484,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
 
         {/* BOTTOM INTERACTIVE ARCADE CONTROLS: THE GAMING PRESS MINI-GAME! */}
         {selectedMachineCategory === 'press' && (
-          <div className="relative z-10 bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3.5 sm:p-4 space-y-3">
+          <div className="hud-panel relative z-10 p-3.5 sm:p-4 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <span className="text-xs font-bold text-white uppercase font-mono flex items-center gap-1.5">
@@ -588,7 +588,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
 
         {/* Other Machines Quick Interaction Bar */}
         {selectedMachineCategory !== 'press' && (
-          <div className="relative z-10 bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="hud-panel relative z-10 p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-purple-400" />
               <span className="text-neutral-300 font-medium">

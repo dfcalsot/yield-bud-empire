@@ -28,7 +28,7 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
 
   if (!plant) {
     return (
-      <div className="relative h-96 w-full rounded-2xl bg-neutral-900/50 border border-neutral-800 flex flex-col items-center justify-center p-6 text-center overflow-hidden">
+      <div className="hud-panel relative h-96 w-full flex flex-col items-center justify-center p-6 text-center overflow-hidden">
         <div className="w-20 h-20 rounded-full bg-neutral-950 border border-dashed border-neutral-700 flex items-center justify-center mb-4">
           <Sparkles className="w-8 h-8 text-neutral-600" />
         </div>
@@ -572,7 +572,7 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
       </div>
 
       {/* Bottom Controls Bar: Drip & CO2 Status Indicators + Yield */}
-      <div className="relative z-20 bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+      <div className="hud-panel relative z-20 p-3 flex flex-wrap items-center justify-between gap-3 shadow-lg">
         {/* Systems status badges */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs font-mono">

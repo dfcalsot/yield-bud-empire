@@ -90,7 +90,7 @@ export const CultivationView: React.FC = () => {
     <div className={inDrawer ? 'space-y-4' : `${displayMode === 'indoor_room' ? 'lg:col-span-4' : 'lg:col-span-5'} space-y-4`}>
           {/* Scientific Meters Card (pH, EC, Lux, PAR, CO2) */}
           {activePlant && (
-            <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 sm:p-5 space-y-4">
+            <div className="hud-panel p-4 sm:p-5 space-y-4">
               <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
                 <div className="flex items-center gap-2">
                   <Gauge className="w-4 h-4 text-cyan-400" />
@@ -214,7 +214,7 @@ export const CultivationView: React.FC = () => {
           )}
 
           {/* Microclimate Sliders */}
-          <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 space-y-5">
+          <div className="hud-panel p-5 space-y-5">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
                 <Activity className="w-4 h-4 text-emerald-400" />
@@ -355,7 +355,7 @@ export const CultivationView: React.FC = () => {
 
           {/* Terpene and Strain Profile Card */}
           {activePlant && (
-            <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-4 space-y-3">
+            <div className="hud-panel p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-neutral-300 font-mono uppercase">
                   Perfil de Terpenos Activo
@@ -405,7 +405,7 @@ export const CultivationView: React.FC = () => {
     <div className="space-y-6">
       {displayMode !== 'scene' && (<>
       {/* Top Banner: Facility info & Inventory Overview */}
-      <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="hud-panel p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-xl bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
             <img 
@@ -454,7 +454,7 @@ export const CultivationView: React.FC = () => {
       </div>
 
       {/* Grow Rooms Selection Bar */}
-      <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-3 sm:p-4 space-y-2">
+      <div className="hud-panel p-3 sm:p-4 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-emerald-400" />
@@ -503,7 +503,7 @@ export const CultivationView: React.FC = () => {
       </div>
 
       {/* View Mode Switcher: Sala Indoor (3 Filas x 10 en Pares de 2) vs Detalle Macro */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-neutral-900/60 border border-neutral-800 rounded-2xl p-2.5 sm:p-3">
+      <div className="hud-panel flex flex-wrap items-center justify-between gap-3 p-2.5 sm:p-3">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setDisplayMode('scene')}
@@ -592,7 +592,7 @@ export const CultivationView: React.FC = () => {
 
           {/* Plant Actions Toolbar */}
           {activePlant ? (
-            <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-4 space-y-3">
+            <div className="hud-panel p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-neutral-300 uppercase tracking-wider font-mono">
                   Intervenciones de Cultivo
@@ -682,7 +682,7 @@ export const CultivationView: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-6 text-center space-y-4">
+            <div className="hud-panel p-6 text-center space-y-4">
               <div className="max-w-md mx-auto">
                 <h3 className="text-base font-bold text-white mb-1">Comenzar Nuevo Cultivo</h3>
                 <p className="text-xs text-neutral-400 mb-4">
@@ -721,7 +721,7 @@ export const CultivationView: React.FC = () => {
       {/* Seed Selection Modal */}
       {showSeedModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+          <div className="hud-panel max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div>
                 <h3 className="text-lg font-bold text-white">Banco de Semillas Genéticas</h3>
@@ -784,7 +784,7 @@ export const CultivationView: React.FC = () => {
       {/* Facility Upgrade Modal */}
       {showFacilityModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+          <div className="hud-panel max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div>
                 <h3 className="text-lg font-bold text-white">Instalaciones de Cultivo</h3>
@@ -843,7 +843,7 @@ export const CultivationView: React.FC = () => {
                             setShowFacilityModal(false);
                           }}
                           disabled={floraBalance < fac.costFlora}
-                          className="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                          className="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 shadow-[0_0_16px_-4px_rgba(251,191,36,0.6)]"
                         >
                           <Flame className="w-3.5 h-3.5 text-neutral-950" />
                           <span>Desbloquear ({fac.costFlora} $FLORA)</span>
@@ -861,7 +861,7 @@ export const CultivationView: React.FC = () => {
       {/* Nutrient Feeding Schedule Modal */}
       {showNutrientModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-3xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+          <div className="hud-panel max-w-3xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2.5">
                 <FlaskConical className="w-5 h-5 text-emerald-400" />

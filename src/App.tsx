@@ -14,6 +14,7 @@ import { SolanaWalletModal } from './components/SolanaWalletModal';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { NotificationToast } from './components/NotificationToast';
+import { TxToast } from './components/TxToast';
 import { QuestProgressBar } from './components/QuestProgressBar';
 import { Dock } from './components/Dock';
 import { SubTabs } from './components/SubTabs';
@@ -75,6 +76,7 @@ function ChronoFloraApp() {
 
       {/* Global Toast Alerts */}
       <NotificationToast />
+      <TxToast />
 
       {/* Solana Wallet Modal with Mainnet/Devnet/Testnet & All Providers */}
       <SolanaWalletModal 

@@ -107,7 +107,7 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-neutral-900 border border-neutral-700/80 rounded-3xl max-w-lg w-full p-5 sm:p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 my-8">
+      <div className="hud-panel max-w-lg w-full p-5 sm:p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 my-8">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-neutral-800 pb-3.5">
@@ -116,7 +116,7 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
               <Wallet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+              <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2 font-serif tracking-wide">
                 Conexión Solana Web3
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono text-white ${currentNetworkConfig.badgeColor}`}>
                   {currentNetworkConfig.badgeLabel}

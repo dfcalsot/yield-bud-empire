@@ -56,7 +56,7 @@ export const GrowMarketView: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-neutral-900 via-neutral-900 to-neutral-950 border border-neutral-800 rounded-2xl p-5 sm:p-7 relative overflow-hidden">
+      <div className="hud-panel p-5 sm:p-7 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -127,7 +127,7 @@ export const GrowMarketView: React.FC = () => {
       </div>
 
       {/* Live Automation Master Switch Panel */}
-      <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-4 sm:p-5">
+      <div className="hud-panel p-4 sm:p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Sliders className="w-4 h-4 text-emerald-400" />
@@ -366,7 +366,7 @@ export const GrowMarketView: React.FC = () => {
       </div>
 
       {/* Educational Notice */}
-      <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-5 flex items-start gap-3 text-xs text-neutral-400 leading-relaxed">
+      <div className="hud-panel p-5 flex items-start gap-3 text-xs text-neutral-400 leading-relaxed">
         <Info className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
         <div>
           <strong className="text-neutral-200 block mb-1">Impacto Biológico de la Automatización y el CO2 Enriquecido</strong>

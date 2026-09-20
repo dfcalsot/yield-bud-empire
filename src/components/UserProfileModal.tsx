@@ -74,7 +74,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-neutral-900 border border-neutral-700/80 rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 my-8">
+      <div className="hud-panel max-w-md w-full p-5 sm:p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 my-8">
         
         {/* Top bar */}
         <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
@@ -83,7 +83,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <User className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Perfil de Cultivador</h3>
+              <h3 className="text-sm font-bold text-white font-serif tracking-wide">Perfil de Cultivador</h3>
               <p className="text-[10px] text-neutral-400 font-mono">Datos y estado personal aislados</p>
             </div>
           </div>
@@ -97,7 +97,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
         {/* Profile Card Header */}
         <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 flex items-center gap-3.5">
-          <div className="text-4xl p-2 bg-neutral-900 border border-neutral-800 rounded-2xl shrink-0">
+          <div className="hud-panel text-4xl p-2 shrink-0">
             {currentUser.avatar}
           </div>
           <div className="min-w-0 flex-1">
@@ -178,7 +178,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="flex-1 py-1.5 bg-emerald-500 text-neutral-950 font-bold text-xs rounded-lg hover:bg-emerald-400 transition cursor-pointer"
+                className="flex-1 py-1.5 bg-emerald-500 text-neutral-950 font-bold text-xs rounded-lg hover:bg-emerald-400 transition cursor-pointer shadow-[0_0_16px_-4px_rgba(52,211,153,0.6)]"
               >
                 Guardar Cambios
               </button>

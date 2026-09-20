@@ -19,7 +19,7 @@ import {
 import { Strain } from '../types';
 import { GeneticCard } from './GeneticCard';
 import { MintCeremony } from './MintCeremony';
-import { GeneticCardData, cardFromPatent, cardFromStrain } from '../utils/nft';
+import { GeneticCardData, cardFromDonor, cardFromPatent, cardFromStrain } from '../utils/nft';
 
 export const GeneticsLabView: React.FC = () => {
   const {
@@ -81,7 +81,7 @@ export const GeneticsLabView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="hud-panel p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono">
@@ -91,7 +91,7 @@ export const GeneticsLabView: React.FC = () => {
               Propiedad Intelectual NFT
             </span>
           </div>
-          <h2 className="text-xl font-bold text-white mt-1 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-white mt-1 flex items-center gap-2 font-serif">
             <Dna className="w-5 h-5 text-emerald-400" />
             Laboratorio de Madres, Padres, Hibridación & Patentes
           </h2>
@@ -191,7 +191,7 @@ export const GeneticsLabView: React.FC = () => {
             {/* Left: Mother Plants & Father Donors (7 Cols) */}
             <div className="lg:col-span-7 space-y-6">
               {/* Mother Plants Sanctuary */}
-              <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 space-y-4">
+              <div className="hud-panel p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
                   <div className="flex items-center gap-2">
                     <Crown className="w-4 h-4 text-purple-400" />
@@ -210,41 +210,28 @@ export const GeneticsLabView: React.FC = () => {
                     <p className="text-[11px] text-neutral-600">Cultiva una planta y guárdala como madre durante su fase vegetativa.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4">
                     {mothers.map((mother) => (
-                      <div
-                        key={mother.id}
-                        className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 hover:border-purple-500/40 transition space-y-2"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                              {mother.strainName}
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">
-                                Madre #{mother.generation}
-                              </span>
-                            </h4>
-                            <p className="text-[11px] text-neutral-400 mt-0.5">
-                              THC: <strong className="text-emerald-400">{mother.thcPercentage}%</strong> | Vigor: {mother.vigorRating}/10 | Edad: {mother.ageDays} días
-                            </p>
-                          </div>
-
-                          <button
-                            onClick={() => takeCloneFromMother(mother.id)}
-                            className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1.5 shadow"
-                          >
-                            <Scissors className="w-3.5 h-3.5" />
-                            <span>Sacar Esqueje ({mother.clonesHarvested} tomados)</span>
-                          </button>
+                      <GeneticCard key={mother.id} card={cardFromDonor(mother)}>
+                        <div className="text-[10px] font-mono text-neutral-400 flex justify-between">
+                          <span>Edad: {mother.ageDays} días</span>
+                          <span>Gen. {mother.generation}</span>
                         </div>
-                      </div>
+                        <button
+                          onClick={() => takeCloneFromMother(mother.id)}
+                          className="w-full px-3 py-2 bg-fuchsia-500/20 hover:bg-fuchsia-500/30 border border-fuchsia-300/40 text-fuchsia-100 rounded-lg text-[11px] font-mono font-bold uppercase tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Scissors className="w-3.5 h-3.5" />
+                          <span>Sacar esqueje</span>
+                        </button>
+                      </GeneticCard>
                     ))}
                   </div>
                 )}
               </div>
 
               {/* Father Plants Sanctuary */}
-              <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 space-y-4">
+              <div className="hud-panel p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-cyan-400" />
@@ -262,34 +249,21 @@ export const GeneticsLabView: React.FC = () => {
                     <p>No tienes padres donantes de polen registrados actualmente.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4">
                     {fathers.map((father) => (
-                      <div
-                        key={father.id}
-                        className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 hover:border-cyan-500/40 transition space-y-2"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                              {father.strainName}
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono">
-                                Donante #{father.generation}
-                              </span>
-                            </h4>
-                            <p className="text-[11px] text-neutral-400 mt-0.5">
-                              THC: <strong className="text-emerald-400">{father.thcPercentage}%</strong> | Reserva: <strong className="text-cyan-400">{father.pollenGramsCollected || 0}g polen</strong>
-                            </p>
-                          </div>
-
-                          <button
-                            onClick={() => collectPollenFromFather(father.id)}
-                            className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1.5 shadow"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span>Recolectar Polen</span>
-                          </button>
+                      <GeneticCard key={father.id} card={cardFromDonor(father)}>
+                        <div className="text-[10px] font-mono text-neutral-400 flex justify-between">
+                          <span>Reserva: <strong className="text-cyan-300">{father.pollenGramsCollected || 0}g</strong></span>
+                          <span>Gen. {father.generation}</span>
                         </div>
-                      </div>
+                        <button
+                          onClick={() => collectPollenFromFather(father.id)}
+                          className="w-full px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-300/40 text-cyan-100 rounded-lg text-[11px] font-mono font-bold uppercase tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Recolectar polen</span>
+                        </button>
+                      </GeneticCard>
                     ))}
                   </div>
                 )}
@@ -298,7 +272,7 @@ export const GeneticsLabView: React.FC = () => {
 
             {/* Right: True Hybridization Chamber (5 Cols) */}
             <div className="lg:col-span-5 space-y-4">
-              <form onSubmit={handleHybridize} className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-5 space-y-4">
+              <form onSubmit={handleHybridize} className="hud-panel p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
                   <div className="flex items-center gap-2">
                     <Dna className="w-4 h-4 text-purple-400" />
@@ -325,7 +299,7 @@ export const GeneticsLabView: React.FC = () => {
                       {mothers.length === 0 && <option value="">(No hay madres registradas)</option>}
                       {mothers.map(m => (
                         <option key={m.id} value={m.id}>
-                          {m.strainName} ({m.thcPercentage}% THC - Vigor {m.vigorRating}/10)
+                          {m.strainName ?? m.name} ({m.thcPercentage ?? m.strain.thcPercentage}% THC - Vigor {m.vigorRating ?? 5}/10)
                         </option>
                       ))}
                     </select>
@@ -344,7 +318,7 @@ export const GeneticsLabView: React.FC = () => {
                       {fathers.length === 0 && <option value="">(No hay padres registrados)</option>}
                       {fathers.map(f => (
                         <option key={f.id} value={f.id}>
-                          {f.strainName} ({f.thcPercentage}% THC - {f.pollenGramsCollected || 0}g polen)
+                          {f.strainName ?? f.name} ({f.thcPercentage ?? f.strain.thcPercentage}% THC - {f.pollenGramsCollected || 0}g polen)
                         </option>
                       ))}
                     </select>
@@ -394,7 +368,7 @@ export const GeneticsLabView: React.FC = () => {
       {activeSubTab === 'cruce_rapido' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-7 space-y-4">
-            <form onSubmit={handleBreed} className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 space-y-5">
+            <form onSubmit={handleBreed} className="hud-panel p-5 space-y-5">
               <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-emerald-400" />
@@ -518,7 +492,7 @@ export const GeneticsLabView: React.FC = () => {
             </form>
           </div>
 
-          <div className="lg:col-span-5 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 space-y-3">
+          <div className="hud-panel lg:col-span-5 p-5 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-200 font-mono">
               Genéticas Activas en Laboratorio
             </h3>
@@ -541,7 +515,7 @@ export const GeneticsLabView: React.FC = () => {
       {activeSubTab === 'patentes' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-6 space-y-4">
-            <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 space-y-4">
+            <div className="hud-panel p-5 space-y-4">
               <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-amber-400" />
@@ -598,7 +572,7 @@ export const GeneticsLabView: React.FC = () => {
           </div>
 
           {/* Active Registered Patents Registry */}
-          <div className="lg:col-span-6 bg-neutral-900/60 border border-neutral-800 rounded-2xl p-5 space-y-3">
+          <div className="hud-panel lg:col-span-6 p-5 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileCheck className="w-4 h-4 text-emerald-400" />

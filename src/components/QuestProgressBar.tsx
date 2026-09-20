@@ -47,7 +47,7 @@ export const QuestProgressBar: React.FC = () => {
   };
 
   return (
-    <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3 sm:p-4 transition-all duration-300 shadow-md">
+    <div className="hud-panel p-3 sm:p-4 transition-all duration-300 shadow-md">
       {/* Level & Quest Summary Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Left: Level & Rank */}
@@ -60,7 +60,7 @@ export const QuestProgressBar: React.FC = () => {
               </div>
             </div>
             {completedUnclaimed.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-neutral-950 text-[10px] font-black rounded-full flex items-center justify-center animate-bounce">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-neutral-950 text-[10px] font-black rounded-full flex items-center justify-center animate-bounce shadow-[0_0_16px_-4px_rgba(251,191,36,0.6)]">
                 {completedUnclaimed.length}
               </span>
             )}

@@ -54,7 +54,7 @@ export const TokenomicsView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="hud-panel p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono">
@@ -64,7 +64,7 @@ export const TokenomicsView: React.FC = () => {
               Solana SPL Standard
             </span>
           </div>
-          <h2 className="text-xl font-bold text-white mt-1 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-white mt-1 flex items-center gap-2 font-serif">
             <BarChart3 className="w-5 h-5 text-emerald-400" />
             Tokenómica Sostenible & Mecanismos de Quema
           </h2>
@@ -88,7 +88,7 @@ export const TokenomicsView: React.FC = () => {
       {/* 4 Core Pillars of Deflation Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Sink 1: Speedup */}
-        <div className="bg-neutral-900/70 border border-neutral-800 rounded-2xl p-4 space-y-2">
+        <div className="hud-panel p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono text-emerald-400 font-semibold">Sumidero 1</span>
             <Flame className="w-4 h-4 text-emerald-400" />
@@ -104,7 +104,7 @@ export const TokenomicsView: React.FC = () => {
         </div>
 
         {/* Sink 2: Repairs */}
-        <div className="bg-neutral-900/70 border border-neutral-800 rounded-2xl p-4 space-y-2">
+        <div className="hud-panel p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono text-amber-400 font-semibold">Sumidero 2</span>
             <Flame className="w-4 h-4 text-amber-400" />
@@ -120,7 +120,7 @@ export const TokenomicsView: React.FC = () => {
         </div>
 
         {/* Sink 3: Patents */}
-        <div className="bg-neutral-900/70 border border-neutral-800 rounded-2xl p-4 space-y-2">
+        <div className="hud-panel p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono text-purple-400 font-semibold">Sumidero 3</span>
             <Flame className="w-4 h-4 text-purple-400" />
@@ -136,7 +136,7 @@ export const TokenomicsView: React.FC = () => {
         </div>
 
         {/* Sink 4: V2P Redemption */}
-        <div className="bg-neutral-900/70 border border-neutral-800 rounded-2xl p-4 space-y-2">
+        <div className="hud-panel p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono text-cyan-400 font-semibold">Sumidero 4</span>
             <Flame className="w-4 h-4 text-cyan-400" />
@@ -153,7 +153,7 @@ export const TokenomicsView: React.FC = () => {
       </div>
 
       {/* Interactive Deflationary Simulation Engine */}
-      <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 space-y-6">
+      <div className="hud-panel p-5 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-800 pb-4">
           <div className="flex items-center gap-2">
             <Sliders className="w-5 h-5 text-emerald-400" />
@@ -293,7 +293,7 @@ export const TokenomicsView: React.FC = () => {
       </div>
 
       {/* Solana Simulated On-Chain Transaction Stream */}
-      <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-5 space-y-4">
+      <div className="hud-panel p-5 space-y-4">
         <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-emerald-400" />

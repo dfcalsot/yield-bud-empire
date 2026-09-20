@@ -101,7 +101,7 @@ export const IndoorRoomVisualizer: React.FC<IndoorRoomVisualizerProps> = () => {
   const lightOpacity = Math.min(1, Math.max(0.35, roomPpfd / 1000));
 
   return (
-    <div className="bg-neutral-900/90 border border-neutral-800 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-4 overflow-hidden relative">
+    <div className="hud-panel p-4 sm:p-5 shadow-2xl space-y-4 overflow-hidden relative">
       
       {/* Top Indoor Room Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-3.5">
@@ -343,7 +343,7 @@ export const IndoorRoomVisualizer: React.FC<IndoorRoomVisualizerProps> = () => {
                 .map((row) => (
                   <div 
                     key={row.rowNumber}
-                    className="p-3.5 rounded-2xl bg-neutral-900/70 border border-neutral-800/90 backdrop-blur-md space-y-2.5 hover:border-neutral-700 transition shadow-lg relative"
+                    className="hud-panel p-3.5 backdrop-blur-md space-y-2.5 hover:border-neutral-700 transition shadow-lg relative"
                   >
                     {/* Continuous Drip Irrigation Mainline Pipe across this grow table */}
                     <div className="absolute top-8 left-4 right-4 h-1 bg-neutral-800 rounded pointer-events-none z-0">
@@ -565,7 +565,7 @@ export const IndoorRoomVisualizer: React.FC<IndoorRoomVisualizerProps> = () => {
 
             {/* INTERACTIVE SELECTED CANNABIS PLANT PREVIEW & ROOM ACTION CONTROLS */}
             {selectedPlant && (
-              <div className="relative z-20 mt-4 p-4 rounded-2xl bg-neutral-900/95 border border-emerald-500/50 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shadow-2xl">
+              <div className="hud-panel relative z-20 mt-4 p-4 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shadow-2xl">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-neutral-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-lg font-black shadow-inner">
                     #{selectedPlantIndex + 1}
@@ -750,14 +750,14 @@ export const IndoorRoomVisualizer: React.FC<IndoorRoomVisualizerProps> = () => {
               <div className="flex gap-2">
                 <button
                   onClick={() => waterPlant()}
-                  className="flex-1 py-2 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-neutral-950 font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-neutral-950 font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_0_16px_-4px_rgba(34,211,238,0.6)]"
                 >
                   <Droplet className="w-3.5 h-3.5 fill-current" />
                   <span>Regar Esta Planta</span>
                 </button>
                 <button
                   onClick={() => feedNutrients()}
-                  className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_0_16px_-4px_rgba(52,211,153,0.6)]"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Abonar N-P-K</span>

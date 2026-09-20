@@ -83,7 +83,7 @@ export const WhitepaperView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Document Hero Card */}
-      <div className="relative rounded-3xl overflow-hidden border border-neutral-800 bg-neutral-900 shadow-2xl">
+      <div className="hud-panel relative overflow-hidden shadow-2xl">
         <div className="absolute inset-0 z-0">
           <img
             src="https://images.unsplash.com/photo-1516253593875-bd7ba052fbc5?auto=format&fit=crop&w=1400&q=80"
@@ -125,7 +125,7 @@ export const WhitepaperView: React.FC = () => {
       {/* Main Reader Layout: Sidebar Section Index + Content Pane */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Index Sidebar (4 Cols) */}
-        <div className="lg:col-span-4 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 space-y-2 sticky top-24">
+        <div className="hud-panel lg:col-span-4 p-4 space-y-2 sticky top-24">
           <span className="text-xs font-mono uppercase text-neutral-400 px-3 py-1 block">
             Índice del Libro Blanco
           </span>
@@ -153,7 +153,7 @@ export const WhitepaperView: React.FC = () => {
         </div>
 
         {/* Content Pane (8 Cols) */}
-        <div className="lg:col-span-8 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-6 sm:p-8 space-y-6 text-neutral-300 text-sm leading-relaxed">
+        <div className="hud-panel lg:col-span-8 p-6 sm:p-8 space-y-6 text-neutral-300 text-sm leading-relaxed">
           {/* Section 1: Resumen */}
           {activeSection === 'resumen' && (
             <div className="space-y-4 animate-in fade-in duration-200">

@@ -50,6 +50,7 @@ body::before {
   border-radius: 14px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 0 34px -14px rgba(52, 211, 153, 0.45);
 }
+.hud-panel.sticky { position: sticky; }
 .hud-panel::before,
 .hud-panel::after {
   content: '';
@@ -207,8 +208,15 @@ body::before {
 }
 .mint-ring { animation: mintRing 1.2s ease-out infinite; }
 
+
+@keyframes cfFloatIn {
+  from { transform: translate3d(24px, 0, 0); opacity: 0; }
+  to { transform: translate3d(0, 0, 0); opacity: 1; }
+}
+.cf-float-in { animation: cfFloatIn 0.35s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+
 @media (prefers-reduced-motion: reduce) {
-  .mint-reveal, .mint-burst, .mint-spin, .mint-ring, .frost-breath, .cf-sway, .cf-breeze, .cf-wind, .cf-twinkle, .cf-spore, .cf-ring { animation: none; }
+  .cf-float-in, .mint-reveal, .mint-burst, .mint-spin, .mint-ring, .frost-breath, .cf-sway, .cf-breeze, .cf-wind, .cf-twinkle, .cf-spore, .cf-ring { animation: none; }
   .rarity-frame, .rarity-frame::after { transition: none; }
 }
 

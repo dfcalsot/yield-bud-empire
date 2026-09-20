@@ -54,7 +54,7 @@ export const DispensaryV2PView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header with Virtual Brand Status */}
-      <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="hud-panel p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono">
@@ -66,7 +66,7 @@ export const DispensaryV2PView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 mt-1">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2 font-serif">
               <Store className="w-5 h-5 text-emerald-400" />
               {brand.name}
             </h2>
@@ -96,7 +96,7 @@ export const DispensaryV2PView: React.FC = () => {
 
       {/* Brand Edit Form Drawer */}
       {isEditingBrand && (
-        <form onSubmit={handleSaveBrand} className="bg-neutral-900 border border-emerald-500/30 rounded-2xl p-4 flex flex-col sm:flex-row gap-3 items-end">
+        <form onSubmit={handleSaveBrand} className="hud-panel p-4 flex flex-col sm:flex-row gap-3 items-end">
           <div className="flex-1 space-y-1">
             <label className="text-xs text-neutral-300 font-semibold block">Nombre de tu Marca Virtual:</label>
             <input
@@ -117,7 +117,7 @@ export const DispensaryV2PView: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs rounded-xl transition cursor-pointer"
+            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs rounded-xl transition cursor-pointer shadow-[0_0_16px_-4px_rgba(52,211,153,0.6)]"
           >
             Guardar
           </button>
@@ -128,7 +128,7 @@ export const DispensaryV2PView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Virtual Dispensary Shelf (6 Cols) */}
         <div className="lg:col-span-6 space-y-4">
-          <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 space-y-4">
+          <div className="hud-panel p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4 text-emerald-400" />
@@ -193,7 +193,7 @@ export const DispensaryV2PView: React.FC = () => {
 
         {/* Right Column: V2P (Virtual to Physical) E-Commerce Bridge (6 Cols) */}
         <div className="lg:col-span-6 space-y-4">
-          <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 space-y-4">
+          <div className="hud-panel p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-amber-400" />
@@ -252,7 +252,7 @@ export const DispensaryV2PView: React.FC = () => {
 
           {/* V2P Orders Ledger */}
           {redeemedV2pList.length > 0 && (
-            <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-5 space-y-3">
+            <div className="hud-panel p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <PackageCheck className="w-4 h-4 text-emerald-400" />
@@ -290,7 +290,7 @@ export const DispensaryV2PView: React.FC = () => {
       {/* V2P Physical Claim Modal */}
       {selectedV2pItem && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="hud-panel max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div>
                 <h3 className="text-base font-bold text-white">Canje de Producto Físico (V2P)</h3>

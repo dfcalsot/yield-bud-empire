@@ -83,7 +83,7 @@ export const ExtractionLabView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header with Lab Status & Biomass Inventory */}
-      <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="hud-panel p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 font-mono flex items-center gap-1.5">
@@ -94,7 +94,7 @@ export const ExtractionLabView: React.FC = () => {
               Rango: {rankTitle} (Nivel {playerLevel})
             </span>
           </div>
-          <h2 className="text-xl font-bold text-white mt-1 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-white mt-1 flex items-center gap-2 font-serif">
             <FlaskConical className="w-5 h-5 text-emerald-400" />
             Laboratorio de Extracción & Prensado Interactivo
           </h2>
@@ -176,7 +176,7 @@ export const ExtractionLabView: React.FC = () => {
           {/* Side Panel: Inventory & Quick Stats (5 cols) */}
           <div className="lg:col-span-5 space-y-4">
             {/* Quick Machinery Wear Card */}
-            <div className="bg-neutral-900/70 border border-neutral-800 rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="hud-panel p-4 sm:p-5 space-y-3">
               <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
                 <div className="flex items-center gap-2">
                   <Wrench className="w-4 h-4 text-amber-400" />
@@ -226,7 +226,7 @@ export const ExtractionLabView: React.FC = () => {
             </div>
 
             {/* Processed Products Inventory */}
-            <div className="bg-neutral-900/70 border border-neutral-800 rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="hud-panel p-4 sm:p-5 space-y-3">
               <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-emerald-400" />
@@ -279,7 +279,7 @@ export const ExtractionLabView: React.FC = () => {
       {activeTab === 'batch' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-7 space-y-4">
-            <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 space-y-5">
+            <div className="hud-panel p-5 space-y-5">
               <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-emerald-400" />
@@ -373,7 +373,7 @@ export const ExtractionLabView: React.FC = () => {
           </div>
 
           <div className="lg:col-span-5 space-y-4">
-            <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-5 space-y-3">
+            <div className="hud-panel p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-emerald-400" />
@@ -424,7 +424,7 @@ export const ExtractionLabView: React.FC = () => {
 
       {/* VIEW MODE 3: FULL MACHINERY & DEPRECIATION BAY */}
       {activeTab === 'machinery' && (
-        <div className="bg-neutral-900/70 border border-neutral-800 rounded-2xl p-5 space-y-4">
+        <div className="hud-panel p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
             <div className="flex items-center gap-2">
               <Wrench className="w-5 h-5 text-amber-400" />
