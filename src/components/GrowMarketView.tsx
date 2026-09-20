@@ -1,11 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ShoppingBag, Droplets, Thermometer, Wind, Flame, Coins, Sliders, Zap, Wrench, Package, Info, Sparkles,
-  Lightbulb, Snowflake, FlaskConical, Gauge, Sun, KeyRound, Activity, Check,
+  ShoppingBag, Droplets, Thermometer, Wind, Flame, Coins, Sliders, Zap, Wrench, Package, Lock, Plus, Minus,
+  Lightbulb, Snowflake, FlaskConical, Gauge, Sun, KeyRound, Activity, Check, Sparkles,
 } from 'lucide-react';
 import { useGame } from '../context/GameContext';
-import { HudPanel, NeonButton, RarityFrame, RARITY_STYLE, StatBar } from './game/GameUI';
-import { ResourceBar, Bump, fmtRunway } from './ResourceBar';
+import { HudPanel, NeonButton, StatBar, RARITY_STYLE } from './game/GameUI';
+import { Bump, fmtRunway } from './ResourceBar';
+import { ItemArt, rarityColor } from './market/ItemArt';
+import { Merchant, type Mood } from './market/Merchant';
+import { flyCoins, flyToken, floatText } from './market/fx';
 import {
   CATALOG, CATALOG_BY_ID, CATEGORY_LABEL, RARITY_BY_TIER, AssetCategory, CatalogItem, OwnedAsset, repairCostOf, USE,
 } from '../economy/catalog';
@@ -20,10 +23,55 @@ const CAT_COLOR: Record<AssetCategory, string> = {
   nutrient: '#a78bfa', water: '#38bdf8', energy: '#fbbf24', license: '#f472b6',
 };
 const CATEGORY_ORDER: AssetCategory[] = ['energy', 'water', 'nutrient', 'lamp', 'ac', 'irrigation', 'solar', 'co2', 'meter', 'license'];
+const HOTBAR: Array<{ cat: AssetCategory; label: string }> = [
+  { cat: 'lamp', label: 'Lámpara' }, { cat: 'ac', label: 'Aire' }, { cat: 'irrigation', label: 'Riego' },
+  { cat: 'co2', label: 'CO₂' }, { cat: 'solar', label: 'Solar' }, { cat: 'meter', label: 'Sensor' },
+];
 
 const durColor = (d: number) => (d > 40 ? '#34d399' : d > 15 ? '#fbbf24' : '#f87171');
+const css = (v: Record<string, string | number>) => v as unknown as React.CSSProperties;
+const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
-/** One-line "what does this do to my room" hint shown on shop cards. */
+/* ───────────────────────── item data for the inspector ───────────────────────── */
+
+interface Bar { label: string; value: number; max: number; text: string; good: boolean }
+
+const barsOf = (it: CatalogItem): Bar[] => {
+  const wear: Bar = { label: 'Desgaste', value: it.wearPerDay ?? 0, max: 1.2, text: `${it.wearPerDay} %/día`, good: false };
+  switch (it.category) {
+    case 'lamp': return [{ label: 'Luz (PPFD)', value: it.maxPpfd ?? 0, max: 1400, text: `${it.maxPpfd} µmol`, good: true }, { label: 'Consumo', value: it.watts ?? 0, max: 4000, text: `${it.watts} W`, good: false }, wear];
+    case 'ac': return [{ label: 'Consumo', value: it.acKw ?? 0, max: 3, text: `${it.acKw} kW`, good: false }, wear];
+    case 'irrigation': return [{ label: 'Agua por riego', value: it.waterEff ?? 0, max: 0.6, text: `${it.waterEff} L`, good: false }, { label: 'Electricidad', value: it.pumpKw ?? 0, max: 0.1, text: `${it.pumpKw ?? 0} kW`, good: false }, wear];
+    case 'solar': return [{ label: 'Generación', value: it.solarKw ?? 0, max: 1.2, text: `${it.solarKw} kW`, good: true }, wear];
+    case 'co2': return [{ label: 'CO₂ sostenido', value: it.co2Ppm ?? 0, max: 1200, text: `${it.co2Ppm} ppm`, good: true }, wear];
+    case 'nutrient': return [{ label: 'Crecimiento', value: ((it.feedBonus ?? 1) - 1) * 100, max: 10, text: `+${(((it.feedBonus ?? 1) - 1) * 100).toFixed(0)} %`, good: true }, { label: 'Contenido', value: it.amount ?? 0, max: 1000, text: `${it.amount} ml`, good: true }];
+    case 'water': return [{ label: 'Volumen', value: it.amount ?? 0, max: 1000, text: `${it.amount} L`, good: true }];
+    case 'energy': return [{ label: 'Crédito', value: it.amount ?? 0, max: 500, text: `${it.amount} kWh`, good: true }];
+    case 'meter': return [wear];
+    case 'license': return [{ label: 'Energía por ciclo', value: USE.labKwhPerCycle[it.stationId ?? ''] ?? 0, max: 2, text: `${USE.labKwhPerCycle[it.stationId ?? ''] ?? 0} kWh`, good: false }];
+    default: return [];
+  }
+};
+
+const PRIMARY: Partial<Record<AssetCategory, { key: 'maxPpfd' | 'acKw' | 'waterEff' | 'co2Ppm'; unit: string; lowerBetter?: boolean }>> = {
+  lamp: { key: 'maxPpfd', unit: ' µmol' }, ac: { key: 'acKw', unit: ' kW', lowerBetter: true },
+  irrigation: { key: 'waterEff', unit: ' L', lowerBetter: true }, co2: { key: 'co2Ppm', unit: ' ppm' },
+};
+
+const compareWith = (it: CatalogItem, assets: OwnedAsset[]): { text: string; tone: 'up' | 'down' | 'same' } | null => {
+  const p = PRIMARY[it.category];
+  if (!p) return null;
+  const eq = assets.find((a) => a.equipped && CATALOG_BY_ID[a.catalogId]?.category === it.category);
+  if (!eq) return { text: 'No tienes ninguno instalado', tone: 'up' };
+  const cur = CATALOG_BY_ID[eq.catalogId];
+  if (cur.id === it.id) return { text: 'Es el que tienes instalado', tone: 'same' };
+  const diff = (it[p.key] ?? 0) - (cur[p.key] ?? 0);
+  if (Math.abs(diff) < 1e-9) return { text: 'Igual que tu equipo', tone: 'same' };
+  const better = p.lowerBetter ? diff < 0 : diff > 0;
+  const shown = Number.isInteger(diff) ? Math.abs(diff) : Math.abs(diff).toFixed(2);
+  return { text: `${diff > 0 ? '▲ +' : '▼ −'}${shown}${p.unit} vs. tu equipo`, tone: better ? 'up' : 'down' };
+};
+
 const effectHint = (it: CatalogItem): string | null => {
   if (it.category === 'lamp' && it.watts) return `hasta ${(it.watts / 1000 * 18).toFixed(1)} kWh/día a plena potencia y 18/6`;
   if (it.category === 'ac' && it.acKw) return `≈ ${(it.acKw * 0.5 * 24).toFixed(1)} kWh/día con clima autónomo`;
@@ -36,15 +84,85 @@ const effectHint = (it: CatalogItem): string | null => {
   return null;
 };
 
+/* ───────────────────────── ambience ───────────────────────── */
+
+const FIREFLIES = Array.from({ length: 16 }, (_, i) => ({
+  left: (i * 37 + 11) % 96, top: 8 + ((i * 53) % 82), dx: ((i * 29) % 60) - 30, dy: -20 - ((i * 17) % 50), delay: (i % 8) * 0.9, dur: 6 + (i % 5) * 1.4,
+}));
+
+const Ambience: React.FC = () => (
+  <>
+    <div className="mk-rays" />
+    {FIREFLIES.map((f, i) => (
+      <span key={i} className="mk-firefly" style={css({ left: `${f.left}%`, top: `${f.top}%`, '--dx': `${f.dx}px`, '--dy': `${f.dy}px`, animationDelay: `${f.delay}s`, animationDuration: `${f.dur}s` })} />
+    ))}
+  </>
+);
+
+const Awning: React.FC = () => (
+  <div className="mk-awning" aria-hidden>
+    <svg viewBox="0 0 1200 46" preserveAspectRatio="none" className="w-full h-full">
+      {Array.from({ length: 20 }, (_, i) => (
+        <g key={i}>
+          <rect x={i * 60} y="0" width="60" height="26" fill={i % 2 ? '#e8f5ee' : '#16a34a'} />
+          <path d={`M${i * 60} 26 a30 20 0 0 0 60 0Z`} fill={i % 2 ? '#e8f5ee' : '#16a34a'} />
+        </g>
+      ))}
+      <rect x="0" y="0" width="1200" height="26" fill="url(#mkAwnShade)" />
+      <defs><linearGradient id="mkAwnShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#000" stopOpacity=".35" /><stop offset="1" stopColor="#000" stopOpacity="0" /></linearGradient></defs>
+    </svg>
+    <span className="mk-hang-lamp" style={{ left: '9%' }}><i /></span>
+    <span className="mk-hang-lamp" style={{ left: '91%', animationDelay: '-1.3s' }}><i /></span>
+  </div>
+);
+
+/* ───────────────────────── parts ───────────────────────── */
+
+const Slot: React.FC<{
+  it: CatalogItem; index: number; selected: boolean; owned: number; price: number; currency: 'FLORA' | 'SOL'; affordable: boolean; onSelect: () => void;
+}> = ({ it, index, selected, owned, price, currency, affordable, onSelect }) => {
+  const rc = rarityColor(it);
+  const licenceOwned = it.kind === 'license' && owned > 0;
+  return (
+    <button
+      role="option"
+      aria-selected={selected}
+      onClick={onSelect}
+      className={`mk-slot shop-in ${it.tier >= 3 ? 'mk-float' : ''} ${it.tier === 4 ? 'mk-beam' : ''} ${!affordable && !licenceOwned ? 'mk-poor' : ''}`}
+      style={css({ '--rc': rc, '--d': `${Math.min(index, 15) * 40}ms` })}
+    >
+      {it.tier >= 3 && [0, 1, 2].map((i) => <span key={i} className="mk-spark" style={css({ left: `${16 + i * 34}%`, top: `${12 + ((i * 23) % 34)}%`, animationDelay: `${i * 0.7}s` })} />)}
+      <span className="mk-stars">{'★'.repeat(it.tier)}</span>
+      {owned > 0 && <span className="mk-owned">×{owned}</span>}
+      <span className="mk-slot-art"><ItemArt item={it} /></span>
+      <span className="mk-slot-name">{it.name}</span>
+      <span className="mk-tag">
+        {licenceOwned ? <Check className="w-3 h-3" /> : price === 0 ? 'GRATIS' : <>{currency === 'FLORA' ? <Flame className="w-3 h-3" /> : <Coins className="w-3 h-3" />}{price}</>}
+      </span>
+      {!affordable && !licenceOwned && <span className="mk-lock"><Lock className="w-3.5 h-3.5" /></span>}
+      <span className="mk-plank" />
+    </button>
+  );
+};
+
+/* ───────────────────────── main view ───────────────────────── */
+
 export const GrowMarketView: React.FC = () => {
   const {
-    assets, resources, equipStats, buyAsset, setAssetEquipped, repairAsset, floraBalance, solBalance,
-    autoWaterActive, toggleAutoWater, autoClimateActive, toggleAutoClimate, co2Ppm, setCo2Ppm, calibrateMeter,
+    assets, resources, equipStats, buyAsset, setAssetEquipped, repairAsset, floraBalance, solBalance, calibrateMeter,
   } = useGame();
 
-  const [view, setView] = useState<'shop' | 'stock'>('shop');
+  const [tab, setTab] = useState<'buy' | 'bag'>('buy');
   const [cat, setCat] = useState<AssetCategory | 'all'>('all');
   const [currency, setCurrency] = useState<'FLORA' | 'SOL'>('FLORA');
+  const [qty, setQty] = useState(1);
+  const [selectedId, setSelectedId] = useState<string>(CATALOG.find((c) => c.category === 'energy')?.id ?? CATALOG[0].id);
+  const [say, setSay] = useState<{ text: string; mood: Mood; key: number }>({ text: '¡Bienvenido al Mercado Chrono, cultivador! Mira los estantes; todo lo que compres se acuña como NFT.', mood: 'idle', key: 0 });
+  const speak = useCallback((text: string, mood: Mood = 'idle') => setSay((s) => ({ text, mood, key: s.key + 1 })), []);
+
+  const buyRef = useRef<HTMLButtonElement>(null);
+  const artRef = useRef<HTMLDivElement>(null);
+  const lastSpoke = useRef(Date.now());
 
   const ownedCount = useMemo(() => {
     const m: Record<string, number> = {};
@@ -52,51 +170,268 @@ export const GrowMarketView: React.FC = () => {
     return m;
   }, [assets]);
 
-  const shopItems = CATALOG.filter((c) => (cat === 'all' || c.category === cat) && !(c.kind === 'license' && c.priceFlora === 0 && ownedCount[c.id]));
-  const effectiveCo2 = Math.max(co2Ppm, equipStats.co2Ppm);
+  const items = CATALOG.filter((c) => (cat === 'all' || c.category === cat) && !(c.kind === 'license' && c.priceFlora === 0 && ownedCount[c.id]));
+  const selected = CATALOG_BY_ID[selectedId] && items.some((c) => c.id === selectedId) ? CATALOG_BY_ID[selectedId] : items[0];
+  const isConsumable = selected?.kind === 'consumable';
+  const n = isConsumable ? qty : 1;
+  const unit = selected ? (currency === 'FLORA' ? selected.priceFlora : selected.priceSol) : 0;
+  const total = Number((unit * n).toFixed(3));
+  const balance = currency === 'FLORA' ? floraBalance : solBalance;
+  const affordable = balance >= total;
+  const licenceOwned = !!selected && selected.kind === 'license' && (ownedCount[selected.id] ?? 0) > 0;
+
+  // the merchant keeps an eye on your room and drops hints
+  const latest = useRef({ resources, equipStats });
+  latest.current = { resources, equipStats };
+  useEffect(() => {
+    const tip = () => {
+      if (Date.now() - lastSpoke.current < 14000) return;
+      const { resources: r, equipStats: e } = latest.current;
+      const lines: string[] = [];
+      if (e.lampWatts > 0 && r.energy <= 0.05) lines.push('⚡ ¡Sin electricidad! Tus lámparas están apagadas. Un Bono de Energía y volvemos al negocio.');
+      else if (e.lampWatts > 0 && Number.isFinite(r.energyDays) && r.energyDays < 1) lines.push(`⚡ Solo te queda luz para ${fmtRunway(r.energyDays)}. Yo compraría un Bono de Energía.`);
+      if (r.water < 15) lines.push('💧 El tanque de agua está casi vacío. ¡Las plantas tienen sed!');
+      if (r.nutrient < 90) lines.push('🧪 Te queda poco abono. Un buen fertilizante marca la diferencia.');
+      if (!e.hasAc) lines.push('❄️ Un aire acondicionado mantiene el clima perfecto sin que estés encima.');
+      if (!e.autoWater) lines.push('💦 Con un sistema de riego tus plantas nunca tendrán sed.');
+      lines.push('Una lámpara más fuerte crece más rápido… pero también gasta más luz.', 'El campo solar es electricidad gratis: la mejor inversión a largo plazo.', 'Cada compra acuña un NFT y quema $FLORA. ¡Menos oferta, más valor!', 'Repara tu equipo a tiempo: un aparato averiado no sirve de nada.');
+      const urgent = lines.filter((l) => /^(⚡|💧|🧪)/.test(l));
+      speak(urgent.length ? urgent[0] : pick(lines));
+    };
+    const id = window.setInterval(tip, 9000);
+    const first = window.setTimeout(tip, 6500);
+    return () => { window.clearInterval(id); window.clearTimeout(first); };
+  }, [speak]);
+
+  const say2 = (text: string, mood: Mood = 'idle') => { lastSpoke.current = Date.now(); speak(text, mood); };
+
+  const selectItem = (it: CatalogItem) => {
+    setSelectedId(it.id);
+    setQty(1);
+    say2(`${it.name}. ${it.description}`);
+  };
+
+  const changeCat = (c: AssetCategory | 'all') => {
+    setCat(c);
+    setQty(1);
+    const list = CATALOG.filter((x) => c === 'all' || x.category === c);
+    if (list.length && !list.some((x) => x.id === selectedId)) setSelectedId(list[0].id);
+  };
+
+  const doBuy = () => {
+    if (!selected || licenceOwned) return;
+    if (!affordable) {
+      say2(`Uy… te faltan ${(total - balance).toLocaleString(undefined, { maximumFractionDigits: 3 })} ${currency === 'FLORA' ? '$FLORA' : 'SOL'} para llevarte eso. Vuelve cuando tengas más.`, 'sad');
+      buyRef.current?.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(0)' }], { duration: 300 });
+      return;
+    }
+    const wallet = document.querySelector(`[data-mk-wallet="${currency}"] .mk-coin`);
+    const slotTarget = HOTBAR.some((h) => h.cat === selected.category) && selected.kind === 'equipment'
+      ? document.querySelector(`[data-mk-slot="${selected.category}"]`) : document.querySelector('[data-mk-bag]');
+    const ok = buyAsset(selected.id, currency, n);
+    if (!ok) return;
+    flyCoins(buyRef.current, wallet, Math.min(12, 5 + n), currency);
+    flyToken(artRef.current?.querySelector('svg') ?? null, slotTarget);
+    floatText(wallet, `−${total} ${currency === 'FLORA' ? '$FLORA' : 'SOL'}`, '#fca5a5');
+    say2(pick([`¡Trato hecho! ${n > 1 ? `${n} × ` : ''}${selected.name} es tuyo.`, '¡Excelente elección, cultivador!', '¡Que rinda mucho tu cosecha!', 'Un placer hacer negocios contigo.']), 'happy');
+  };
+
+  const equippedBy = (cat2: AssetCategory) => assets.filter((a) => a.equipped && CATALOG_BY_ID[a.catalogId]?.category === cat2 && CATALOG_BY_ID[a.catalogId].kind === 'equipment');
+  const cmp = selected ? compareWith(selected, assets) : null;
+  const bars = selected ? barsOf(selected) : [];
+  const rc = selected ? rarityColor(selected) : '#9ca3af';
+  const rarityLabel = selected ? RARITY_STYLE[RARITY_BY_TIER[selected.tier]].label : '';
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header + balance */}
-      <div className="hud-panel p-5 sm:p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div className="space-y-2 max-w-2xl">
-            <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-semibold uppercase tracking-wider">
-              <ShoppingBag className="w-3.5 h-3.5" /> Cada compra acuña un NFT
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-bold font-serif text-white tracking-tight">Grow Market</h1>
-            <p className="text-sm text-neutral-300 leading-relaxed">
-              Las lámparas gastan electricidad, el riego gasta agua y el abono se consume en cada dosis. Compra recursos,
-              instala equipo y repáralo quemando $FLORA: lo que pagas sale de circulación.
-            </p>
-          </div>
-          <div className="bg-neutral-950/90 border border-neutral-800 rounded-xl p-4 flex flex-col gap-2.5 min-w-[250px] text-xs">
-            <div className="flex items-center justify-between"><span className="text-neutral-400">Saldo $FLORA</span><span className="font-mono text-amber-300 font-bold"><Bump value={floraBalance.toLocaleString()} /></span></div>
-            <div className="flex items-center justify-between"><span className="text-neutral-400">Saldo SOL</span><span className="font-mono text-purple-300 font-bold"><Bump value={String(solBalance)} /></span></div>
-            <div className="flex items-center gap-1 bg-neutral-900 p-1 rounded-lg border border-neutral-800">
+    <div className="mk-stage animate-fade-in">
+      <Ambience />
+      <Awning />
+
+      <div className="relative z-10 px-4 sm:px-6 pt-14 pb-6 space-y-5">
+        {/* keeper + sign + wallet */}
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-end">
+          <Merchant text={say.text} mood={say.mood} moodKey={say.key} />
+          <div className="space-y-3">
+            <div className="mk-sign">
+              <span className="mk-chain mk-chain--l" /><span className="mk-chain mk-chain--r" />
+              <div className="mk-board">
+                <div className="font-serif text-xl sm:text-2xl font-black tracking-[0.14em] text-amber-100 leading-none">MERCADO CHRONO</div>
+                <div className="text-[9.5px] font-mono uppercase tracking-[0.22em] text-amber-200/70 mt-1">Suministros para cultivadores</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
               {(['FLORA', 'SOL'] as const).map((c) => (
                 <button
                   key={c}
+                  data-mk-wallet={c}
                   onClick={() => setCurrency(c)}
-                  className={`flex-1 text-[11px] py-1 rounded font-mono font-medium transition cursor-pointer flex items-center justify-center gap-1 ${
-                    currency === c
-                      ? c === 'FLORA' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold' : 'bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold'
-                      : 'text-neutral-400 hover:text-white'
-                  }`}
+                  className={`mk-wallet ${currency === c ? 'is-on' : ''}`}
+                  title={`Pagar en ${c === 'FLORA' ? '$FLORA' : 'SOL'}`}
                 >
-                  {c === 'FLORA' ? <Flame className="w-3 h-3" /> : <Coins className="w-3 h-3" />} {c === 'FLORA' ? '$FLORA' : 'SOL'}
+                  <span className={`mk-coin mk-coin--${c}`}>{c === 'FLORA' ? 'F' : '◎'}</span>
+                  <span className="leading-tight text-left">
+                    <span className="block text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-400">{c === 'FLORA' ? '$FLORA' : 'SOL'}{currency === c ? ' · pago' : ''}</span>
+                    <span className={`block font-mono font-bold text-lg ${c === 'FLORA' ? 'text-amber-200' : 'text-purple-200'}`}>
+                      <Bump value={c === 'FLORA' ? floraBalance.toLocaleString() : String(solBalance)} />
+                    </span>
+                  </span>
                 </button>
               ))}
             </div>
           </div>
         </div>
-        <div className="relative z-10 mt-5 pt-4 border-t border-neutral-800/80">
-          <ResourceBar onOpenMarket={() => { setView('shop'); }} />
-        </div>
-      </div>
 
-      {/* Automation master switches (they need the matching equipment installed) */}
+        {/* your room: equipped hotbar + resource bars */}
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] mk-panel p-3 sm:p-4">
+          <div>
+            <div className="mk-label">Tu sala</div>
+            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+              {HOTBAR.map(({ cat: c, label }) => {
+                const eq = equippedBy(c);
+                const first = eq[0];
+                const item = first ? CATALOG_BY_ID[first.catalogId] : null;
+                const dur = first?.durability ?? 100;
+                return (
+                  <button
+                    key={c}
+                    data-mk-slot={c}
+                    onClick={() => (item ? setTab('bag') : (setTab('buy'), changeCat(c)))}
+                    className={`mk-hot ${item ? 'is-full' : ''}`}
+                    style={css({ '--rc': item ? rarityColor(item) : '#475569' })}
+                    title={item ? `${item.name} · durabilidad ${dur.toFixed(0)} %` : `Sin ${label.toLowerCase()} instalado — ver en la tienda`}
+                  >
+                    <svg viewBox="0 0 50 50" className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                      <circle cx="25" cy="25" r="22.5" fill="none" stroke="rgba(148,163,184,.18)" strokeWidth="2.2" />
+                      {item && <circle cx="25" cy="25" r="22.5" fill="none" stroke={durColor(dur)} strokeWidth="2.6" strokeLinecap="round" pathLength={100} strokeDasharray="100" strokeDashoffset={100 - Math.max(0, dur)} className="mk-ring" />}
+                    </svg>
+                    {item ? <span className="mk-hot-art"><ItemArt item={item} /></span> : <Plus className="w-4 h-4 text-slate-500" />}
+                    {eq.length > 1 && <span className="mk-owned" style={{ top: 0, right: 0, left: 'auto' }}>×{eq.length}</span>}
+                    {item && dur <= 0 && <span className="mk-broken">!</span>}
+                    <span className="mk-hot-label">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <StatBar value={Math.min(100, (resources.energy / 100) * 100)} color={resources.energy < 8 ? '#f87171' : '#fbbf24'} label="⚡ Electricidad" valueLabel={`${resources.energy.toFixed(1)} kWh · ${fmtRunway(resources.energyDays)}`} />
+            <StatBar value={Math.min(100, (resources.water / 200) * 100)} color={resources.water < 15 ? '#f87171' : '#38bdf8'} label="💧 Agua" valueLabel={`${resources.water.toFixed(resources.water < 100 ? 1 : 0)} L`} />
+            <StatBar value={Math.min(100, (resources.nutrient / 500) * 100)} color={resources.nutrient < 90 ? '#f87171' : '#a78bfa'} label="🧪 Abono" valueLabel={`${Math.floor(resources.nutrient)} ml`} />
+          </div>
+        </div>
+
+        {/* menu tabs */}
+        <div className="flex items-center gap-2">
+          {([['buy', 'Comprar', ShoppingBag], ['bag', 'Mi bolsa', Package]] as const).map(([id, label, Icon]) => (
+            <button key={id} data-mk-bag={id === 'bag' ? '' : undefined} onClick={() => setTab(id)} className={`mk-tab ${tab === id ? 'is-on' : ''}`}>
+              <Icon className="w-4 h-4" /> {label}
+              {id === 'bag' && <span className="text-[10px] font-mono opacity-70">{assets.length}</span>}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'buy' ? (
+          <div className="grid gap-4 lg:grid-cols-[150px_minmax(0,1fr)_330px] items-start">
+            {/* category rail */}
+            <div className="mk-rail flex lg:flex-col gap-1.5 overflow-x-auto scrollbar-none">
+              {(['all', ...CATEGORY_ORDER] as const).map((c) => {
+                const Icon = c === 'all' ? ShoppingBag : CAT_ICON[c];
+                const count = CATALOG.filter((x) => (c === 'all' || x.category === c) && !(x.kind === 'license' && x.priceFlora === 0 && ownedCount[x.id])).length;
+                return (
+                  <button key={c} onClick={() => changeCat(c)} className={`mk-cat ${cat === c ? 'is-on' : ''}`} style={css({ '--cc': c === 'all' ? '#34d399' : CAT_COLOR[c] })}>
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{c === 'all' ? 'Todo' : CATEGORY_LABEL[c]}</span>
+                    <span className="ml-auto text-[10px] font-mono opacity-60">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* shelves */}
+            <div key={`${cat}-${currency}`} role="listbox" aria-label="Estantes" className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+              {items.map((it, i) => (
+                <Slot
+                  key={it.id} it={it} index={i} selected={selected?.id === it.id} owned={ownedCount[it.id] ?? 0}
+                  price={currency === 'FLORA' ? it.priceFlora : it.priceSol} currency={currency}
+                  affordable={(currency === 'FLORA' ? floraBalance : solBalance) >= (currency === 'FLORA' ? it.priceFlora : it.priceSol)}
+                  onSelect={() => selectItem(it)}
+                />
+              ))}
+            </div>
+
+            {/* inspector */}
+            {selected && (
+              <aside key={selected.id} className="mk-insp shop-swap lg:sticky lg:top-4" style={css({ '--rc': rc })}>
+                <div className={`mk-insp-stage ${selected.tier === 4 ? 'mk-beam' : ''}`}>
+                  <div ref={artRef} className="mk-insp-art"><ItemArt item={selected} live /></div>
+                  <span className="mk-rarity-chip" style={{ color: rc, borderColor: rc }}>{rarityLabel} · {'★'.repeat(selected.tier)}</span>
+                </div>
+                <div className="px-4 pt-3 pb-4 space-y-3">
+                  <div>
+                    <div className="text-[10px] font-mono uppercase tracking-[0.18em]" style={{ color: CAT_COLOR[selected.category] }}>{CATEGORY_LABEL[selected.category]}</div>
+                    <h3 className="font-serif text-lg font-bold text-white leading-snug">{selected.name}</h3>
+                    <p className="text-[11px] font-mono text-neutral-500">{selected.brand}</p>
+                  </div>
+                  <p className="text-xs text-neutral-300 leading-relaxed">{selected.description}</p>
+
+                  <div className="space-y-2">
+                    {bars.map((b) => (
+                      <div key={b.label}>
+                        <div className="flex justify-between text-[10px] font-mono uppercase tracking-wider text-neutral-400 mb-0.5"><span>{b.label}</span><span className="text-neutral-200">{b.text}</span></div>
+                        <div className="mk-bar"><i style={css({ '--to': Math.max(0.05, Math.min(1, b.value / b.max)), background: b.good ? 'linear-gradient(90deg,#059669,#6ee7b7)' : 'linear-gradient(90deg,#d97706,#fcd34d)' })} /></div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {cmp && <div className={`mk-cmp mk-cmp--${cmp.tone}`}>{cmp.text}</div>}
+                  {effectHint(selected) && <div className="text-[10.5px] font-mono text-emerald-300/90 bg-emerald-400/5 border border-emerald-400/15 rounded-md px-2 py-1">{effectHint(selected)}</div>}
+
+                  {isConsumable && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">Cantidad</span>
+                      <div className="mk-qty">
+                        <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Menos"><Minus className="w-3.5 h-3.5" /></button>
+                        <span key={qty} className="shop-bump font-mono font-bold">{qty}</span>
+                        <button onClick={() => setQty((q) => Math.min(10, q + 1))} aria-label="Más"><Plus className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </div>
+                  )}
+
+                  {licenceOwned ? (
+                    <div className="w-full py-3 rounded-xl border border-emerald-400/30 bg-emerald-400/5 text-emerald-300 text-xs font-mono font-bold text-center flex items-center justify-center gap-1.5"><Check className="w-4 h-4" /> Licencia adquirida</div>
+                  ) : (
+                    <button ref={buyRef} onClick={doBuy} className={`mk-buy ${affordable ? '' : 'is-poor'}`}>
+                      <span className="mk-buy-shine" />
+                      <Sparkles className="w-4 h-4" />
+                      <span>{selected.kind === 'license' ? 'Adquirir' : 'Comprar'}{n > 1 ? ` ×${n}` : ''}</span>
+                      <span className="ml-auto flex items-center gap-1 font-mono">
+                        {total === 0 ? 'GRATIS' : <>{currency === 'FLORA' ? <Flame className="w-4 h-4" /> : <Coins className="w-4 h-4" />}{total} {currency === 'FLORA' ? '$FLORA' : 'SOL'}</>}
+                      </span>
+                    </button>
+                  )}
+                  {!affordable && !licenceOwned && <p className="text-[10.5px] font-mono text-red-300/90 text-center -mt-1">Te faltan {(total - balance).toLocaleString(undefined, { maximumFractionDigits: 3 })} {currency === 'FLORA' ? '$FLORA' : 'SOL'}</p>}
+                </div>
+              </aside>
+            )}
+          </div>
+        ) : (
+          <div className="shop-swap">
+            <StockView assets={assets} floraBalance={floraBalance} onEquip={setAssetEquipped} onRepair={repairAsset} onCalibrate={calibrateMeter} resources={resources} />
+          </div>
+        )}
+
+        <Automation />
+      </div>
+    </div>
+  );
+};
+
+/* ───────────────────────── automation switches ───────────────────────── */
+
+const Automation: React.FC = () => {
+  const { equipStats, autoWaterActive, toggleAutoWater, autoClimateActive, toggleAutoClimate, co2Ppm, setCo2Ppm } = useGame();
+  const effectiveCo2 = Math.max(co2Ppm, equipStats.co2Ppm);
+  return (
       <HudPanel title={<><Sliders className="w-4 h-4" /> Automatización de la sala</>}>
         <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 flex items-center justify-between gap-2">
@@ -137,137 +472,6 @@ export const GrowMarketView: React.FC = () => {
           </div>
         </div>
       </HudPanel>
-
-      {/* Shop / stock switch */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-neutral-800 pb-3">
-        {([['shop', 'Tienda', ShoppingBag], ['stock', 'Mi bodega', Package]] as const).map(([id, label, Icon]) => (
-          <button
-            key={id}
-            onClick={() => setView(id)}
-            className={`shop-chip px-3.5 py-1.5 rounded-lg border text-xs font-bold tracking-wide cursor-pointer flex items-center gap-1.5 ${view === id ? 'bg-emerald-400/10 border-emerald-300/60 text-emerald-200' : 'bg-neutral-900/60 border-neutral-800 text-neutral-400 hover:text-white'}`}
-          >
-            <Icon className="w-3.5 h-3.5" /> {label}
-            {id === 'stock' && <span className="text-[10px] font-mono text-neutral-500">{assets.length}</span>}
-          </button>
-        ))}
-        {view === 'shop' && <span className="w-px h-5 bg-neutral-800 mx-1" />}
-        {view === 'shop' && (['all', ...CATEGORY_ORDER] as const).map((c) => {
-          const Icon = c === 'all' ? ShoppingBag : CAT_ICON[c];
-          return (
-            <button
-              key={c}
-              onClick={() => setCat(c)}
-              className={`shop-chip px-2.5 py-1 rounded-lg border text-[11px] font-medium cursor-pointer flex items-center gap-1 ${cat === c ? 'bg-neutral-800 border-neutral-600 text-white' : 'bg-neutral-900/60 border-neutral-800 text-neutral-400 hover:text-white'}`}
-            >
-              <Icon className="w-3 h-3" style={{ color: c === 'all' ? undefined : CAT_COLOR[c] }} />
-              {c === 'all' ? 'Todo' : CATEGORY_LABEL[c]}
-            </button>
-          );
-        })}
-      </div>
-
-      <div key={view} className="shop-swap">
-      {view === 'shop' ? (
-        <div key={`${cat}-${currency}`} className="grid grid-cols-[repeat(auto-fill,minmax(285px,1fr))] gap-5">
-          {shopItems.map((it, i) => (
-            <ShopCard
-              key={it.id}
-              item={it}
-              index={i}
-              currency={currency}
-              owned={ownedCount[it.id] ?? 0}
-              affordable={currency === 'FLORA' ? floraBalance >= it.priceFlora : solBalance >= it.priceSol}
-              onBuy={() => buyAsset(it.id, currency)}
-            />
-          ))}
-          {shopItems.length === 0 && <p className="text-sm text-neutral-500 col-span-full text-center py-10">No hay artículos en esta categoría.</p>}
-        </div>
-      ) : (
-        <StockView assets={assets} floraBalance={floraBalance} onEquip={setAssetEquipped} onRepair={repairAsset} onCalibrate={calibrateMeter} resources={resources} />
-      )}
-      </div>
-
-      <div className="hud-panel p-5 flex items-start gap-3 text-xs text-neutral-400 leading-relaxed">
-        <Info className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-        <div>
-          <strong className="text-neutral-200 block mb-1">Cómo se gasta cada recurso</strong>
-          Una lámpara consume su potencia durante las horas de luz del ciclo (a 18/6, {`600 W ≈ 10,8 kWh al día`}). Si se acaba la electricidad las lámparas se apagan y las plantas dejan de crecer;
-          un campo solar cubre parte de la factura. El riego manual gasta {USE.waterPerPlantManual} L por planta y cada abonado {USE.nutrientPerPlant} ml. El equipo se desgasta con el uso y se repara quemando $FLORA.
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* ───────────────────────── shop card ───────────────────────── */
-
-const ShopCard: React.FC<{
-  item: CatalogItem;
-  index: number;
-  currency: 'FLORA' | 'SOL';
-  owned: number;
-  affordable: boolean;
-  onBuy: () => boolean;
-}> = ({ item: it, index, currency, owned, affordable, onBuy }) => {
-  const [burst, setBurst] = useState<string | null>(null);
-  const rarity = RARITY_BY_TIER[it.tier];
-  const Icon = CAT_ICON[it.category];
-  const price = currency === 'FLORA' ? it.priceFlora : it.priceSol;
-  const licenceOwned = it.kind === 'license' && owned > 0;
-  const hint = effectHint(it);
-  const delay = `${Math.min(index, 14) * 45}ms`;
-
-  const handleBuy = () => {
-    if (!onBuy()) return;
-    setBurst(it.kind === 'consumable' ? `+${it.amount} ${it.unit}` : it.kind === 'license' ? 'Licencia ✓' : 'NFT minteado ✓');
-  };
-
-  return (
-    <RarityFrame
-      rarity={rarity}
-      className={`p-4 flex flex-col gap-3 shop-in ${it.tier === 4 ? 'shop-legend' : ''} ${burst ? 'shop-buy' : ''}`}
-      style={{ ['--d' as string]: delay }}
-    >
-      <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider">
-        <span className="flex items-center gap-2" style={{ color: CAT_COLOR[it.category] }}>
-          <span className={`shop-ico shop-ico--${it.category}`} style={{ ['--c' as string]: CAT_COLOR[it.category] }}><Icon className="w-4 h-4" /></span>
-          {CATEGORY_LABEL[it.category]}
-        </span>
-        <span style={{ color: RARITY_STYLE[rarity].color }}>{RARITY_STYLE[rarity].label}</span>
-      </div>
-      <div>
-        <h3 className="text-[15px] font-bold text-white leading-snug">{it.name}</h3>
-        <p className="text-[11px] text-neutral-500 font-mono">{it.brand}</p>
-      </div>
-      <p className="text-xs text-neutral-400 leading-relaxed flex-1">{it.description}</p>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-mono">
-        {it.specs.map((s) => (
-          <div key={s.label} className="flex flex-col"><span className="text-neutral-600 text-[9.5px] uppercase">{s.label}</span><span className="text-neutral-200">{s.value}</span></div>
-        ))}
-      </div>
-      {hint && <div className="text-[10.5px] font-mono text-emerald-300/90 bg-emerald-400/5 border border-emerald-400/15 rounded-md px-2 py-1">{hint}</div>}
-      <div className="flex items-center justify-between pt-2 border-t border-neutral-800/80">
-        <span className="font-mono font-bold text-sm">
-          {price === 0 ? <span className="text-emerald-300">Gratis</span> : currency === 'FLORA'
-            ? <span className="text-amber-300 flex items-center gap-1"><Flame className="w-3.5 h-3.5" /> {price} $FLORA</span>
-            : <span className="text-purple-300 flex items-center gap-1"><Coins className="w-3.5 h-3.5" /> {price} SOL</span>}
-        </span>
-        {owned > 0 && !licenceOwned && <span className="text-[10px] font-mono text-neutral-500"><Bump value={`tienes ${owned}`} /></span>}
-      </div>
-      {licenceOwned ? (
-        <div className="w-full py-2 rounded-lg border border-emerald-400/30 bg-emerald-400/5 text-emerald-300 text-xs font-mono font-bold text-center flex items-center justify-center gap-1.5"><Check className="w-3.5 h-3.5" /> Licencia adquirida</div>
-      ) : (
-        <NeonButton tone={currency === 'FLORA' ? 'amber' : 'magenta'} disabled={!affordable} onClick={handleBuy} className="w-full">
-          <Sparkles className="w-3.5 h-3.5" /> {it.kind === 'consumable' ? 'Comprar' : it.kind === 'license' ? 'Adquirir licencia' : 'Comprar e instalar'}
-        </NeonButton>
-      )}
-      {burst && (
-        <>
-          <span className="shop-ring" />
-          <span className="shop-float" onAnimationEnd={() => setBurst(null)}>{burst}</span>
-        </>
-      )}
-    </RarityFrame>
   );
 };
 
@@ -292,13 +496,12 @@ const StockView: React.FC<{
           {equipment.length === 0 && <p className="text-xs text-neutral-500 text-center py-6">Sin equipo. Compra una lámpara en la tienda.</p>}
           {equipment.map((a, i) => {
             const it = CATALOG_BY_ID[a.catalogId];
-            const Icon = CAT_ICON[it.category];
             const dur = a.durability ?? 100;
             const cost = repairCostOf(a);
             return (
               <div key={a.id} style={{ ['--d' as string]: `${Math.min(i, 8) * 50}ms` }} className={`shop-in rounded-xl border p-3 space-y-2 ${a.equipped ? 'border-emerald-400/40 bg-emerald-400/[0.04]' : 'border-neutral-800 bg-neutral-950/60'}`}>
                 <div className="flex items-center gap-2.5">
-                  <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${CAT_COLOR[it.category]}1f`, color: CAT_COLOR[it.category] }}><Icon className="w-5 h-5" /></span>
+                  <span className="mk-bag-art shrink-0"><ItemArt item={it} /></span>
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] font-bold text-white truncate">{it.name}</div>
                     <div className="text-[10px] font-mono text-neutral-500">{CATEGORY_LABEL[it.category]}{a.starter ? ' · kit de inicio' : ''}{dur <= 0 ? ' · AVERIADO' : ''}</div>
@@ -335,13 +538,12 @@ const StockView: React.FC<{
             {consumables.length === 0 && <p className="text-xs text-neutral-500 text-center py-6">Sin consumibles. Compra agua, abono y electricidad.</p>}
             {consumables.map((a, i) => {
               const it = CATALOG_BY_ID[a.catalogId];
-              const Icon = CAT_ICON[it.category];
-              const total = it.amount ?? 1;
+                const total = it.amount ?? 1;
               const left = a.remaining ?? 0;
               return (
                 <div key={a.id} style={{ ['--d' as string]: `${Math.min(i, 8) * 50}ms` }} className="shop-in rounded-xl border border-neutral-800 bg-neutral-950/60 p-3 space-y-2">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${CAT_COLOR[it.category]}1f`, color: CAT_COLOR[it.category] }}><Icon className="w-4 h-4" /></span>
+                    <span className="mk-bag-art shrink-0"><ItemArt item={it} /></span>
                     <div className="min-w-0 flex-1">
                       <div className="text-[13px] font-bold text-white truncate">{it.name}</div>
                       <div className="text-[10px] font-mono text-neutral-500">{a.starter ? 'kit de inicio' : it.brand}</div>

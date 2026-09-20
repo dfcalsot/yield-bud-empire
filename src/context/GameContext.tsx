@@ -173,7 +173,7 @@ interface GameContextType {
   equipStats: EquipStats;
   /** litres of water, ml of nutrient and kWh of electricity in stock, and the electric runway in days */
   resources: { water: number; nutrient: number; energy: number; kwhPerDay: number; solarKwhPerDay: number; energyDays: number };
-  buyAsset: (catalogId: string, currency?: 'FLORA' | 'SOL') => boolean;
+  buyAsset: (catalogId: string, currency?: 'FLORA' | 'SOL', qty?: number) => boolean;
   setAssetEquipped: (assetId: string, equipped: boolean) => void;
   repairAsset: (assetId: string) => boolean;
   ownsStation: (stationId: string) => boolean;
@@ -1562,46 +1562,51 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // --- NFT ASSETS: buy / install / repair ---
   const SINGLE_SLOT = ['lamp', 'ac', 'irrigation'];
 
-  const buyAsset = (catalogId: string, currency: 'FLORA' | 'SOL' = 'FLORA'): boolean => {
+  const buyAsset = (catalogId: string, currency: 'FLORA' | 'SOL' = 'FLORA', qty: number = 1): boolean => {
     const item = CATALOG_BY_ID[catalogId];
     if (!item) return false;
+    // only consumables come in stacks; equipment and licences are bought one at a time
+    const n = item.kind === 'consumable' ? Math.max(1, Math.min(20, Math.floor(qty) || 1)) : 1;
     if (item.kind === 'license' && item.stationId && ownsStation(assets, item.stationId)) {
       showNotification('Ya tienes esta licencia.', 'info');
       return false;
     }
+    const totalFlora = item.priceFlora * n;
+    const totalSol = Number((item.priceSol * n).toFixed(3));
+    const label = `${n > 1 ? `${n}× ` : ''}${item.name}`;
     if (currency === 'FLORA') {
-      if (floraBalance < item.priceFlora) {
-        showNotification(`Saldo insuficiente: requiere ${item.priceFlora} $FLORA`, 'info');
+      if (floraBalance < totalFlora) {
+        showNotification(`Saldo insuficiente: requiere ${totalFlora} $FLORA`, 'info');
         return false;
       }
-      recordBurnTransaction('BURN_PURCHASE', item.priceFlora, `ChronoFlora: Mint NFT ${item.name} (${item.kind === 'consumable' ? 'consumible' : item.kind === 'license' ? 'licencia' : 'equipo'})`);
+      recordBurnTransaction('BURN_PURCHASE', totalFlora, `ChronoFlora: Mint NFT ${label} (${item.kind === 'consumable' ? 'consumible' : item.kind === 'license' ? 'licencia' : 'equipo'})`);
     } else {
-      if (solBalance < item.priceSol) {
-        showNotification(`Saldo insuficiente: requiere ${item.priceSol} SOL`, 'info');
+      if (solBalance < totalSol) {
+        showNotification(`Saldo insuficiente: requiere ${totalSol} SOL`, 'info');
         return false;
       }
-      setSolBalance(prev => Number(Math.max(0, prev - item.priceSol).toFixed(3)));
+      setSolBalance(prev => Number(Math.max(0, prev - totalSol).toFixed(3)));
       setTransactions(prev => [{
         id: `tx-asset-${Date.now()}`,
         signature: generateSolanaSignature(),
         type: 'BURN_PURCHASE',
         amountFlora: 0,
-        amountSol: item.priceSol,
+        amountSol: totalSol,
         timestamp: Date.now(),
         status: 'confirmed',
         blockSlot: 248928000 + Math.floor(Math.random() * 5000),
-        memo: `ChronoFlora: Mint NFT ${item.name}`
+        memo: `ChronoFlora: Mint NFT ${label}`
       }, ...prev.slice(0, 24)]);
     }
     // equipment goes straight into an empty slot (lamp / AC / irrigation); racks like solar, CO₂ and meters always install
     const slotTaken = assets.some(a => a.equipped && CATALOG_BY_ID[a.catalogId]?.category === item.category);
     const equip = item.kind === 'equipment' && (!SINGLE_SLOT.includes(item.category) || !slotTaken);
-    setAssets(prev => [...prev, newAsset(catalogId, { equipped: equip || undefined })]);
+    setAssets(prev => [...prev, ...Array.from({ length: n }, () => newAsset(catalogId, { equipped: equip || undefined }))]);
     if (equip && item.category === 'irrigation') setAutoWaterActive(true);
     if (equip && item.category === 'ac') setAutoClimateActive(true);
-    confetti({ particleCount: 50, spread: 60 });
-    addXp(item.tier * 15, 'Compra de Equipamiento');
-    showNotification(`NFT minteado: ${item.name}${equip ? ' — instalado' : ''}${item.kind === 'consumable' ? ` (+${item.amount} ${item.unit})` : ''}`, 'success');
+    confetti({ particleCount: 40, spread: 60 });
+    addXp(item.tier * 15 * n, 'Compra de Equipamiento');
+    showNotification(`NFT minteado: ${label}${equip ? ' — instalado' : ''}${item.kind === 'consumable' ? ` (+${(item.amount ?? 0) * n} ${item.unit})` : ''}`, 'success');
     return true;
   };
 
