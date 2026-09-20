@@ -215,8 +215,49 @@ body::before {
 }
 .cf-float-in { animation: cfFloatIn 0.35s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
 
+
+/* Animated seed art (SeedArt.tsx): rolling stripes, float, germination loop, orbiting packs */
+@keyframes saFloat { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(4px); } }
+.sa-float { animation: saFloat 5s ease-in-out infinite; }
+
+@keyframes saRoll { from { transform: translateX(0); } to { transform: translateX(-120px); } }
+.sa-roll { animation: saRoll 5.5s linear infinite; }
+
+@keyframes saShake {
+  0%, 44%, 56%, 100% { transform: rotate(0deg); }
+  46% { transform: rotate(-3.5deg); }
+  48% { transform: rotate(3.5deg); }
+  50% { transform: rotate(-2.5deg); }
+  52% { transform: rotate(2.5deg); }
+  54% { transform: rotate(-1deg); }
+}
+.sa-shake { animation: saShake 10s ease-in-out infinite; }
+
+@keyframes saRadicle {
+  0%, 50% { stroke-dashoffset: 1; opacity: 1; }
+  72%, 92% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+.sa-radicle { stroke-dasharray: 1; stroke-dashoffset: 1; animation: saRadicle 10s ease-in-out infinite; }
+
+@keyframes saCoty {
+  0%, 62% { opacity: 0; transform: scale(0.1); }
+  80%, 92% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+.sa-coty { transform-box: fill-box; transform-origin: 50% 100%; opacity: 0; animation: saCoty 10s ease-out infinite; }
+
+@keyframes saOrbit { to { transform: rotate(360deg); } }
+.sa-orbit { transform-origin: 100px 100px; animation: saOrbit 18s linear infinite; }
+
+@keyframes saHalo { 0%, 100% { opacity: 0.25; transform: scale(0.97); } 50% { opacity: 0.85; transform: scale(1.03); } }
+.sa-halo { transform-box: fill-box; transform-origin: center; animation: saHalo 3.4s ease-in-out infinite; }
+
+@keyframes nftTurn { 0% { transform: rotateY(0deg); } 50% { transform: rotateY(90deg); } 100% { transform: rotateY(0deg); } }
+.nft-turn { animation: nftTurn 0.35s ease-in-out; }
+
 @media (prefers-reduced-motion: reduce) {
-  .cf-float-in, .mint-reveal, .mint-burst, .mint-spin, .mint-ring, .frost-breath, .cf-sway, .cf-breeze, .cf-wind, .cf-twinkle, .cf-spore, .cf-ring { animation: none; }
+  .sa-float, .sa-roll, .sa-shake, .sa-radicle, .sa-coty, .sa-orbit, .sa-halo, .nft-turn, .cf-float-in, .mint-reveal, .mint-burst, .mint-spin, .mint-ring, .frost-breath, .cf-sway, .cf-breeze, .cf-wind, .cf-twinkle, .cf-spore, .cf-ring { animation: none; }
   .rarity-frame, .rarity-frame::after { transition: none; }
 }
 
