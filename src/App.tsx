@@ -74,7 +74,7 @@ function ChronoFloraApp() {
 
         {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && <ResourceBar onOpenMarket={() => goToTab('market')} />}
 
-        {currentTab === 'cultivo' && <CultivationView />}
+        {currentTab === 'cultivo' && <CultivationView onOpenMarket={() => goToTab('market')} />}
         {currentTab === 'semillas' && <SeedBankView onNavigateToCultivation={() => goToTab('cultivo')} />}
         {currentTab === 'market' && <GrowMarketView />}
         {currentTab === 'nutrientes' && <NutrientTablesView />}

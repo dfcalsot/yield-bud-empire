@@ -86,7 +86,16 @@ export interface PlantInGrow {
   sim?: { progress: number; moisture: number; ec: number; health: number };
   /** growth bonus from the nutrient brand used at the last feeding */
   feedBonus?: number;
+  /** active plague (hours since it appeared) */
+  pest?: { kind: PestKind; hours: number };
+  /** hours of protection left after a treatment (no new plague while > 0) */
+  guard?: number;
+  /** simulated hours lived — seeds the deterministic plague dice */
+  age?: number;
 }
+
+/** Plagues that can hit a plant: mites (hot / dry / dirty), mould (humid), root rot (over-watered). */
+export type PestKind = 'mites' | 'mold' | 'rot';
 
 export type GrowRoomId = 'germination' | 'vegetative' | 'flowering' | 'mothers_fathers';
 
@@ -372,5 +381,7 @@ export interface UserAccountData {
   autoClimateActive?: boolean;
   /** NFT assets the player owns (equipment, consumables, licences) — see economy/catalog.ts */
   assets?: import('../economy/catalog').OwnedAsset[];
+  /** gardener rating (0–100, falls with neglect / garbage) and the last time the room was cleaned */
+  care?: { rating: number; lastCleanAt: number };
 }
 

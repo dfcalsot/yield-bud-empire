@@ -1,17 +1,19 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Droplet, Scissors, Flame, Zap, Crown, Layers, Grid3X3, SlidersHorizontal, ChevronDown, Sprout } from 'lucide-react';
+import { Droplet, Scissors, Flame, Zap, Crown, Layers, Grid3X3, SlidersHorizontal, ChevronDown, Sprout, Bug } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { GROW_ROOMS_CONFIG } from '../data/initialData';
 import { PlantView } from './PlantView';
+import { CarePanel } from './CarePanel';
 import { NutrientBottle, FlaskLeaf, CannabisLeaf } from './icons/CannabisIcons';
 import { StatBar } from './game/GameUI';
 import type { GrowStage } from '../types';
-import { formatDuration, hoursUntilMoisture, isHungry, isThirsty } from '../sim/engine';
+import { formatDuration, hoursUntilMoisture, isHungry, isThirsty, PEST_INFO } from '../sim/engine';
 
 interface CultivationSceneProps {
   onOpenSeedModal: () => void;
   onOpenFacility: () => void;
   onOpenNutrients: () => void;
+  onOpenMarket?: () => void;
   onOpenPanel: () => void;
   onShowRoom: () => void;
 }
@@ -112,14 +114,15 @@ const SkillButton: React.FC<{
 
 /* ───────────────────────────── scene ───────────────────────────── */
 
-export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedModal, onOpenFacility, onOpenNutrients, onOpenPanel, onShowRoom }) => {
+export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedModal, onOpenFacility, onOpenNutrients, onOpenPanel, onShowRoom, onOpenMarket }) => {
   const {
     activePlant, indoorPlants, selectedPlantIndex, selectPlant,
     waterPlant, feedNutrients, trainPlant, speedUpGrowth, harvestPlant, saveCurrentPlantAsMotherOrFather,
-    currentRoom, switchGrowRoom, currentFacility, rawFlowerGrams, trimGrams, co2Ppm, getPlantEta,
+    currentRoom, switchGrowRoom, currentFacility, rawFlowerGrams, trimGrams, co2Ppm, getPlantEta, care,
   } = useGame();
 
   const [roomMenu, setRoomMenu] = useState(false);
+  const [careOpen, setCareOpen] = useState(false);
   const [floaters, setFloaters] = useState<Array<{ id: number; text: string; color: string; dx: number }>>([]);
   const nextId = useRef(1);
 
@@ -153,6 +156,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const clockRows = activePlant ? [
     { icon: '⏱', text: activePlant.stage === 'ready_harvest' ? '¡Lista para cosechar!' : isFinite(eta) ? `Cosecha en ${formatDuration(eta)}` : 'Crecimiento en pausa', warn: !isFinite(eta) && activePlant.stage !== 'ready_harvest' },
     { icon: '💧', text: activePlant.stage === 'ready_harvest' ? 'Sin riego pendiente' : thirsty ? '¡Necesita agua ya!' : `Regar en ~${formatDuration(nextWaterH * 3600)}`, warn: thirsty },
+    ...(activePlant.pest ? [{ icon: PEST_INFO[activePlant.pest.kind].emoji, text: `${PEST_INFO[activePlant.pest.kind].label} · ${Math.max(1, Math.round(activePlant.pest.hours))} h`, warn: true }] : []),
   ] : [];
   const canHarvest = !!activePlant && activePlant.progressPercent >= 80;
 
@@ -232,6 +236,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
             vpdOptimal={activePlant.vpdKpa >= 0.8 && activePlant.vpdKpa <= 1.4}
             strainColor={activePlant.strain.colorTheme || '#15803d'}
             amberPct={activePlant.trichomeMaturity.amber}
+            pest={activePlant.pest?.kind}
           />
         ) : (
           <div className="pointer-events-auto self-center text-center max-w-sm space-y-3 px-6">
@@ -323,9 +328,18 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
             <button onClick={onOpenPanel} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-neutral-600/40 text-[11px] font-semibold text-neutral-200 hover:border-cyan-300/50 cursor-pointer transition" title="Clima, luz, CO₂ e instrumental completo">
               <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-300" /> Panel
             </button>
+            <button onClick={() => setCareOpen((v) => !v)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border text-[11px] font-semibold text-neutral-200 cursor-pointer transition ${care.pests > 0 ? 'border-pink-400/70 cf-ring' : 'border-neutral-600/40 hover:border-emerald-300/50'}`} title="Plagas, calificación de jardinero, limpieza y jardinero del vivero">
+              <Bug className="w-3.5 h-3.5 text-pink-300" /> Cuidado{care.pests > 0 && <span className="px-1 rounded bg-pink-400 text-neutral-950 text-[9px] font-black">{care.pests}</span>}<span className="text-[9px] font-mono" style={{ color: care.rating >= 75 ? '#6ee7b7' : care.rating >= 45 ? '#fcd34d' : '#fca5a5' }}>{care.rating}%</span>
+            </button>
           </div>
         </div>
       </div>
+
+      {careOpen && (
+        <div className="absolute z-40 inset-x-2 top-[7.6rem] flex justify-end sm:inset-x-auto sm:right-3 pointer-events-auto">
+          <CarePanel onClose={() => setCareOpen(false)} onOpenMarket={() => { setCareOpen(false); onOpenMarket?.(); }} />
+        </div>
+      )}
 
       {/* ── action rail ── */}
       {activePlant && (
@@ -415,7 +429,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
                 style={{
                   background: STAGE_DOT[p.stage],
                   opacity: p.health < 50 ? 0.55 : 1,
-                  outline: i === selectedPlantIndex ? '2px solid #fff' : isThirsty(p) ? '1.5px solid #22d3ee' : p.stage === 'ready_harvest' ? '1px solid #fbbf24' : 'none',
+                  outline: i === selectedPlantIndex ? '2px solid #fff' : p.pest ? '1.5px solid #f472b6' : isThirsty(p) ? '1.5px solid #22d3ee' : p.stage === 'ready_harvest' ? '1px solid #fbbf24' : 'none',
                   outlineOffset: 1,
                   boxShadow: i === selectedPlantIndex ? '0 0 8px #fff' : undefined,
                 }}

@@ -762,3 +762,11 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   .mk-stage *, .mk-stage *::before, .mk-stage *::after { animation: none !important; }
 }
+
+/* ───────── plagues & care ───────── */
+.care-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 9px; border-radius: 9px; border: 1px solid rgba(52, 211, 153, 0.4); background: rgba(16, 185, 129, 0.1); color: #a7f3d0;
+  font: 700 10.5px/1.1 ui-monospace, monospace; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: transform 0.12s, background 0.2s, opacity 0.2s; }
+.care-btn:hover:not(:disabled) { background: rgba(16, 185, 129, 0.22); transform: translateY(-1px); }
+.care-btn:active:not(:disabled) { transform: scale(0.97); }
+.care-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.care-btn--hot { border-color: rgba(244, 114, 182, 0.5); background: rgba(236, 72, 153, 0.12); color: #fbcfe8; }

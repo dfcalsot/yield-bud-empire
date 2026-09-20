@@ -237,7 +237,46 @@ const license: Art = (it, u, rc) => {
   );
 };
 
-const ART: Record<string, Art> = { lamp, ac, irrigation, co2, meter, solar, nutrient, water, energy, license };
+const pest: Art = (it, u, rc) => {
+  const color = it.id === 'pest_neem' ? '#a3e635' : it.id === 'pest_bacillus' ? '#38bdf8' : it.id === 'pest_tricho' ? '#d6a35c' : '#c084fc';
+  return (
+    <g>
+      <defs><clipPath id={`p${u}`}><rect x="31" y="42" width="34" height="46" rx="8" /></clipPath></defs>
+      <rect x="31" y="42" width="34" height="46" rx="8" fill="#0d2420" stroke="#94a3b8" strokeOpacity=".7" strokeWidth="1.6" />
+      <g clipPath={`url(#p${u})`}>
+        <g className="a-wave"><path d="M-9 62 q10 -6 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 V92 H-9Z" fill={color} opacity=".9" /></g>
+        {[0, 1].map((i) => <circle key={i} cx={42 + i * 14} cy="82" r="2" fill="#fff" opacity=".7" className="a-bub" style={{ animationDelay: `${i * 0.7}s` }} />)}
+      </g>
+      <rect x="35" y="55" width="26" height="18" rx="3" fill="#f8fafc" opacity=".93" />
+      <rect x="35" y="55" width="26" height="5" rx="2" fill={rc} />
+      <text x="48" y="69.5" textAnchor="middle" fontSize="7" fontWeight="800" fontFamily="monospace" fill="#0f172a">BIO</text>
+      <rect x="39" y="34" width="18" height="9" rx="2" fill="#64748b" />
+      <path d="M34 34 h24 l6 -5 h12 q4 0 4 4 v3 h-12 l-5 5 h-29Z" fill={rc} stroke="#0a100e" strokeWidth="1" />
+      <path d="M52 40 q4 8 8 8" stroke="#334155" strokeWidth="3" fill="none" strokeLinecap="round" />
+      {[[86, 26], [92, 20], [90, 33], [95, 28]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="2.8" fill={color} opacity=".75" className="a-puff" style={{ animationDelay: `${i * 0.35}s` }} />)}
+    </g>
+  );
+};
+
+const service: Art = (it, u, rc) => (
+  <g>
+    <path d="M24 44 q-16 0 -16 18 q0 14 16 14" stroke="#94a3b8" strokeWidth="5" fill="none" strokeLinecap="round" />
+    <path d="M26 40 h40 v40 q0 8 -8 8 h-24 q-8 0 -8 -8Z" fill={`url(#b${u})`} stroke="#0a100e" />
+    <path d="M66 52 L86 32 l5 5 L68 66Z" fill={`url(#b${u})`} stroke="#0a100e" />
+    <ellipse cx="90" cy="33" rx="8" ry="4" transform="rotate(-42 90 33)" fill="#6b7c75" stroke="#0a100e" />
+    {[[96, 44], [92, 52], [98, 57]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="2.6" fill="#38bdf8" className="a-drip" style={{ animationDelay: `${i * 0.4}s` }} />)}
+    <rect x="30" y="56" width="32" height="16" rx="4" fill={rc} />
+    <text x="46" y="67.5" textAnchor="middle" fontSize="9" fontWeight="800" fontFamily="monospace" fill="#0b1210">{it.amount} d</text>
+    <g transform="translate(46 24)">
+      {[-60, -30, 0, 30, 60].map((a) => <path key={a} d="M0 0 Q-2.6 -8 0 -15 Q2.6 -8 0 0Z" fill="#86efac" stroke="#166534" strokeWidth=".5" transform={`rotate(${a})`} />)}
+    </g>
+    {it.gardener === 2 && [[14, 26], [70, 14]].map(([x, y], i) => (
+      <path key={i} d={`M${x} ${y - 4} l1.6 2.4 2.4 1.6 -2.4 1.6 -1.6 2.4 -1.6 -2.4 -2.4 -1.6 2.4 -1.6Z`} fill="#fde047" className="a-spark" style={{ animationDelay: `${i * 0.5}s` }} />
+    ))}
+  </g>
+);
+
+const ART: Record<string, Art> = { lamp, ac, irrigation, co2, meter, solar, nutrient, water, energy, pest, service, license };
 
 export const ItemArt: React.FC<{ item: CatalogItem; className?: string; live?: boolean }> = ({ item, className = '', live }) => {
   const u = useId().replace(/[^a-zA-Z0-9]/g, '');

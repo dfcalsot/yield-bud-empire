@@ -30,7 +30,7 @@ import { GROW_ROOMS_CONFIG } from '../data/initialData';
 import { CultivationScene } from './CultivationScene';
 import { X as CloseIcon } from 'lucide-react';
 
-export const CultivationView: React.FC = () => {
+export const CultivationView: React.FC<{ onOpenMarket?: () => void }> = ({ onOpenMarket }) => {
   const {
     activePlant,
     indoorPlants,
@@ -579,6 +579,7 @@ export const CultivationView: React.FC = () => {
           onOpenNutrients={() => setShowNutrientModal(true)}
           onOpenPanel={() => setShowPanel(true)}
           onShowRoom={() => setDisplayMode('indoor_room')}
+          onOpenMarket={onOpenMarket}
         />
       ) : (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

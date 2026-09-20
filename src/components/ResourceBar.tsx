@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Droplets, FlaskConical, Zap, Sun } from 'lucide-react';
+import { Droplets, FlaskConical, Zap, Sun, Bug, ShieldCheck, Sprout } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 
 /** "∞" when solar covers the load, otherwise hours (<1 d) or days of electricity left. */
@@ -22,7 +22,7 @@ export const Bump: React.FC<{ value: string }> = ({ value }) => {
  * Sits above every view so the player sees the lamps are about to go dark before it happens.
  */
 export const ResourceBar: React.FC<{ onOpenMarket: () => void }> = ({ onOpenMarket }) => {
-  const { resources, equipStats } = useGame();
+  const { resources, equipStats, care } = useGame();
   const energyLow = Number.isFinite(resources.energyDays) && resources.energyDays < 0.5 && equipStats.lampWatts > 0;
   const energyOut = resources.energy <= 0.05 && resources.solarKwhPerDay < resources.kwhPerDay && equipStats.lampWatts > 0;
   const waterLow = resources.water < 15;
@@ -57,6 +57,11 @@ export const ResourceBar: React.FC<{ onOpenMarket: () => void }> = ({ onOpenMark
         resources.water <= 0 ? 'tanque vacío' : waterLow ? 'agua baja' : 'agua', resources.water <= 0 ? 'out' : waterLow ? 'low' : 'ok', 'Agua')}
       {chip('nutrient', FlaskConical, '#a78bfa', `${Math.floor(resources.nutrient)} ml`,
         resources.nutrient <= 0 ? 'sin abono' : nutrientLow ? 'abono bajo' : 'abono', resources.nutrient <= 0 ? 'out' : nutrientLow ? 'low' : 'ok', 'Nutrientes')}
+      {chip('care', ShieldCheck, care.rating >= 75 ? '#34d399' : care.rating >= 45 ? '#fbbf24' : '#f87171', `${care.rating} %`,
+        care.rating >= 75 ? 'sala impecable' : care.rating >= 45 ? 'calificación' : 'sala sucia', care.rating < 30 ? 'out' : care.rating < 55 ? 'low' : 'ok', 'Calificación de jardinero')}
+      {care.pests > 0 && chip('pests', Bug, '#f472b6', `${care.pests} plaga${care.pests > 1 ? 's' : ''}`, 'tratar ya', 'out', 'Plagas activas')}
+      {care.gardenerLevel > 0 && chip('gardener', Sprout, '#86efac', `${care.gardenerDays.toFixed(1)} d`,
+        `jardinero ${care.gardenerLevel === 2 ? 'maestro' : 'aprendiz'}`, care.gardenerDays < 1 ? 'low' : 'ok', 'Jardinero contratado')}
       {resources.solarKwhPerDay > 0 && (
         <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-yellow-300/30 bg-yellow-300/5 text-[10.5px] font-mono text-yellow-200">
           <Sun className="w-3.5 h-3.5" /> +{resources.solarKwhPerDay.toFixed(1)} kWh/día solar

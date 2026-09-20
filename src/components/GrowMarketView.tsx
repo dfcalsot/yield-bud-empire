@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ShoppingBag, Droplets, Thermometer, Wind, Flame, Coins, Sliders, Zap, Wrench, Package, Lock, Plus, Minus,
-  Lightbulb, Snowflake, FlaskConical, Gauge, Sun, KeyRound, Activity, Check, Sparkles,
+  Lightbulb, Snowflake, FlaskConical, Gauge, Sun, KeyRound, Activity, Check, Sparkles, Bug, Sprout, Recycle,
 } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { HudPanel, NeonButton, StatBar, RARITY_STYLE } from './game/GameUI';
@@ -9,6 +9,7 @@ import { Bump, fmtRunway } from './ResourceBar';
 import { ItemArt, rarityColor } from './market/ItemArt';
 import { Merchant, type Mood } from './market/Merchant';
 import { flyCoins, flyToken, floatText } from './market/fx';
+import { PEST_INFO } from '../sim/engine';
 import {
   CATALOG, CATALOG_BY_ID, CATEGORY_LABEL, RARITY_BY_TIER, AssetCategory, CatalogItem, OwnedAsset, repairCostOf, USE,
 } from '../economy/catalog';
@@ -16,16 +17,16 @@ import {
 type IconType = React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
 const CAT_ICON: Record<AssetCategory, IconType> = {
   lamp: Lightbulb, ac: Snowflake, irrigation: Droplets, co2: Wind, meter: Gauge, solar: Sun,
-  nutrient: FlaskConical, water: Droplets, energy: Zap, license: KeyRound,
+  nutrient: FlaskConical, water: Droplets, energy: Zap, pest: Bug, service: Sprout, license: KeyRound,
 };
 const CAT_COLOR: Record<AssetCategory, string> = {
   lamp: '#fbbf24', ac: '#67e8f9', irrigation: '#38bdf8', co2: '#34d399', meter: '#a3e635', solar: '#facc15',
-  nutrient: '#a78bfa', water: '#38bdf8', energy: '#fbbf24', license: '#f472b6',
+  nutrient: '#a78bfa', water: '#38bdf8', energy: '#fbbf24', pest: '#f472b6', service: '#86efac', license: '#f472b6',
 };
-const CATEGORY_ORDER: AssetCategory[] = ['energy', 'water', 'nutrient', 'lamp', 'ac', 'irrigation', 'solar', 'co2', 'meter', 'license'];
+const CATEGORY_ORDER: AssetCategory[] = ['energy', 'water', 'nutrient', 'pest', 'service', 'lamp', 'ac', 'irrigation', 'solar', 'co2', 'meter', 'license'];
 const HOTBAR: Array<{ cat: AssetCategory; label: string }> = [
   { cat: 'lamp', label: 'Lámpara' }, { cat: 'ac', label: 'Aire' }, { cat: 'irrigation', label: 'Riego' },
-  { cat: 'co2', label: 'CO₂' }, { cat: 'solar', label: 'Solar' }, { cat: 'meter', label: 'Sensor' },
+  { cat: 'co2', label: 'CO₂' }, { cat: 'solar', label: 'Solar' }, { cat: 'meter', label: 'Sensor' }, { cat: 'service', label: 'Jardinero' },
 ];
 
 const durColor = (d: number) => (d > 40 ? '#34d399' : d > 15 ? '#fbbf24' : '#f87171');
@@ -49,6 +50,8 @@ const barsOf = (it: CatalogItem): Bar[] => {
     case 'energy': return [{ label: 'Crédito', value: it.amount ?? 0, max: 500, text: `${it.amount} kWh`, good: true }];
     case 'meter': return [wear];
     case 'license': return [{ label: 'Energía por ciclo', value: USE.labKwhPerCycle[it.stationId ?? ''] ?? 0, max: 2, text: `${USE.labKwhPerCycle[it.stationId ?? ''] ?? 0} kWh`, good: false }];
+    case 'pest': return [{ label: 'Contenido', value: it.amount ?? 0, max: 500, text: `${it.amount} ml`, good: true }, { label: 'Protección', value: it.guardHours ?? 0, max: 96, text: `${it.guardHours} h`, good: true }, { label: 'Plagas que cura', value: (it.treats ?? []).length, max: 3, text: (it.treats ?? []).map((k) => PEST_INFO[k].label).join(', '), good: true }];
+    case 'service': return [{ label: 'Duración', value: it.amount ?? 0, max: 30, text: `${it.amount} días`, good: true }, { label: 'Nivel de cuidado', value: it.gardener ?? 0, max: 2, text: it.gardener === 2 ? 'Maestro' : 'Aprendiz', good: true }];
     default: return [];
   }
 };
@@ -80,6 +83,8 @@ const effectHint = (it: CatalogItem): string | null => {
   if (it.category === 'nutrient') return `${USE.nutrientPerPlant} ml por planta y abonado · crecimiento ×${it.feedBonus?.toFixed(2)}`;
   if (it.category === 'water') return `${Math.round((it.amount ?? 0) / USE.waterPerPlantManual)} riegos manuales`;
   if (it.category === 'energy') return `≈ ${((it.amount ?? 0) / 10.8).toFixed(1)} días de una lámpara de 600 W`;
+  if (it.category === 'pest') return `${USE.pestPerPlant} ml por planta tratada · ≈ ${Math.floor((it.amount ?? 0) / USE.pestPerPlant)} dosis`;
+  if (it.category === 'service') return it.gardener === 2 ? 'gasta agua, abono y tratamientos de tu almacén · la calificación casi no baja' : 'gasta agua y abono de tu almacén';
   if (it.category === 'license' && it.stationId) return `${USE.labKwhPerCycle[it.stationId] ?? 0} kWh por ciclo`;
   return null;
 };
@@ -149,7 +154,7 @@ const Slot: React.FC<{
 
 export const GrowMarketView: React.FC = () => {
   const {
-    assets, resources, equipStats, buyAsset, setAssetEquipped, repairAsset, floraBalance, solBalance, calibrateMeter,
+    assets, resources, equipStats, buyAsset, setAssetEquipped, repairAsset, floraBalance, solBalance, calibrateMeter, care, recycleGarbage,
   } = useGame();
 
   const [tab, setTab] = useState<'buy' | 'bag'>('buy');
@@ -181,21 +186,24 @@ export const GrowMarketView: React.FC = () => {
   const licenceOwned = !!selected && selected.kind === 'license' && (ownedCount[selected.id] ?? 0) > 0;
 
   // the merchant keeps an eye on your room and drops hints
-  const latest = useRef({ resources, equipStats });
-  latest.current = { resources, equipStats };
+  const latest = useRef({ resources, equipStats, care });
+  latest.current = { resources, equipStats, care };
   useEffect(() => {
     const tip = () => {
       if (Date.now() - lastSpoke.current < 14000) return;
-      const { resources: r, equipStats: e } = latest.current;
+      const { resources: r, equipStats: e, care } = latest.current;
       const lines: string[] = [];
       if (e.lampWatts > 0 && r.energy <= 0.05) lines.push('⚡ ¡Sin electricidad! Tus lámparas están apagadas. Un Bono de Energía y volvemos al negocio.');
       else if (e.lampWatts > 0 && Number.isFinite(r.energyDays) && r.energyDays < 1) lines.push(`⚡ Solo te queda luz para ${fmtRunway(r.energyDays)}. Yo compraría un Bono de Energía.`);
       if (r.water < 15) lines.push('💧 El tanque de agua está casi vacío. ¡Las plantas tienen sed!');
       if (r.nutrient < 90) lines.push('🧪 Te queda poco abono. Un buen fertilizante marca la diferencia.');
+      if (care.pests > 0) lines.push(`🐛 ¡Tienes ${care.pests} planta${care.pests > 1 ? 's' : ''} con plaga! Mira el Control de plagas: un tratamiento a tiempo salva la cosecha.`);
+      if (care.rating < 50) lines.push('🧹 Tu calificación de jardinero está por los suelos. Limpia la sala y recicla lo vacío, o contrata un jardinero.');
+      if (care.gardenerLevel === 0) lines.push('🧑‍🌾 ¿Cansado de regar? Un jardinero del vivero cuida tus plantas mientras duermes.');
       if (!e.hasAc) lines.push('❄️ Un aire acondicionado mantiene el clima perfecto sin que estés encima.');
       if (!e.autoWater) lines.push('💦 Con un sistema de riego tus plantas nunca tendrán sed.');
       lines.push('Una lámpara más fuerte crece más rápido… pero también gasta más luz.', 'El campo solar es electricidad gratis: la mejor inversión a largo plazo.', 'Cada compra acuña un NFT y quema $FLORA. ¡Menos oferta, más valor!', 'Repara tu equipo a tiempo: un aparato averiado no sirve de nada.');
-      const urgent = lines.filter((l) => /^(⚡|💧|🧪)/.test(l));
+      const urgent = lines.filter((l) => /^(⚡|💧|🧪|🐛)/.test(l));
       speak(urgent.length ? urgent[0] : pick(lines));
     };
     const id = window.setInterval(tip, 9000);
@@ -226,7 +234,7 @@ export const GrowMarketView: React.FC = () => {
       return;
     }
     const wallet = document.querySelector(`[data-mk-wallet="${currency}"] .mk-coin`);
-    const slotTarget = HOTBAR.some((h) => h.cat === selected.category) && selected.kind === 'equipment'
+    const slotTarget = HOTBAR.some((h) => h.cat === selected.category) && (selected.kind === 'equipment' || selected.category === 'service')
       ? document.querySelector(`[data-mk-slot="${selected.category}"]`) : document.querySelector('[data-mk-bag]');
     const ok = buyAsset(selected.id, currency, n);
     if (!ok) return;
@@ -287,10 +295,11 @@ export const GrowMarketView: React.FC = () => {
             <div className="mk-label">Tu sala</div>
             <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
               {HOTBAR.map(({ cat: c, label }) => {
-                const eq = equippedBy(c);
+                const eq = c === 'service' ? assets.filter((a) => CATALOG_BY_ID[a.catalogId]?.category === 'service' && (a.remaining ?? 0) > 0) : equippedBy(c);
                 const first = eq[0];
                 const item = first ? CATALOG_BY_ID[first.catalogId] : null;
-                const dur = first?.durability ?? 100;
+                // the gardener slot shows days left, the rest show durability
+                const dur = c === 'service' ? (first && item ? ((first.remaining ?? 0) / (item.amount ?? 1)) * 100 : 0) : first?.durability ?? 100;
                 return (
                   <button
                     key={c}
@@ -298,7 +307,7 @@ export const GrowMarketView: React.FC = () => {
                     onClick={() => (item ? setTab('bag') : (setTab('buy'), changeCat(c)))}
                     className={`mk-hot ${item ? 'is-full' : ''}`}
                     style={css({ '--rc': item ? rarityColor(item) : '#475569' })}
-                    title={item ? `${item.name} · durabilidad ${dur.toFixed(0)} %` : `Sin ${label.toLowerCase()} instalado — ver en la tienda`}
+                    title={item ? (c === 'service' ? `${item.name} · quedan ${(first?.remaining ?? 0).toFixed(1)} días` : `${item.name} · durabilidad ${dur.toFixed(0)} %`) : `Sin ${label.toLowerCase()} — ver en la tienda`}
                   >
                     <svg viewBox="0 0 50 50" className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
                       <circle cx="25" cy="25" r="22.5" fill="none" stroke="rgba(148,163,184,.18)" strokeWidth="2.2" />
@@ -306,7 +315,7 @@ export const GrowMarketView: React.FC = () => {
                     </svg>
                     {item ? <span className="mk-hot-art"><ItemArt item={item} /></span> : <Plus className="w-4 h-4 text-slate-500" />}
                     {eq.length > 1 && <span className="mk-owned" style={{ top: 0, right: 0, left: 'auto' }}>×{eq.length}</span>}
-                    {item && dur <= 0 && <span className="mk-broken">!</span>}
+                    {item && dur <= 0 && c !== 'service' && <span className="mk-broken">!</span>}
                     <span className="mk-hot-label">{label}</span>
                   </button>
                 );
@@ -317,6 +326,7 @@ export const GrowMarketView: React.FC = () => {
             <StatBar value={Math.min(100, (resources.energy / 100) * 100)} color={resources.energy < 8 ? '#f87171' : '#fbbf24'} label="⚡ Electricidad" valueLabel={`${resources.energy.toFixed(1)} kWh · ${fmtRunway(resources.energyDays)}`} />
             <StatBar value={Math.min(100, (resources.water / 200) * 100)} color={resources.water < 15 ? '#f87171' : '#38bdf8'} label="💧 Agua" valueLabel={`${resources.water.toFixed(resources.water < 100 ? 1 : 0)} L`} />
             <StatBar value={Math.min(100, (resources.nutrient / 500) * 100)} color={resources.nutrient < 90 ? '#f87171' : '#a78bfa'} label="🧪 Abono" valueLabel={`${Math.floor(resources.nutrient)} ml`} />
+            <StatBar value={care.rating} color={care.rating >= 75 ? '#34d399' : care.rating >= 45 ? '#fbbf24' : '#f87171'} label="🧹 Calificación de jardinero" valueLabel={`${care.rating} %${care.pests ? ` · 🐛 ${care.pests}` : ''}`} />
           </div>
         </div>
 
@@ -416,7 +426,7 @@ export const GrowMarketView: React.FC = () => {
           </div>
         ) : (
           <div className="shop-swap">
-            <StockView assets={assets} floraBalance={floraBalance} onEquip={setAssetEquipped} onRepair={repairAsset} onCalibrate={calibrateMeter} resources={resources} />
+            <StockView assets={assets} floraBalance={floraBalance} onEquip={setAssetEquipped} onRepair={repairAsset} onCalibrate={calibrateMeter} resources={resources} garbage={care.garbage} onRecycle={recycleGarbage} />
           </div>
         )}
 
@@ -484,7 +494,9 @@ const StockView: React.FC<{
   onEquip: (id: string, equipped: boolean) => void;
   onRepair: (id: string) => boolean;
   onCalibrate: (m: 'ph' | 'ec' | 'par' | 'lux') => void;
-}> = ({ assets, floraBalance, resources, onEquip, onRepair, onCalibrate }) => {
+  garbage: number;
+  onRecycle: () => void;
+}> = ({ assets, floraBalance, resources, onEquip, onRepair, onCalibrate, garbage, onRecycle }) => {
   const equipment = assets.filter((a) => CATALOG_BY_ID[a.catalogId]?.kind === 'equipment');
   const consumables = assets.filter((a) => CATALOG_BY_ID[a.catalogId]?.kind === 'consumable');
   const licences = assets.filter((a) => CATALOG_BY_ID[a.catalogId]?.kind === 'license');
@@ -533,7 +545,7 @@ const StockView: React.FC<{
       </HudPanel>
 
       <div className="space-y-5">
-        <HudPanel title={<><Zap className="w-4 h-4" /> Consumibles</>} accessory={<span className="text-[10px] font-mono text-neutral-500">autonomía eléctrica {fmtRunway(resources.energyDays)}</span>}>
+        <HudPanel title={<><Zap className="w-4 h-4" /> Consumibles</>} accessory={<div className="flex items-center gap-2"><span className="text-[10px] font-mono text-neutral-500">autonomía eléctrica {fmtRunway(resources.energyDays)}</span><button onClick={onRecycle} disabled={garbage === 0} className="care-btn !py-1 !px-2" title="Frascos vacíos y equipo averiado bajan tu calificación de jardinero"><Recycle className="w-3 h-3" /> Reciclar{garbage > 0 ? ` (${garbage})` : ''}</button></div>}>
           <div className="px-4 pb-4 space-y-2.5">
             {consumables.length === 0 && <p className="text-xs text-neutral-500 text-center py-6">Sin consumibles. Compra agua, abono y electricidad.</p>}
             {consumables.map((a, i) => {

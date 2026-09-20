@@ -1,4 +1,4 @@
-import type { GrowStage, PlantInGrow, Strain } from '../types';
+import type { GrowStage, PestKind, PlantInGrow, Strain } from '../types';
 import { BALANCE as B, LIGHT_FRACTION } from './balance';
 
 /**
@@ -26,7 +26,24 @@ export interface EquipInput {
 }
 
 /** Consumable stock the simulation may spend (mutated by advanceWorld; the caller applies the difference). */
-export interface Budget { waterL: number; energyKwh: number }
+export interface Budget {
+  waterL: number;
+  energyKwh: number;
+  /** optional stocks, only needed when a gardener is hired */
+  nutrientMl?: number;
+  treatMl?: Partial<Record<PestKind, number>>;
+  /** days of contract left; ticks down with every simulated chunk that has plants */
+  gardenerDays?: number;
+}
+
+/** What the hired gardener does (level 1: water + feed, level 2: also treats plagues). */
+export interface GardenerInput { water: boolean; feed: boolean; treat: boolean; feedBonus: number }
+
+export const PEST_INFO: Record<PestKind, { label: string; emoji: string; cause: string; cure: string }> = {
+  mites: { label: 'Ácaros', emoji: '🕷️', cause: 'calor, aire seco y sala sucia', cure: 'Aceite de Neem' },
+  mold: { label: 'Moho', emoji: '🍄', cause: 'humedad alta, sobre todo en floración', cure: 'Fungicida Bacillus' },
+  rot: { label: 'Pudrición de raíz', emoji: '🦠', cause: 'sustrato encharcado', cure: 'Trichoderma' },
+};
 
 export interface SimEnv {
   autoWater: boolean;
@@ -40,6 +57,10 @@ export interface SimEnv {
   /** when present, lamps/AC/pumps draw electricity from `budget` and auto-drip spends water */
   equip?: EquipInput;
   budget?: Budget;
+  /** 0–100 gardener rating of the room: the dirtier, the more plagues */
+  cleanliness?: number;
+  /** active gardener contract */
+  gardener?: GardenerInput;
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -92,7 +113,8 @@ export function growthPerSecond(p: PlantInGrow, env: SimEnv): number {
   // stronger lamps grow faster, with diminishing returns (starter 600 W lamp = 1.0)
   const ppfdF = env.equip ? Math.sqrt(clamp(Math.min(p.ppfdLightIntensity, env.equip.lampMaxPpfd || 0) / 480, 0.4, 3)) : 1;
   const feedF = s.ec >= B.ecOk ? (p.feedBonus ?? 1) : 1;
-  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * ppfdF * feedF * (env.lightOn > 0 ? 1 : 0);
+  const pestF = p.pest ? B.pestGrowth[p.pest.kind] : 1;
+  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * ppfdF * feedF * pestF * (env.lightOn > 0 ? 1 : 0);
 }
 
 /** Seconds left until harvest at the current rate (Infinity if stalled). */
@@ -113,7 +135,27 @@ export function hoursUntilMoisture(p: PlantInGrow, threshold: number, lightOn = 
 }
 
 export const isThirsty = (p: PlantInGrow) => p.stage !== 'ready_harvest' && p.soilMoisture < B.thirstyBelow;
+export const pestCount = (plants: PlantInGrow[]) => plants.filter((p) => p.pest).length;
 export const isHungry = (p: PlantInGrow) => p.stage !== 'ready_harvest' && p.ecLevel < B.ecOk + 0.15;
+
+/** Deterministic pseudo-random in [0,1) from a string seed and an integer — same plant + same hour = same roll, so catch-up equals live play. */
+export function hash01(seed: string, n: number): number {
+  let h = 2166136261 ^ n;
+  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+  h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15;
+  return (h >>> 0) / 4294967296;
+}
+
+/** Hourly chance of each plague for a plant in these conditions (0 while it is protected). */
+export function pestHazards(p: PlantInGrow, cleanliness: number, temp: number, rh: number, moisture: number, stage: GrowStage): Record<PestKind, number> {
+  if ((p.guard ?? 0) > 0 || stage === 'ready_harvest') return { mites: 0, mold: 0, rot: 0 };
+  const dirt = 1 + (100 - clamp(cleanliness, 0, 100)) / 40;   // rating 0 → ×3.5
+  const base = B.pestBaseHazardPerHour * dirt;
+  const mites = base * (temp > 27 ? 1 + (temp - 27) * 0.5 : 1) * (rh < 45 ? 1 + (45 - rh) / 15 : 1);
+  const mold = base * (rh > 65 ? 1 + (rh - 65) / 6 : 1) * (stage === 'flowering' ? 1.6 : 1) * (moisture > 90 ? 1.3 : 1);
+  const rot = base * (moisture > 88 ? 1 + (moisture - 88) / 3 : 0.4);
+  return { mites, mold, rot };
+}
 
 /** Advance one plant by `dt` real seconds (dt ≤ chunkSeconds keeps the integration accurate). */
 export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGrow {
@@ -132,9 +174,20 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
       moisture = B.autoWaterTarget;
     }
   }
+  // a hired gardener waters by hand (from the tank) when the irrigation system does not
+  if (moisture < B.autoWaterTrigger && env.gardener?.water && env.budget && env.budget.waterL >= B.waterPerWatering) {
+    env.budget.waterL -= B.waterPerWatering;
+    moisture = B.autoWaterTarget;
+  }
 
-  // --- nutrient solution fades ---
-  const ec = Math.max(B.ecFloor, s.ec - B.ecDecayPerHour * hours);
+  // --- nutrient solution fades (the gardener feeds when it runs low) ---
+  let ec = Math.max(B.ecFloor, s.ec - B.ecDecayPerHour * hours);
+  let feedBonus = p.feedBonus;
+  if (env.gardener?.feed && ec < B.ecOk + 0.15 && env.budget && (env.budget.nutrientMl ?? 0) >= B.feedMl) {
+    env.budget.nutrientMl = (env.budget.nutrientMl ?? 0) - B.feedMl;
+    ec = B.ecFed;
+    feedBonus = env.gardener.feedBonus;
+  }
 
   // --- climate ---
   let temp = p.temperatureC;
@@ -152,14 +205,41 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   const optimal = vpd >= 0.8 && vpd <= 1.4;
 
   // --- growth (uses the state *after* this chunk's drying, like a real crop) ---
-  const probe: PlantInGrow = { ...p, soilMoisture: moisture, ecLevel: ec, vpdKpa: vpd, sim: { progress: s.progress, moisture, ec, health: s.health } };
+  const probe: PlantInGrow = { ...p, feedBonus, soilMoisture: moisture, ecLevel: ec, vpdKpa: vpd, sim: { progress: s.progress, moisture, ec, health: s.health } };
   const progress = Math.min(100, s.progress + growthPerSecond(probe, env) * dt);
   const stage = stageOf(progress);
 
   // --- health: dry plants suffer down to a floor; cared-for plants recover ---
   let health = s.health;
   if (moisture < B.moistureStress) health = Math.max(B.healthFloor, health - B.healthLossPerHourDry * hours);
-  else if (optimal && moisture >= B.moistureOk && ec >= B.ecOk) health = Math.min(100, health + B.healthGainPerHourCared * hours);
+  else if (optimal && moisture >= B.moistureOk && ec >= B.ecOk && !p.pest) health = Math.min(100, health + B.healthGainPerHourCared * hours);
+
+  // --- plagues: seeded dice per plant and simulated hour; a gardener (level 2) treats them from the stock ---
+  const age = (p.age ?? 0) + hours;
+  let pest = p.pest;
+  let guard = Math.max(0, (p.guard ?? 0) - hours);
+  if (pest) {
+    pest = { kind: pest.kind, hours: pest.hours + hours };
+    health = Math.max(B.healthFloor, health - B.pestHealthLossPerHour[pest.kind] * hours);
+    const ml = env.budget?.treatMl?.[pest.kind] ?? 0;
+    if (env.gardener?.treat && env.budget?.treatMl && ml >= B.treatMl) {
+      env.budget.treatMl[pest.kind] = ml - B.treatMl;
+      pest = undefined;
+      guard = B.guardHoursGardener;
+      health = Math.min(100, health + 5);
+    }
+  } else if (env.cleanliness !== undefined) {
+    const hz = pestHazards({ ...p, guard }, env.cleanliness, temp, rh, moisture, stage);
+    const total = hz.mites + hz.mold + hz.rot;
+    if (total > 0) {
+      const seed = `${p.id ?? ''}${p.strain.id ?? ''}${p.plantedAt}`;
+      const slot = Math.floor(age * 12);   // one roll per 5 simulated minutes
+      if (hash01(seed, slot) < 1 - Math.exp(-total * hours)) {
+        const pick = hash01(seed + 'k', slot) * total;
+        pest = { kind: pick < hz.mites ? 'mites' : pick < hz.mites + hz.mold ? 'mold' : 'rot', hours: 0 };
+      }
+    }
+  }
 
   // --- trichomes ripen in flower ---
   let clear = 90, milky = 10, amber = 0;
@@ -185,6 +265,10 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
     health: Math.round(health),
     trichomeMaturity: { clear, milky, amber },
     sim: { progress, moisture, ec, health },
+    feedBonus,
+    pest,
+    guard,
+    age,
   };
 }
 
@@ -204,6 +288,11 @@ export function advanceWorld(plants: PlantInGrow[], dtSeconds: number, env: SimE
       const lightOn = env.equip.lampWatts <= 0 ? 0 : need <= 0 ? 1 : Math.min(1, have / need);
       env.budget.energyKwh = Math.max(0, have - Math.min(need, have));
       chunkEnv = { ...env, lightOn, autoClimate: env.autoClimate && lightOn > 0.5 };
+    }
+    if (env.gardener && env.budget && env.budget.gardenerDays !== undefined && cur.length > 0) {
+      const on = env.budget.gardenerDays > 0;
+      env.budget.gardenerDays = Math.max(0, env.budget.gardenerDays - step / 86400);
+      chunkEnv = { ...chunkEnv, gardener: on ? env.gardener : undefined };
     }
     cur = cur.map((p) => advancePlant(p, step, chunkEnv));
     remaining -= step;

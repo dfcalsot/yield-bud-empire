@@ -1,4 +1,5 @@
 import type { Rarity } from '../components/game/GameUI';
+import type { PestKind } from '../types';
 
 /**
  * Catalogue of everything the player buys. Every purchase mints an NFT (simulated Devnet):
@@ -8,7 +9,7 @@ import type { Rarity } from '../components/game/GameUI';
  * All numbers live here so the economy can be tuned in one place.
  */
 
-export type AssetCategory = 'lamp' | 'ac' | 'irrigation' | 'co2' | 'meter' | 'solar' | 'nutrient' | 'water' | 'energy' | 'license';
+export type AssetCategory = 'lamp' | 'ac' | 'irrigation' | 'co2' | 'meter' | 'solar' | 'nutrient' | 'water' | 'energy' | 'pest' | 'service' | 'license';
 export type AssetKind = 'equipment' | 'consumable' | 'license';
 
 export interface CatalogItem {
@@ -34,7 +35,10 @@ export interface CatalogItem {
   wearPerDay?: number;     // durability % lost per day of use
   // consumables
   amount?: number;
-  unit?: 'L' | 'ml' | 'kWh';
+  unit?: 'L' | 'ml' | 'kWh' | 'días';
+  treats?: PestKind[];     // plagues this product cures
+  guardHours?: number;     // protection after treating
+  gardener?: 1 | 2;        // contract level: 1 waters + feeds, 2 also treats plagues
   feedBonus?: number;      // growth bonus while the plants are fed with this nutrient
   // licenses
   stationId?: string;
@@ -120,6 +124,24 @@ export const CATALOG: CatalogItem[] = [
   { id: 'energy_100', category: 'energy', kind: 'consumable', name: 'Bono de Energía 100 kWh', brand: 'Red Solana', tier: 2, priceFlora: 270, priceSol: 0.27, amount: 100, unit: 'kWh', description: 'Paquete de una semana con descuento.', specs: [{ label: 'Crédito', value: '100 kWh' }] },
   { id: 'energy_500', category: 'energy', kind: 'consumable', name: 'Bono de Energía 500 kWh', brand: 'Red Solana', tier: 3, priceFlora: 1200, priceSol: 1.2, amount: 500, unit: 'kWh', description: 'Contrato industrial mensual.', specs: [{ label: 'Crédito', value: '500 kWh' }] },
 
+  /* ── Control de plagas ── */
+  { id: 'pest_neem', category: 'pest', kind: 'consumable', name: 'Aceite de Neem 250 ml', brand: 'Dr. Verde', tier: 1, priceFlora: 30, priceSol: 0.03, amount: 250, unit: 'ml', treats: ['mites'], guardHours: 48,
+    description: 'Elimina ácaros y trips y protege a la planta 48 h. Se aplica en toda la sala.', specs: [{ label: 'Contenido', value: '250 ml' }, { label: 'Trata', value: 'Ácaros' }, { label: 'Protección', value: '48 h' }] },
+  { id: 'pest_bacillus', category: 'pest', kind: 'consumable', name: 'Fungicida Bacillus 250 ml', brand: 'BioShield', tier: 2, priceFlora: 55, priceSol: 0.06, amount: 250, unit: 'ml', treats: ['mold'], guardHours: 72,
+    description: 'Fungicida biológico contra el moho y el oídio. Protege 72 h.', specs: [{ label: 'Contenido', value: '250 ml' }, { label: 'Trata', value: 'Moho' }, { label: 'Protección', value: '72 h' }] },
+  { id: 'pest_tricho', category: 'pest', kind: 'consumable', name: 'Trichoderma Radicular 250 ml', brand: 'RootGuard', tier: 2, priceFlora: 55, priceSol: 0.06, amount: 250, unit: 'ml', treats: ['rot'], guardHours: 72,
+    description: 'Hongos beneficiosos que desplazan a los patógenos de la raíz. Protege 72 h.', specs: [{ label: 'Contenido', value: '250 ml' }, { label: 'Trata', value: 'Pudrición de raíz' }, { label: 'Protección', value: '72 h' }] },
+  { id: 'pest_shield', category: 'pest', kind: 'consumable', name: 'Bio-Shield Total 500 ml', brand: 'Chrono Labs', tier: 3, priceFlora: 150, priceSol: 0.15, amount: 500, unit: 'ml', treats: ['mites', 'mold', 'rot'], guardHours: 96,
+    description: 'Amplio espectro: cura ácaros, moho y pudrición. Protege 96 h.', specs: [{ label: 'Contenido', value: '500 ml' }, { label: 'Trata', value: 'Las 3 plagas' }, { label: 'Protección', value: '96 h' }] },
+
+  /* ── Servicios de vivero (modo vivero: jardineros contratados) ── */
+  { id: 'svc_apprentice_7', category: 'service', kind: 'consumable', name: 'Jardinero Aprendiz · 7 días', brand: 'Vivero de Doña Flora', tier: 2, priceFlora: 90, priceSol: 0.09, amount: 7, unit: 'días', gardener: 1,
+    description: 'Riega y abona a tus plantas por ti con lo que haya en tu almacén. Tú solo cosechas.', specs: [{ label: 'Duración', value: '7 días' }, { label: 'Hace', value: 'Riega y abona' }] },
+  { id: 'svc_master_7', category: 'service', kind: 'consumable', name: 'Jardinero Maestro · 7 días', brand: 'Vivero de Doña Flora', tier: 3, priceFlora: 260, priceSol: 0.26, amount: 7, unit: 'días', gardener: 2,
+    description: 'Además de regar y abonar, trata las plagas y mantiene la sala impecable (la calificación no baja).', specs: [{ label: 'Duración', value: '7 días' }, { label: 'Hace', value: 'Riega, abona, trata y limpia' }] },
+  { id: 'svc_master_30', category: 'service', kind: 'consumable', name: 'Jardinero Maestro · 30 días', brand: 'Vivero de Doña Flora', tier: 4, priceFlora: 900, priceSol: 0.9, amount: 30, unit: 'días', gardener: 2,
+    description: 'Un mes de cuidado profesional completo. El mejor precio por día.', specs: [{ label: 'Duración', value: '30 días' }, { label: 'Hace', value: 'Riega, abona, trata y limpia' }] },
+
   /* ── Licencias de estaciones del laboratorio ── */
   { id: 'lic_rosin', category: 'license', kind: 'license', name: 'Licencia Prensa de Rosin', brand: 'Chrono Labs', tier: 1, priceFlora: 0, priceSol: 0, stationId: 'rosin', description: 'Incluida en el Kit de Inicio F2P.', specs: [{ label: 'Estación', value: 'Prensa de Rosin' }] },
   { id: 'lic_kief', category: 'license', kind: 'license', name: 'Licencia Tamizadora de Kief', brand: 'Chrono Labs', tier: 1, priceFlora: 0, priceSol: 0, stationId: 'kief', description: 'Incluida en el Kit de Inicio F2P.', specs: [{ label: 'Estación', value: 'Tamizadora de Kief' }] },
@@ -134,7 +156,7 @@ export const CATALOG_BY_ID: Record<string, CatalogItem> = Object.fromEntries(CAT
 
 export const CATEGORY_LABEL: Record<AssetCategory, string> = {
   lamp: 'Lámparas', ac: 'Aires acondicionados', irrigation: 'Riego', co2: 'CO₂', meter: 'Medidores', solar: 'Energía solar',
-  nutrient: 'Nutrientes', water: 'Agua', energy: 'Electricidad', license: 'Licencias de laboratorio',
+  nutrient: 'Nutrientes', water: 'Agua', energy: 'Electricidad', pest: 'Control de plagas', service: 'Servicios de vivero', license: 'Licencias de laboratorio',
 };
 
 export const RARITY_BY_TIER: Record<number, Rarity> = { 1: 'common', 2: 'rare', 3: 'epic', 4: 'legendary' };
@@ -175,14 +197,20 @@ export const STARTER_KIT: Array<{ catalogId: string; equipped?: boolean; amount?
   { catalogId: 'water_200' },
   { catalogId: 'nut_canna' },
   { catalogId: 'energy_100', amount: 60 },   // 60 kWh: a full first cycle for the starter lamp
+  { catalogId: 'pest_neem' },
+  { catalogId: 'pest_bacillus' },
+  { catalogId: 'pest_tricho' },
 ];
+
+/** A small treatment kit (also granted once to saves from before plagues existed). */
+export const starterPestKit = (): OwnedAsset[] => ['pest_neem', 'pest_bacillus', 'pest_tricho'].map((id) => newAsset(id, { starter: true }));
 
 /** Fresh copy of the starter kit (a `amount` override sets the lot size, e.g. a partial energy bond). */
 export const starterAssets = (): OwnedAsset[] =>
   STARTER_KIT.map((k) => ({ ...newAsset(k.catalogId, { starter: true, equipped: k.equipped }), ...(k.amount !== undefined ? { remaining: k.amount } : {}) }));
 
-export type ResourceKind = 'water' | 'nutrient' | 'energy';
-const RESOURCE_CATEGORY: Record<ResourceKind, AssetCategory> = { water: 'water', nutrient: 'nutrient', energy: 'energy' };
+export type ResourceKind = 'water' | 'nutrient' | 'energy' | 'service';
+const RESOURCE_CATEGORY: Record<ResourceKind, AssetCategory> = { water: 'water', nutrient: 'nutrient', energy: 'energy', service: 'service' };
 
 export const stockOf = (assets: OwnedAsset[], kind: ResourceKind): number =>
   assets.reduce((sum, a) => (CATALOG_BY_ID[a.catalogId]?.category === RESOURCE_CATEGORY[kind] ? sum + (a.remaining ?? 0) : sum), 0);
@@ -262,7 +290,67 @@ export const repairCostOf = (asset: OwnedAsset): number => {
 };
 
 /** Consumption constants shared by actions and the UI. */
+/* ─────────────── plague treatments, gardener contracts and garbage ─────────────── */
+
+const PEST_KINDS: PestKind[] = ['mites', 'mold', 'rot'];
+
+/** ml of treatment available per plague (broad-spectrum lots count for every kind they cure). */
+export const pestStock = (assets: OwnedAsset[]): Record<PestKind, number> => {
+  const out: Record<PestKind, number> = { mites: 0, mold: 0, rot: 0 };
+  for (const a of assets) {
+    const it = CATALOG_BY_ID[a.catalogId];
+    if (it?.category === 'pest') for (const k of it.treats ?? []) out[k] += a.remaining ?? 0;
+  }
+  return out;
+};
+
+/** Spend up to `ml` of treatment for one plague (single-purpose lots first). Returns what was really spent. */
+export const spendPest = (assets: OwnedAsset[], kind: PestKind, ml: number): { assets: OwnedAsset[]; spent: number; guardHours: number } => {
+  let left = ml;
+  let guard = 0;
+  const order = assets
+    .filter((a) => CATALOG_BY_ID[a.catalogId]?.category === 'pest' && CATALOG_BY_ID[a.catalogId].treats?.includes(kind) && (a.remaining ?? 0) > 0)
+    .sort((a, b) => (CATALOG_BY_ID[a.catalogId].treats!.length - CATALOG_BY_ID[b.catalogId].treats!.length) || a.mintedAt - b.mintedAt);
+  const take = new Map<string, number>();
+  for (const a of order) {
+    if (left <= 0) break;
+    const t = Math.min(a.remaining ?? 0, left);
+    take.set(a.id, t);
+    left -= t;
+    guard = Math.max(guard, CATALOG_BY_ID[a.catalogId].guardHours ?? 0);
+  }
+  return {
+    assets: assets.map((a) => (take.has(a.id) ? { ...a, remaining: Number(((a.remaining ?? 0) - take.get(a.id)!).toFixed(4)) } : a)),
+    spent: ml - left,
+    guardHours: guard,
+  };
+};
+
+/** 0 = no contract, 1 = apprentice (water + feed), 2 = master (also plagues + keeps the room clean). */
+export const gardenerLevelOf = (assets: OwnedAsset[]): 0 | 1 | 2 =>
+  assets.reduce<0 | 1 | 2>((lvl, a) => {
+    const it = CATALOG_BY_ID[a.catalogId];
+    return it?.category === 'service' && (a.remaining ?? 0) > 0 ? (Math.max(lvl, it.gardener ?? 0) as 0 | 1 | 2) : lvl;
+  }, 0);
+
+/** Empty bottles and broken gear pile up as garbage (each one drags the gardener rating down until recycled). */
+export const garbageOf = (assets: OwnedAsset[]): OwnedAsset[] =>
+  assets.filter((a) => {
+    const it = CATALOG_BY_ID[a.catalogId];
+    if (!it) return false;
+    if (it.kind === 'consumable') return (a.remaining ?? 0) <= 0.0001;
+    if (it.kind === 'equipment') return (a.durability ?? 100) <= 0;
+    return false;
+  });
+
 export const USE = {
+  pestPerPlant: 8,            // ml of treatment per plant
+  cleanCooldownHours: 4,      // real hours between "clean the room" actions
+  cleanGain: 30,              // rating points a cleaning gives
+  recycleGain: 3,             // rating points per recycled item
+  ratingDecayPerDay: 5,       // rating lost per day of neglect
+  garbageDecayPerDay: 1.5,    // extra per piece of garbage per day
+  marketFee: 0.025,           // share of every dispensary sale that is burned (HashKings: 2.5 %)
   waterPerPlantManual: 0.5,   // L per watering
   nutrientPerPlant: 3,        // ml per feeding
   labKwhPerCycle: { rosin: 0.6, bubble: 0.5, terpsoup: 1.4, kief: 0.4, roller: 0.5, rotavap: 2.0, hplc: 0.8 } as Record<string, number>,

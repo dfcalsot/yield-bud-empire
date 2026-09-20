@@ -1,6 +1,7 @@
 import React, { Component, Suspense, lazy, useState } from 'react';
 import { Box, Layers } from 'lucide-react';
 import { CannabisPlant, type CannabisPlantProps } from './CannabisPlant';
+import type { PestKind } from '../types';
 
 /**
  * The plant on the Cultivation stage: the 3D model when WebGL works, the animated SVG otherwise.
@@ -36,7 +37,7 @@ const webglOk = (() => {
 const STORE_KEY = 'cf_plant_view';
 const readMode = (): '3d' | '2d' => { try { return localStorage.getItem(STORE_KEY) === '2d' ? '2d' : '3d'; } catch { return '3d'; } };
 
-export const PlantView: React.FC<CannabisPlantProps> = (props) => {
+export const PlantView: React.FC<CannabisPlantProps & { pest?: PestKind }> = ({ pest, ...props }) => {
   const [mode, setMode] = useState<'3d' | '2d'>(readMode);
   const canvasMode = mode === '3d' && webglOk();
   const svg = <CannabisPlant {...props} />;
@@ -60,6 +61,7 @@ export const PlantView: React.FC<CannabisPlantProps> = (props) => {
                 soilMoisture={props.soilMoisture}
                 strainColor={props.strainColor}
                 amberPct={props.amberPct}
+                pest={pest}
               />
             </div>
           </Suspense>

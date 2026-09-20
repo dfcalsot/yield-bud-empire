@@ -7,6 +7,7 @@ import {
   PlantInGrow,
   ProcessedProduct,
   LabRunSpec,
+  PestKind,
   GenomicPatent,
   VirtualBrand,
   SolanaTransaction,
@@ -63,10 +64,10 @@ import {
   setSoundEnabled
 } from '../utils/audio';
 
-import { advanceWorld, calculateVpd, etaSeconds, formatDuration, powerDraw, SimEnv } from '../sim/engine';
+import { advanceWorld, calculateVpd, etaSeconds, formatDuration, pestCount, PEST_INFO, powerDraw, SimEnv } from '../sim/engine';
 import {
   CATALOG_BY_ID, OwnedAsset, USE, newAsset, starterAssets, equipStatsOf, stockOf, spendResource, bestFeedBonus, repairCostOf,
-  ownsStation, EquipStats,
+  ownsStation, EquipStats, pestStock, spendPest, gardenerLevelOf, garbageOf, starterPestKit,
 } from '../economy/catalog';
 import { BALANCE } from '../sim/balance';
 export { calculateVpd };
@@ -177,6 +178,12 @@ interface GameContextType {
   setAssetEquipped: (assetId: string, equipped: boolean) => void;
   repairAsset: (assetId: string) => boolean;
   ownsStation: (stationId: string) => boolean;
+
+  // Plagues, gardener rating and nursery mode (HashKings-inspired)
+  care: { rating: number; cleanReadyInHours: number; pests: number; garbage: number; gardenerLevel: 0 | 1 | 2; gardenerDays: number };
+  treatPests: (scope: 'selected' | 'all') => void;
+  cleanRoom: () => boolean;
+  recycleGarbage: () => void;
 
   // Nutrient Tables & Feeding
   nutrientBrands: NutrientBrand[];
@@ -370,6 +377,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [assets, setAssets] = useState<OwnedAsset[]>(() => starterAssets());
   const assetsRef = useRef<OwnedAsset[]>(assets);
   assetsRef.current = assets;
+  // gardener rating (0–100): falls with neglect and garbage, rises when the room is cleaned / garbage recycled
+  const [care, setCare] = useState<{ rating: number; lastCleanAt: number }>({ rating: 100, lastCleanAt: 0 });
   const [autoWaterActive, setAutoWaterActive] = useState<boolean>(false);
   const [autoClimateActive, setAutoClimateActive] = useState<boolean>(false);
 
@@ -613,6 +622,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     co2Ppm: Math.max(co2Ppm, equipStats.co2Ppm),
     lightOn: 1,
     equip: equipStats,
+    cleanliness: care.rating,
+    gardener: gardenerLevelOf(assets) > 0 ? { water: true, feed: true, treat: gardenerLevelOf(assets) >= 2, feedBonus: bestFeedBonus(assets) } : undefined,
     getRoomTarget: (roomId) => {
       const r = GROW_ROOMS_CONFIG.find(x => x.id === (roomId || currentRoom));
       return r ? { tempC: r.targetTempC, rh: r.targetRhPercent } : undefined;
@@ -650,6 +661,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       autoWaterActive,
       autoClimateActive,
       assets,
+      care,
       savedAt: Date.now()
     });
   }, [
@@ -675,7 +687,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     processedProducts,
     autoWaterActive,
     autoClimateActive,
-    assets
+    assets,
+    care
   ]);
 
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
@@ -708,7 +721,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (typeof saved.autoWaterActive === 'boolean') setAutoWaterActive(saved.autoWaterActive);
       if (typeof saved.autoClimateActive === 'boolean') setAutoClimateActive(saved.autoClimateActive);
       // saves from before the asset economy get the starter kit
-      setAssets(Array.isArray(saved.assets) ? saved.assets : starterAssets());
+      const loadedAssets = Array.isArray(saved.assets) ? saved.assets : starterAssets();
+      // saves from before plagues existed get a one-off treatment kit
+      setAssets(Array.isArray(saved.assets) && !saved.care ? [...loadedAssets, ...starterPestKit()] : loadedAssets);
+      if (saved.care) setCare(saved.care);
       lastSimRef.current = saved.lastSimAt ?? saved.savedAt ?? Date.now();
     } else if (seedIfMissing) {
       // Seed preset demo data
@@ -1017,20 +1033,29 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const dt = (now - lastSimRef.current) / 1000 + extraSeconds;
     lastSimRef.current = now;
     if (dt < 0.5) return;
-    // consumables the simulation may spend during this span (electricity, tank water); applied to the NFT lots afterwards
+    // consumables the simulation may spend during this span (electricity, tank water, nutrients, treatments, the
+    // gardener's contract days); applied to the NFT lots afterwards
     const stock = assetsRef.current;
-    const budget = { waterL: stockOf(stock, 'water'), energyKwh: stockOf(stock, 'energy') };
-    const env: SimEnv = { ...simEnvRef.current, budget: { ...budget } };
+    const treat0 = pestStock(stock);
+    const budget = { waterL: stockOf(stock, 'water'), energyKwh: stockOf(stock, 'energy'), nutrientMl: stockOf(stock, 'nutrient'), treatMl: { ...treat0 }, gardenerDays: stockOf(stock, 'service') };
+    const env: SimEnv = { ...simEnvRef.current, budget: { ...budget, treatMl: { ...treat0 } } };
     const before = indoorRef.current;
     const after = advanceWorld(before, dt, env);
-    const usedWater = budget.waterL - env.budget!.waterL;
-    const usedEnergy = budget.energyKwh - env.budget!.energyKwh;
-    if (usedWater > 1e-6 || usedEnergy > 1e-6 || stock.some(a => a.equipped && CATALOG_BY_ID[a.catalogId]?.kind === 'equipment')) {
-      const days = Math.min(dt, BALANCE.maxCatchUpSeconds) / 86400;
+    const eb = env.budget!;
+    const usedWater = budget.waterL - eb.waterL;
+    const usedEnergy = budget.energyKwh - eb.energyKwh;
+    const usedNutrient = budget.nutrientMl - (eb.nutrientMl ?? 0);
+    const usedDays = budget.gardenerDays - (eb.gardenerDays ?? 0);
+    const usedTreat = (['mites', 'mold', 'rot'] as const).map(k => [k, treat0[k] - (eb.treatMl?.[k] ?? 0)] as const).filter(([, v]) => v > 1e-6);
+    const days = Math.min(dt, BALANCE.maxCatchUpSeconds) / 86400;
+    if (usedWater > 1e-6 || usedEnergy > 1e-6 || usedNutrient > 1e-6 || usedDays > 1e-9 || usedTreat.length || stock.some(a => a.equipped && CATALOG_BY_ID[a.catalogId]?.kind === 'equipment')) {
       setAssets(prev => {
         let next = prev;
         if (usedWater > 1e-6) next = spendResource(next, 'water', Math.min(usedWater, stockOf(next, 'water'))) ?? next;
         if (usedEnergy > 1e-6) next = spendResource(next, 'energy', Math.min(usedEnergy, stockOf(next, 'energy'))) ?? next;
+        if (usedNutrient > 1e-6) next = spendResource(next, 'nutrient', Math.min(usedNutrient, stockOf(next, 'nutrient'))) ?? next;
+        if (usedDays > 1e-9) next = spendResource(next, 'service', Math.min(usedDays, stockOf(next, 'service'))) ?? next;
+        for (const [k, v] of usedTreat) next = spendPest(next, k, v).assets;
         // installed gear wears with time (a lamp only while there was power to run it)
         return next.map(a => {
           const it = CATALOG_BY_ID[a.catalogId];
@@ -1041,10 +1066,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       });
     }
-    if (budget.energyKwh > 0 && env.budget!.energyKwh <= 0 && (env.equip?.lampWatts ?? 0) > 0 && (env.equip?.solarKw ?? 0) * 0.25 < 0.3) {
+    // gardener rating: falls with neglect and garbage while there are plants (a master gardener nearly stops it)
+    if (before.length > 0) {
+      const decay = (USE.ratingDecayPerDay + USE.garbageDecayPerDay * garbageOf(stock).length) * days * (gardenerLevelOf(stock) >= 2 ? 0.1 : 1);
+      if (decay > 0) setCare(c => ({ ...c, rating: Math.max(0, Number((c.rating - decay).toFixed(3))) }));
+    }
+    const newPests = after.filter((p, i) => p.pest && !before[i]?.pest);
+    if (budget.energyKwh > 0 && eb.energyKwh <= 0 && (env.equip?.lampWatts ?? 0) > 0 && (env.equip?.solarKw ?? 0) * 0.25 < 0.3) {
       showNotification('⚡ Se acabó la electricidad: las lámparas se apagaron y las plantas dejan de crecer. Compra un Bono de Energía en el Grow Market.', 'burn');
-    } else if (budget.waterL > 0 && env.budget!.waterL <= 0 && env.autoWater) {
+    } else if (budget.waterL > 0 && eb.waterL <= 0 && (env.autoWater || env.gardener?.water)) {
       showNotification('💧 El tanque de agua está vacío: el riego automático se detuvo.', 'burn');
+    } else if (budget.gardenerDays > 0 && (eb.gardenerDays ?? 0) <= 0 && before.length > 0) {
+      showNotification('🧑‍🌾 Terminó el contrato de tu jardinero. Renuévalo en el Grow Market → Servicios de vivero.', 'info');
+    } else if (newPests.length > 0 && dt <= 1800) {
+      const kinds = newPests.reduce<Record<string, number>>((m, p) => { const k = PEST_INFO[p.pest!.kind].label; m[k] = (m[k] ?? 0) + 1; return m; }, {});
+      showNotification(`🐛 Plaga detectada en ${newPests.length} planta${newPests.length > 1 ? 's' : ''} (${Object.entries(kinds).map(([k, n]) => `${k} ×${n}`).join(', ')}). Trátalas desde el botón Cuidado.`, 'burn');
     }
     if (dt > 1800) {
       // welcome-back summary for long absences
@@ -1052,9 +1088,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const grew = avg(after, p => p.progressPercent) - avg(before, p => p.progressPercent);
       const thirsty = after.filter(p => p.stage !== 'ready_harvest' && p.soilMoisture < BALANCE.thirstyBelow).length;
       const ready = after.filter(p => p.stage === 'ready_harvest').length;
+      const sick = pestCount(after);
       showNotification(
-        `Han pasado ${formatDuration(Math.min(dt, BALANCE.maxCatchUpSeconds))}: tus plantas crecieron +${grew.toFixed(1)}%${ready ? ` (${ready} listas para cosechar)` : ''}${thirsty ? `. ¡${thirsty} necesitan agua!` : '.'}`,
-        thirsty ? 'info' : 'success'
+        `Han pasado ${formatDuration(Math.min(dt, BALANCE.maxCatchUpSeconds))}: tus plantas crecieron +${grew.toFixed(1)}%${ready ? ` (${ready} listas para cosechar)` : ''}${thirsty ? `. ¡${thirsty} necesitan agua!` : '.'}${sick ? ` 🐛 ${sick} con plaga.` : ''}`,
+        thirsty || sick ? 'info' : 'success'
       );
     }
     setIndoorPlants(after);
@@ -1645,6 +1682,72 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAssets(prev => prev.map(a => a.id === assetId ? { ...a, durability: 100 } : a));
     showNotification(`${item.name} reparado al 100 % (${cost} $FLORA quemados)`, 'success');
     return true;
+  };
+
+  // --- PLAGUES, GARDENER RATING AND CLEANING ---
+  const treatPests = (scope: 'selected' | 'all') => {
+    const targets = indoorPlants.map((p, i) => ({ p, i })).filter(({ p, i }) => p.pest && (scope === 'all' || i === selectedPlantIndex));
+    if (targets.length === 0) {
+      showNotification(scope === 'selected' ? 'Esta planta no tiene plagas.' : 'No hay plagas que tratar. ¡Bien cuidado!', 'info');
+      return;
+    }
+    // dry-run on a copy of the stock: a plant is treated only if there is enough product for it
+    let cur = assets;
+    const jobs: Array<{ i: number; kind: PestKind; guard: number }> = [];
+    const missing = new Set<string>();
+    for (const { p, i } of targets) {
+      const r = spendPest(cur, p.pest!.kind, USE.pestPerPlant);
+      if (r.spent + 1e-9 >= USE.pestPerPlant) { cur = r.assets; jobs.push({ i, kind: p.pest!.kind, guard: r.guardHours || 48 }); }
+      else missing.add(PEST_INFO[p.pest!.kind].cure);
+    }
+    if (jobs.length === 0) {
+      showNotification(`No tienes tratamiento: necesitas ${[...missing].join(' / ')}. Cómpralo en el Grow Market → Control de plagas.`, 'burn');
+      return;
+    }
+    setAssets(prev => jobs.reduce((acc, j) => spendPest(acc, j.kind, USE.pestPerPlant).assets, prev));
+    setIndoorPlants(prev => prev.map((p, i) => {
+      const j = jobs.find(x => x.i === i);
+      return j && p.pest ? { ...p, pest: undefined, guard: j.guard, health: Math.min(100, p.health + 5) } : p;
+    }));
+    playClickSound();
+    addXp(15 * jobs.length, 'Control de plagas');
+    showNotification(`🧴 ${jobs.length} planta${jobs.length > 1 ? 's tratadas' : ' tratada'} y protegida${jobs.length > 1 ? 's' : ''} ${Math.max(...jobs.map(j => j.guard))} h${missing.size ? `. Faltó: ${[...missing].join(' / ')}` : ''}.`, missing.size ? 'info' : 'success');
+  };
+
+  const cleanRoom = (): boolean => {
+    const since = (Date.now() - care.lastCleanAt) / 3600000;
+    if (since < USE.cleanCooldownHours) {
+      const left = USE.cleanCooldownHours - since;
+      showNotification(`La sala ya está limpia. Podrás volver a limpiar en ${left >= 1 ? `${Math.floor(left)} h ${Math.round((left % 1) * 60)} min` : `${Math.max(1, Math.round(left * 60))} min`}.`, 'info');
+      return false;
+    }
+    playClickSound();
+    setCare({ rating: Math.min(100, care.rating + USE.cleanGain), lastCleanAt: Date.now() });
+    addXp(20, 'Limpieza de la sala');
+    showNotification(`🧹 Sala limpia: calificación de jardinero +${Math.min(USE.cleanGain, 100 - Math.round(care.rating))}.`, 'success');
+    return true;
+  };
+
+  const recycleGarbage = () => {
+    const trash = garbageOf(assets);
+    if (trash.length === 0) {
+      showNotification('No hay basura que reciclar.', 'info');
+      return;
+    }
+    const ids = new Set(trash.map(a => a.id));
+    playClickSound();
+    setAssets(prev => prev.filter(a => !ids.has(a.id)));
+    setCare(c => ({ ...c, rating: Math.min(100, c.rating + trash.length * USE.recycleGain) }));
+    showNotification(`♻️ Reciclaste ${trash.length} objeto${trash.length > 1 ? 's' : ''} (frascos vacíos y equipo averiado): +${trash.length * USE.recycleGain} de calificación.`, 'success');
+  };
+
+  const careInfo = {
+    rating: Math.round(care.rating),
+    cleanReadyInHours: Math.max(0, USE.cleanCooldownHours - (Date.now() - care.lastCleanAt) / 3600000),
+    pests: pestCount(indoorPlants),
+    garbage: garbageOf(assets).length,
+    gardenerLevel: gardenerLevelOf(assets),
+    gardenerDays: stockOf(assets, 'service'),
   };
 
   const resources = (() => {
@@ -2238,7 +2341,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!prod) return;
 
     playHarvestChime();
+    const fee = Math.max(1, Math.round(prod.marketValueFlora * USE.marketFee));
     setFloraBalance(prev => prev + prod.marketValueFlora);
+    recordBurnTransaction('BURN_PROCESS', fee, `ChronoFlora Dispensario: comisión de mercado ${(USE.marketFee * 100).toFixed(1)} % (${prod.name})`);
     setProcessedProducts(prev => prev.filter(p => p.id !== productId));
     setBrand(prev => ({
       ...prev,
@@ -2246,7 +2351,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       reputation: Math.min(100, prev.reputation + 1)
     }));
 
-    showNotification(`¡Venta realizada en el Dispensario! Recibiste +${prod.marketValueFlora} $FLORA`, 'success');
+    showNotification(`¡Venta realizada en el Dispensario! Recibiste +${prod.marketValueFlora - fee} $FLORA (comisión de mercado ${fee} quemados)`, 'success');
   };
 
   // Redeem V2P (Virtual to Physical)
@@ -2335,6 +2440,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAssetEquipped,
         repairAsset,
         ownsStation: (stationId: string) => ownsStation(assets, stationId),
+        care: careInfo,
+        treatPests,
+        cleanRoom,
+        recycleGarbage,
         feedNutrients,
         setTemperature,
         setHumidity,

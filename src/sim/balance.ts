@@ -34,6 +34,19 @@ export const BALANCE = {
   ecOk: 1.2,
   ecFed: 2.1,
 
+  /** plagues: base hazard per plant-hour for each kind (≈ 3 % a day in total under normal conditions) */
+  pestBaseHazardPerHour: 0.0006,
+  /** growth multiplier / health lost per hour while infested */
+  pestGrowth: { mites: 0.7, mold: 0.5, rot: 0.4 },
+  pestHealthLossPerHour: { mites: 0.35, mold: 0.5, rot: 0.45 },
+  /** hours a plant stays protected after being treated by a gardener */
+  guardHoursGardener: 48,
+
+  /** what one plant consumes per action (also used by the gardener) */
+  waterPerWatering: 0.5,
+  feedMl: 3,
+  treatMl: 8,
+
   /** offline catch-up: never simulate more than this, in chunks of this size */
   maxCatchUpSeconds: 7 * 24 * 3600,
   chunkSeconds: 300,

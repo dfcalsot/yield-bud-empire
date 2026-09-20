@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import type { GrowStage } from '../types';
+import type { GrowStage, PestKind } from '../types';
 
 /**
  * The real 3D cannabis plant (public/models/fases-cannabis.glb: 5 growth stages laid side by side).
@@ -180,6 +180,7 @@ function makeMaterial(part: Part, u: Uniforms, height: number): THREE.MeshStanda
 
 const YELLOW = new THREE.Color('#8f8a22');
 const ORANGE = new THREE.Color('#e8600a');
+const PEST_TINT: Record<PestKind, THREE.Color> = { mites: new THREE.Color('#c9b437'), mold: new THREE.Color('#c3cdbb'), rot: new THREE.Color('#7a5a2a') };
 
 /* ───────────────────────────── scene ───────────────────────────── */
 
@@ -190,6 +191,8 @@ export interface Plant3DProps {
   soilMoisture: number;  // 0..100
   strainColor: string;   // strain colorTheme (hex)
   amberPct: number;      // trichome maturity
+  /** active plague: leaves and buds take its colour */
+  pest?: PestKind;
   className?: string;
 }
 
@@ -226,7 +229,7 @@ const Ticker: React.FC = () => {
   return null;
 };
 
-const PlantModel: React.FC<Plant3DProps & { gltf: GLTF }> = ({ gltf, progress, health, soilMoisture, strainColor, amberPct }) => {
+const PlantModel: React.FC<Plant3DProps & { gltf: GLTF }> = ({ gltf, progress, health, soilMoisture, strainColor, amberPct, pest }) => {
   const stage = modelStageOf(progress);
   const [lo, hi] = STAGE_RANGE[stage];
   const within = clamp((progress - lo) / (hi - lo));
@@ -247,13 +250,14 @@ const PlantModel: React.FC<Plant3DProps & { gltf: GLTF }> = ({ gltf, progress, h
       if (p.name === 'hoja' || p.name === 'hoja_tierna' || p.name === 'tallo') c.lerp(strain, p.name === 'tallo' ? 0.05 : 0.12).lerp(YELLOW, stress * 0.85);
       else if (p.name === 'cogollo') c.lerp(strain, 0.22).lerp(YELLOW, stress * 0.5);
       else if (p.name === 'pistilo_blanco') c.lerp(ORANGE, clamp(amberPct / 60) * 0.85);
+      if (pest && (p.name === 'hoja' || p.name === 'hoja_tierna' || p.name === 'tallo' || p.name === 'cogollo')) c.lerp(PEST_TINT[pest], p.name === 'cogollo' ? 0.35 : 0.5);
       // lifts the shadow side of leaves and buds (they are dark flat colours lit from one direction)
       if (CFG[p.name]?.leaf || p.name === 'cogollo' || p.name === 'tallo') materials[i].emissive.copy(c).multiplyScalar(0.32);
     });
-  }, [asset, materials, strainColor, health, amberPct]);
+  }, [asset, materials, strainColor, health, amberPct, pest]);
 
   // thirst droop
-  uniforms.droop.value = clamp((38 - soilMoisture) / 30) * asset.height * 0.16 + clamp((60 - health) / 60) * asset.height * 0.05;
+  uniforms.droop.value = clamp((38 - soilMoisture) / 30) * asset.height * 0.16 + clamp((60 - health) / 60) * asset.height * 0.05 + (pest === 'rot' ? asset.height * 0.12 : 0);
 
   const groupRef = useRef<THREE.Group>(null);
   const pop = useRef(0);
