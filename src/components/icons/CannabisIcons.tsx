@@ -251,3 +251,12 @@ export const Chromatograph: IconComponent = (props) => (
     <path d="M6 16.5h2l1.4-6 1.6 8 1.4-11 1.4 9 1-4h3.2" />
   </Svg>
 );
+
+export const PlanetGlobe: IconComponent = (props) => (
+  <Svg {...props}>
+    <circle cx="12" cy="12" r="9.2" />
+    <path d="M2.8 12h18.4" />
+    <path d="M12 2.8c3 2.6 4.6 5.7 4.6 9.2S15 18.6 12 21.2C9 18.6 7.4 15.5 7.4 12S9 5.4 12 2.8Z" />
+    <path d="M4.6 7.4c2.2 1.2 4.7 1.8 7.4 1.8s5.2-.6 7.4-1.8M4.6 16.6c2.2-1.2 4.7-1.8 7.4-1.8s5.2.6 7.4 1.8" opacity=".6" />
+  </Svg>
+);

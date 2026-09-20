@@ -11,10 +11,12 @@ import {
   Dispensary,
   BookLeaf,
   IconComponent,
+  PlanetGlobe,
 } from './components/icons/CannabisIcons';
 
 export type TabId =
   | 'cultivo'
+  | 'planeta'
   | 'semillas'
   | 'market'
   | 'nutrientes'
@@ -39,6 +41,7 @@ export interface NavGroup {
 
 export const NAV_TABS: Record<TabId, NavTab> = {
   cultivo: { id: 'cultivo', label: 'Cultivo', icon: CannabisLeaf },
+  planeta: { id: 'planeta', label: 'Planeta', icon: PlanetGlobe },
   nutrientes: { id: 'nutrientes', label: 'Nutrición', icon: NutrientBottle },
   semillas: { id: 'semillas', label: 'Semillas', icon: Seed },
   extraccion: { id: 'extraccion', label: 'Extracción', icon: RosinPress },
@@ -51,7 +54,7 @@ export const NAV_TABS: Record<TabId, NavTab> = {
 
 /** The five dock entries. Groups with several tabs show a sub-tab bar in the shell. */
 export const NAV_GROUPS: NavGroup[] = [
-  { id: 'cultivo', label: 'Cultivo', icon: CannabisLeaf, tabs: ['cultivo', 'nutrientes'] },
+  { id: 'cultivo', label: 'Cultivo', icon: CannabisLeaf, tabs: ['cultivo', 'planeta', 'nutrientes'] },
   { id: 'semillas', label: 'Semillas', icon: Seed, tabs: ['semillas'] },
   { id: 'laboratorio', label: 'Laboratorio', icon: FlaskLeaf, tabs: ['extraccion', 'genetica'] },
   { id: 'mercado', label: 'Mercado', icon: CuringJar, tabs: ['market', 'dispensario'] },

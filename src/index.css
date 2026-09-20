@@ -770,3 +770,75 @@ body::before {
 .care-btn:active:not(:disabled) { transform: scale(0.97); }
 .care-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .care-btn--hot { border-color: rgba(244, 114, 182, 0.5); background: rgba(236, 72, 153, 0.12); color: #fbcfe8; }
+
+/* ───────── cast of characters (animated NPCs) ───────── */
+.mk-npc--busy { animation: npcBusy 0.9s ease-in-out infinite; }
+@keyframes npcBusy { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.npc-hat { animation: npcHat 6s ease-in-out infinite; }
+@keyframes npcHat { 0%, 78%, 100% { transform: rotate(0); } 84% { transform: rotate(-4deg); } 92% { transform: rotate(3deg); } }
+.npc-can { animation: npcPour 4.2s ease-in-out infinite; }
+@keyframes npcPour { 0%, 55%, 100% { transform: rotate(0); } 68%, 88% { transform: rotate(-22deg); } }
+.npc-drop { transform-box: fill-box; animation: npcDrop 4.2s ease-in infinite; }
+@keyframes npcDrop { 0%, 62% { opacity: 0; transform: translate(0, 0); } 68% { opacity: 1; } 90% { opacity: 1; transform: translate(6px, 34px); } 94%, 100% { opacity: 0; transform: translate(7px, 40px); } }
+.npc-sprout { animation: npcSway 3.4s ease-in-out infinite; }
+@keyframes npcSway { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+.npc-bub { transform-box: fill-box; animation: npcBub 1.6s ease-in infinite; }
+@keyframes npcBub { 0% { transform: translateY(6px) scale(0.6); opacity: 0; } 25% { opacity: 0.9; } 100% { transform: translateY(-22px) scale(1.1); opacity: 0; } }
+.mk-npc--busy .npc-bub { animation-duration: 0.7s; }
+.npc-glow { transform-box: fill-box; transform-origin: center; animation: npcGlow 2.2s ease-in-out infinite; }
+@keyframes npcGlow { 0%, 100% { transform: scale(0.9); } 50% { transform: scale(1.15); } }
+.npc-flask { animation: npcFlask 3s ease-in-out infinite; }
+@keyframes npcFlask { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+.mk-npc--busy .npc-flask { animation-duration: 0.5s; }
+.npc-helix { animation: npcJar 3.2s ease-in-out infinite; }
+.npc-rung { transform-box: fill-box; animation: npcRung 1.6s ease-in-out infinite; }
+@keyframes npcRung { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.12); } }
+.mk-npc--busy .npc-rung { animation-duration: 0.7s; }
+.npc-jar { animation: npcJar 3.6s ease-in-out infinite; }
+@keyframes npcJar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.npc-spark { transform-box: fill-box; transform-origin: center; animation: mkSparkS 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .mk-npc * { animation: none !important; } .mk-npc { animation: none !important; } }
+
+/* ───────── the planet ───────── */
+.pl-stage { position: relative; isolation: isolate; overflow: hidden; border-radius: 24px; border: 1px solid rgba(56, 189, 248, 0.28);
+  background: radial-gradient(110% 70% at 50% -10%, #0c2a44 0%, transparent 60%), radial-gradient(90% 60% at 100% 100%, rgba(16, 185, 129, 0.12), transparent 60%), linear-gradient(#06131f, #040a12);
+  box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.6); }
+.pl-stars { position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0.8; animation: mkRays 5s ease-in-out infinite alternate;
+  background: radial-gradient(1.5px 1.5px at 8% 12%, #fff9, transparent), radial-gradient(1px 1px at 22% 30%, #fff8, transparent), radial-gradient(1.5px 1.5px at 41% 8%, #fff9, transparent),
+    radial-gradient(1px 1px at 63% 18%, #fff8, transparent), radial-gradient(1.5px 1.5px at 78% 9%, #fff9, transparent), radial-gradient(1px 1px at 92% 26%, #fff7, transparent), radial-gradient(1px 1px at 35% 42%, #fff6, transparent); }
+.pl-map { display: block; width: 100%; height: auto; }
+.pl-marker { cursor: pointer; outline: none; }
+.pl-dot { transform-box: fill-box; transform-origin: center; transition: transform 0.15s; }
+.pl-marker:hover .pl-dot, .pl-marker:focus-visible .pl-dot { transform: scale(1.25); }
+.pl-ring { transform-box: fill-box; transform-origin: center; animation: plRing 2.4s ease-out infinite; }
+@keyframes plRing { 0% { transform: scale(0.6); opacity: 0.85; } 100% { transform: scale(2.6); opacity: 0; } }
+.pl-cloud { animation: plCloud 60s linear infinite; }
+@keyframes plCloud { from { transform: translateX(-160px); } to { transform: translateX(1160px); } }
+.pl-offer { border-radius: 14px; padding: 12px; border: 1px solid color-mix(in srgb, var(--rc) 45%, transparent); background: linear-gradient(170deg, color-mix(in srgb, var(--rc) 12%, #07130f), #050c0a); transition: transform 0.18s, box-shadow 0.18s; }
+.pl-offer:hover { transform: translateY(-3px); box-shadow: 0 10px 24px -10px var(--rc); }
+.pl-mine { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; cursor: pointer; border: 1px solid color-mix(in srgb, var(--rc) 45%, transparent); background: rgba(3, 14, 11, 0.7); transition: transform 0.15s, box-shadow 0.2s; }
+.pl-mine:hover { transform: translateY(-2px); box-shadow: 0 0 22px -8px var(--rc); }
+
+/* the field of a plot */
+.pl-field { position: relative; overflow: hidden; border-radius: 18px; border: 2px solid #2b1a0e; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.14) 0 2px, transparent 2px 52px), linear-gradient(#5f3f24, #3a2414); }
+.pl-tile { position: relative; aspect-ratio: 1; cursor: pointer; border-radius: 8px; background: radial-gradient(circle at 50% 82%, rgba(0, 0, 0, 0.32), transparent 62%); transition: transform 0.12s; }
+.pl-tile:hover { transform: translateY(-2px) scale(1.07); z-index: 3; }
+.pl-tile.is-sel { outline: 2px solid #fff; box-shadow: 0 0 14px rgba(255, 255, 255, 0.55); z-index: 2; }
+.pl-tile.is-ready { box-shadow: 0 0 14px -2px #fbbf24; }
+.pl-tile--empty { border: 1px dashed rgba(255, 255, 255, 0.12); background: transparent; display: grid; place-items: center; }
+.pl-mound { width: 44%; height: 22%; border-radius: 50%; background: rgba(0, 0, 0, 0.28); }
+.pl-sway { animation: plSway 3.4s ease-in-out infinite; }
+@keyframes plSway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+.pl-badge { position: absolute; z-index: 2; font-size: 11px; line-height: 1; filter: none; }
+.pl-badge--pest { right: -1px; top: -1px; animation: mkBlinkS 1s infinite; }
+.pl-badge--thirst { left: -1px; top: -1px; animation: mkFloatY 1.6s ease-in-out infinite; }
+.pl-night { position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  background: radial-gradient(2px 2px at 20% 30%, #fff9, transparent), radial-gradient(1.5px 1.5px at 72% 18%, #fff8, transparent), radial-gradient(2px 2px at 86% 66%, #fff9, transparent), radial-gradient(1.5px 1.5px at 40% 78%, #fff7, transparent), rgba(5, 12, 45, 0.5); }
+.pl-rain { position: absolute; inset: -20% 0; z-index: 5; pointer-events: none; opacity: 0.45; background: repeating-linear-gradient(105deg, transparent 0 9px, rgba(186, 230, 253, 0.6) 9px 10px); animation: plRain 0.55s linear infinite; }
+@keyframes plRain { to { transform: translate(-16px, 46px); } }
+.pl-flash { position: absolute; inset: 0; z-index: 6; pointer-events: none; animation: plFlash 6s infinite; }
+@keyframes plFlash { 0%, 91%, 100% { background: transparent; } 92% { background: rgba(255, 255, 255, 0.6); } 94% { background: rgba(255, 255, 255, 0.05); } 95% { background: rgba(255, 255, 255, 0.45); } 97% { background: transparent; } }
+.pl-heat { position: absolute; inset: 0; z-index: 4; pointer-events: none; background: linear-gradient(rgba(251, 146, 60, 0.2), transparent 70%); animation: mkRays 2.4s ease-in-out infinite alternate; }
+.pl-cold { position: absolute; inset: 0; z-index: 4; pointer-events: none; background: rgba(147, 197, 253, 0.16); }
+.care-btn--gold { border-color: rgba(251, 191, 36, 0.6); background: rgba(245, 158, 11, 0.14); color: #fde68a; }
+@media (prefers-reduced-motion: reduce) { .pl-stage *, .pl-field * { animation: none !important; } }

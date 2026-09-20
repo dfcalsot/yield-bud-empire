@@ -1,5 +1,6 @@
 import { advancePlant, advanceWorld, cycleSecondsOf, etaSeconds, hoursUntilMoisture, pestCount, SimEnv } from '../src/sim/engine';
-import type { PlantInGrow } from '../src/types';
+import type { PlantInGrow, RegionId } from '../src/types';
+import { plotOffer, REGION_BY_ID, REGIONS, siteConditions, terroirOf, weatherOn, regionDistance, WeatherKind } from '../src/sim/terroir';
 
 let failed = 0;
 const ok = (name: string, cond: boolean, extra = '') => { console.log(`${cond ? 'PASS' : 'FAIL'}  ${name} ${extra}`); if (!cond) failed++; };
@@ -128,6 +129,49 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
   const b3 = { waterL: 0, energyKwh: 0, nutrientMl: 0, treatMl: {}, gardenerDays: 2 };
   const nothing = advanceWorld([thirsty()], 3600, env({ gardener: g, budget: b3, cleanliness: 100 }))[0];
   ok('jardinero sin agua ni abono en el almacén no puede hacer magia', nothing.sim!.moisture < 20 && nothing.sim!.ec < 0.5, `(hum ${nothing.sim!.moisture.toFixed(1)}, EC ${nothing.sim!.ec.toFixed(2)})`);
+}
+// 14 · planet: deterministic weather, region climates, terroir, plots
+{
+  const rainy = (id: RegionId) => Array.from({ length: 400 }, (_, d) => weatherOn(REGION_BY_ID[id], d).kind).filter((k) => k === 'rain' || k === 'storm').length;
+  ok('clima: determinista (mismo día = mismo tiempo)', weatherOn(REGION_BY_ID.jamaica, 123).kind === weatherOn(REGION_BY_ID.jamaica, 123).kind);
+  ok('clima: Jamaica llueve mucho más que Afganistán', rainy('jamaica') > rainy('afghanistan') * 3, `(${rainy('jamaica')} vs ${rainy('afghanistan')} días de 400)`);
+  const night = siteConditions('mexico', { water: 60, sunlight: 96, soil: 82 }, Date.UTC(2026, 0, 5, 10));
+  const noon = siteConditions('mexico', { water: 60, sunlight: 96, soil: 82 }, Date.UTC(2026, 0, 5, 21));
+  ok('sitio: de noche (hora local) no hay sol y hace más fresco que por la tarde', night.light === 0 && noon.light > 0 && noon.tempC > night.tempC, `(${night.tempC} °C noche, ${noon.tempC} °C día)`);
+  const rat = { water: 80, sunlight: 90, soil: 90 };
+  const home = terroirOf('jamaica', 'jamaica', rat), hybrid = terroirOf(undefined, 'jamaica', rat), far = terroirOf('afghanistan', 'jamaica', rat);
+  ok('terroir: landrace en su tierra > híbrida > clima ajeno', home.growth > hybrid.growth && hybrid.growth > far.growth && home.yield > hybrid.yield && hybrid.yield > far.yield, `(crec ${home.growth.toFixed(2)}/${hybrid.growth.toFixed(2)}/${far.growth.toFixed(2)}, cosecha ${home.yield.toFixed(2)}/${hybrid.yield.toFixed(2)}/${far.yield.toFixed(2)})`);
+  ok('terroir: Afganistán y Jamaica son climas muy distintos; México y Centroamérica se parecen más', regionDistance('afghanistan', 'jamaica') > regionDistance('mexico', 'central_america'));
+  const a = plotOffer('asia', 7), b = plotOffer('asia', 7), c = plotOffer('asia', 8);
+  ok('parcelas: la n-ésima parcela es siempre la misma y cada una es distinta', JSON.stringify(a) === JSON.stringify(b) && a.name !== c.name, `(${a.name} vs ${c.name})`);
+  ok('parcelas: valoraciones 40–100, nota 0–10 y precio positivo en las 7 regiones', REGIONS.every((r) => { const o = plotOffer(r.id, 3); return Object.values(o.ratings).every((v) => v >= 40 && v <= 100) && o.landRating > 4 && o.landRating <= 10 && o.priceFlora > 100; }));
+}
+// 15 · outdoor growth on a plot
+{
+  const findDay = (id: RegionId, kind: WeatherKind) => { for (let d = 20000; d < 20800; d++) if (weatherOn(REGION_BY_ID[id], d).kind === kind) return d; throw new Error('no day'); };
+  const ratings = { water: 80, sunlight: 90, soil: 90 };
+  const site = (id: RegionId) => (sid: string, ms: number) => (sid === 'plotA' ? siteConditions(id, ratings, ms) : undefined);
+  const outdoor = (origin: RegionId | undefined, o: Partial<PlantInGrow> = {}) => plant(65, { siteId: 'plotA', lightSchedule: '24/0', strain: { cycleDurationSeconds: 65, origin } as PlantInGrow['strain'], ...o });
+  const gardenerEnv = (id: RegionId, day: number, hour = 0) => {
+    const budget = { waterL: 9999, energyKwh: 0, nutrientMl: 9999, treatMl: {}, gardenerDays: 99 };
+    return env({ site: site(id), clockMs: (day * 24 + hour) * 3600000, gardener: { water: true, feed: true, treat: false, feedBonus: 1 }, budget, cleanliness: 100 });
+  };
+  const d0 = findDay('jamaica', 'sunny');
+  const night = advanceWorld([outdoor('jamaica', { id: 'n' })], 3600, gardenerEnv('jamaica', d0, 8))[0];
+  ok('parcela: de noche la planta no crece', night.sim!.progress < 0.001, `(progreso ${night.sim!.progress.toFixed(4)})`);
+  const dayHome = advanceWorld([outdoor('jamaica', { id: 'h' })], 2 * 86400, gardenerEnv('jamaica', d0))[0];
+  const dayFar = advanceWorld([outdoor('afghanistan', { id: 'f' })], 2 * 86400, gardenerEnv('jamaica', d0))[0];
+  ok('parcela: la landrace de la región crece más que la de un clima ajeno', dayHome.sim!.progress > dayFar.sim!.progress * 1.2, `(${dayHome.sim!.progress.toFixed(1)} % vs ${dayFar.sim!.progress.toFixed(1)} % en 2 d)`);
+  const dry = advanceWorld([outdoor(undefined, { id: 'd', soilMoisture: 70 })], 6 * 3600, env({ site: site('afghanistan'), clockMs: (findDay('afghanistan', 'sunny') * 24 + 6) * 3600000, cleanliness: 100 }))[0];
+  const wet = advanceWorld([outdoor(undefined, { id: 'w', soilMoisture: 50 })], 6 * 3600, env({ site: site('jamaica'), clockMs: (findDay('jamaica', 'rain') * 24 + 6) * 3600000, cleanliness: 100 }))[0];
+  ok('parcela: un día seco y soleado seca el sustrato; la lluvia lo moja', dry.sim!.moisture < 65 && wet.sim!.moisture > 55, `(seco ${dry.sim!.moisture.toFixed(0)} %, lluvia ${wet.sim!.moisture.toFixed(0)} %)`);
+  const storm = advanceWorld([outdoor(undefined, { id: 's' })], 12 * 3600, env({ site: site('central_america'), clockMs: findDay('central_america', 'storm') * 24 * 3600000, gardener: { water: true, feed: true, treat: false, feedBonus: 1 }, budget: { waterL: 99, energyKwh: 0, nutrientMl: 99, gardenerDays: 9 } as never, cleanliness: 100 }))[0];
+  ok('parcela: una tormenta daña a las plantas', storm.sim!.health < 96, `(salud ${storm.sim!.health.toFixed(1)})`);
+  const eb = { waterL: 100, energyKwh: 50, nutrientMl: 0, treatMl: {}, gardenerDays: 0 };
+  advanceWorld([outdoor('mexico', { id: 'e' })], 86400, env({ site: site('mexico'), clockMs: findDay('mexico', 'sunny') * 24 * 3600000, budget: eb, equip: { lampWatts: 600, lampMaxPpfd: 480, acKw: 0, pumpKw: 0, solarKw: 0, waterPerPlantAuto: 0.5 }, cleanliness: 100 }));
+  ok('parcela: al aire libre no se gasta electricidad de las lámparas', eb.energyKwh === 50, `(${eb.energyKwh} kWh)`);
+  const lost = advanceWorld([outdoor('mexico', { id: 'x', siteId: 'desconocida' })], 3600, env({ site: site('mexico'), clockMs: 0, budget: { waterL: 0, energyKwh: 0 } }))[0];
+  ok('una parcela desconocida se trata como sala interior (no rompe)', Number.isFinite(lost.sim!.progress));
 }
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 process.exit(failed ? 1 : 0);

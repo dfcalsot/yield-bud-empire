@@ -1,5 +1,9 @@
-import type { GrowStage, PestKind, PlantInGrow, Strain } from '../types';
+import type { GrowStage, PestKind, PlantInGrow, RegionId, Strain } from '../types';
 import { BALANCE as B, LIGHT_FRACTION } from './balance';
+import { hash01 } from './hash';
+import { averageLight, REGION_BY_ID, terroirOf, type PlotRatings, type SiteConditions } from './terroir';
+
+export { hash01 };
 
 /**
  * Pure real-time simulation of the grow room. No React, no globals: the live tick, the
@@ -61,6 +65,21 @@ export interface SimEnv {
   cleanliness?: number;
   /** active gardener contract */
   gardener?: GardenerInput;
+  /** outdoor plots: conditions at an instant for a plot id (undefined = unknown plot → treated as indoor) */
+  site?: (siteId: string, nowMs: number) => SiteConditions | undefined;
+  /** absolute time (ms) at the start of this advance; only needed when `site` is used */
+  clockMs?: number;
+  /** set by advanceWorld for plants on a plot: the conditions of this chunk */
+  siteCond?: SiteConditions;
+  /** sunshine multiplier for growth; when present it replaces the lamp switch */
+  lightMul?: number;
+  /** ambient weather: overrides the plant's temperature / humidity every chunk */
+  ambient?: { tempC: number; rh: number };
+  /** % of moisture gained per hour (rain) and health lost per hour (storm) */
+  rainPerHour?: number;
+  stormLoss?: number;
+  /** multiplies the substrate's drying (heat, soil drainage) */
+  evap?: number;
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -114,7 +133,13 @@ export function growthPerSecond(p: PlantInGrow, env: SimEnv): number {
   const ppfdF = env.equip ? Math.sqrt(clamp(Math.min(p.ppfdLightIntensity, env.equip.lampMaxPpfd || 0) / 480, 0.4, 3)) : 1;
   const feedF = s.ec >= B.ecOk ? (p.feedBonus ?? 1) : 1;
   const pestF = p.pest ? B.pestGrowth[p.pest.kind] : 1;
-  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * ppfdF * feedF * pestF * (env.lightOn > 0 ? 1 : 0);
+  // outdoors: the sun replaces the lamp, the plot + strain decide the terroir and the weather sets the temperature
+  const sc = env.siteCond;
+  const terroirF = sc ? terroirOf(p.strain.origin, sc.region, sc.ratings).growth : 1;
+  const t = env.ambient?.tempC;
+  const tempF = t === undefined ? 1 : t < 8 ? 0.15 : t < 16 ? 0.6 : t > 36 ? 0.4 : t > 32 ? 0.8 : 1;
+  const lightF = env.lightMul !== undefined ? env.lightMul : (env.lightOn > 0 ? 1 : 0);
+  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * ppfdF * feedF * pestF * terroirF * tempF * lightF;
 }
 
 /** Seconds left until harvest at the current rate (Infinity if stalled). */
@@ -123,6 +148,16 @@ export function etaSeconds(p: PlantInGrow, env: SimEnv): number {
   const rate = growthPerSecond(p, env);
   if (rate <= 0) return Infinity;
   return (100 - readSim(p).progress) / rate;
+}
+
+/** ETA of a plant on a plot at the average daily sunshine (at night the instant rate would read "never"). */
+export function plotEtaSeconds(p: PlantInGrow, region: RegionId, ratings: PlotRatings): number {
+  const r = REGION_BY_ID[region];
+  const sc: SiteConditions = { region, ratings, weather: 'sunny', tempC: r.temp, rh: r.rh, daylight: true, light: 1, rainPerHour: 0, stormLoss: 0 };
+  return etaSeconds(p, {
+    autoWater: false, autoClimate: false, facilityBonus: 1, co2Ppm: 420, lightOn: 1, getRoomTarget: () => undefined,
+    siteCond: sc, lightMul: averageLight(ratings), ambient: { tempC: r.temp, rh: r.rh },
+  });
 }
 
 /** Hours until the substrate falls below `threshold` (no watering). */
@@ -137,14 +172,6 @@ export function hoursUntilMoisture(p: PlantInGrow, threshold: number, lightOn = 
 export const isThirsty = (p: PlantInGrow) => p.stage !== 'ready_harvest' && p.soilMoisture < B.thirstyBelow;
 export const pestCount = (plants: PlantInGrow[]) => plants.filter((p) => p.pest).length;
 export const isHungry = (p: PlantInGrow) => p.stage !== 'ready_harvest' && p.ecLevel < B.ecOk + 0.15;
-
-/** Deterministic pseudo-random in [0,1) from a string seed and an integer — same plant + same hour = same roll, so catch-up equals live play. */
-export function hash01(seed: string, n: number): number {
-  let h = 2166136261 ^ n;
-  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
-  h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15;
-  return (h >>> 0) / 4294967296;
-}
 
 /** Hourly chance of each plague for a plant in these conditions (0 while it is protected). */
 export function pestHazards(p: PlantInGrow, cleanliness: number, temp: number, rh: number, moisture: number, stage: GrowStage): Record<PestKind, number> {
@@ -166,7 +193,9 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   // --- substrate: drinks with lamp exposure and size; auto-drip tops it up ---
   const lit = (LIGHT_FRACTION[p.lightSchedule] ?? 0.75) * env.lightOn;
   const drain = (B.moistureDrainPerHourDark + (B.moistureDrainPerHourLit - B.moistureDrainPerHourDark) * lit) * (B.drinkBase + B.drinkPerProgress * (s.progress / 100));
-  let moisture = Math.max(5, s.moisture - drain * hours);
+  let moisture = Math.max(5, s.moisture - drain * (env.evap ?? 1) * hours + (env.rainPerHour ?? 0) * hours);
+  if (moisture > 90) moisture = Math.max(90, moisture - (moisture - 90) * 0.2 * Math.min(1, hours * 4));   // runoff
+  moisture = Math.min(100, moisture);
   if (env.autoWater && moisture < B.autoWaterTrigger) {
     const cost = env.equip?.waterPerPlantAuto ?? 0.5;
     if (!env.budget || env.budget.waterL >= cost) {
@@ -192,7 +221,10 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   // --- climate ---
   let temp = p.temperatureC;
   let rh = p.relativeHumidity;
-  if (env.autoClimate) {
+  if (env.ambient) {
+    temp = env.ambient.tempC;
+    rh = env.ambient.rh;
+  } else if (env.autoClimate) {
     const target = env.getRoomTarget(p.currentRoom);
     if (target) {
       const dT = target.tempC - temp;
@@ -213,6 +245,8 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   let health = s.health;
   if (moisture < B.moistureStress) health = Math.max(B.healthFloor, health - B.healthLossPerHourDry * hours);
   else if (optimal && moisture >= B.moistureOk && ec >= B.ecOk && !p.pest) health = Math.min(100, health + B.healthGainPerHourCared * hours);
+  if (env.stormLoss) health = Math.max(B.healthFloor, health - env.stormLoss * hours);
+  if (env.ambient && (env.ambient.tempC < 6 || env.ambient.tempC > 38)) health = Math.max(B.healthFloor, health - 0.8 * hours);
 
   // --- plagues: seeded dice per plant and simulated hour; a gardener (level 2) treats them from the stock ---
   const age = (p.age ?? 0) + hours;
@@ -272,17 +306,38 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   };
 }
 
-/** Advance every plant by `dt` real seconds, in chunks (so long absences stay accurate). */
+/** The environment a plant on a plot lives in for one chunk. */
+function siteEnvFor(base: SimEnv, sc: SiteConditions): SimEnv {
+  return {
+    ...base,
+    siteCond: sc,
+    autoWater: false,
+    autoClimate: false,
+    equip: undefined,
+    facilityBonus: 1,
+    lightOn: sc.daylight ? 1 : 0,
+    lightMul: sc.light,
+    ambient: { tempC: sc.tempC, rh: sc.rh },
+    rainPerHour: sc.rainPerHour,
+    stormLoss: sc.stormLoss,
+    // hot, sunny days dry the soil faster; a high water rating retains it
+    evap: Math.max(0.4, (1 + (sc.tempC - 24) * 0.04) * (1.25 - (sc.ratings.water / 100) * 0.6)),
+  };
+}
+
+/** Advance every plant by `dt` real seconds, in chunks (so long absences stay accurate). Plants with a `siteId` grow outdoors. */
 export function advanceWorld(plants: PlantInGrow[], dtSeconds: number, env: SimEnv): PlantInGrow[] {
   let remaining = Math.min(Math.max(0, dtSeconds), B.maxCatchUpSeconds);
   let cur = plants;
+  let elapsed = 0;
   while (remaining > 0.5) {
     const step = Math.min(B.chunkSeconds, remaining);
     let chunkEnv = env;
-    if (env.equip && env.budget) {
+    const indoorRef = cur.find((p) => !p.siteId);
+    if (env.equip && env.budget && indoorRef) {
       // electricity: solar first, then the stock. Not enough power → the lamps (and AC) run only part of the chunk.
       const hours = step / 3600;
-      const { avgKw } = powerDraw(env.equip, cur[0], { autoClimate: env.autoClimate, autoWater: env.autoWater });
+      const { avgKw } = powerDraw(env.equip, indoorRef, { autoClimate: env.autoClimate, autoWater: env.autoWater });
       const need = avgKw * hours;
       const have = env.budget.energyKwh + env.equip.solarKw * 0.25 * hours;
       const lightOn = env.equip.lampWatts <= 0 ? 0 : need <= 0 ? 1 : Math.min(1, have / need);
@@ -294,8 +349,23 @@ export function advanceWorld(plants: PlantInGrow[], dtSeconds: number, env: SimE
       env.budget.gardenerDays = Math.max(0, env.budget.gardenerDays - step / 86400);
       chunkEnv = { ...chunkEnv, gardener: on ? env.gardener : undefined };
     }
-    cur = cur.map((p) => advancePlant(p, step, chunkEnv));
+    const nowMs = (env.clockMs ?? 0) + (elapsed + step / 2) * 1000;   // conditions at the middle of the chunk
+    const siteCache = new Map<string, SimEnv | null>();
+    cur = cur.map((p) => {
+      let pe = chunkEnv;
+      if (p.siteId && env.site) {
+        let se = siteCache.get(p.siteId);
+        if (se === undefined) {
+          const sc = env.site(p.siteId, nowMs);
+          se = sc ? siteEnvFor(chunkEnv, sc) : null;
+          siteCache.set(p.siteId, se);
+        }
+        if (se) pe = se;
+      }
+      return advancePlant(p, step, pe);
+    });
     remaining -= step;
+    elapsed += step;
   }
   return cur;
 }

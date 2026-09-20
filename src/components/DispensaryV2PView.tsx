@@ -15,6 +15,7 @@ import {
   PackageCheck
 } from 'lucide-react';
 import { V2pRedemptionItem } from '../types';
+import { Npc, useNpc } from './npc/Npc';
 
 export const DispensaryV2PView: React.FC = () => {
   const {
@@ -28,6 +29,13 @@ export const DispensaryV2PView: React.FC = () => {
     floraBalance
   } = useGame();
 
+  const npc = useNpc('¡Bienvenido al dispensario virtual! Soy Marta. Aquí vendes tus lotes y canjeas premios de verdad.');
+  npc.tips.current = () => [
+    'Cada venta paga una comisión de mercado del 2,5 % que se quema: menos $FLORA en circulación.',
+    'Los lotes certificados con HPLC se venden mejor: pasa por la estación del laboratorio.',
+    'Una marca con buena reputación atrae más clientes. Vende con constancia.',
+    ...(processedProducts.length === 0 ? ['Aún no tienes lotes que vender. Procesa tu cosecha en el laboratorio.'] : [`Tienes ${processedProducts.length} lote${processedProducts.length > 1 ? 's' : ''} listo${processedProducts.length > 1 ? 's' : ''} para vender.`]),
+  ];
   const [isEditingBrand, setIsEditingBrand] = useState(false);
   const [brandName, setBrandName] = useState(brand.name);
   const [brandTagline, setBrandTagline] = useState(brand.tagline);
@@ -53,6 +61,8 @@ export const DispensaryV2PView: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="budtender" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>
+
       {/* Header with Virtual Brand Status */}
       <div className="hud-panel p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -178,7 +188,7 @@ export const DispensaryV2PView: React.FC = () => {
                         +{prod.marketValueFlora} $FLORA
                       </span>
                       <button
-                        onClick={() => sellProduct(prod.id)}
+                        onClick={() => { sellProduct(prod.id); npc.speak(`¡Vendido! ${prod.name}. Se descuenta la comisión del mercado, pero el resto es tuyo.`, 'happy'); }}
                         className="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs rounded-lg transition cursor-pointer shadow-sm"
                       >
                         Vender Ahora

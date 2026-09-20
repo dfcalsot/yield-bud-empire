@@ -19,6 +19,7 @@ import { SeedBankItem } from '../types';
 import { GeneticCard } from './GeneticCard';
 import { MintCeremony } from './MintCeremony';
 import { GeneticCardData, cardFromSeed } from '../utils/nft';
+import { Npc, useNpc } from './npc/Npc';
 // three.js is heavy: only fetch it when the Seed Bank tab is opened
 const SeedVault = lazy(() => import('./SeedVault').then((m) => ({ default: m.SeedVault })));
 
@@ -38,12 +39,14 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
     transactions
   } = useGame();
 
+  const npc = useNpc('¡Hola! Soy el Prof. Rafa. Aquí guardo la genética del mundo. Las landrace rinden el doble en su región de origen: mira el Planeta.');
   const [mint, setMint] = useState<{ card: GeneticCardData; fee: string; startedAt: number } | null>(null);
   const mintTx = mint ? transactions.find(t => t.timestamp >= mint.startedAt) : undefined;
 
   const handleBuy = (seed: SeedBankItem) => {
     const startedAt = Date.now();
     if (buySeed(seed.id, selectedCurrency)) {
+      npc.speak(seed.seedType === 'Landrace' ? `¡Una landrace pura, ${seed.name}! Plántala en su región de origen y verás la diferencia.` : `¡Buena elección! ${seed.name}. Cuida el riego los primeros días.`, 'happy');
       setMint({
         card: cardFromSeed(seed, (seedInventory[seed.id] || 0) + seed.seedsPerPack),
         fee: selectedCurrency === 'FLORA' ? `Quema ${seed.priceFlora} $FLORA` : `${seed.priceSol} SOL`,
@@ -55,6 +58,13 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'Feminizada' | 'Autofloreciente' | 'Landrace' | 'Regular' | 'inventory'>('all');
   const [selectedCurrency, setSelectedCurrency] = useState<'FLORA' | 'SOL'>('FLORA');
 
+  npc.tips.current = () => [
+    'Los híbridos se adaptan a cualquier clima; las landrace exigen su tierra pero rinden mucho más.',
+    'Hindu Kush ama Afganistán, Acapulco Gold México, Lamb’s Bread Jamaica… cada región tiene su landrace.',
+    'Una semilla se gasta al plantar en una parcela: piensa bien dónde la siembras.',
+    'Con un jardinero contratado, tus parcelas se riegan y se abonan solas.',
+    ...(Object.values(seedInventory).reduce((a, q) => a + q, 0) === 0 ? ['No tienes semillas. Compra un pack y ve al Planeta a sembrar.'] : []),
+  ];
   const totalSeedsOwned = Object.values(seedInventory).reduce((acc, qty) => acc + qty, 0);
 
   const filteredSeeds = seedBank.filter(seed => {
@@ -67,6 +77,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
 
   return (
     <div className="space-y-8 animate-fade-in">
+      <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="geneticist" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-emerald-950/60 via-neutral-900 to-neutral-950 border border-emerald-500/20 rounded-2xl p-5 sm:p-7 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>

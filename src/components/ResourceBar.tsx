@@ -60,6 +60,7 @@ export const ResourceBar: React.FC<{ onOpenMarket: () => void }> = ({ onOpenMark
       {chip('care', ShieldCheck, care.rating >= 75 ? '#34d399' : care.rating >= 45 ? '#fbbf24' : '#f87171', `${care.rating} %`,
         care.rating >= 75 ? 'sala impecable' : care.rating >= 45 ? 'calificación' : 'sala sucia', care.rating < 30 ? 'out' : care.rating < 55 ? 'low' : 'ok', 'Calificación de jardinero')}
       {care.pests > 0 && chip('pests', Bug, '#f472b6', `${care.pests} plaga${care.pests > 1 ? 's' : ''}`, 'tratar ya', 'out', 'Plagas activas')}
+      {care.plotPests > 0 && chip('plotpests', Bug, '#fb7185', `${care.plotPests} en parcelas`, 'plagas al aire libre', 'out', 'Plagas en las parcelas')}
       {care.gardenerLevel > 0 && chip('gardener', Sprout, '#86efac', `${care.gardenerDays.toFixed(1)} d`,
         `jardinero ${care.gardenerLevel === 2 ? 'maestro' : 'aprendiz'}`, care.gardenerDays < 1 ? 'low' : 'ok', 'Jardinero contratado')}
       {resources.solarKwhPerDay > 0 && (

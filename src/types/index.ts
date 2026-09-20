@@ -23,6 +23,8 @@ export interface Strain {
   patentId?: string;
   colorTheme: string;
   description: string;
+  /** native region of a landrace: it thrives there (terroir); undefined = adaptable hybrid */
+  origin?: RegionId;
 }
 
 export interface GrowFacility {
@@ -92,7 +94,24 @@ export interface PlantInGrow {
   guard?: number;
   /** simulated hours lived — seeds the deterministic plague dice */
   age?: number;
+  /** land plot this plant grows on (undefined = the indoor room) */
+  siteId?: string;
 }
+
+/** A land plot NFT: 6×6 = 36 plants, with the ratings that decide how well things grow there. */
+export interface OwnedPlot {
+  id: string;
+  region: RegionId;
+  index: number;
+  name: string;
+  ratings: { water: number; sunlight: number; soil: number };
+  landRating: number;
+  mintedAt: number;
+  plants: PlantInGrow[];
+}
+
+/** Growing regions of the planet (land plots live here; landrace strains are native to one). */
+export type RegionId = 'afghanistan' | 'mexico' | 'jamaica' | 'central_america' | 'south_america' | 'africa' | 'asia';
 
 /** Plagues that can hit a plant: mites (hot / dry / dirty), mould (humid), root rot (over-watered). */
 export type PestKind = 'mites' | 'mold' | 'rot';
@@ -383,5 +402,7 @@ export interface UserAccountData {
   assets?: import('../economy/catalog').OwnedAsset[];
   /** gardener rating (0–100, falls with neglect / garbage) and the last time the room was cleaned */
   care?: { rating: number; lastCleanAt: number };
+  /** land plots the player owns, with the plants growing on them */
+  plots?: OwnedPlot[];
 }
 

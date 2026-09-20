@@ -7,7 +7,8 @@ import {
   GrowSupplyItem,
   NutrientBrand,
   GrowRoomConfig,
-  MotherFatherPlant
+  MotherFatherPlant,
+  RegionId
 } from '../types';
 
 export const INITIAL_STRAINS: Strain[] = [
@@ -503,6 +504,7 @@ export const INITIAL_SEED_BANK: SeedBankItem[] = [
     inStock: true,
     strainTemplate: {
       id: 'colombian_gold_strain',
+      origin: 'south_america',
       name: 'Santa Marta Colombian Gold',
       lineage: 'Sierra Nevada Landrace',
       type: 'Sativa',
@@ -537,6 +539,43 @@ export const INITIAL_SEED_BANK: SeedBankItem[] = [
     strainTemplate: INITIAL_STRAINS[3]
   }
 ];
+
+/** A pure landrace, native to one region of the planet (it thrives on land plots there — see sim/terroir.ts). */
+const landraceSeed = (o: {
+  id: string; name: string; short: string; origin: RegionId; lineage: string; type: Strain['type']; thc: number; cbd: number; weeks: number; yieldG: number;
+  terp: string[]; terpenes: Strain['terpenes']; price: number; cycle: number; resin: number; color: string; desc: string; strainDesc: string;
+}): SeedBankItem => ({
+  id: `seed_${o.id}`, name: `${o.name} (Regular)`, breeder: 'Landrace del Mundo', seedType: 'Landrace', lineage: o.lineage,
+  thcPercentage: o.thc, cbdPercentage: o.cbd, floweringWeeks: o.weeks, yieldGramsPerPlant: o.yieldG, difficulty: 'Avanzado', dominantTerpenes: o.terp,
+  priceFlora: o.price, priceSol: Number((o.price / 1000).toFixed(3)), description: o.desc, seedsPerPack: 5, imageTheme: 'emerald', inStock: true,
+  strainTemplate: {
+    id: o.id, name: o.short, lineage: o.lineage, type: o.type, thcPercentage: o.thc, cbdPercentage: o.cbd, terpenes: o.terpenes, difficulty: 'Maestro',
+    cycleDurationSeconds: o.cycle, resinYieldMultiplier: o.resin, colorTheme: o.color, description: o.strainDesc, origin: o.origin,
+  },
+});
+
+export const LANDRACE_SEEDS: SeedBankItem[] = [
+  landraceSeed({ id: 'hindu_kush', name: 'Hindu Kush Afgano', short: 'Hindu Kush', origin: 'afghanistan', lineage: 'Cordillera del Hindu Kush (Landrace pura)', type: 'Indica', thc: 17, cbd: 0.8, weeks: 9, yieldG: 150,
+    terp: ['Mirceno', 'Pineno', 'Cariofileno'], terpenes: { myrcene: 1.1, limonene: 0.2, caryophyllene: 0.7, pinene: 0.5, linalool: 0.3 }, price: 120, cycle: 70, resin: 1.4, color: '#d97706',
+    desc: 'La madre de las indicas: resina densa y gruesa, nacida entre valles secos y noches frías. Ama el sol y el aire seco de Afganistán.', strainDesc: 'Indica de montaña, resinosa y resistente al frío. Rinde mucho en tierras áridas.' }),
+  landraceSeed({ id: 'acapulco_gold', name: 'Acapulco Gold', short: 'Acapulco Gold', origin: 'mexico', lineage: 'Sierra de Guerrero (Landrace pura)', type: 'Sativa', thc: 19, cbd: 0.3, weeks: 11, yieldG: 170,
+    terp: ['Limoneno', 'Pineno', 'Terpinoleno'], terpenes: { myrcene: 0.3, limonene: 1.2, caryophyllene: 0.3, pinene: 0.7, linalool: 0.2 }, price: 130, cycle: 85, resin: 1.1, color: '#f97316',
+    desc: 'La sativa dorada de México: efecto luminoso y aroma cítrico-dulce. Pide sol fuerte y riego atento en la sierra seca.', strainDesc: 'Sativa dorada de clima cálido y seco.' }),
+  landraceSeed({ id: 'lambs_bread', name: "Lamb's Bread Jamaicana", short: "Lamb's Bread", origin: 'jamaica', lineage: 'Colinas de Jamaica (Landrace pura)', type: 'Sativa', thc: 20, cbd: 0.2, weeks: 11, yieldG: 180,
+    terp: ['Mirceno', 'Ocimeno', 'Cariofileno'], terpenes: { myrcene: 0.9, limonene: 0.5, caryophyllene: 0.6, pinene: 0.3, linalool: 0.4 }, price: 150, cycle: 88, resin: 1.15, color: '#22c55e',
+    desc: 'Sativa isleña de calor húmedo y suelos ricos. Vigorosa, aromática y agradecida con las lluvias… si vigilas el moho.', strainDesc: 'Sativa tropical, vigorosa y aromática.' }),
+  landraceSeed({ id: 'panama_red', name: 'Panama Red', short: 'Panama Red', origin: 'central_america', lineage: 'Selvas de Panamá (Landrace pura)', type: 'Sativa', thc: 18, cbd: 0.3, weeks: 12, yieldG: 190,
+    terp: ['Pineno', 'Limoneno', 'Mirceno'], terpenes: { myrcene: 0.6, limonene: 0.8, caryophyllene: 0.4, pinene: 0.9, linalool: 0.2 }, price: 140, cycle: 90, resin: 1.1, color: '#ef4444',
+    desc: 'Sativa de selva con pistilos rojizos. Aguanta lluvias y sombra como ninguna y es la reina del trópico húmedo.', strainDesc: 'Sativa de selva, tolera lluvias y poca luz.' }),
+  landraceSeed({ id: 'durban_poison', name: 'Durban Poison Sudafricana', short: 'Durban Poison', origin: 'africa', lineage: 'Puerto de Durban (Landrace pura)', type: 'Sativa', thc: 20, cbd: 0.1, weeks: 10, yieldG: 170,
+    terp: ['Terpinoleno', 'Ocimeno', 'Mirceno'], terpenes: { myrcene: 0.5, limonene: 0.6, caryophyllene: 0.3, pinene: 0.4, linalool: 0.2 }, price: 140, cycle: 78, resin: 1.2, color: '#a3e635',
+    desc: 'Sativa enérgica de la sabana africana: crece rápido bajo el sol implacable y es de las landrace más productivas.', strainDesc: 'Sativa de sabana, rápida y enérgica.' }),
+  landraceSeed({ id: 'thai_stick', name: 'Thai Stick', short: 'Thai Stick', origin: 'asia', lineage: 'Llanuras de Tailandia (Landrace pura)', type: 'Sativa', thc: 19, cbd: 0.2, weeks: 13, yieldG: 200,
+    terp: ['Ocimeno', 'Terpinoleno', 'Limoneno'], terpenes: { myrcene: 0.3, limonene: 0.9, caryophyllene: 0.3, pinene: 0.4, linalool: 0.3 }, price: 150, cycle: 90, resin: 1.1, color: '#38bdf8',
+    desc: 'Sativa alta y esbelta del monzón. Agradece el calor y la humedad del sudeste asiático; lenta pero generosa.', strainDesc: 'Sativa alta de monzón, lenta y generosa.' }),
+];
+
+INITIAL_SEED_BANK.push(...LANDRACE_SEEDS);
 
 export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
   // CO2

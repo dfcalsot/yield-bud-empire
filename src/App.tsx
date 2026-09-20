@@ -3,6 +3,7 @@ import { GameProvider, useGame } from './context/GameContext';
 import { isThirsty } from './sim/engine';
 import { Navbar } from './components/Navbar';
 import { CultivationView } from './components/CultivationView';
+import { PlanetView } from './components/planet/PlanetView';
 import { SeedBankView } from './components/SeedBankView';
 import { GrowMarketView } from './components/GrowMarketView';
 import { NutrientTablesView } from './components/NutrientTablesView';
@@ -75,6 +76,7 @@ function ChronoFloraApp() {
         {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && <ResourceBar onOpenMarket={() => goToTab('market')} />}
 
         {currentTab === 'cultivo' && <CultivationView onOpenMarket={() => goToTab('market')} />}
+        {currentTab === 'planeta' && <PlanetView onOpenSeedBank={() => goToTab('semillas')} />}
         {currentTab === 'semillas' && <SeedBankView onNavigateToCultivation={() => goToTab('cultivo')} />}
         {currentTab === 'market' && <GrowMarketView />}
         {currentTab === 'nutrientes' && <NutrientTablesView />}

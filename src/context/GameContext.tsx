@@ -8,6 +8,8 @@ import {
   ProcessedProduct,
   LabRunSpec,
   PestKind,
+  OwnedPlot,
+  RegionId,
   GenomicPatent,
   VirtualBrand,
   SolanaTransaction,
@@ -64,7 +66,8 @@ import {
   setSoundEnabled
 } from '../utils/audio';
 
-import { advanceWorld, calculateVpd, etaSeconds, formatDuration, pestCount, PEST_INFO, powerDraw, SimEnv } from '../sim/engine';
+import { advanceWorld, calculateVpd, etaSeconds, formatDuration, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, SimEnv } from '../sim/engine';
+import { siteConditions, plotOffer, terroirOf, REGION_BY_ID, PLOT_SIZE, type PlotOffer } from '../sim/terroir';
 import {
   CATALOG_BY_ID, OwnedAsset, USE, newAsset, starterAssets, equipStatsOf, stockOf, spendResource, bestFeedBonus, repairCostOf,
   ownsStation, EquipStats, pestStock, spendPest, gardenerLevelOf, garbageOf, starterPestKit,
@@ -180,10 +183,21 @@ interface GameContextType {
   ownsStation: (stationId: string) => boolean;
 
   // Plagues, gardener rating and nursery mode (HashKings-inspired)
-  care: { rating: number; cleanReadyInHours: number; pests: number; garbage: number; gardenerLevel: 0 | 1 | 2; gardenerDays: number };
-  treatPests: (scope: 'selected' | 'all') => void;
+  care: { rating: number; cleanReadyInHours: number; pests: number; plotPests: number; garbage: number; gardenerLevel: 0 | 1 | 2; gardenerDays: number };
+  treatPests: (scope: 'selected' | 'all', plotId?: string) => void;
   cleanRoom: () => boolean;
   recycleGarbage: () => void;
+
+  // Land plots on the planet: NFT parcels of 36 plants that grow outdoors under the sun and the weather
+  plots: OwnedPlot[];
+  /** plots still for sale in a region (the next few, cheapest number first) and how many are left in total */
+  plotsForSale: (region: RegionId) => { offers: PlotOffer[]; left: number };
+  buyPlot: (offerId: string, currency?: 'FLORA' | 'SOL') => boolean;
+  plantPlot: (plotId: string, seedId: string, count?: number) => boolean;
+  waterPlot: (plotId: string, all?: boolean) => void;
+  feedPlot: (plotId: string) => void;
+  harvestPlot: (plotId: string) => void;
+  plotEta: (plot: OwnedPlot, plant: PlantInGrow) => number;
 
   // Nutrient Tables & Feeding
   nutrientBrands: NutrientBrand[];
@@ -379,6 +393,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   assetsRef.current = assets;
   // gardener rating (0–100): falls with neglect and garbage, rises when the room is cleaned / garbage recycled
   const [care, setCare] = useState<{ rating: number; lastCleanAt: number }>({ rating: 100, lastCleanAt: 0 });
+  const [plots, setPlots] = useState<OwnedPlot[]>([]);
+  const plotsRef = useRef<OwnedPlot[]>(plots);
+  plotsRef.current = plots;
   const [autoWaterActive, setAutoWaterActive] = useState<boolean>(false);
   const [autoClimateActive, setAutoClimateActive] = useState<boolean>(false);
 
@@ -662,6 +679,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       autoClimateActive,
       assets,
       care,
+      plots,
       savedAt: Date.now()
     });
   }, [
@@ -688,7 +706,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     autoWaterActive,
     autoClimateActive,
     assets,
-    care
+    care,
+    plots
   ]);
 
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
@@ -725,6 +744,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // saves from before plagues existed get a one-off treatment kit
       setAssets(Array.isArray(saved.assets) && !saved.care ? [...loadedAssets, ...starterPestKit()] : loadedAssets);
       if (saved.care) setCare(saved.care);
+      setPlots(Array.isArray(saved.plots) ? saved.plots : []);
       lastSimRef.current = saved.lastSimAt ?? saved.savedAt ?? Date.now();
     } else if (seedIfMissing) {
       // Seed preset demo data
@@ -1038,9 +1058,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const stock = assetsRef.current;
     const treat0 = pestStock(stock);
     const budget = { waterL: stockOf(stock, 'water'), energyKwh: stockOf(stock, 'energy'), nutrientMl: stockOf(stock, 'nutrient'), treatMl: { ...treat0 }, gardenerDays: stockOf(stock, 'service') };
-    const env: SimEnv = { ...simEnvRef.current, budget: { ...budget, treatMl: { ...treat0 } } };
+    const plotsBefore = plotsRef.current;
+    const plotList = plotsBefore.flatMap(pl => pl.plants);
+    const env: SimEnv = {
+      ...simEnvRef.current,
+      budget: { ...budget, treatMl: { ...treat0 } },
+      // plots: the weather is a pure function of region + time, so catch-up replays exactly what happened
+      clockMs: now - Math.min(dt, BALANCE.maxCatchUpSeconds) * 1000,
+      site: (siteId, ms) => { const pl = plotsBefore.find(x => x.id === siteId); return pl ? siteConditions(pl.region, pl.ratings, ms) : undefined; },
+    };
     const before = indoorRef.current;
-    const after = advanceWorld(before, dt, env);
+    const everything = advanceWorld([...before, ...plotList], dt, env);
+    const after = everything.slice(0, before.length);
+    let off = before.length;
+    const plotsAfter = plotsBefore.map(pl => { const plants = everything.slice(off, off + pl.plants.length); off += pl.plants.length; return { ...pl, plants }; });
+    const plotAfterList = plotsAfter.flatMap(pl => pl.plants);
     const eb = env.budget!;
     const usedWater = budget.waterL - eb.waterL;
     const usedEnergy = budget.energyKwh - eb.energyKwh;
@@ -1067,11 +1099,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
     // gardener rating: falls with neglect and garbage while there are plants (a master gardener nearly stops it)
-    if (before.length > 0) {
+    if (before.length > 0 || plotList.length > 0) {
       const decay = (USE.ratingDecayPerDay + USE.garbageDecayPerDay * garbageOf(stock).length) * days * (gardenerLevelOf(stock) >= 2 ? 0.1 : 1);
       if (decay > 0) setCare(c => ({ ...c, rating: Math.max(0, Number((c.rating - decay).toFixed(3))) }));
     }
-    const newPests = after.filter((p, i) => p.pest && !before[i]?.pest);
+    const newPests = [...after.filter((p, i) => p.pest && !before[i]?.pest), ...plotAfterList.filter((p, i) => p.pest && !plotList[i]?.pest)];
     if (budget.energyKwh > 0 && eb.energyKwh <= 0 && (env.equip?.lampWatts ?? 0) > 0 && (env.equip?.solarKw ?? 0) * 0.25 < 0.3) {
       showNotification('⚡ Se acabó la electricidad: las lámparas se apagaron y las plantas dejan de crecer. Compra un Bono de Energía en el Grow Market.', 'burn');
     } else if (budget.waterL > 0 && eb.waterL <= 0 && (env.autoWater || env.gardener?.water)) {
@@ -1095,6 +1127,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     }
     setIndoorPlants(after);
+    if (plotsBefore.length > 0) setPlots(plotsAfter);
   }, [showNotification]);
 
   useEffect(() => {
@@ -1685,7 +1718,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // --- PLAGUES, GARDENER RATING AND CLEANING ---
-  const treatPests = (scope: 'selected' | 'all') => {
+  const treatPests = (scope: 'selected' | 'all', plotId?: string) => {
+    if (plotId) { treatPlot(plotId); return; }
     const targets = indoorPlants.map((p, i) => ({ p, i })).filter(({ p, i }) => p.pest && (scope === 'all' || i === selectedPlantIndex));
     if (targets.length === 0) {
       showNotification(scope === 'selected' ? 'Esta planta no tiene plagas.' : 'No hay plagas que tratar. ¡Bien cuidado!', 'info');
@@ -1741,10 +1775,172 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showNotification(`♻️ Reciclaste ${trash.length} objeto${trash.length > 1 ? 's' : ''} (frascos vacíos y equipo averiado): +${trash.length * USE.recycleGain} de calificación.`, 'success');
   };
 
+  // --- LAND PLOTS (the planet) ---
+  /** plots already sold to other growers, per region (the market looks alive; your own purchases come on top) */
+  const SOLD_BASE: Record<RegionId, number> = { afghanistan: 14, mexico: 22, jamaica: 31, central_america: 9, south_america: 27, africa: 18, asia: 12 };
+
+  const plotsForSale = (region: RegionId): { offers: PlotOffer[]; left: number } => {
+    const r = REGION_BY_ID[region];
+    const owned = new Set(plots.map(pl => pl.id));
+    const left = Math.max(0, r.supply - SOLD_BASE[region] - plots.filter(pl => pl.region === region).length);
+    const offers: PlotOffer[] = [];
+    for (let i = SOLD_BASE[region] + 1; i <= r.supply && offers.length < Math.min(6, left); i++) {
+      const o = plotOffer(region, i);
+      if (!owned.has(o.id)) offers.push(o);
+    }
+    return { offers, left };
+  };
+
+  const buyPlot = (offerId: string, currency: 'FLORA' | 'SOL' = 'FLORA'): boolean => {
+    const m = /^plot-([a-z_]+)-(\d+)$/.exec(offerId);
+    const region = m?.[1] as RegionId | undefined;
+    if (!m || !region || !REGION_BY_ID[region]) return false;
+    const offer = plotOffer(region, Number(m[2]));
+    if (!plotsForSale(region).offers.some(o => o.id === offer.id)) {
+      showNotification('Esa parcela ya no está a la venta.', 'info');
+      return false;
+    }
+    const r = REGION_BY_ID[region];
+    if (currency === 'FLORA') {
+      if (floraBalance < offer.priceFlora) {
+        showNotification(`Saldo insuficiente: la parcela ${offer.name} cuesta ${offer.priceFlora} $FLORA`, 'info');
+        return false;
+      }
+      recordBurnTransaction('BURN_PURCHASE', offer.priceFlora, `ChronoFlora Planeta: Mint NFT parcela ${offer.name} (${r.name}, nota ${offer.landRating}/10)`);
+    } else {
+      if (solBalance < offer.priceSol) {
+        showNotification(`Saldo insuficiente: la parcela cuesta ${offer.priceSol} SOL`, 'info');
+        return false;
+      }
+      setSolBalance(prev => Number(Math.max(0, prev - offer.priceSol).toFixed(3)));
+      setTransactions(prev => [{
+        id: `tx-plot-${Date.now()}`, signature: generateSolanaSignature(), type: 'BURN_PURCHASE', amountFlora: 0, amountSol: offer.priceSol,
+        timestamp: Date.now(), status: 'confirmed', blockSlot: 248928000 + Math.floor(Math.random() * 5000), memo: `ChronoFlora Planeta: Mint NFT parcela ${offer.name}`
+      }, ...prev.slice(0, 24)]);
+    }
+    setPlots(prev => [...prev, { id: offer.id, region, index: offer.index, name: offer.name, ratings: offer.ratings, landRating: offer.landRating, mintedAt: Date.now(), plants: [] }]);
+    confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+    addXp(80, 'Compra de parcela');
+    showNotification(`🌎 Parcela minteada: ${offer.name} en ${r.name} · nota ${offer.landRating}/10 · 36 plantas`, 'success');
+    return true;
+  };
+
+  const plantPlot = (plotId: string, seedId: string, count?: number): boolean => {
+    const plot = plots.find(pl => pl.id === plotId);
+    const seedItem = seedBank.find(s => s.id === seedId);
+    if (!plot || !seedItem) return false;
+    const have = seedInventory[seedId] || 0;
+    const taken = new Set(plot.plants.map(p => p.slotIndex));
+    const empty = Array.from({ length: PLOT_SIZE }, (_, i) => i).filter(i => !taken.has(i));
+    const n = Math.min(count ?? empty.length, have, empty.length);
+    if (n <= 0) {
+      showNotification(empty.length === 0 ? 'La parcela está llena: cosecha antes de sembrar.' : 'No tienes semillas de esa genética. Cómpralas en el Banco de Semillas.', 'info');
+      return false;
+    }
+    const strain = seedItem.strainTemplate;
+    const ter = terroirOf(strain.origin, plot.region, plot.ratings);
+    const now = Date.now();
+    const yieldEach = Math.round(seedItem.yieldGramsPerPlant * 0.32 * ter.yield);
+    const fresh: PlantInGrow[] = empty.slice(0, n).map(slot => ({
+      id: `${plot.id}-s${slot}-${now}`, slotIndex: slot, siteId: plot.id, strain, plantedAt: now, stage: 'seed' as GrowStage, progressPercent: 0, health: 100, soilMoisture: 80,
+      temperatureC: 24, relativeHumidity: 60, vpdKpa: calculateVpd(24, 60), ppfdLightIntensity: 900, luxLumens: 900 * 54, co2Ppm: 420, currentRoom: 'vegetative', lightSchedule: '24/0',
+      ecLevel: 1.6, phLevel: 6.2, nutrientBrand: selectedNutrientBrand, trichomeMaturity: { clear: 100, milky: 0, amber: 0 }, lastWatered: now, lastFed: now, estimatedDryYieldGrams: yieldEach,
+    }));
+    setSeedInventory(prev => ({ ...prev, [seedId]: Math.max(0, (prev[seedId] || 0) - n) }));
+    setPlots(prev => prev.map(pl => pl.id === plotId ? { ...pl, plants: [...pl.plants, ...fresh] } : pl));
+    playClickSound();
+    addXp(n * 5, 'Siembra en parcela');
+    showNotification(`🌱 ${n} semilla${n > 1 ? 's' : ''} de ${strain.name} en ${plot.name}: ${ter.label}. ~${yieldEach} g por planta.`, ter.tone === 'down' ? 'info' : 'success');
+    return true;
+  };
+
+  const waterPlot = (plotId: string, all = false) => {
+    const plot = plots.find(pl => pl.id === plotId);
+    if (!plot) return;
+    const targets = plot.plants.filter(p => p.stage !== 'ready_harvest' && (all || p.soilMoisture < 60));
+    if (targets.length === 0) {
+      showNotification(plot.plants.length ? 'Ninguna planta necesita riego ahora (todas ≥ 60 % de humedad).' : 'La parcela está vacía.', 'info');
+      return;
+    }
+    if (!takeResource('water', USE.waterPerPlantManual * targets.length)) return;
+    const slots = new Set(targets.map(p => p.slotIndex));
+    playWaterSound();
+    setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.map(p => slots.has(p.slotIndex) ? { ...p, soilMoisture: Math.min(100, p.soilMoisture + 55), health: Math.min(100, p.health + 3), lastWatered: Date.now() } : p) }));
+    addXp(targets.length * 3, 'Riego de parcela');
+    showNotification(`💧 ${targets.length} planta${targets.length > 1 ? 's regadas' : ' regada'} en ${plot.name} (${(USE.waterPerPlantManual * targets.length).toFixed(1)} L)`, 'info');
+  };
+
+  const feedPlot = (plotId: string) => {
+    const plot = plots.find(pl => pl.id === plotId);
+    if (!plot) return;
+    const targets = plot.plants.filter(p => p.stage !== 'ready_harvest' && p.ecLevel < 1.6);
+    if (targets.length === 0) {
+      showNotification('Ninguna planta necesita abono ahora.', 'info');
+      return;
+    }
+    if (!takeResource('nutrient', USE.nutrientPerPlant * targets.length)) return;
+    const slots = new Set(targets.map(p => p.slotIndex));
+    const feedBonus = bestFeedBonus(assets);
+    playClickSound();
+    setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.map(p => slots.has(p.slotIndex) ? { ...p, ecLevel: 2.1, phLevel: 6.2, feedBonus, health: Math.min(100, p.health + 5), lastFed: Date.now() } : p) }));
+    addXp(targets.length * 4, 'Abonado de parcela');
+    showNotification(`🧪 ${targets.length} planta${targets.length > 1 ? 's abonadas' : ' abonada'} en ${plot.name}`, 'info');
+  };
+
+  const treatPlot = (plotId: string) => {
+    const plot = plots.find(pl => pl.id === plotId);
+    if (!plot) return;
+    const targets = plot.plants.filter(p => p.pest);
+    if (targets.length === 0) {
+      showNotification('No hay plagas en esta parcela.', 'info');
+      return;
+    }
+    let cur = assets;
+    const jobs: Array<{ slot: number; kind: PestKind; guard: number }> = [];
+    const missing = new Set<string>();
+    for (const p of targets) {
+      const r = spendPest(cur, p.pest!.kind, USE.pestPerPlant);
+      if (r.spent + 1e-9 >= USE.pestPerPlant) { cur = r.assets; jobs.push({ slot: p.slotIndex ?? -1, kind: p.pest!.kind, guard: r.guardHours || 48 }); }
+      else missing.add(PEST_INFO[p.pest!.kind].cure);
+    }
+    if (jobs.length === 0) {
+      showNotification(`No tienes tratamiento: necesitas ${[...missing].join(' / ')}. Cómpralo en el Grow Market → Control de plagas.`, 'burn');
+      return;
+    }
+    setAssets(prev => jobs.reduce((acc, j) => spendPest(acc, j.kind, USE.pestPerPlant).assets, prev));
+    setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.map(p => { const j = jobs.find(x => x.slot === p.slotIndex); return j && p.pest ? { ...p, pest: undefined, guard: j.guard, health: Math.min(100, p.health + 5) } : p; }) }));
+    playClickSound();
+    addXp(15 * jobs.length, 'Control de plagas');
+    showNotification(`🧴 ${jobs.length} planta${jobs.length > 1 ? 's tratadas' : ' tratada'} en ${plot.name}${missing.size ? `. Faltó: ${[...missing].join(' / ')}` : ''}.`, missing.size ? 'info' : 'success');
+  };
+
+  const harvestPlot = (plotId: string) => {
+    const plot = plots.find(pl => pl.id === plotId);
+    if (!plot) return;
+    const ready = plot.plants.filter(p => p.stage === 'ready_harvest');
+    if (ready.length === 0) {
+      showNotification('Aún no hay plantas listas para cosechar en esta parcela.', 'info');
+      return;
+    }
+    let flower = 0, trim = 0;
+    for (const p of ready) { const f = Math.round(p.estimatedDryYieldGrams * (p.health / 100)); flower += f; trim += Math.round(f * 0.4); }
+    setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.filter(p => p.stage !== 'ready_harvest') }));
+    setRawFlowerGrams(prev => prev + flower);
+    setTrimGrams(prev => prev + trim);
+    updateQuestProgress('quest_harvest_run', ready.length);
+    addXp(ready.length * 180, 'Cosecha en parcela');
+    playHarvestChime();
+    confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 }, colors: ['#10b981', '#34d399', '#f59e0b', '#a855f7', '#6366f1'] });
+    showNotification(`🌾 Cosecha en ${plot.name}: ${ready.length} plantas → +${flower} g de flor y +${trim} g de biomasa. La parcela queda libre para sembrar.`, 'success');
+  };
+
+  const plotEta = (plot: OwnedPlot, plant: PlantInGrow) => plotEtaSeconds(plant, plot.region, plot.ratings);
+
   const careInfo = {
     rating: Math.round(care.rating),
     cleanReadyInHours: Math.max(0, USE.cleanCooldownHours - (Date.now() - care.lastCleanAt) / 3600000),
     pests: pestCount(indoorPlants),
+    plotPests: plots.reduce((n, pl) => n + pestCount(pl.plants), 0),
     garbage: garbageOf(assets).length,
     gardenerLevel: gardenerLevelOf(assets),
     gardenerDays: stockOf(assets, 'service'),
@@ -2441,6 +2637,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         repairAsset,
         ownsStation: (stationId: string) => ownsStation(assets, stationId),
         care: careInfo,
+        plots,
+        plotsForSale,
+        buyPlot,
+        plantPlot,
+        waterPlot,
+        feedPlot,
+        harvestPlot,
+        plotEta,
         treatPests,
         cleanRoom,
         recycleGarbage,

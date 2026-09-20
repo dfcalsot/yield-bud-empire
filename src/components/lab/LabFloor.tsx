@@ -8,6 +8,7 @@ import { ProductCard, rarityOfQuality } from './ProductCard';
 import { HudPanel, NeonButton, RARITY_STYLE } from '../game/GameUI';
 import type { ProcessedProduct } from '../../types';
 import { CATALOG_BY_ID, USE } from '../../economy/catalog';
+import { Npc, useNpc } from '../npc/Npc';
 
 const wearFactorOf = (wear: number) => (wear > 60 ? 1 : wear > 40 ? 0.93 : 0.85);
 
@@ -35,6 +36,8 @@ export const LabFloor: React.FC = () => {
   const [result, setResult] = useState<ProcessedProduct | null>(null);
   const [profile, setProfile] = useState<CoaProfile | null>(null);
   const [hplcId, setHplcId] = useState<string | null>(null);
+  const npc = useNpc('¡Bienvenido a la Planta Industrial! Soy la Dra. Lucía. Elige una estación y cuéntame qué vamos a procesar.');
+  const firstStation = useRef(true);
 
   const sceneRef = useRef<HTMLDivElement>(null);
   const pctRef = useRef<HTMLSpanElement>(null);
@@ -52,6 +55,14 @@ export const LabFloor: React.FC = () => {
     setP(0);
   }, [stationId]);
   useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+  useEffect(() => {
+    if (firstStation.current) { firstStation.current = false; return; }
+    npc.speak(`${station.name}: ${station.blurb}`);
+  }, [stationId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (phase === 'running') npc.speak(`Calibrando la ${station.name}… ¡no toques nada, por favor!`, 'busy');
+    else if (phase === 'done' && result) npc.speak(stationId === 'hplc' ? '¡Análisis completo! Mira el certificado: cada cannabinoide y terpeno, medido al miligramo.' : `¡Lote listo! ${result.name}. Sale directo al inventario, mira qué calidad.`, 'happy');
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stock = recipe ? (recipe.inputKind === 'flower' ? rawFlowerGrams : trimGrams) : 0;
   const maxAllowed = recipe ? Math.min(recipe.maxGrams, Math.floor(stock)) : 0;
@@ -101,7 +112,7 @@ export const LabFloor: React.FC = () => {
   };
 
   const start = () => {
-    if (blocker) return;
+    if (blocker) { if (phase !== 'running') npc.speak(`No puedo empezar todavía: ${blocker.toLowerCase()}.`, 'sad'); return; }
     if (stationId === 'hplc') {
       if (!hplcSelected) return;
       const updated = certifyProduct(hplcSelected.id, HPLC_FEE);
@@ -135,6 +146,14 @@ export const LabFloor: React.FC = () => {
     setP(0);
   };
 
+  npc.tips.current = () => [
+    'Las estaciones gastan electricidad en cada ciclo: mira tu autonomía antes de empezar.',
+    'Una máquina desgastada rinde menos. Repárala antes de que se averíe.',
+    'Certifica tus lotes con el HPLC: un COA sube su valor en el dispensario.',
+    'La flor da rosin y hash de mejor calidad; el trim es ideal para bubble hash.',
+    ...(rawFlowerGrams < 10 ? ['Casi no te queda flor seca. Cosecha en las parcelas o en la sala para seguir produciendo.'] : []),
+    ...(!ownsStation(stationId) ? [`Esta estación necesita su licencia NFT. Puedes comprarla aquí mismo.`] : []),
+  ];
   const recent = processedProducts.filter((p) => p.id !== result?.id || phase === 'idle').slice(0, 8);
   const running = phase === 'running';
 
@@ -164,6 +183,8 @@ export const LabFloor: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="scientist" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>
 
       {/* station rail */}
       <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
