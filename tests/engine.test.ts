@@ -66,5 +66,33 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
   const eta = etaSeconds(p, env()) / 86400;
   ok('ETA de una semilla ≈ 3.5–4.5 d', eta > 3.5 && eta < 4.8, `(${eta.toFixed(2)} d)`);
 }
+// 9 · electricity: 600 W lamp (18/6) draws 10.8 kWh/day; empty stock → lamps go dark
+{
+  const equip = { lampWatts: 600, lampMaxPpfd: 480, acKw: 0, pumpKw: 0, solarKw: 0, waterPerPlantAuto: 0.5 };
+  const budget = { waterL: 500, energyKwh: 60 };
+  const p = advanceWorld([plant(65)], 3 * 86400, env({ equip, budget, autoWater: true }))[0];
+  ok('consumo eléctrico: 600 W × 18 h/día × 3 d = 32.4 kWh', Math.abs((60 - budget.energyKwh) - 32.4) < 1.5, `(gastó ${(60 - budget.energyKwh).toFixed(1)} kWh)`);
+  ok('con energía y riego crece a buen ritmo', p.progressPercent > 60, `(${p.progressPercent}%)`);
+  const b2 = { waterL: 500, energyKwh: 5 };
+  const q = advanceWorld([plant(65)], 3 * 86400, env({ equip, budget: b2, autoWater: true }))[0];
+  ok('sin energía se apaga: crece mucho menos', q.progressPercent < p.progressPercent * 0.4, `(${q.progressPercent}% vs ${p.progressPercent}%)`);
+}
+// 10 · solar field covers most of the bill
+{
+  const equip = { lampWatts: 600, lampMaxPpfd: 480, acKw: 0, pumpKw: 0, solarKw: 1.6, waterPerPlantAuto: 0.5 };
+  const budget = { waterL: 500, energyKwh: 0 };
+  const p = advanceWorld([plant(65)], 2 * 86400, env({ equip, budget, autoWater: true }))[0];
+  ok('un campo solar de 1.6 kW mantiene las lámparas sin comprar energía', p.progressPercent > 40, `(${p.progressPercent}%)`);
+}
+// 11 · auto-drip spends water and stops when the tank is empty
+{
+  const equip = { lampWatts: 600, lampMaxPpfd: 480, acKw: 0, pumpKw: 0.04, solarKw: 0, waterPerPlantAuto: 0.45 };
+  const budget = { waterL: 200, energyKwh: 200 };
+  advanceWorld([plant(65)], 3 * 86400, env({ equip, budget, autoWater: true }));
+  ok('goteo gasta agua del tanque', budget.waterL < 200 && budget.waterL > 190, `(quedan ${budget.waterL.toFixed(2)} L)`);
+  const dry = { waterL: 0, energyKwh: 200 };
+  const p = advanceWorld([plant(65)], 3 * 86400, env({ equip, budget: dry, autoWater: true }))[0];
+  ok('sin agua el goteo no riega: se seca', p.soilMoisture < 30, `(${p.soilMoisture}%)`);
+}
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 process.exit(failed ? 1 : 0);

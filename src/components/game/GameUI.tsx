@@ -81,8 +81,9 @@ export const RarityFrame: React.FC<{
   rarity: Rarity;
   selected?: boolean;
   className?: string;
+  style?: React.CSSProperties;
   children: React.ReactNode;
-}> = ({ rarity, selected, className = '', children }) => {
+}> = ({ rarity, selected, className = '', style, children }) => {
   const { color } = RARITY_STYLE[rarity];
   return (
     <div
@@ -90,6 +91,7 @@ export const RarityFrame: React.FC<{
       style={{
         ['--rarity' as string]: color,
         boxShadow: selected ? `0 0 0 1px ${color}, 0 0 28px -4px ${color}` : undefined,
+        ...style,
       }}
     >
       {children}

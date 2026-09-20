@@ -7,6 +7,7 @@ import { StationScene, CoaProfile } from './StationScenes';
 import { ProductCard, rarityOfQuality } from './ProductCard';
 import { HudPanel, NeonButton, RARITY_STYLE } from '../game/GameUI';
 import type { ProcessedProduct } from '../../types';
+import { CATALOG_BY_ID, USE } from '../../economy/catalog';
 
 const wearFactorOf = (wear: number) => (wear > 60 ? 1 : wear > 40 ? 0.93 : 0.85);
 
@@ -22,7 +23,7 @@ const STATUS_LABEL: Record<string, string> = { operativo: 'Operativa', mantenimi
 export const LabFloor: React.FC = () => {
   const {
     rawFlowerGrams, trimGrams, machines, repairMachine, runLabProcess, certifyProduct,
-    processedProducts, floraBalance, burnStats, totalFloraBurned,
+    processedProducts, floraBalance, burnStats, totalFloraBurned, ownsStation, resources, buyAsset,
   } = useGame();
 
   const [stationId, setStationId] = useState<StationId>('rosin');
@@ -69,9 +70,13 @@ export const LabFloor: React.FC = () => {
   const uncertified = processedProducts.filter((p) => !p.certified && p.id !== result?.id);
   const hplcSelected = uncertified.find((p) => p.id === hplcId) ?? uncertified[0];
 
+  const kwhNeeded = USE.labKwhPerCycle[stationId] ?? 0;
+  const licence = CATALOG_BY_ID[`lic_${stationId}`];
   let blocker = '';
   if (phase === 'running') blocker = 'Ciclo en marcha…';
+  else if (!ownsStation(stationId)) blocker = 'Estación sin licencia NFT';
   else if (broken) blocker = 'Máquina averiada: repárala primero';
+  else if (kwhNeeded > resources.energy + 1e-9) blocker = `Sin electricidad (${kwhNeeded} kWh por ciclo)`;
   else if (stationId === 'hplc') {
     if (!hplcSelected) blocker = 'No hay lotes sin certificar';
     else if (floraBalance < HPLC_FEE) blocker = `Saldo insuficiente (${HPLC_FEE} $FLORA)`;
@@ -108,7 +113,7 @@ export const LabFloor: React.FC = () => {
     }
     if (!recipe) return;
     const prod = runLabProcess({
-      machineId: station.machineId, inputKind: recipe.inputKind, grams: g, type: recipe.type, label: recipe.name,
+      machineId: station.machineId, stationId, inputKind: recipe.inputKind, grams: g, type: recipe.type, label: recipe.name,
       yieldRatio: recipe.yieldRatio, potency: recipe.potency, pricePerGram: recipe.pricePerGram, feeFlora: recipe.feeFlora,
     });
     if (!prod) return;
@@ -180,7 +185,7 @@ export const LabFloor: React.FC = () => {
                 <span className="text-[11px] font-bold text-white leading-tight">{s.short}</span>
               </div>
               <div className="mt-1.5 h-1 rounded-full bg-neutral-800 overflow-hidden"><div className="h-full" style={{ width: `${w}%`, background: w > 40 ? '#34d399' : w > 15 ? '#fbbf24' : '#f87171' }} /></div>
-              <div className="text-[9px] font-mono text-neutral-500 mt-0.5">Desgaste {100 - Math.round(w)}%</div>
+              <div className={`text-[9px] font-mono mt-0.5 ${ownsStation(s.id) ? 'text-neutral-500' : 'text-pink-300'}`}>{ownsStation(s.id) ? `Desgaste ${100 - Math.round(w)}%` : '🔒 Sin licencia'}</div>
             </button>
           );
         })}
@@ -206,7 +211,7 @@ export const LabFloor: React.FC = () => {
             )}
             <div className="absolute left-3 bottom-3 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-400/40 text-[10.5px] font-mono text-amber-300">
               <Flame className={`w-3.5 h-3.5 ${running ? 'lb-blink' : ''}`} />
-              {stationId === 'hplc' ? `Quema ${HPLC_FEE} $FLORA por análisis` : recipe ? `Quema ${recipe.feeFlora} $FLORA por ciclo` : ''}
+              {stationId === 'hplc' ? `Quema ${HPLC_FEE} $FLORA` : recipe ? `Quema ${recipe.feeFlora} $FLORA` : ''} · {kwhNeeded} kWh
             </div>
             {machine && (
               <div className="absolute right-3 bottom-3 px-2.5 py-1 rounded-lg bg-neutral-950/80 border border-white/10 text-[10.5px] font-mono text-neutral-300">
@@ -318,6 +323,14 @@ export const LabFloor: React.FC = () => {
               )}
             </div>
 
+            {!ownsStation(stationId) && licence && (
+              <div className="rounded-lg border border-pink-300/30 bg-pink-400/5 p-2.5 space-y-2">
+                <p className="text-[11px] text-pink-100 leading-snug">Esta estación se desbloquea con su licencia NFT.</p>
+                <NeonButton tone="magenta" onClick={() => buyAsset(licence.id)} disabled={floraBalance < licence.priceFlora} className="w-full !py-1.5">
+                  Adquirir licencia · quema {licence.priceFlora} $FLORA
+                </NeonButton>
+              </div>
+            )}
             <NeonButton tone="emerald" onClick={start} disabled={!!blocker} className="w-full !py-3 text-sm">
               {running ? 'Procesando…' : stationId === 'hplc' ? 'Analizar lote' : 'Iniciar ciclo'}
             </NeonButton>

@@ -63,7 +63,11 @@ import {
   setSoundEnabled
 } from '../utils/audio';
 
-import { advanceWorld, calculateVpd, etaSeconds, formatDuration, SimEnv } from '../sim/engine';
+import { advanceWorld, calculateVpd, etaSeconds, formatDuration, powerDraw, SimEnv } from '../sim/engine';
+import {
+  CATALOG_BY_ID, OwnedAsset, USE, newAsset, starterAssets, equipStatsOf, stockOf, spendResource, bestFeedBonus, repairCostOf,
+  ownsStation, EquipStats,
+} from '../economy/catalog';
 import { BALANCE } from '../sim/balance';
 export { calculateVpd };
 
@@ -163,6 +167,16 @@ interface GameContextType {
   plantFromSeedBank: (seedId: string) => boolean;
   suppliesMarket: GrowSupplyItem[];
   buySupply: (supplyId: string, currency?: 'FLORA' | 'SOL') => boolean;
+
+  // NFT assets: equipment, consumables (water / nutrients / electricity) and lab licences
+  assets: OwnedAsset[];
+  equipStats: EquipStats;
+  /** litres of water, ml of nutrient and kWh of electricity in stock, and the electric runway in days */
+  resources: { water: number; nutrient: number; energy: number; kwhPerDay: number; solarKwhPerDay: number; energyDays: number };
+  buyAsset: (catalogId: string, currency?: 'FLORA' | 'SOL') => boolean;
+  setAssetEquipped: (assetId: string, equipped: boolean) => void;
+  repairAsset: (assetId: string) => boolean;
+  ownsStation: (stationId: string) => boolean;
 
   // Nutrient Tables & Feeding
   nutrientBrands: NutrientBrand[];
@@ -353,6 +367,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Rooms & Microclimate Automation
   const [currentRoom, setCurrentRoom] = useState<GrowRoomId>('vegetative');
   const [co2Ppm, setCo2PpmState] = useState<number>(750);
+  const [assets, setAssets] = useState<OwnedAsset[]>(() => starterAssets());
+  const assetsRef = useRef<OwnedAsset[]>(assets);
+  assetsRef.current = assets;
   const [autoWaterActive, setAutoWaterActive] = useState<boolean>(false);
   const [autoClimateActive, setAutoClimateActive] = useState<boolean>(false);
 
@@ -573,7 +590,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (type === 'BURN_SPEEDUP') {
       setBurnStats(prev => ({ ...prev, speedUp: prev.speedUp + amount }));
-    } else if (type === 'BURN_REPAIR' || type === 'BURN_PROCESS') {
+    } else if (type === 'BURN_REPAIR' || type === 'BURN_PROCESS' || type === 'BURN_PURCHASE') {
       setBurnStats(prev => ({ ...prev, repairs: prev.repairs + amount }));
     } else if (type === 'BURN_PATENT') {
       setBurnStats(prev => ({ ...prev, patents: prev.patents + amount }));
@@ -587,12 +604,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const indoorRef = useRef<PlantInGrow[]>(indoorPlants);
   indoorRef.current = indoorPlants;
   const simEnvRef = useRef<SimEnv>(null as unknown as SimEnv);
+  const equipStats = equipStatsOf(assets);
   simEnvRef.current = {
-    autoWater: autoWaterActive,
-    autoClimate: autoClimateActive,
+    // automation only works with the matching NFT equipment installed (and not broken)
+    autoWater: autoWaterActive && equipStats.autoWater,
+    autoClimate: autoClimateActive && equipStats.hasAc,
     facilityBonus: currentFacility.environmentBonus,
-    co2Ppm,
+    co2Ppm: Math.max(co2Ppm, equipStats.co2Ppm),
     lightOn: 1,
+    equip: equipStats,
     getRoomTarget: (roomId) => {
       const r = GROW_ROOMS_CONFIG.find(x => x.id === (roomId || currentRoom));
       return r ? { tempC: r.targetTempC, rh: r.targetRhPercent } : undefined;
@@ -629,6 +649,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       processedProducts,
       autoWaterActive,
       autoClimateActive,
+      assets,
       savedAt: Date.now()
     });
   }, [
@@ -653,7 +674,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     machines,
     processedProducts,
     autoWaterActive,
-    autoClimateActive
+    autoClimateActive,
+    assets
   ]);
 
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
@@ -685,6 +707,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (Array.isArray(saved.processedProducts)) setProcessedProducts(saved.processedProducts);
       if (typeof saved.autoWaterActive === 'boolean') setAutoWaterActive(saved.autoWaterActive);
       if (typeof saved.autoClimateActive === 'boolean') setAutoClimateActive(saved.autoClimateActive);
+      // saves from before the asset economy get the starter kit
+      setAssets(Array.isArray(saved.assets) ? saved.assets : starterAssets());
       lastSimRef.current = saved.lastSimAt ?? saved.savedAt ?? Date.now();
     } else if (seedIfMissing) {
       // Seed preset demo data
@@ -993,11 +1017,37 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const dt = (now - lastSimRef.current) / 1000 + extraSeconds;
     lastSimRef.current = now;
     if (dt < 0.5) return;
-    const env = simEnvRef.current;
+    // consumables the simulation may spend during this span (electricity, tank water); applied to the NFT lots afterwards
+    const stock = assetsRef.current;
+    const budget = { waterL: stockOf(stock, 'water'), energyKwh: stockOf(stock, 'energy') };
+    const env: SimEnv = { ...simEnvRef.current, budget: { ...budget } };
+    const before = indoorRef.current;
+    const after = advanceWorld(before, dt, env);
+    const usedWater = budget.waterL - env.budget!.waterL;
+    const usedEnergy = budget.energyKwh - env.budget!.energyKwh;
+    if (usedWater > 1e-6 || usedEnergy > 1e-6 || stock.some(a => a.equipped && CATALOG_BY_ID[a.catalogId]?.kind === 'equipment')) {
+      const days = Math.min(dt, BALANCE.maxCatchUpSeconds) / 86400;
+      setAssets(prev => {
+        let next = prev;
+        if (usedWater > 1e-6) next = spendResource(next, 'water', Math.min(usedWater, stockOf(next, 'water'))) ?? next;
+        if (usedEnergy > 1e-6) next = spendResource(next, 'energy', Math.min(usedEnergy, stockOf(next, 'energy'))) ?? next;
+        // installed gear wears with time (a lamp only while there was power to run it)
+        return next.map(a => {
+          const it = CATALOG_BY_ID[a.catalogId];
+          if (!a.equipped || it?.kind !== 'equipment' || (a.durability ?? 0) <= 0) return a;
+          const running = it.category === 'lamp' ? usedEnergy > 1e-6 || (env.equip?.solarKw ?? 0) > 0 : true;
+          if (!running) return a;
+          return { ...a, durability: Math.max(0, Number(((a.durability ?? 100) - (it.wearPerDay ?? 0) * days).toFixed(3))) };
+        });
+      });
+    }
+    if (budget.energyKwh > 0 && env.budget!.energyKwh <= 0 && (env.equip?.lampWatts ?? 0) > 0 && (env.equip?.solarKw ?? 0) * 0.25 < 0.3) {
+      showNotification('⚡ Se acabó la electricidad: las lámparas se apagaron y las plantas dejan de crecer. Compra un Bono de Energía en el Grow Market.', 'burn');
+    } else if (budget.waterL > 0 && env.budget!.waterL <= 0 && env.autoWater) {
+      showNotification('💧 El tanque de agua está vacío: el riego automático se detuvo.', 'burn');
+    }
     if (dt > 1800) {
       // welcome-back summary for long absences
-      const before = indoorRef.current;
-      const after = advanceWorld(before, dt, env);
       const avg = (arr: PlantInGrow[], f: (p: PlantInGrow) => number) => arr.reduce((a, p) => a + f(p), 0) / Math.max(1, arr.length);
       const grew = avg(after, p => p.progressPercent) - avg(before, p => p.progressPercent);
       const thirsty = after.filter(p => p.stage !== 'ready_harvest' && p.soilMoisture < BALANCE.thirstyBelow).length;
@@ -1007,7 +1057,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         thirsty ? 'info' : 'success'
       );
     }
-    setIndoorPlants(prev => advanceWorld(prev, dt, env));
+    setIndoorPlants(after);
   }, [showNotification]);
 
   useEffect(() => {
@@ -1050,7 +1100,42 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Actions on active plant & room-wide batch actions
+  /** Takes `amount` of a consumable from the NFT lots, or explains what is missing. */
+  const takeResource = (kind: 'water' | 'nutrient', amount: number): boolean => {
+    const next = spendResource(assets, kind, amount);
+    if (!next) {
+      showNotification(
+        kind === 'water'
+          ? `Sin agua suficiente (${amount.toFixed(1)} L necesarios, quedan ${stockOf(assets, 'water').toFixed(1)} L). Compra agua en el Grow Market.`
+          : `Sin nutrientes suficientes (${amount} ml necesarios, quedan ${Math.floor(stockOf(assets, 'nutrient'))} ml). Compra fertilizante en el Grow Market.`,
+        'burn'
+      );
+      return false;
+    }
+    setAssets(prev => spendResource(prev, kind, amount) ?? prev);
+    return true;
+  };
+
+  /** Lab cycle gate: the station licence NFT must be owned and the electricity is drawn from the stock. */
+  const takeStation = (stationId: string | undefined): boolean => {
+    if (!stationId) return true;
+    if (!ownsStation(assets, stationId)) {
+      showNotification('Esta estación necesita su licencia NFT. Cómprala en el Grow Market → Licencias de laboratorio.', 'info');
+      return false;
+    }
+    const kwh = USE.labKwhPerCycle[stationId] ?? 0;
+    if (kwh > 0) {
+      if (stockOf(assets, 'energy') + 1e-9 < kwh) {
+        showNotification(`Sin electricidad: el ciclo necesita ${kwh} kWh y quedan ${stockOf(assets, 'energy').toFixed(1)} kWh. Compra un Bono de Energía.`, 'burn');
+        return false;
+      }
+      setAssets(prev => spendResource(prev, 'energy', kwh) ?? prev);
+    }
+    return true;
+  };
+
   const waterPlant = () => {
+    if (!takeResource('water', USE.waterPerPlantManual)) return;
     playWaterSound();
     setIndoorPlants(prev => prev.map((p, idx) => {
       if (idx !== selectedPlantIndex) return p;
@@ -1067,6 +1152,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const waterAllPlants = () => {
+    if (!takeResource('water', USE.waterPerPlantManual * indoorPlants.length)) return;
     playWaterSound();
     setIndoorPlants(prev => prev.map(p => ({
       ...p,
@@ -1080,11 +1166,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const feedNutrients = () => {
+    if (!takeResource('nutrient', USE.nutrientPerPlant)) return;
     playClickSound();
+    const feedBonus = bestFeedBonus(assets);
     setIndoorPlants(prev => prev.map((p, idx) => {
       if (idx !== selectedPlantIndex) return p;
       return {
         ...p,
+        feedBonus,
         ecLevel: 2.1,
         phLevel: 6.2,
         health: Math.min(100, p.health + 10),
@@ -1096,9 +1185,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const feedAllPlants = () => {
+    if (!takeResource('nutrient', USE.nutrientPerPlant * indoorPlants.length)) return;
     playClickSound();
+    const feedBonus = bestFeedBonus(assets);
     setIndoorPlants(prev => prev.map(p => ({
       ...p,
+      feedBonus,
       ecLevel: 2.1,
       phLevel: 6.2,
       health: Math.min(100, p.health + 10),
@@ -1467,6 +1559,97 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
+  // --- NFT ASSETS: buy / install / repair ---
+  const SINGLE_SLOT = ['lamp', 'ac', 'irrigation'];
+
+  const buyAsset = (catalogId: string, currency: 'FLORA' | 'SOL' = 'FLORA'): boolean => {
+    const item = CATALOG_BY_ID[catalogId];
+    if (!item) return false;
+    if (item.kind === 'license' && item.stationId && ownsStation(assets, item.stationId)) {
+      showNotification('Ya tienes esta licencia.', 'info');
+      return false;
+    }
+    if (currency === 'FLORA') {
+      if (floraBalance < item.priceFlora) {
+        showNotification(`Saldo insuficiente: requiere ${item.priceFlora} $FLORA`, 'info');
+        return false;
+      }
+      recordBurnTransaction('BURN_PURCHASE', item.priceFlora, `ChronoFlora: Mint NFT ${item.name} (${item.kind === 'consumable' ? 'consumible' : item.kind === 'license' ? 'licencia' : 'equipo'})`);
+    } else {
+      if (solBalance < item.priceSol) {
+        showNotification(`Saldo insuficiente: requiere ${item.priceSol} SOL`, 'info');
+        return false;
+      }
+      setSolBalance(prev => Number(Math.max(0, prev - item.priceSol).toFixed(3)));
+      setTransactions(prev => [{
+        id: `tx-asset-${Date.now()}`,
+        signature: generateSolanaSignature(),
+        type: 'BURN_PURCHASE',
+        amountFlora: 0,
+        amountSol: item.priceSol,
+        timestamp: Date.now(),
+        status: 'confirmed',
+        blockSlot: 248928000 + Math.floor(Math.random() * 5000),
+        memo: `ChronoFlora: Mint NFT ${item.name}`
+      }, ...prev.slice(0, 24)]);
+    }
+    // equipment goes straight into an empty slot (lamp / AC / irrigation); racks like solar, CO₂ and meters always install
+    const slotTaken = assets.some(a => a.equipped && CATALOG_BY_ID[a.catalogId]?.category === item.category);
+    const equip = item.kind === 'equipment' && (!SINGLE_SLOT.includes(item.category) || !slotTaken);
+    setAssets(prev => [...prev, newAsset(catalogId, { equipped: equip || undefined })]);
+    if (equip && item.category === 'irrigation') setAutoWaterActive(true);
+    if (equip && item.category === 'ac') setAutoClimateActive(true);
+    confetti({ particleCount: 50, spread: 60 });
+    addXp(item.tier * 15, 'Compra de Equipamiento');
+    showNotification(`NFT minteado: ${item.name}${equip ? ' — instalado' : ''}${item.kind === 'consumable' ? ` (+${item.amount} ${item.unit})` : ''}`, 'success');
+    return true;
+  };
+
+  const setAssetEquipped = (assetId: string, equipped: boolean) => {
+    playClickSound();
+    setAssets(prev => {
+      const target = prev.find(a => a.id === assetId);
+      const item = target && CATALOG_BY_ID[target.catalogId];
+      if (!target || item?.kind !== 'equipment') return prev;
+      return prev.map(a => {
+        if (a.id === assetId) return { ...a, equipped };
+        // one lamp / AC / irrigation system at a time
+        if (equipped && SINGLE_SLOT.includes(item.category) && CATALOG_BY_ID[a.catalogId]?.category === item.category) return { ...a, equipped: false };
+        return a;
+      });
+    });
+    const item = CATALOG_BY_ID[assets.find(a => a.id === assetId)?.catalogId ?? ''];
+    if (equipped && item?.category === 'irrigation') setAutoWaterActive(true);
+    if (equipped && item?.category === 'ac') setAutoClimateActive(true);
+  };
+
+  const repairAsset = (assetId: string): boolean => {
+    const asset = assets.find(a => a.id === assetId);
+    const item = asset && CATALOG_BY_ID[asset.catalogId];
+    if (!asset || !item || asset.durability === undefined) return false;
+    if (asset.durability >= 99) {
+      showNotification('Este equipo está como nuevo.', 'info');
+      return false;
+    }
+    const cost = repairCostOf(asset);
+    if (floraBalance < cost) {
+      showNotification(`Saldo insuficiente: la reparación cuesta ${cost} $FLORA`, 'info');
+      return false;
+    }
+    recordBurnTransaction('BURN_REPAIR', cost, `ChronoFlora: Reparación de ${item.name} (quema permanente)`);
+    setAssets(prev => prev.map(a => a.id === assetId ? { ...a, durability: 100 } : a));
+    showNotification(`${item.name} reparado al 100 % (${cost} $FLORA quemados)`, 'success');
+    return true;
+  };
+
+  const resources = (() => {
+    const flags = { autoClimate: simEnvRef.current.autoClimate, autoWater: simEnvRef.current.autoWater };
+    const { kwhPerDay, solarKwhPerDay } = powerDraw(equipStats, indoorPlants[0], flags);
+    const energy = stockOf(assets, 'energy');
+    const net = kwhPerDay - solarKwhPerDay;
+    return { water: stockOf(assets, 'water'), nutrient: stockOf(assets, 'nutrient'), energy, kwhPerDay, solarKwhPerDay, energyDays: net <= 0.001 ? Infinity : energy / net };
+  })();
+
   // --- NUTRIENT DOSING & BRAND FEEDING TABLES ---
   const applyNutrientStage = (stageIndex: number) => {
     if (!activePlant) return;
@@ -1778,6 +1961,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showNotification(`Saldo insuficiente: el ciclo quema ${spec.feeFlora} $FLORA`, 'info');
       return null;
     }
+    if (!takeStation(spec.stationId)) return null;
 
     playClickSound();
     if (spec.inputKind === 'flower') setRawFlowerGrams(prev => Math.max(0, Number((prev - spec.grams).toFixed(2))));
@@ -1829,6 +2013,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showNotification(`Saldo insuficiente: el análisis quema ${feeFlora} $FLORA`, 'info');
       return null;
     }
+    if (!takeStation('hplc')) return null;
     recordBurnTransaction('BURN_PROCESS', feeFlora, `ChronoFlora Lab: Análisis HPLC de ${prod.name}`);
     setMachines(prev => prev.map(m => {
       if (m.id !== 'hplc_analyzer') return m;
@@ -2138,6 +2323,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         trainIndoorCanopy,
         plantNewSeed,
         waterPlant,
+        assets,
+        equipStats,
+        resources,
+        buyAsset,
+        setAssetEquipped,
+        repairAsset,
+        ownsStation: (stationId: string) => ownsStation(assets, stationId),
         feedNutrients,
         setTemperature,
         setHumidity,

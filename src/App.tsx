@@ -18,6 +18,7 @@ import { NotificationToast } from './components/NotificationToast';
 import { TxToast } from './components/TxToast';
 import { QuestProgressBar } from './components/QuestProgressBar';
 import { Dock } from './components/Dock';
+import { ResourceBar } from './components/ResourceBar';
 import { SubTabs } from './components/SubTabs';
 import { ParticleField } from './components/game/GameUI';
 import { NAV_GROUPS, groupOfTab } from './nav';
@@ -70,6 +71,8 @@ function ChronoFloraApp() {
             <QuestProgressBar />
           </div>
         </div>
+
+        {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && <ResourceBar onOpenMarket={() => goToTab('market')} />}
 
         {currentTab === 'cultivo' && <CultivationView />}
         {currentTab === 'semillas' && <SeedBankView onNavigateToCultivation={() => goToTab('cultivo')} />}

@@ -84,6 +84,8 @@ export interface PlantInGrow {
   estimatedDryYieldGrams: number;
   /** full-precision copy of progress / moisture / EC / health kept by the real-time engine (visible fields are rounded) */
   sim?: { progress: number; moisture: number; ec: number; health: number };
+  /** growth bonus from the nutrient brand used at the last feeding */
+  feedBonus?: number;
 }
 
 export type GrowRoomId = 'germination' | 'vegetative' | 'flowering' | 'mothers_fathers';
@@ -226,6 +228,8 @@ export interface LabRunSpec {
   pricePerGram: number;   // $FLORA market value per output gram
   feeFlora: number;       // burned on every cycle (deflationary sink)
   xp?: number;
+  /** lab station running the cycle: needs its licence NFT and burns electricity (economy/catalog.ts USE.labKwhPerCycle) */
+  stationId?: string;
 }
 
 export interface GenomicPatent {
@@ -257,7 +261,7 @@ export interface VirtualBrand {
 export interface SolanaTransaction {
   id: string;
   signature: string;
-  type: 'BURN_SPEEDUP' | 'BURN_REPAIR' | 'BURN_PATENT' | 'BURN_PROCESS' | 'AIRDROP' | 'V2P_CLAIM' | 'DISPENSARY_SALE';
+  type: 'BURN_SPEEDUP' | 'BURN_REPAIR' | 'BURN_PATENT' | 'BURN_PROCESS' | 'BURN_PURCHASE' | 'AIRDROP' | 'V2P_CLAIM' | 'DISPENSARY_SALE';
   amountFlora: number;
   amountSol?: number;
   timestamp: number;
@@ -366,5 +370,7 @@ export interface UserAccountData {
   processedProducts?: ProcessedProduct[];
   autoWaterActive?: boolean;
   autoClimateActive?: boolean;
+  /** NFT assets the player owns (equipment, consumables, licences) — see economy/catalog.ts */
+  assets?: import('../economy/catalog').OwnedAsset[];
 }
 

@@ -15,15 +15,44 @@ export function calculateVpd(tempC: number, rhPercent: number): number {
   return Math.max(0.1, Number(vpd.toFixed(2)));
 }
 
+/** Installed equipment, as numbers (see economy/catalog.ts equipStatsOf). */
+export interface EquipInput {
+  lampWatts: number;
+  lampMaxPpfd: number;
+  acKw: number;
+  pumpKw: number;
+  solarKw: number;
+  waterPerPlantAuto: number;
+}
+
+/** Consumable stock the simulation may spend (mutated by advanceWorld; the caller applies the difference). */
+export interface Budget { waterL: number; energyKwh: number }
+
 export interface SimEnv {
   autoWater: boolean;
   autoClimate: boolean;
   facilityBonus: number;
   /** global CO2 fallback when a plant has none */
   co2Ppm: number;
-  /** 0 = lamps off (no energy), 1 = lamps on */
+  /** 0 = lamps off (no energy), 1 = lamps on. Ignored when `equip` is given (derived from electricity). */
   lightOn: number;
   getRoomTarget: (roomId: string | undefined) => { tempC: number; rh: number } | undefined;
+  /** when present, lamps/AC/pumps draw electricity from `budget` and auto-drip spends water */
+  equip?: EquipInput;
+  budget?: Budget;
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+/** Average electrical draw (kW) over a day and kWh/day, for the runway shown to the player. */
+export function powerDraw(equip: EquipInput, plant: Pick<PlantInGrow, 'lightSchedule' | 'ppfdLightIntensity'> | undefined, flags: { autoClimate: boolean; autoWater: boolean }) {
+  const frac = LIGHT_FRACTION[plant?.lightSchedule ?? '18/6'] ?? 0.75;
+  const ppfd = plant?.ppfdLightIntensity ?? 0;
+  const lampKw = equip.lampMaxPpfd > 0 ? (equip.lampWatts / 1000) * clamp(ppfd / equip.lampMaxPpfd, 0.3, 1) * frac : 0;
+  const acKw = flags.autoClimate ? equip.acKw * 0.5 : 0;
+  const pumpKw = flags.autoWater ? equip.pumpKw * 0.25 : 0;
+  const avgKw = lampKw + acKw + pumpKw;
+  return { avgKw, kwhPerDay: avgKw * 24, solarKwhPerDay: equip.solarKw * 0.25 * 24 };
 }
 
 /** Real seconds a genetic needs from seed to harvest at nominal conditions (3–5 days). */
@@ -60,7 +89,10 @@ export function growthPerSecond(p: PlantInGrow, env: SimEnv): number {
   const vpdF = optimal ? 1 : 0.7;
   const co2 = p.co2Ppm || env.co2Ppm;
   const co2F = co2 >= 1100 ? 1.35 : co2 >= 800 ? 1.18 : 1;
-  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * (env.lightOn > 0 ? 1 : 0);
+  // stronger lamps grow faster, with diminishing returns (starter 600 W lamp = 1.0)
+  const ppfdF = env.equip ? Math.sqrt(clamp(Math.min(p.ppfdLightIntensity, env.equip.lampMaxPpfd || 0) / 480, 0.4, 3)) : 1;
+  const feedF = s.ec >= B.ecOk ? (p.feedBonus ?? 1) : 1;
+  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * ppfdF * feedF * (env.lightOn > 0 ? 1 : 0);
 }
 
 /** Seconds left until harvest at the current rate (Infinity if stalled). */
@@ -93,7 +125,13 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   const lit = (LIGHT_FRACTION[p.lightSchedule] ?? 0.75) * env.lightOn;
   const drain = (B.moistureDrainPerHourDark + (B.moistureDrainPerHourLit - B.moistureDrainPerHourDark) * lit) * (B.drinkBase + B.drinkPerProgress * (s.progress / 100));
   let moisture = Math.max(5, s.moisture - drain * hours);
-  if (env.autoWater && moisture < B.autoWaterTrigger) moisture = B.autoWaterTarget;
+  if (env.autoWater && moisture < B.autoWaterTrigger) {
+    const cost = env.equip?.waterPerPlantAuto ?? 0.5;
+    if (!env.budget || env.budget.waterL >= cost) {
+      if (env.budget) env.budget.waterL -= cost;
+      moisture = B.autoWaterTarget;
+    }
+  }
 
   // --- nutrient solution fades ---
   const ec = Math.max(B.ecFloor, s.ec - B.ecDecayPerHour * hours);
@@ -156,7 +194,18 @@ export function advanceWorld(plants: PlantInGrow[], dtSeconds: number, env: SimE
   let cur = plants;
   while (remaining > 0.5) {
     const step = Math.min(B.chunkSeconds, remaining);
-    cur = cur.map((p) => advancePlant(p, step, env));
+    let chunkEnv = env;
+    if (env.equip && env.budget) {
+      // electricity: solar first, then the stock. Not enough power → the lamps (and AC) run only part of the chunk.
+      const hours = step / 3600;
+      const { avgKw } = powerDraw(env.equip, cur[0], { autoClimate: env.autoClimate, autoWater: env.autoWater });
+      const need = avgKw * hours;
+      const have = env.budget.energyKwh + env.equip.solarKw * 0.25 * hours;
+      const lightOn = env.equip.lampWatts <= 0 ? 0 : need <= 0 ? 1 : Math.min(1, have / need);
+      env.budget.energyKwh = Math.max(0, have - Math.min(need, have));
+      chunkEnv = { ...env, lightOn, autoClimate: env.autoClimate && lightOn > 0.5 };
+    }
+    cur = cur.map((p) => advancePlant(p, step, chunkEnv));
     remaining -= step;
   }
   return cur;

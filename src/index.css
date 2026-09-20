@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* the 3D assets in public/ are binary: keep Tailwind's automatic class scan away from them (it blew up to GBs of RAM) */
+@source not "../public";
 
 /* ── Neon cyber-botanical theme ─────────────────────────────────────────────
    Re-tints Tailwind's neutral scale toward green-black so every existing view
@@ -522,4 +524,60 @@ body::before {
 
 .animate-led-shimmer {
   animation: ledShimmer 3s ease-in-out infinite;
+}
+
+/* ───────── Grow Market animations ─────────
+   transform / opacity only (animated filters and widths made this laptop stutter). Icons animate on hover, not all at once. */
+@keyframes shopIn { from { opacity: 0; transform: translateY(16px) scale(0.965); } to { opacity: 1; transform: none; } }
+.shop-in { animation: shopIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: var(--d, 0ms); }
+
+@keyframes shopSwap { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+.shop-swap { animation: shopSwap 0.35s ease-out backwards; }
+
+@keyframes shopBump { 0% { transform: scale(1); } 30% { transform: scale(1.2); color: #fde68a; } 100% { transform: scale(1); } }
+.shop-bump { display: inline-block; animation: shopBump 0.6s ease-out; }
+
+/* purchase feedback: card pulse + expanding ring + floating "+50 L" */
+@keyframes shopBuy { 0% { transform: scale(1); } 30% { transform: scale(1.04); } 100% { transform: scale(1); } }
+.shop-buy { animation: shopBuy 0.5s ease; }
+@keyframes shopRing { from { opacity: 0.9; transform: scale(0.5); } to { opacity: 0; transform: scale(2.6); } }
+.shop-ring { position: absolute; left: 50%; bottom: 14px; width: 44px; height: 44px; margin-left: -22px; border-radius: 999px; border: 2px solid var(--rarity); pointer-events: none; animation: shopRing 0.75s ease-out forwards; }
+@keyframes shopFloat { 0% { opacity: 0; transform: translate(-50%, 8px) scale(0.8); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -64px) scale(1.06); } }
+.shop-float { position: absolute; left: 50%; bottom: 52px; z-index: 5; pointer-events: none; white-space: nowrap; padding: 3px 10px; border-radius: 999px; font: 700 12px/1.2 ui-monospace, monospace; color: #04140c; background: var(--rarity); animation: shopFloat 1.15s ease-out forwards; }
+
+/* category icon: halo + a motion that fits the item, only while the card is hovered */
+.shop-ico { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
+.shop-ico::before { content: ''; position: absolute; inset: 0; border-radius: 999px; border: 1px solid var(--c); opacity: 0; }
+@keyframes shopHalo { 0% { opacity: 0.75; transform: scale(0.7); } 100% { opacity: 0; transform: scale(1.7); } }
+.rarity-frame:hover .shop-ico::before { animation: shopHalo 1.4s ease-out infinite; }
+@keyframes shopFlick { 0%, 100% { opacity: 1; transform: scale(1); } 45% { opacity: 0.72; transform: scale(1.14); } 55% { opacity: 1; transform: scale(1.02); } }
+@keyframes shopZap { 0%, 100% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-2px) rotate(-9deg); } 50% { transform: translateY(1px) rotate(7deg); } 75% { transform: translateY(-1px) rotate(-3deg); } }
+@keyframes shopDrip { 0% { transform: translateY(-4px); opacity: 0.45; } 60% { opacity: 1; } 100% { transform: translateY(4px); opacity: 0.45; } }
+@keyframes shopSpin { to { transform: rotate(360deg); } }
+@keyframes shopBubble { 0%, 100% { transform: translateY(2px) scale(0.95); } 50% { transform: translateY(-3px) scale(1.08); } }
+@keyframes shopDrift { 0%, 100% { transform: translateX(-2px); } 50% { transform: translateX(3px); } }
+@keyframes shopSweep { 0%, 100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
+.rarity-frame:hover .shop-ico--lamp svg { animation: shopFlick 1.6s ease-in-out infinite; }
+.rarity-frame:hover .shop-ico--energy svg { animation: shopZap 0.9s ease-in-out infinite; }
+.rarity-frame:hover .shop-ico--water svg,
+.rarity-frame:hover .shop-ico--irrigation svg { animation: shopDrip 1.1s ease-in infinite; }
+.rarity-frame:hover .shop-ico--solar svg { animation: shopSpin 7s linear infinite; }
+.rarity-frame:hover .shop-ico--ac svg { animation: shopSpin 5s linear infinite; }
+.rarity-frame:hover .shop-ico--nutrient svg { animation: shopBubble 1.3s ease-in-out infinite; }
+.rarity-frame:hover .shop-ico--co2 svg { animation: shopDrift 1.5s ease-in-out infinite; }
+.rarity-frame:hover .shop-ico--meter svg,
+.rarity-frame:hover .shop-ico--license svg { animation: shopSweep 1.2s ease-in-out infinite; }
+
+/* legendary cards catch the light every few seconds */
+@keyframes shopGlint { 0%, 68% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+.rarity-frame.shop-legend:not(:hover)::after { animation: shopGlint 5.5s ease-in-out infinite; animation-delay: var(--d, 0ms); }
+
+.shop-chip { transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
+.shop-chip:hover { transform: translateY(-1px); }
+.shop-chip:active { transform: scale(0.96); }
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-in, .shop-swap, .shop-bump, .shop-buy, .shop-ring, .shop-float,
+  .shop-ico::before, .shop-ico svg, .rarity-frame.shop-legend::after { animation: none !important; }
+  .shop-float { opacity: 1; }
 }
