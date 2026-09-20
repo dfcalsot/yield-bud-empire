@@ -4,6 +4,7 @@ import { useGame } from '../context/GameContext';
 import { GROW_ROOMS_CONFIG } from '../data/initialData';
 import { PlantView } from './PlantView';
 import { CarePanel } from './CarePanel';
+import { GardenerCameo } from './npc/GardenerCameo';
 import { NutrientBottle, FlaskLeaf, CannabisLeaf } from './icons/CannabisIcons';
 import { StatBar } from './game/GameUI';
 import type { GrowStage } from '../types';
@@ -340,6 +341,8 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
           <CarePanel onClose={() => setCareOpen(false)} onOpenMarket={() => { setCareOpen(false); onOpenMarket?.(); }} />
         </div>
       )}
+
+      {care.gardenerLevel > 0 && <GardenerCameo />}
 
       {/* ── action rail ── */}
       {activePlant && (
