@@ -5,6 +5,7 @@ import { Navbar } from './components/Navbar';
 import { CultivationView } from './components/CultivationView';
 import { PlanetView } from './components/planet/PlanetView';
 import { ProfileView } from './components/profile/ProfileView';
+import { AuthGate } from './auth/AuthGate';
 import { SeedBankView } from './components/SeedBankView';
 import { GrowMarketView } from './components/GrowMarketView';
 import { NutrientTablesView } from './components/NutrientTablesView';
@@ -145,9 +146,14 @@ function ChronoFloraApp() {
 }
 
 export default function App() {
+  // the game only opens for a signed-in session (see server/ and SECURITY.md)
   return (
-    <GameProvider>
-      <ChronoFloraApp />
-    </GameProvider>
+    <AuthGate>
+      {() => (
+        <GameProvider>
+          <ChronoFloraApp />
+        </GameProvider>
+      )}
+    </AuthGate>
   );
 }

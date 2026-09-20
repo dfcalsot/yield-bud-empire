@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Check, Coins, Flame, Lock, Pencil, Settings, Upload, X } from 'lucide-react';
+import { Check, Coins, Flame, LogOut, Lock, Pencil, Settings, Upload, X } from 'lucide-react';
+import { logoutServer } from '../../auth/api';
 import { useGame } from '../../context/GameContext';
 import { Avatar, AvatarArt, fileToAvatarDataUrl, RARITY_COLOR, RARITY_LABEL } from './AvatarArt';
 import { Npc, useNpc } from '../npc/Npc';
@@ -130,6 +131,7 @@ export const ProfileView: React.FC<{ onOpenAccountModal: () => void }> = ({ onOp
                 </div>
                 <button className="care-btn care-btn--gold" onClick={saveNick} disabled={nick.trim() === currentUser.displayName}>Guardar</button>
                 <button className="care-btn" onClick={onOpenAccountModal}><Settings className="w-3.5 h-3.5" /> Cuenta</button>
+                <button className="care-btn" onClick={async () => { await logoutServer(); window.location.reload(); }}><LogOut className="w-3.5 h-3.5" /> Salir</button>
               </div>
               {nickErr && <p className="text-[11px] font-mono text-red-300 mt-1">{nickErr}</p>}
               <p className="text-[10.5px] font-mono text-neutral-500 mt-1">@{currentUser.username} · {currentUser.role}</p>
