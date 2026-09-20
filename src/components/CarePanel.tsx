@@ -9,8 +9,8 @@ const ratingColor = (r: number) => (r >= 75 ? '#34d399' : r >= 45 ? '#fbbf24' : 
 const KINDS: PestKind[] = ['mites', 'mold', 'rot'];
 
 /** "Cuidado de la sala": plagues, gardener rating, cleaning, recycling and the hired gardener. */
-export const CarePanel: React.FC<{ onClose: () => void; onOpenMarket: () => void }> = ({ onClose, onOpenMarket }) => {
-  const { care, indoorPlants, selectedPlantIndex, assets, treatPests, cleanRoom, recycleGarbage } = useGame();
+export const CarePanel: React.FC<{ onClose: () => void; onOpenMarket: (cat?: string) => void }> = ({ onClose, onOpenMarket }) => {
+  const { care, indoorPlants, selectedPlantIndex, assets, treatPests, cleanRoom, recycleGarbage, removeMales, saveCurrentPlantAsMotherOrFather } = useGame();
   const selected = indoorPlants[selectedPlantIndex];
   const byKind = KINDS.map((k) => ({ k, n: indoorPlants.filter((p) => p.pest?.kind === k).length }));
   const stock = pestStock(assets);
@@ -64,6 +64,21 @@ export const CarePanel: React.FC<{ onClose: () => void; onOpenMarket: () => void
         </div>
       </div>
 
+      {/* sexing */}
+      {(care.males > 0 || care.pollinated > 0 || (selected && selected.sex === 'male')) && (
+        <div className="rounded-lg border border-sky-400/30 bg-sky-400/5 p-2.5 space-y-1.5">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-sky-300">♂ Sexado</div>
+          <p className="text-[10.5px] text-neutral-300 leading-snug">
+            {care.males > 0 ? `${care.males} macho${care.males > 1 ? 's' : ''} revelado${care.males > 1 ? 's' : ''} en la sala. Quítalos antes de la floración (55 %) o polinizarán a las hembras.` : 'Sin machos revelados.'}
+            {care.pollinated > 0 && ` 🐝 ${care.pollinated} polinizada${care.pollinated > 1 ? 's' : ''}: dan menos flor pero también semillas.`}
+          </p>
+          <div className="flex gap-1.5">
+            <button className="care-btn care-btn--male flex-1" disabled={care.males === 0} onClick={() => removeMales()}>Quitar machos</button>
+            <button className="care-btn flex-1" disabled={!(selected && selected.sex === 'male')} onClick={() => saveCurrentPlantAsMotherOrFather('Padre (Donante de Polen)')}>Guardar como padre</button>
+          </div>
+        </div>
+      )}
+
       {/* cleaning */}
       <div className="grid grid-cols-2 gap-1.5">
         <button onClick={() => cleanRoom()} className={`care-btn ${cleanWait > 0 ? 'opacity-60' : ''}`} title={`+${USE.cleanGain} de calificación cada ${USE.cleanCooldownHours} h`}>
@@ -87,7 +102,10 @@ export const CarePanel: React.FC<{ onClose: () => void; onOpenMarket: () => void
             </div>
           </div>
         </div>
-        <button onClick={onOpenMarket} className="care-btn w-full mt-2"><Sparkles className="w-3.5 h-3.5" /> {care.gardenerLevel === 0 ? 'Contratar jardinero' : 'Renovar / tratamientos'}</button>
+        <div className="flex gap-1.5 mt-2">
+          <button onClick={() => onOpenMarket('service')} className="care-btn flex-1"><Sparkles className="w-3.5 h-3.5" /> {care.gardenerLevel === 0 ? 'Contratar jardinero' : 'Renovar contrato'}</button>
+          <button onClick={() => onOpenMarket('pest')} className="care-btn flex-1 care-btn--hot"><Bug className="w-3.5 h-3.5" /> Tratamientos</button>
+        </div>
       </div>
     </div>
   );

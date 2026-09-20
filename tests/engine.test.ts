@@ -1,4 +1,4 @@
-import { advancePlant, advanceWorld, cycleSecondsOf, etaSeconds, hoursUntilMoisture, pestCount, SimEnv } from '../src/sim/engine';
+import { advancePlant, advanceWorld, cycleSecondsOf, etaSeconds, hoursUntilMoisture, pestCount, sexFor, POLLINATED_YIELD, SimEnv } from '../src/sim/engine';
 import type { PlantInGrow, RegionId } from '../src/types';
 import { plotOffer, REGION_BY_ID, REGIONS, siteConditions, terroirOf, weatherOn, regionDistance, WeatherKind } from '../src/sim/terroir';
 
@@ -172,6 +172,23 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
   ok('parcela: al aire libre no se gasta electricidad de las lámparas', eb.energyKwh === 50, `(${eb.energyKwh} kWh)`);
   const lost = advanceWorld([outdoor('mexico', { id: 'x', siteId: 'desconocida' })], 3600, env({ site: site('mexico'), clockMs: 0, budget: { waterL: 0, energyKwh: 0 } }))[0];
   ok('una parcela desconocida se trata como sala interior (no rompe)', Number.isFinite(lost.sim!.progress));
+}
+// 16 · sexing: 50/50 for regular seeds, feminized always female, males pollinate their room / plot
+{
+  const males = Array.from({ length: 400 }, (_, i) => sexFor(`seed-${i}`, 'Regular')).filter((s) => s === 'male').length;
+  ok('sexado: semilla regular ≈ 50 % machos', males > 160 && males < 240, `(${males} de 400)`);
+  ok('sexado: feminizada / auto siempre hembra', ['Feminizada', 'Autofloreciente', 'Fast Flowering', undefined].every((t) => Array.from({ length: 100 }, (_, i) => sexFor(`s${i}`, t)).every((s) => s === 'female')));
+  ok('sexado: determinista (misma semilla = mismo sexo)', sexFor('abc-123', 'Landrace') === sexFor('abc-123', 'Landrace'));
+  const ploted = (o: Partial<PlantInGrow>) => plant(65, { progressPercent: 62, stage: 'flowering', sim: undefined, estimatedDryYieldGrams: 100, ...o });
+  const room = advanceWorld([ploted({ id: 'm', sex: 'male' }), ploted({ id: 'f1', sex: 'female' }), ploted({ id: 'f2' }), ploted({ id: 'f3', siteId: 'plotB', sex: 'female' })], 600, env({ autoWater: true }));
+  const by = (id: string) => room.find((p) => p.id === id)!;
+  ok('polinización: el macho en flor poliniza a las hembras de su sala (y a las de sexo sin definir)', by('f1').pollinated === true && by('f2').pollinated === true);
+  ok('polinización: la cosecha baja al 60 % una sola vez', by('f1').estimatedDryYieldGrams === Math.round(100 * POLLINATED_YIELD), `(${by('f1').estimatedDryYieldGrams} g)`);
+  ok('polinización: una hembra de otra parcela no se poliniza', !by('f3').pollinated);
+  const young = advanceWorld([ploted({ id: 'm2', sex: 'male', progressPercent: 40 }), ploted({ id: 'f4', progressPercent: 45 })], 600, env({ autoWater: true }));
+  ok('polinización: un macho joven (<55 %) todavía no poliniza', !young[1].pollinated);
+  const twice = advanceWorld(room, 600, env({ autoWater: true }));
+  ok('polinización: no se aplica dos veces', twice.find((p) => p.id === 'f1')!.estimatedDryYieldGrams === by('f1').estimatedDryYieldGrams);
 }
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 process.exit(failed ? 1 : 0);

@@ -14,7 +14,8 @@ interface CultivationSceneProps {
   onOpenSeedModal: () => void;
   onOpenFacility: () => void;
   onOpenNutrients: () => void;
-  onOpenMarket?: () => void;
+  onOpenMarket?: (cat?: string) => void;
+  onOpenPlanet?: () => void;
   onOpenPanel: () => void;
   onShowRoom: () => void;
 }
@@ -115,7 +116,7 @@ const SkillButton: React.FC<{
 
 /* ───────────────────────────── scene ───────────────────────────── */
 
-export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedModal, onOpenFacility, onOpenNutrients, onOpenPanel, onShowRoom, onOpenMarket }) => {
+export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedModal, onOpenFacility, onOpenNutrients, onOpenPanel, onShowRoom, onOpenMarket, onOpenPlanet }) => {
   const {
     activePlant, indoorPlants, selectedPlantIndex, selectPlant,
     waterPlant, feedNutrients, trainPlant, speedUpGrowth, harvestPlant, saveCurrentPlantAsMotherOrFather,
@@ -157,6 +158,8 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const clockRows = activePlant ? [
     { icon: '⏱', text: activePlant.stage === 'ready_harvest' ? '¡Lista para cosechar!' : isFinite(eta) ? `Cosecha en ${formatDuration(eta)}` : 'Crecimiento en pausa', warn: !isFinite(eta) && activePlant.stage !== 'ready_harvest' },
     { icon: '💧', text: activePlant.stage === 'ready_harvest' ? 'Sin riego pendiente' : thirsty ? '¡Necesita agua ya!' : `Regar en ~${formatDuration(nextWaterH * 3600)}`, warn: thirsty },
+    ...(activePlant.sex === 'male' && activePlant.progressPercent >= 30 ? [{ icon: '♂', text: 'Macho: quítalo en Cuidado', warn: true }] : []),
+    ...(activePlant.pollinated ? [{ icon: '🐝', text: 'Polinizada · dará semillas', warn: false }] : []),
     ...(activePlant.pest ? [{ icon: PEST_INFO[activePlant.pest.kind].emoji, text: `${PEST_INFO[activePlant.pest.kind].label} · ${Math.max(1, Math.round(activePlant.pest.hours))} h`, warn: true }] : []),
   ] : [];
   const canHarvest = !!activePlant && activePlant.progressPercent >= 80;
@@ -329,8 +332,9 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
             <button onClick={onOpenPanel} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-neutral-600/40 text-[11px] font-semibold text-neutral-200 hover:border-cyan-300/50 cursor-pointer transition" title="Clima, luz, CO₂ e instrumental completo">
               <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-300" /> Panel
             </button>
+            {onOpenPlanet && <button onClick={onOpenPlanet} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-sky-400/40 text-[11px] font-semibold text-sky-200 hover:border-sky-300/70 cursor-pointer transition" title="Tus parcelas al aire libre: el Planeta"><span>🌎</span> Parcelas</button>}
             <button onClick={() => setCareOpen((v) => !v)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border text-[11px] font-semibold text-neutral-200 cursor-pointer transition ${care.pests > 0 ? 'border-pink-400/70 cf-ring' : 'border-neutral-600/40 hover:border-emerald-300/50'}`} title="Plagas, calificación de jardinero, limpieza y jardinero del vivero">
-              <Bug className="w-3.5 h-3.5 text-pink-300" /> Cuidado{care.pests > 0 && <span className="px-1 rounded bg-pink-400 text-neutral-950 text-[9px] font-black">{care.pests}</span>}<span className="text-[9px] font-mono" style={{ color: care.rating >= 75 ? '#6ee7b7' : care.rating >= 45 ? '#fcd34d' : '#fca5a5' }}>{care.rating}%</span>
+              <Bug className="w-3.5 h-3.5 text-pink-300" /> Cuidado{care.males > 0 && <span className="px-1 rounded bg-sky-400 text-neutral-950 text-[9px] font-black">♂{care.males}</span>}{care.pests > 0 && <span className="px-1 rounded bg-pink-400 text-neutral-950 text-[9px] font-black">{care.pests}</span>}<span className="text-[9px] font-mono" style={{ color: care.rating >= 75 ? '#6ee7b7' : care.rating >= 45 ? '#fcd34d' : '#fca5a5' }}>{care.rating}%</span>
             </button>
           </div>
         </div>

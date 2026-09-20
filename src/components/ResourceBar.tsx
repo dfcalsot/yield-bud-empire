@@ -21,7 +21,7 @@ export const Bump: React.FC<{ value: string }> = ({ value }) => {
  * Live stock of the three consumables that keep the room running (tank water, nutrients, electricity).
  * Sits above every view so the player sees the lamps are about to go dark before it happens.
  */
-export const ResourceBar: React.FC<{ onOpenMarket: () => void }> = ({ onOpenMarket }) => {
+export const ResourceBar: React.FC<{ onOpenMarket: (cat?: string) => void }> = ({ onOpenMarket }) => {
   const { resources, equipStats, care } = useGame();
   const energyLow = Number.isFinite(resources.energyDays) && resources.energyDays < 0.5 && equipStats.lampWatts > 0;
   const energyOut = resources.energy <= 0.05 && resources.solarKwhPerDay < resources.kwhPerDay && equipStats.lampWatts > 0;
@@ -29,11 +29,11 @@ export const ResourceBar: React.FC<{ onOpenMarket: () => void }> = ({ onOpenMark
   const nutrientLow = resources.nutrient < 90;
 
   const chip = (
-    key: string, Icon: React.ComponentType<{ className?: string }>, color: string, value: string, sub: string, state: 'ok' | 'low' | 'out', label: string
+    key: string, Icon: React.ComponentType<{ className?: string }>, color: string, value: string, sub: string, state: 'ok' | 'low' | 'out', label: string, cat?: string
   ) => (
     <button
       key={key}
-      onClick={onOpenMarket}
+      onClick={() => onOpenMarket(cat)}
       title={`${label} — abrir el Grow Market`}
       className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg border text-left transition cursor-pointer hover:bg-neutral-900/80 ${
         state === 'out' ? 'border-red-400/70 bg-red-500/10 animate-pulse' : state === 'low' ? 'border-amber-400/60 bg-amber-400/5' : 'border-neutral-700/60 bg-neutral-950/50'
@@ -52,17 +52,17 @@ export const ResourceBar: React.FC<{ onOpenMarket: () => void }> = ({ onOpenMark
   return (
     <div className="flex flex-wrap items-center gap-2" aria-label="Recursos de la sala">
       {chip('energy', Zap, '#fbbf24', `${resources.energy.toFixed(1)} kWh`,
-        energyOut ? 'sin energía' : `autonomía ${fmtRunway(resources.energyDays)}`, energyOut ? 'out' : energyLow ? 'low' : 'ok', 'Electricidad')}
+        energyOut ? 'sin energía' : `autonomía ${fmtRunway(resources.energyDays)}`, energyOut ? 'out' : energyLow ? 'low' : 'ok', 'Electricidad', 'energy')}
       {chip('water', Droplets, '#38bdf8', `${resources.water.toFixed(resources.water < 100 ? 1 : 0)} L`,
-        resources.water <= 0 ? 'tanque vacío' : waterLow ? 'agua baja' : 'agua', resources.water <= 0 ? 'out' : waterLow ? 'low' : 'ok', 'Agua')}
+        resources.water <= 0 ? 'tanque vacío' : waterLow ? 'agua baja' : 'agua', resources.water <= 0 ? 'out' : waterLow ? 'low' : 'ok', 'Agua', 'water')}
       {chip('nutrient', FlaskConical, '#a78bfa', `${Math.floor(resources.nutrient)} ml`,
-        resources.nutrient <= 0 ? 'sin abono' : nutrientLow ? 'abono bajo' : 'abono', resources.nutrient <= 0 ? 'out' : nutrientLow ? 'low' : 'ok', 'Nutrientes')}
+        resources.nutrient <= 0 ? 'sin abono' : nutrientLow ? 'abono bajo' : 'abono', resources.nutrient <= 0 ? 'out' : nutrientLow ? 'low' : 'ok', 'Nutrientes', 'nutrient')}
       {chip('care', ShieldCheck, care.rating >= 75 ? '#34d399' : care.rating >= 45 ? '#fbbf24' : '#f87171', `${care.rating} %`,
-        care.rating >= 75 ? 'sala impecable' : care.rating >= 45 ? 'calificación' : 'sala sucia', care.rating < 30 ? 'out' : care.rating < 55 ? 'low' : 'ok', 'Calificación de jardinero')}
-      {care.pests > 0 && chip('pests', Bug, '#f472b6', `${care.pests} plaga${care.pests > 1 ? 's' : ''}`, 'tratar ya', 'out', 'Plagas activas')}
-      {care.plotPests > 0 && chip('plotpests', Bug, '#fb7185', `${care.plotPests} en parcelas`, 'plagas al aire libre', 'out', 'Plagas en las parcelas')}
+        care.rating >= 75 ? 'sala impecable' : care.rating >= 45 ? 'calificación' : 'sala sucia', care.rating < 30 ? 'out' : care.rating < 55 ? 'low' : 'ok', 'Calificación de jardinero', 'service')}
+      {care.pests > 0 && chip('pests', Bug, '#f472b6', `${care.pests} plaga${care.pests > 1 ? 's' : ''}`, 'tratar ya', 'out', 'Plagas activas', 'pest')}
+      {care.plotPests > 0 && chip('plotpests', Bug, '#fb7185', `${care.plotPests} en parcelas`, 'plagas al aire libre', 'out', 'Plagas en las parcelas', 'pest')}
       {care.gardenerLevel > 0 && chip('gardener', Sprout, '#86efac', `${care.gardenerDays.toFixed(1)} d`,
-        `jardinero ${care.gardenerLevel === 2 ? 'maestro' : 'aprendiz'}`, care.gardenerDays < 1 ? 'low' : 'ok', 'Jardinero contratado')}
+        `jardinero ${care.gardenerLevel === 2 ? 'maestro' : 'aprendiz'}`, care.gardenerDays < 1 ? 'low' : 'ok', 'Jardinero contratado', 'service')}
       {resources.solarKwhPerDay > 0 && (
         <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-yellow-300/30 bg-yellow-300/5 text-[10.5px] font-mono text-yellow-200">
           <Sun className="w-3.5 h-3.5" /> +{resources.solarKwhPerDay.toFixed(1)} kWh/día solar

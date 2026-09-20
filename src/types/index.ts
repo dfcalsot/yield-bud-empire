@@ -96,6 +96,10 @@ export interface PlantInGrow {
   age?: number;
   /** land plot this plant grows on (undefined = the indoor room) */
   siteId?: string;
+  /** sex, decided when the seed is planted (undefined = female: feminized / legacy plants). Shown from 30 % progress. */
+  sex?: 'female' | 'male';
+  /** a male released pollen nearby: less flower, but the harvest also gives seeds */
+  pollinated?: boolean;
 }
 
 /** A land plot NFT: 6×6 = 36 plants, with the ratings that decide how well things grow there. */

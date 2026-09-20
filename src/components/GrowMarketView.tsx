@@ -152,16 +152,17 @@ const Slot: React.FC<{
 
 /* ───────────────────────── main view ───────────────────────── */
 
-export const GrowMarketView: React.FC = () => {
+export const GrowMarketView: React.FC<{ initialCat?: string }> = ({ initialCat }) => {
   const {
     assets, resources, equipStats, buyAsset, setAssetEquipped, repairAsset, floraBalance, solBalance, calibrateMeter, care, recycleGarbage,
   } = useGame();
 
   const [tab, setTab] = useState<'buy' | 'bag'>('buy');
-  const [cat, setCat] = useState<AssetCategory | 'all'>('all');
+  const startCat = (CATEGORY_ORDER as string[]).includes(initialCat ?? '') ? (initialCat as AssetCategory) : 'all';
+  const [cat, setCat] = useState<AssetCategory | 'all'>(startCat);
   const [currency, setCurrency] = useState<'FLORA' | 'SOL'>('FLORA');
   const [qty, setQty] = useState(1);
-  const [selectedId, setSelectedId] = useState<string>(CATALOG.find((c) => c.category === 'energy')?.id ?? CATALOG[0].id);
+  const [selectedId, setSelectedId] = useState<string>((startCat !== 'all' ? CATALOG.find((c) => c.category === startCat) : CATALOG.find((c) => c.category === 'energy'))?.id ?? CATALOG[0].id);
   const [say, setSay] = useState<{ text: string; mood: Mood; key: number }>({ text: '¡Bienvenido al Mercado Chrono, cultivador! Mira los estantes; todo lo que compres se acuña como NFT.', mood: 'idle', key: 0 });
   const speak = useCallback((text: string, mood: Mood = 'idle') => setSay((s) => ({ text, mood, key: s.key + 1 })), []);
 

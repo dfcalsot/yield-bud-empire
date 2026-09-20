@@ -25,7 +25,7 @@ const Bar: React.FC<{ label: string; value: number; color: string }> = ({ label,
 const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
 /** The Planet: world map, the seven regions, the plots you own and Don Tomás, the farmer who guides you. */
-export const PlanetView: React.FC<{ onOpenSeedBank: () => void }> = ({ onOpenSeedBank }) => {
+export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (cat?: string) => void }> = ({ onOpenSeedBank, onOpenMarket }) => {
   const { plots, plotsForSale, buyPlot, floraBalance, solBalance, seedBank } = useGame();
   const now = useNow(30000);
   const [region, setRegion] = useState<RegionId | null>(null);
@@ -109,6 +109,8 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void }> = ({ onOpenSee
               <span className="mk-panel px-2.5 py-1.5 text-neutral-200">🗺️ <b className="text-amber-300">{plots.length}</b> parcelas</span>
               <span className="mk-panel px-2.5 py-1.5 text-neutral-200">🌱 <b className="text-emerald-300">{totalPlants}</b> plantas</span>
               <span className={`mk-panel px-2.5 py-1.5 ${totalReady ? 'text-amber-300 border-amber-400/50' : 'text-neutral-200'}`}>🌾 <b>{totalReady}</b> listas</span>
+              <button onClick={() => onOpenMarket('service')} className="mk-panel px-2.5 py-1.5 text-emerald-200 cursor-pointer hover:border-emerald-400/60" title="Grow Market → Servicios de vivero">🧑‍🌾 Contratar jardinero</button>
+              <button onClick={onOpenSeedBank} className="mk-panel px-2.5 py-1.5 text-emerald-200 cursor-pointer hover:border-emerald-400/60" title="Banco de semillas">🌱 Semillas</button>
               <button onClick={() => setCurrency((c) => (c === 'FLORA' ? 'SOL' : 'FLORA'))} className="mk-panel px-2.5 py-1.5 text-neutral-200 cursor-pointer hover:border-amber-400/50" title="Cambiar moneda de pago">
                 {currency === 'FLORA' ? <Flame className="inline w-3.5 h-3.5 text-amber-300" /> : <Coins className="inline w-3.5 h-3.5 text-purple-300" />} <b className={currency === 'FLORA' ? 'text-amber-200' : 'text-purple-200'}><Bump value={currency === 'FLORA' ? floraBalance.toLocaleString() : String(solBalance)} /></b> {currency === 'FLORA' ? '$FLORA' : 'SOL'}
               </button>

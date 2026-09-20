@@ -66,7 +66,7 @@ import {
   setSoundEnabled
 } from '../utils/audio';
 
-import { advanceWorld, calculateVpd, etaSeconds, formatDuration, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, SimEnv } from '../sim/engine';
+import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
 import { siteConditions, plotOffer, terroirOf, REGION_BY_ID, PLOT_SIZE, type PlotOffer } from '../sim/terroir';
 import {
   CATALOG_BY_ID, OwnedAsset, USE, newAsset, starterAssets, equipStatsOf, stockOf, spendResource, bestFeedBonus, repairCostOf,
@@ -136,7 +136,7 @@ interface GameContextType {
   plantIndoorBatch: (strain: Strain) => void;
   speedUpIndoorRoom: () => boolean;
   trainIndoorCanopy: () => void;
-  plantNewSeed: (strain: Strain) => void;
+  plantNewSeed: (strain: Strain, seedType?: string) => void;
   waterPlant: () => void;
   feedNutrients: () => void;
   setTemperature: (temp: number) => void;
@@ -183,7 +183,7 @@ interface GameContextType {
   ownsStation: (stationId: string) => boolean;
 
   // Plagues, gardener rating and nursery mode (HashKings-inspired)
-  care: { rating: number; cleanReadyInHours: number; pests: number; plotPests: number; garbage: number; gardenerLevel: 0 | 1 | 2; gardenerDays: number };
+  care: { rating: number; cleanReadyInHours: number; pests: number; plotPests: number; males: number; plotMales: number; pollinated: number; garbage: number; gardenerLevel: 0 | 1 | 2; gardenerDays: number };
   treatPests: (scope: 'selected' | 'all', plotId?: string) => void;
   cleanRoom: () => boolean;
   recycleGarbage: () => void;
@@ -198,6 +198,10 @@ interface GameContextType {
   feedPlot: (plotId: string) => void;
   harvestPlot: (plotId: string) => void;
   plotEta: (plot: OwnedPlot, plant: PlantInGrow) => number;
+  /** pull up the revealed males of the room (no plotId) or of a plot */
+  removeMales: (plotId?: string) => void;
+  /** keep a male of a plot as a pollen donor in the Sanctuary of mothers & fathers */
+  keepMaleAsFather: (plotId: string, slot: number) => void;
 
   // Nutrient Tables & Feeding
   nutrientBrands: NutrientBrand[];
@@ -1114,6 +1118,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const kinds = newPests.reduce<Record<string, number>>((m, p) => { const k = PEST_INFO[p.pest!.kind].label; m[k] = (m[k] ?? 0) + 1; return m; }, {});
       showNotification(`🐛 Plaga detectada en ${newPests.length} planta${newPests.length > 1 ? 's' : ''} (${Object.entries(kinds).map(([k, n]) => `${k} ×${n}`).join(', ')}). Trátalas desde el botón Cuidado.`, 'burn');
     }
+    const allBefore = [...before, ...plotList];
+    const allAfter = [...after, ...plotAfterList];
+    const newMales = allAfter.filter((p, i) => isMale(p) && sexRevealed(p) && !(allBefore[i] && isMale(allBefore[i]) && sexRevealed(allBefore[i])));
+    const newPollinated = allAfter.filter((p, i) => p.pollinated && !allBefore[i]?.pollinated);
+    if (dt <= 1800 && newPollinated.length > 0) {
+      showNotification(`🐝 ¡Polinización! ${newPollinated.length} hembra${newPollinated.length > 1 ? 's' : ''} recibieron polen: darán un 40 % menos de flor pero también semillas. Habrá que quitar el macho a tiempo la próxima vez.`, 'burn');
+    } else if (dt <= 1800 && newMales.length > 0) {
+      showNotification(`♂ ¡Macho detectado en ${newMales.length} planta${newMales.length > 1 ? 's' : ''}! Quítalo antes de que llegue a flor (55 %) o polinizará a las hembras. También puedes guardarlo como padre.`, 'burn');
+    }
     if (dt > 1800) {
       // welcome-back summary for long absences
       const avg = (arr: PlantInGrow[], f: (p: PlantInGrow) => number) => arr.reduce((a, p) => a + f(p), 0) / Math.max(1, arr.length);
@@ -1122,7 +1135,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const ready = after.filter(p => p.stage === 'ready_harvest').length;
       const sick = pestCount(after);
       showNotification(
-        `Han pasado ${formatDuration(Math.min(dt, BALANCE.maxCatchUpSeconds))}: tus plantas crecieron +${grew.toFixed(1)}%${ready ? ` (${ready} listas para cosechar)` : ''}${thirsty ? `. ¡${thirsty} necesitan agua!` : '.'}${sick ? ` 🐛 ${sick} con plaga.` : ''}`,
+        `Han pasado ${formatDuration(Math.min(dt, BALANCE.maxCatchUpSeconds))}: tus plantas crecieron +${grew.toFixed(1)}%${ready ? ` (${ready} listas para cosechar)` : ''}${thirsty ? `. ¡${thirsty} necesitan agua!` : '.'}${sick ? ` 🐛 ${sick} con plaga.` : ''}${newMales.length ? ` ♂ ${newMales.length} macho${newMales.length > 1 ? 's' : ''} por quitar.` : ''}${newPollinated.length ? ` 🐝 ${newPollinated.length} polinizada${newPollinated.length > 1 ? 's' : ''}.` : ''}`,
         thirsty || sick ? 'info' : 'success'
       );
     }
@@ -1394,8 +1407,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       colors: ['#10b981', '#34d399', '#f59e0b', '#a855f7']
     });
 
-    const flowerHarvested = Math.round(target.estimatedDryYieldGrams * (target.health / 100));
+    const maleTarget = target.sex === 'male';
+    const flowerHarvested = maleTarget ? 0 : Math.round(target.estimatedDryYieldGrams * (target.health / 100));
     const trimHarvested = Math.round(flowerHarvested * 0.4);
+    const seedsGot = !maleTarget && target.pollinated ? giveSeeds(target.strain, SEEDS_PER_POLLINATED) : 0;
 
     setRawFlowerGrams(prev => prev + flowerHarvested);
     setTrimGrams(prev => prev + trimHarvested);
@@ -1403,7 +1418,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateQuestProgress('quest_harvest_run', 1);
     addXp(180, 'Cosecha F2P');
 
-    showNotification(`¡Cosecha exitosa! Planta #${selectedPlantIndex + 1}: +${flowerHarvested}g Flor Seca y +${trimHarvested}g Biomasa (+180 XP)`, 'success');
+    showNotification(maleTarget ? `Planta #${selectedPlantIndex + 1} era macho: no da flor. La sala queda libre para una hembra.` : `¡Cosecha exitosa! Planta #${selectedPlantIndex + 1}: +${flowerHarvested}g Flor Seca y +${trimHarvested}g Biomasa${seedsGot ? ` y 🌰 ${seedsGot} semillas (fue polinizada)` : ''} (+180 XP)`, 'success');
 
     // Reset plant to fresh seedling
     setIndoorPlants(prev => prev.map((p, idx) => {
@@ -1415,7 +1430,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         health: 98,
         soilMoisture: 80,
         plantedAt: Date.now(),
-        trichomeMaturity: { clear: 95, milky: 5, amber: 0 }
+        trichomeMaturity: { clear: 95, milky: 5, amber: 0 },
+        sex: 'female' as const,
+        pollinated: false
       };
     }));
   };
@@ -1441,35 +1458,45 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     let totalFlower = 0;
     let totalTrim = 0;
+    let totalSeeds = 0;
+    let maleCut = 0;
+    const readySet = new Set(readyIndices.map(r => r.idx));
+    readyIndices.forEach(({ p }) => {
+      if (p.sex === 'male') { maleCut++; return; }
+      const flower = Math.round(p.estimatedDryYieldGrams * (p.health / 100));
+      totalFlower += flower;
+      totalTrim += Math.round(flower * 0.4);
+      if (p.pollinated) totalSeeds += giveSeeds(p.strain, SEEDS_PER_POLLINATED);
+    });
 
-    setIndoorPlants(prev => prev.map((p) => {
-      if (p.stage === 'ready_harvest' || p.progressPercent >= 90) {
-        const flower = Math.round(p.estimatedDryYieldGrams * (p.health / 100));
-        const trim = Math.round(flower * 0.4);
-        totalFlower += flower;
-        totalTrim += trim;
-
-        return {
-          ...p,
-          stage: 'seedling' as GrowStage,
-          progressPercent: 5,
-          health: 98,
-          soilMoisture: 80,
-          plantedAt: Date.now(),
-          trichomeMaturity: { clear: 95, milky: 5, amber: 0 }
-        };
-      }
-      return p;
-    }));
+    setIndoorPlants(prev => prev.map((p, idx) => readySet.has(idx) ? {
+      ...p,
+      stage: 'seedling' as GrowStage,
+      progressPercent: 5,
+      health: 98,
+      soilMoisture: 80,
+      plantedAt: Date.now(),
+      trichomeMaturity: { clear: 95, milky: 5, amber: 0 },
+      sex: 'female' as const,
+      pollinated: false
+    } : p));
 
     setRawFlowerGrams(prev => prev + totalFlower);
     setTrimGrams(prev => prev + totalTrim);
     updateQuestProgress('quest_harvest_run', readyIndices.length);
     addXp(readyIndices.length * 150, 'Cosecha Sala Indoor');
-    showNotification(`¡Cosecha de Sala Completa! ${readyIndices.length} plantas cosechadas: +${totalFlower}g Flor Seca y +${totalTrim}g Biomasa`, 'success');
+    showNotification(`¡Cosecha de Sala Completa! ${readyIndices.length} plantas cosechadas: +${totalFlower}g Flor Seca y +${totalTrim}g Biomasa${totalSeeds ? ` · 🌰 +${totalSeeds} semillas` : ''}${maleCut ? ` · ${maleCut} macho${maleCut > 1 ? 's' : ''} (sin flor)` : ''}`, 'success');
   };
 
-  const plantNewSeed = (strain: Strain) => {
+  /** seeds of a strain go back to the seed bank inventory (pollinated females give seeds at harvest) */
+  const giveSeeds = (strain: Strain, n: number): number => {
+    const item = seedBank.find(s => s.strainTemplate.id === strain.id);
+    if (!item) return 0;
+    setSeedInventory(prev => ({ ...prev, [item.id]: (prev[item.id] || 0) + n }));
+    return n;
+  };
+
+  const plantNewSeed = (strain: Strain, seedType?: string) => {
     playClickSound();
     setIndoorPlants(prev => prev.map((p, idx) => {
       if (idx !== selectedPlantIndex) return p;
@@ -1497,7 +1524,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         trichomeMaturity: { clear: 100, milky: 0, amber: 0 },
         lastWatered: Date.now(),
         lastFed: Date.now(),
-        estimatedDryYieldGrams: Math.round(75 * strain.resinYieldMultiplier * currentFacility.environmentBonus)
+        estimatedDryYieldGrams: Math.round(75 * strain.resinYieldMultiplier * currentFacility.environmentBonus),
+        sex: sexFor(`${p.id ?? idx}-${Date.now()}`, seedType),
+        pollinated: false,
+        pest: undefined
       };
     }));
     showNotification(`Semilla plantada en Planta #${selectedPlantIndex + 1}: ${strain.name}. ¡Inicia el monitoreo de microclima!`, 'info');
@@ -1570,7 +1600,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
 
     // Plant new plant
-    plantNewSeed(seedItem.strainTemplate);
+    plantNewSeed(seedItem.strainTemplate, seedItem.seedType);
     return true;
   };
 
@@ -1845,6 +1875,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `${plot.id}-s${slot}-${now}`, slotIndex: slot, siteId: plot.id, strain, plantedAt: now, stage: 'seed' as GrowStage, progressPercent: 0, health: 100, soilMoisture: 80,
       temperatureC: 24, relativeHumidity: 60, vpdKpa: calculateVpd(24, 60), ppfdLightIntensity: 900, luxLumens: 900 * 54, co2Ppm: 420, currentRoom: 'vegetative', lightSchedule: '24/0',
       ecLevel: 1.6, phLevel: 6.2, nutrientBrand: selectedNutrientBrand, trichomeMaturity: { clear: 100, milky: 0, amber: 0 }, lastWatered: now, lastFed: now, estimatedDryYieldGrams: yieldEach,
+      sex: sexFor(`${plot.id}-s${slot}-${now}`, seedItem.seedType), pollinated: false,
     }));
     setSeedInventory(prev => ({ ...prev, [seedId]: Math.max(0, (prev[seedId] || 0) - n) }));
     setPlots(prev => prev.map(pl => pl.id === plotId ? { ...pl, plants: [...pl.plants, ...fresh] } : pl));
@@ -1922,8 +1953,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showNotification('Aún no hay plantas listas para cosechar en esta parcela.', 'info');
       return;
     }
-    let flower = 0, trim = 0;
-    for (const p of ready) { const f = Math.round(p.estimatedDryYieldGrams * (p.health / 100)); flower += f; trim += Math.round(f * 0.4); }
+    let flower = 0, trim = 0, seeds = 0, maleCut = 0;
+    for (const p of ready) {
+      if (isMale(p)) { maleCut++; continue; }
+      const f = Math.round(p.estimatedDryYieldGrams * (p.health / 100));
+      flower += f;
+      trim += Math.round(f * 0.4);
+      if (p.pollinated) seeds += giveSeeds(p.strain, SEEDS_PER_POLLINATED);
+    }
     setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.filter(p => p.stage !== 'ready_harvest') }));
     setRawFlowerGrams(prev => prev + flower);
     setTrimGrams(prev => prev + trim);
@@ -1931,16 +1968,63 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     addXp(ready.length * 180, 'Cosecha en parcela');
     playHarvestChime();
     confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 }, colors: ['#10b981', '#34d399', '#f59e0b', '#a855f7', '#6366f1'] });
-    showNotification(`🌾 Cosecha en ${plot.name}: ${ready.length} plantas → +${flower} g de flor y +${trim} g de biomasa. La parcela queda libre para sembrar.`, 'success');
+    showNotification(`🌾 Cosecha en ${plot.name}: ${ready.length} plantas → +${flower} g de flor y +${trim} g de biomasa${seeds ? ` · 🌰 +${seeds} semillas` : ''}${maleCut ? ` · ${maleCut} macho${maleCut > 1 ? 's' : ''} sin flor` : ''}. La parcela queda libre para sembrar.`, 'success');
   };
 
   const plotEta = (plot: OwnedPlot, plant: PlantInGrow) => plotEtaSeconds(plant, plot.region, plot.ratings);
+
+  const removeMales = (plotId?: string) => {
+    if (plotId) {
+      const plot = plots.find(pl => pl.id === plotId);
+      const males = plot?.plants.filter(p => isMale(p) && sexRevealed(p)) ?? [];
+      if (!plot || males.length === 0) { showNotification('No hay machos por quitar en esta parcela.', 'info'); return; }
+      const slots = new Set(males.map(p => p.slotIndex));
+      setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.filter(p => !slots.has(p.slotIndex)) }));
+      playClickSound();
+      addXp(males.length * 10, 'Machos retirados');
+      showNotification(`♂ ${males.length} macho${males.length > 1 ? 's' : ''} arrancado${males.length > 1 ? 's' : ''} de ${plot.name}. Las hembras están a salvo de la polinización.`, 'success');
+      return;
+    }
+    const idx = indoorPlants.map((p, i) => ({ p, i })).filter(({ p }) => isMale(p) && sexRevealed(p)).map(x => x.i);
+    if (idx.length === 0) { showNotification('No hay machos por quitar en la sala.', 'info'); return; }
+    const set = new Set(idx);
+    setIndoorPlants(prev => prev.map((p, i) => set.has(i) ? { ...p, stage: 'seedling' as GrowStage, progressPercent: 5, health: 98, soilMoisture: 80, plantedAt: Date.now(), trichomeMaturity: { clear: 95, milky: 5, amber: 0 }, sex: 'female' as const, pollinated: false, pest: undefined } : p));
+    playClickSound();
+    addXp(idx.length * 10, 'Machos retirados');
+    showNotification(`♂ ${idx.length} macho${idx.length > 1 ? 's' : ''} retirado${idx.length > 1 ? 's' : ''} de la sala; su hueco vuelve a empezar como hembra.`, 'success');
+  };
+
+  const keepMaleAsFather = (plotId: string, slot: number) => {
+    const plot = plots.find(pl => pl.id === plotId);
+    const plant = plot?.plants.find(p => p.slotIndex === slot);
+    if (!plot || !plant || !isMale(plant)) return;
+    const donor: MotherFatherPlant = {
+      id: `donor_${Date.now()}`,
+      role: 'Padre (Donante de Polen)',
+      strain: plant.strain,
+      name: `Padre Donante ${plant.strain.name}`,
+      health: plant.health,
+      clonesCutCount: 0,
+      pollenCollectedMg: 250,
+      savedAt: Date.now(),
+      traits: [`THC: ${plant.strain.thcPercentage}%`, `Terpeno Dominante: ${Object.keys(plant.strain.terpenes)[0]}`, plant.strain.origin ? `Landrace de ${REGION_BY_ID[plant.strain.origin].name}` : 'Híbrido adaptable'],
+    };
+    setMothersFathers(prev => [donor, ...prev]);
+    setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.filter(p => p.slotIndex !== slot) }));
+    playLevelUpSound();
+    addXp(75, 'Conservación Genética');
+    showNotification(`♂ ${donor.name} guardado en el Santuario de Madres & Padres: ya puedes cruzarlo en Genética (+75 XP).`, 'success');
+  };
+
 
   const careInfo = {
     rating: Math.round(care.rating),
     cleanReadyInHours: Math.max(0, USE.cleanCooldownHours - (Date.now() - care.lastCleanAt) / 3600000),
     pests: pestCount(indoorPlants),
     plotPests: plots.reduce((n, pl) => n + pestCount(pl.plants), 0),
+    males: maleCount(indoorPlants),
+    plotMales: plots.reduce((n, pl) => n + maleCount(pl.plants), 0),
+    pollinated: indoorPlants.filter(p => p.pollinated).length + plots.reduce((n, pl) => n + pl.plants.filter(p => p.pollinated).length, 0),
     garbage: garbageOf(assets).length,
     gardenerLevel: gardenerLevelOf(assets),
     gardenerDays: stockOf(assets, 'service'),
@@ -2645,6 +2729,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         feedPlot,
         harvestPlot,
         plotEta,
+        removeMales,
+        keepMaleAsFather,
         treatPests,
         cleanRoom,
         recycleGarbage,

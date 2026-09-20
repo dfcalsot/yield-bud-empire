@@ -31,6 +31,8 @@ function ChronoFloraApp() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   // Remember the last sub-tab visited in each dock group
   const [lastTabByGroup, setLastTabByGroup] = useState<Record<string, string>>({});
+  // shortcuts ("Contratar jardinero", "Tratamientos"…) open the market straight on that shelf
+  const [marketCat, setMarketCat] = useState<string | undefined>(undefined);
 
   // tab title flags plants that need water (this is a real-time game: the player has to come back)
   const { indoorPlants } = useGame();
@@ -40,8 +42,15 @@ function ChronoFloraApp() {
   }, [indoorPlants]);
 
   const goToTab = (tab: string) => {
+    setMarketCat(undefined);
     setCurrentTab(tab);
     setLastTabByGroup((prev) => ({ ...prev, [groupOfTab(tab).id]: tab }));
+  };
+
+  const openMarket = (cat?: string) => {
+    setCurrentTab('market');
+    setLastTabByGroup((prev) => ({ ...prev, mercado: 'market' }));
+    setMarketCat(cat);
   };
 
   const goToGroup = (groupId: string) => {
@@ -73,12 +82,12 @@ function ChronoFloraApp() {
           </div>
         </div>
 
-        {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && <ResourceBar onOpenMarket={() => goToTab('market')} />}
+        {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && <ResourceBar onOpenMarket={openMarket} />}
 
-        {currentTab === 'cultivo' && <CultivationView onOpenMarket={() => goToTab('market')} />}
-        {currentTab === 'planeta' && <PlanetView onOpenSeedBank={() => goToTab('semillas')} />}
+        {currentTab === 'cultivo' && <CultivationView onOpenMarket={openMarket} onOpenPlanet={() => goToTab('planeta')} />}
+        {currentTab === 'planeta' && <PlanetView onOpenSeedBank={() => goToTab('semillas')} onOpenMarket={openMarket} />}
         {currentTab === 'semillas' && <SeedBankView onNavigateToCultivation={() => goToTab('cultivo')} />}
-        {currentTab === 'market' && <GrowMarketView />}
+        {currentTab === 'market' && <GrowMarketView initialCat={marketCat} />}
         {currentTab === 'nutrientes' && <NutrientTablesView />}
         {currentTab === 'extraccion' && <ExtractionLabView />}
         {currentTab === 'genetica' && <GeneticsLabView />}

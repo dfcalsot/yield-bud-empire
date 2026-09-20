@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ArrowLeft, Droplets, FlaskConical, Bug, Scissors, Sprout, Sun, Moon, Thermometer, Wind, Sparkles } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { PlantView } from '../PlantView';
-import { formatDuration, isThirsty, PEST_INFO } from '../../sim/engine';
+import { formatDuration, isMale, isThirsty, maleCount, PEST_INFO, sexRevealed, SEX_REVEAL_AT } from '../../sim/engine';
 import { dayIndexOf, PLOT_SIZE, REGION_BY_ID, siteConditions, terroirOf, weatherOn } from '../../sim/terroir';
 import type { OwnedPlot, PlantInGrow } from '../../types';
 import type { Mood } from '../npc/Npc';
@@ -55,6 +55,8 @@ export const PlantTile: React.FC<{ plant?: PlantInGrow; selected: boolean; index
       </svg>
       {plant.pest && <span className="pl-badge pl-badge--pest" title={PEST_INFO[plant.pest.kind].label}>{PEST_INFO[plant.pest.kind].emoji}</span>}
       {!plant.pest && thirsty && <span className="pl-badge pl-badge--thirst" title="Necesita agua">💧</span>}
+      {isMale(plant) && sexRevealed(plant) && <span className="pl-badge pl-badge--male" title="Macho: quítalo antes de la floración">♂</span>}
+      {plant.pollinated && <span className="pl-badge pl-badge--bee" title="Polinizada: menos flor, dará semillas">🐝</span>}
     </button>
   );
 };
@@ -77,7 +79,7 @@ export const PlotScreen: React.FC<{
   onOpenSeedBank: () => void;
   onSpeak: (text: string, mood?: Mood) => void;
 }> = ({ plot, nowMs, onBack, onOpenSeedBank, onSpeak }) => {
-  const { plantPlot, waterPlot, feedPlot, treatPests, harvestPlot, plotEta, seedBank, seedInventory, resources } = useGame();
+  const { plantPlot, waterPlot, feedPlot, treatPests, harvestPlot, plotEta, seedBank, seedInventory, resources, removeMales, keepMaleAsFather } = useGame();
   const region = REGION_BY_ID[plot.region];
   const [sel, setSel] = useState<number | null>(null);
   const [planting, setPlanting] = useState(false);
@@ -89,6 +91,7 @@ export const PlotScreen: React.FC<{
   const ready = plot.plants.filter((p) => p.stage === 'ready_harvest').length;
   const thirsty = plot.plants.filter(isThirsty).length;
   const sick = plot.plants.filter((p) => p.pest).length;
+  const males = maleCount(plot.plants);
   const plant = sel !== null ? bySlot.get(sel) : undefined;
   const w = forecast[0];
 
@@ -134,6 +137,7 @@ export const PlotScreen: React.FC<{
             <button className="care-btn" onClick={() => act(() => waterPlot(plot.id), thirsty ? '¡A regar se ha dicho!' : 'Todas tienen agua de sobra, patrón.', thirsty ? 'happy' : 'idle')}><Droplets className="w-3.5 h-3.5" /> Regar sedientas{thirsty ? ` (${thirsty})` : ''}</button>
             <button className="care-btn" onClick={() => act(() => feedPlot(plot.id), 'Un buen abono y a crecer.')}><FlaskConical className="w-3.5 h-3.5" /> Abonar</button>
             <button className={`care-btn ${sick ? 'care-btn--hot' : ''}`} disabled={sick === 0} onClick={() => act(() => treatPests('all', plot.id), 'Plaga controlada. ¡Bicho fuera!')}><Bug className="w-3.5 h-3.5" /> Tratar plagas{sick ? ` (${sick})` : ''}</button>
+            {males > 0 && <button className="care-btn care-btn--male" onClick={() => act(() => removeMales(plot.id), '¡Fuera los machos! Así no polinizan a las hembras.')}>♂ Quitar machos ({males})</button>}
             <button className={`care-btn ${ready ? 'care-btn--gold' : ''}`} disabled={ready === 0} onClick={() => act(() => harvestPlot(plot.id), '¡Qué cosecha, compadre! Mira esas flores.')}><Scissors className="w-3.5 h-3.5" /> Cosechar{ready ? ` (${ready})` : ''}</button>
           </div>
 
@@ -154,6 +158,7 @@ export const PlotScreen: React.FC<{
                         <span className="text-[12px] font-bold text-white truncate">{s.strainTemplate.name}</span>
                         <span className="text-[10px] font-mono text-neutral-400">×{have}</span>
                       </div>
+                      <div className="text-[10px] font-mono text-neutral-400">{s.seedType === 'Regular' || s.seedType === 'Landrace' ? '⚥ ~50 % machos: hay que sexarlas' : '♀ 100 % hembras'}</div>
                       <div className={`text-[10.5px] font-mono ${t.tone === 'up' ? 'text-emerald-300' : t.tone === 'down' ? 'text-red-300' : 'text-neutral-400'}`}>{t.label} · crece {Math.round(t.growth * 100)} % · cosecha {Math.round(t.yield * 100)} %</div>
                       <button className="care-btn w-full mt-1.5" disabled={n <= 0} onClick={() => { if (plantPlot(plot.id, s.id, n)) { onSpeak(t.tone === 'up' ? `¡${s.strainTemplate.name} en su tierra! Esto va a dar un cosechón.` : t.tone === 'down' ? `Mmm, ${s.strainTemplate.name} aquí sufrirá un poco… pero probemos.` : `A sembrar ${s.strainTemplate.name}.`, 'happy'); setPlanting(false); } }}>Sembrar {n > 0 ? `×${n}` : ''}</button>
                     </div>
@@ -212,6 +217,13 @@ export const PlotScreen: React.FC<{
                   <span className="text-neutral-400">Sustrato <b className={isThirsty(plant) ? 'text-cyan-300' : 'text-white'}>{plant.soilMoisture}%</b></span>
                   <span className="text-neutral-400">EC <b className="text-white">{plant.ecLevel}</b></span>
                   <span className="text-neutral-400 col-span-2">{plant.stage === 'ready_harvest' ? '¡Lista para cosechar!' : `Cosecha en ~${formatDuration(plotEta(plot, plant))}`} · ~{plant.estimatedDryYieldGrams} g</span>
+                  <span className="col-span-2 text-neutral-400">Sexo: {sexRevealed(plant) ? (isMale(plant) ? <b className="text-sky-300">♂ macho (no da flor)</b> : <b className="text-pink-300">♀ hembra</b>) : <b className="text-neutral-300">? se revela al {SEX_REVEAL_AT} %</b>}{plant.pollinated && <b className="text-amber-300"> · 🐝 polinizada (−40 % flor, da semillas)</b>}</span>
+                  {isMale(plant) && sexRevealed(plant) && (
+                    <span className="col-span-2 flex gap-1.5 pt-1">
+                      <button className="care-btn care-btn--male flex-1" onClick={() => { removeMales(plot.id); setSel(null); }}>Arrancar machos</button>
+                      <button className="care-btn flex-1" onClick={() => { keepMaleAsFather(plot.id, plant.slotIndex ?? -1); setSel(null); onSpeak('¡Buen padre para cruzar! Lo guardé en el Santuario.', 'happy'); }}>Guardar como padre</button>
+                    </span>
+                  )}
                   {plant.pest && <span className="col-span-2 text-pink-300">{PEST_INFO[plant.pest.kind].emoji} {PEST_INFO[plant.pest.kind].label} desde hace {Math.max(1, Math.round(plant.pest.hours))} h · cura: {PEST_INFO[plant.pest.kind].cure}</span>}
                 </div>
               </div>

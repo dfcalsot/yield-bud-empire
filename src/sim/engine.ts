@@ -173,6 +173,26 @@ export const isThirsty = (p: PlantInGrow) => p.stage !== 'ready_harvest' && p.so
 export const pestCount = (plants: PlantInGrow[]) => plants.filter((p) => p.pest).length;
 export const isHungry = (p: PlantInGrow) => p.stage !== 'ready_harvest' && p.ecLevel < B.ecOk + 0.15;
 
+/* ───────────────────────────── sexing ───────────────────────────── */
+
+export type Sex = 'female' | 'male';
+/** progress (%) at which the sex becomes visible */
+export const SEX_REVEAL_AT = 30;
+/** progress (%) from which a male releases pollen */
+export const POLLEN_AT = 55;
+/** flower left on a pollinated female (she puts energy into seeds instead) */
+export const POLLINATED_YIELD = 0.6;
+/** seeds a pollinated female gives at harvest */
+export const SEEDS_PER_POLLINATED = 2;
+
+/** Regular and landrace seeds are 50/50; feminized, autoflowering and fast-flowering seeds are always female. */
+export function sexFor(seed: string, seedType?: string): Sex {
+  return (seedType === 'Regular' || seedType === 'Landrace') && hash01(seed, 11) < 0.5 ? 'male' : 'female';
+}
+export const isMale = (p: PlantInGrow) => p.sex === 'male';
+export const sexRevealed = (p: PlantInGrow) => p.progressPercent >= SEX_REVEAL_AT;
+export const maleCount = (plants: PlantInGrow[]) => plants.filter((p) => isMale(p) && sexRevealed(p)).length;
+
 /** Hourly chance of each plague for a plant in these conditions (0 while it is protected). */
 export function pestHazards(p: PlantInGrow, cleanliness: number, temp: number, rh: number, moisture: number, stage: GrowStage): Record<PestKind, number> {
   if ((p.guard ?? 0) > 0 || stage === 'ready_harvest') return { mites: 0, mold: 0, rot: 0 };
@@ -364,6 +384,13 @@ export function advanceWorld(plants: PlantInGrow[], dtSeconds: number, env: SimE
       }
       return advancePlant(p, step, pe);
     });
+    // a male in flower pollinates the females of the same room / plot
+    const pollen = new Set<string>();
+    for (const p of cur) if (isMale(p) && p.progressPercent >= POLLEN_AT) pollen.add(p.siteId ?? 'indoor');
+    if (pollen.size > 0) {
+      cur = cur.map((p) => (!isMale(p) && !p.pollinated && p.progressPercent >= 40 && p.stage !== 'ready_harvest' && pollen.has(p.siteId ?? 'indoor'))
+        ? { ...p, pollinated: true, estimatedDryYieldGrams: Math.round(p.estimatedDryYieldGrams * POLLINATED_YIELD) } : p);
+    }
     remaining -= step;
     elapsed += step;
   }
