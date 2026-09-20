@@ -118,7 +118,7 @@ export const ExtractionLabView: React.FC = () => {
 
       {/* Navigation Sub-Tabs */}
       <div className="flex items-center justify-between border-b border-neutral-800 pb-3 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setActiveTab('arcade')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold font-mono transition cursor-pointer ${

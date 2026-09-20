@@ -16,6 +16,9 @@ import {
   Layers
 } from 'lucide-react';
 import { SeedBankItem } from '../types';
+import { GeneticCard } from './GeneticCard';
+import { MintCeremony } from './MintCeremony';
+import { GeneticCardData, cardFromSeed } from '../utils/nft';
 // three.js is heavy: only fetch it when the Seed Bank tab is opened
 const SeedVault = lazy(() => import('./SeedVault').then((m) => ({ default: m.SeedVault })));
 
@@ -31,8 +34,23 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
     plantFromSeedBank, 
     floraBalance, 
     solBalance,
-    currentRoom
+    currentRoom,
+    transactions
   } = useGame();
+
+  const [mint, setMint] = useState<{ card: GeneticCardData; fee: string; startedAt: number } | null>(null);
+  const mintTx = mint ? transactions.find(t => t.timestamp >= mint.startedAt) : undefined;
+
+  const handleBuy = (seed: SeedBankItem) => {
+    const startedAt = Date.now();
+    if (buySeed(seed.id, selectedCurrency)) {
+      setMint({
+        card: cardFromSeed(seed, (seedInventory[seed.id] || 0) + seed.seedsPerPack),
+        fee: selectedCurrency === 'FLORA' ? `Quema ${seed.priceFlora} $FLORA` : `${seed.priceSol} SOL`,
+        startedAt,
+      });
+    }
+  };
 
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'Feminizada' | 'Autofloreciente' | 'Landrace' | 'Regular' | 'inventory'>('all');
   const [selectedCurrency, setSelectedCurrency] = useState<'FLORA' | 'SOL'>('FLORA');
@@ -173,156 +191,81 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
         </div>
       </div>
 
-      {/* Seeds Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* Seeds Grid: collectible NFT cards */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-5">
         {filteredSeeds.map(seed => {
           const ownedCount = seedInventory[seed.id] || 0;
           const isAffordable = selectedCurrency === 'FLORA' ? floraBalance >= seed.priceFlora : solBalance >= seed.priceSol;
 
           return (
-            <div 
-              key={seed.id}
-              className="bg-neutral-900/70 border border-neutral-800 hover:border-neutral-700 transition rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-lg group relative"
-            >
-              {/* Top Row: Breeder & Seed Type */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400 font-mono flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    {seed.breeder}
-                  </span>
+            <GeneticCard key={seed.id} card={cardFromSeed(seed, ownedCount)} selected={ownedCount > 0}>
+              <p className="text-[11px] text-neutral-400 leading-snug line-clamp-2">{seed.description}</p>
+              <div className="flex items-center justify-between text-[10px] font-mono text-neutral-500">
+                <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-400" />{seed.breeder}</span>
+                <span>Dificultad: {seed.difficulty}</span>
+              </div>
 
-                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                    seed.seedType === 'Feminizada'
-                      ? 'bg-purple-500/10 border-purple-500/30 text-purple-300'
-                      : seed.seedType === 'Autofloreciente'
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                      : seed.seedType === 'Landrace'
-                      ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-300'
-                      : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
-                  }`}>
-                    {seed.seedType}
-                  </span>
-                </div>
-
-                <div className="flex items-baseline justify-between">
-                  <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition">
-                    {seed.name}
-                  </h3>
-                  {ownedCount > 0 && (
-                    <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                      En posesión: {ownedCount}
-                    </span>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-neutral-400">Pack x{seed.seedsPerPack}</span>
+                <span className="font-mono font-bold text-sm">
+                  {selectedCurrency === 'FLORA' ? (
+                    <span className="text-amber-400 flex items-center gap-1"><Flame className="w-3.5 h-3.5 text-amber-500" />{seed.priceFlora} $FLORA</span>
+                  ) : (
+                    <span className="text-purple-300 flex items-center gap-1"><Coins className="w-3.5 h-3.5 text-purple-400" />{seed.priceSol} SOL</span>
                   )}
-                </div>
-
-                <p className="text-xs text-neutral-400 line-clamp-2">
-                  {seed.description}
-                </p>
-
-                <div className="text-[11px] font-mono text-neutral-500">
-                  Linaje: <span className="text-neutral-300">{seed.lineage}</span>
-                </div>
+                </span>
               </div>
 
-              {/* Cannabinoid & Botanical Specs */}
-              <div className="bg-neutral-950/80 p-3 rounded-xl border border-neutral-800/80 space-y-2 text-xs">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500">THC Potencia:</span>
-                    <span className="font-mono text-emerald-400 font-bold">{seed.thcPercentage}%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500">CBD Ratio:</span>
-                    <span className="font-mono text-cyan-400 font-bold">{seed.cbdPercentage}%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-neutral-400" />
-                      Floración:
-                    </span>
-                    <span className="font-mono text-neutral-300">{seed.floweringWeeks} sem</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 flex items-center gap-1">
-                      <Weight className="w-3 h-3 text-neutral-400" />
-                      Rendimiento:
-                    </span>
-                    <span className="font-mono text-neutral-300">~{seed.yieldGramsPerPlant}g</span>
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => handleBuy(seed)}
+                  disabled={!isAffordable}
+                  className={`w-full py-2 px-2 rounded-xl text-[11px] font-bold font-mono uppercase tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    isAffordable
+                      ? selectedCurrency === 'FLORA'
+                        ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40'
+                        : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40'
+                      : 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Acuñar pack
+                </button>
 
-                {/* Terpene Tags */}
-                <div className="pt-2 border-t border-neutral-900 flex flex-wrap gap-1">
-                  {seed.dominantTerpenes.map(terp => (
-                    <span key={terp} className="text-[10px] bg-neutral-900 px-1.5 py-0.5 rounded text-neutral-400 border border-neutral-800 font-mono">
-                      #{terp}
-                    </span>
-                  ))}
-                  <span className="text-[10px] ml-auto px-1.5 py-0.5 rounded text-neutral-400 font-mono bg-neutral-900">
-                    Dificultad: {seed.difficulty}
-                  </span>
-                </div>
+                <button
+                  onClick={() => {
+                    const success = plantFromSeedBank(seed.id);
+                    if (success && onNavigateToCultivation) {
+                      onNavigateToCultivation();
+                    }
+                  }}
+                  disabled={ownedCount <= 0}
+                  className={`w-full py-2 px-2 rounded-xl text-[11px] font-bold font-mono uppercase tracking-wide transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    ownedCount > 0
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-md shadow-emerald-950'
+                      : 'bg-neutral-800/40 text-neutral-600 border border-neutral-800 cursor-not-allowed'
+                  }`}
+                >
+                  <Sprout className="w-3.5 h-3.5" />
+                  {ownedCount > 0 ? 'Sembrar' : 'Sin semillas'}
+                </button>
               </div>
-
-              {/* Purchase & Action Controls */}
-              <div className="pt-2 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">Pack de {seed.seedsPerPack}x semillas:</span>
-                  <span className="font-mono font-bold text-sm">
-                    {selectedCurrency === 'FLORA' ? (
-                      <span className="text-amber-400 flex items-center gap-1">
-                        <Flame className="w-3.5 h-3.5 text-amber-500" />
-                        {seed.priceFlora} $FLORA
-                      </span>
-                    ) : (
-                      <span className="text-purple-300 flex items-center gap-1">
-                        <Coins className="w-3.5 h-3.5 text-purple-400" />
-                        {seed.priceSol} SOL
-                      </span>
-                    )}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => buySeed(seed.id, selectedCurrency)}
-                    disabled={!isAffordable}
-                    className={`w-full py-2 px-3 rounded-xl text-xs font-semibold font-mono transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                      isAffordable
-                        ? selectedCurrency === 'FLORA'
-                          ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40'
-                          : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40'
-                        : 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed'
-                    }`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Comprar Pack
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const success = plantFromSeedBank(seed.id);
-                      if (success && onNavigateToCultivation) {
-                        onNavigateToCultivation();
-                      }
-                    }}
-                    disabled={ownedCount <= 0}
-                    className={`w-full py-2 px-3 rounded-xl text-xs font-semibold font-mono transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                      ownedCount > 0
-                        ? 'bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold shadow-md shadow-emerald-950'
-                        : 'bg-neutral-800/40 text-neutral-600 border border-neutral-800 cursor-not-allowed'
-                    }`}
-                  >
-                    <Sprout className="w-3.5 h-3.5" />
-                    {ownedCount > 0 ? 'Sembrar Ahora' : 'Sin Semillas'}
-                  </button>
-                </div>
-              </div>
-            </div>
+            </GeneticCard>
           );
         })}
       </div>
+
+      {mint && (
+        <MintCeremony
+          card={mint.card}
+          variant="onchain"
+          feeText={mint.fee}
+          signature={mintTx?.signature}
+          slot={mintTx?.blockSlot}
+          closeLabel="Ver en mi bóveda"
+          onClose={() => setMint(null)}
+        />
+      )}
 
       {/* Botanical Education & Genetic Classes Guide */}
       <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-6 space-y-4">

@@ -17,6 +17,9 @@ import {
   Sprout
 } from 'lucide-react';
 import { Strain } from '../types';
+import { GeneticCard } from './GeneticCard';
+import { MintCeremony } from './MintCeremony';
+import { GeneticCardData, cardFromPatent, cardFromStrain } from '../utils/nft';
 
 export const GeneticsLabView: React.FC = () => {
   const {
@@ -36,6 +39,11 @@ export const GeneticsLabView: React.FC = () => {
 
   const [activeSubTab, setActiveSubTab] = useState<'hibridacion' | 'cruce_rapido' | 'patentes'>('hibridacion');
 
+  // Mint ceremony: a newborn F1 (off-chain) or a freshly registered patent (on-chain)
+  const [birth, setBirth] = useState<GeneticCardData | null>(null);
+  const [patentMint, setPatentMint] = useState<{ strain: Strain } | null>(null);
+  const mintedPatent = patentMint ? patents.find(p => p.strainName === patentMint.strain.name) : undefined;
+
   // Fast breeding state
   const [parentAId, setParentAId] = useState<string>(strains[0]?.id || '');
   const [parentBId, setParentBId] = useState<string>(strains[1]?.id || strains[0]?.id || '');
@@ -54,14 +62,16 @@ export const GeneticsLabView: React.FC = () => {
   const handleBreed = (e: React.FormEvent) => {
     e.preventDefault();
     if (!parentA || !parentB) return;
-    breedStrains(parentA, parentB, newStrainName);
+    const born = breedStrains(parentA, parentB, newStrainName);
+    if (born) setBirth(cardFromStrain(born, 'hybrid'));
     setNewStrainName('');
   };
 
   const handleHybridize = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMotherId || !selectedFatherId || !hybridStrainName.trim()) return;
-    hybridizeParents(selectedMotherId, selectedFatherId, hybridStrainName);
+    const born = hybridizeParents(selectedMotherId, selectedFatherId, hybridStrainName);
+    if (born) setBirth(cardFromStrain(born, 'hybrid'));
     setHybridStrainName('');
   };
 
@@ -104,7 +114,7 @@ export const GeneticsLabView: React.FC = () => {
       </div>
 
       {/* Sub-tab switcher */}
-      <div className="flex gap-2 border-b border-neutral-800 pb-2">
+      <div className="flex flex-wrap gap-2 border-b border-neutral-800 pb-2">
         <button
           onClick={() => setActiveSubTab('hibridacion')}
           className={`px-4 py-2 rounded-xl text-xs font-mono font-medium transition cursor-pointer flex items-center gap-2 ${
@@ -573,7 +583,7 @@ export const GeneticsLabView: React.FC = () => {
                       </div>
 
                       <button
-                        onClick={() => registerPatent(strain)}
+                        onClick={() => { if (registerPatent(strain)) setPatentMint({ strain }); }}
                         disabled={floraBalance < 250}
                         className="px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-mono text-xs font-semibold rounded-lg transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                       >
@@ -599,35 +609,40 @@ export const GeneticsLabView: React.FC = () => {
               <span className="text-[10px] font-mono text-neutral-400">Anchor ID #441</span>
             </div>
 
-            <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4">
               {patents.map((pat) => (
-                <div
-                  key={pat.id}
-                  className="p-3 rounded-xl bg-neutral-950 border border-emerald-500/30 space-y-1.5 text-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-white">{pat.strainName}</span>
-                    <span className="font-mono text-[10px] px-1.5 py-0.2 bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 rounded">
-                      {pat.patentNumber}
-                    </span>
+                <GeneticCard key={pat.id} card={cardFromPatent(pat, strains.find(st => st.name === pat.strainName))}>
+                  <div className="flex items-center justify-between text-[10px] font-mono border-t border-white/10 pt-2">
+                    <span className="text-neutral-400">{pat.patentNumber}</span>
+                    <span className="text-emerald-400 flex items-center gap-0.5"><CheckCircle2 className="w-3 h-3" /> Verificado</span>
                   </div>
-
-                  <div className="text-[11px] text-neutral-400 font-mono flex justify-between">
-                    <span>Linaje: {pat.parentA} x {pat.parentB}</span>
-                    <span className="text-amber-400">Quema: {pat.floraBurnedFee} $FLORA</span>
-                  </div>
-
-                  <div className="text-[10px] text-neutral-500 font-mono flex items-center justify-between border-t border-neutral-900 pt-1">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-neutral-500">
                     <span>Titular: {pat.creatorWallet}</span>
-                    <span className="text-emerald-400 flex items-center gap-0.5">
-                      <CheckCircle2 className="w-3 h-3" /> Verificado Solana
-                    </span>
+                    <span className="text-amber-400">Quema: {pat.floraBurnedFee}</span>
                   </div>
-                </div>
+                </GeneticCard>
               ))}
             </div>
           </div>
         </div>
+      )}
+
+      {birth && (
+        <MintCeremony card={birth} variant="birth" closeLabel="Continuar" onClose={() => setBirth(null)} />
+      )}
+
+      {patentMint && (
+        <MintCeremony
+          card={cardFromPatent(
+            mintedPatent ?? { id: `pending-${patentMint.strain.id}`, strainName: patentMint.strain.name, patentNumber: patentMint.strain.patentId ?? 'SOL-PAT', solanaSignature: '', parentA: '', parentB: '', creatorWallet: '', registeredDate: '', thc: patentMint.strain.thcPercentage, cbd: patentMint.strain.cbdPercentage, dominantTerpene: 'Limoneno y Cariofileno', floraBurnedFee: 250 },
+            patentMint.strain,
+          )}
+          variant="onchain"
+          feeText="Quema 250 $FLORA"
+          signature={mintedPatent?.solanaSignature || undefined}
+          closeLabel="Ver mis títulos"
+          onClose={() => setPatentMint(null)}
+        />
       )}
     </div>
   );
