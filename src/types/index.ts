@@ -36,7 +36,8 @@ export interface GrowFacility {
   environmentBonus: number; // boosts growth and trichome purity
   description: string;
   unlocked: boolean;
-  image: string;
+  /** id of the animated illustration (components/art/GameArt) */
+  art: string;
 }
 
 export interface MachineEquipment {
@@ -308,7 +309,8 @@ export interface V2pRedemptionItem {
   category: 'Botanical Terpenes' | 'Premium Hemp CBD' | 'Chrono Merch' | 'Vip Dispensary Pass';
   requiredFlora: number;
   stockPhysical: number;
-  image: string;
+  /** id of the animated illustration (components/art/GameArt) */
+  art: string;
   description: string;
   nftCertificateId: string;
 }

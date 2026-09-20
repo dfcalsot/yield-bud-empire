@@ -1,3 +1,4 @@
+import { FacilityArt } from './art/GameArt';
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { PlantVisualizer } from './PlantVisualizer';
@@ -408,11 +409,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
       <div className="hud-panel p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-xl bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
-            <img 
-              src={currentFacility.image} 
-              alt={currentFacility.name}
-              className="w-full h-full object-cover"
-            />
+            <FacilityArt kind={currentFacility.id} slice className="w-full h-full" label={currentFacility.name} />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -814,7 +811,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   >
                     <div className="space-y-2">
                       <div className="h-28 w-full rounded-lg overflow-hidden border border-neutral-800">
-                        <img src={fac.image} alt={fac.name} className="w-full h-full object-cover" />
+                        <FacilityArt kind={fac.id} slice className="w-full h-full" label={fac.name} />
                       </div>
                       <h4 className="text-xs font-bold text-white leading-snug">{fac.name}</h4>
                       <p className="text-[11px] text-neutral-400 line-clamp-2">{fac.description}</p>

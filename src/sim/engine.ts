@@ -2,6 +2,7 @@ import type { GrowStage, PestKind, PlantInGrow, RegionId, Strain } from '../type
 import { BALANCE as B, LIGHT_FRACTION } from './balance';
 import { hash01 } from './hash';
 import { averageLight, REGION_BY_ID, terroirOf, type PlotRatings, type SiteConditions } from './terroir';
+import { phGrowthFactor } from './nutrition';
 
 export { hash01 };
 
@@ -132,6 +133,8 @@ export function growthPerSecond(p: PlantInGrow, env: SimEnv): number {
   // stronger lamps grow faster, with diminishing returns (starter 600 W lamp = 1.0)
   const ppfdF = env.equip ? Math.sqrt(clamp(Math.min(p.ppfdLightIntensity, env.equip.lampMaxPpfd || 0) / 480, 0.4, 3)) : 1;
   const feedF = s.ec >= B.ecOk ? (p.feedBonus ?? 1) : 1;
+  // un pH del sustrato fuera de 5,6–6,9 bloquea nutrientes (ver sim/nutrition.ts)
+  const phF = phGrowthFactor(p.phLevel);
   const pestF = p.pest ? B.pestGrowth[p.pest.kind] : 1;
   // outdoors: the sun replaces the lamp, the plot + strain decide the terroir and the weather sets the temperature
   const sc = env.siteCond;
@@ -139,7 +142,7 @@ export function growthPerSecond(p: PlantInGrow, env: SimEnv): number {
   const t = env.ambient?.tempC;
   const tempF = t === undefined ? 1 : t < 8 ? 0.15 : t < 16 ? 0.6 : t > 36 ? 0.4 : t > 32 ? 0.8 : 1;
   const lightF = env.lightMul !== undefined ? env.lightMul : (env.lightOn > 0 ? 1 : 0);
-  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * ppfdF * feedF * pestF * terroirF * tempF * lightF;
+  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * ppfdF * feedF * phF * pestF * terroirF * tempF * lightF;
 }
 
 /** Seconds left until harvest at the current rate (Infinity if stalled). */
@@ -232,10 +235,12 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   // --- nutrient solution fades (the gardener feeds when it runs low) ---
   let ec = Math.max(B.ecFloor, s.ec - B.ecDecayPerHour * hours);
   let feedBonus = p.feedBonus;
+  let phLevel = p.phLevel;
   if (env.gardener?.feed && ec < B.ecOk + 0.15 && env.budget && (env.budget.nutrientMl ?? 0) >= B.feedMl) {
     env.budget.nutrientMl = (env.budget.nutrientMl ?? 0) - B.feedMl;
     ec = B.ecFed;
     feedBonus = env.gardener.feedBonus;
+    phLevel = 6.2; // el jardinero prepara la solución con el pH corregido
   }
 
   // --- climate ---
@@ -264,7 +269,9 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   // --- health: dry plants suffer down to a floor; cared-for plants recover ---
   let health = s.health;
   if (moisture < B.moistureStress) health = Math.max(B.healthFloor, health - B.healthLossPerHourDry * hours);
-  else if (optimal && moisture >= B.moistureOk && ec >= B.ecOk && !p.pest) health = Math.min(100, health + B.healthGainPerHourCared * hours);
+  else if (optimal && moisture >= B.moistureOk && ec >= B.ecOk && ec <= B.ecBurn && !p.pest) health = Math.min(100, health + B.healthGainPerHourCared * hours);
+  // sobredosis de sales: las puntas se queman y la salud cae hasta el mínimo (nunca muere)
+  if (ec > B.ecBurn) health = Math.max(B.healthFloor, health - B.burnLossPerHour * hours);
   if (env.stormLoss) health = Math.max(B.healthFloor, health - env.stormLoss * hours);
   if (env.ambient && (env.ambient.tempC < 6 || env.ambient.tempC > 38)) health = Math.max(B.healthFloor, health - 0.8 * hours);
 
@@ -312,6 +319,7 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
     progressPercent: r1(progress),
     soilMoisture: r1(moisture),
     ecLevel: r1(ec),
+    phLevel: r1(phLevel),
     temperatureC: r1(temp),
     relativeHumidity: r1(rh),
     vpdKpa: vpd,

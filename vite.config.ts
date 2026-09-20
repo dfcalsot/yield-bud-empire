@@ -6,13 +6,13 @@ import {defineConfig} from 'vite';
 // the account service (server/index.mjs) is reached through the same origin, so the session cookie never crosses sites
 const proxy = { '/api': { target: process.env.AUTH_API ?? 'http://127.0.0.1:3020', changeOrigin: false, xfwd: true } };
 
-// Content-Security-Policy of the production build: only what the game really uses (Solana RPC, fonts, Unsplash / imgur images)
+// Content-Security-Policy of the production build: only what the game really uses (Solana RPC, fonts; no external images: all art is in-game SVG)
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https://images.unsplash.com https://i.imgur.com",
+  "img-src 'self' data: blob:",
   "connect-src 'self' https://api.devnet.solana.com https://api.testnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.testnet.solana.com wss://api.mainnet-beta.solana.com",
   "worker-src 'self' blob:",
   "object-src 'none'",

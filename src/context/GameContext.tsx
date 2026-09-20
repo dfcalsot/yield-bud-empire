@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
+import { diagnose as diagnoseMix, dosesFromTable, feedEffect, phCorrection, solve as solveMix, stageOfProgress, strengthForEc, type Mix } from '../sim/nutrition';
 import {
   Strain,
   GrowFacility,
@@ -84,6 +85,12 @@ export function generateSolanaSignature(): string {
     sig += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return sig;
+}
+
+export interface FertigationInput {
+  ec: number; ph: number; feedBonus: number; healthDelta: number; score: number; label: string;
+  scope: 'one' | 'all';
+  brandName?: string;
 }
 
 interface GameContextType {
@@ -216,6 +223,8 @@ interface GameContextType {
   selectedNutrientBrand: string;
   setSelectedNutrientBrand: (brandId: string) => void;
   applyNutrientStage: (stageIndex: number) => void;
+  /** Apply a prepared nutrient solution (from the Nutrition lab or tables) to the selected plant or the whole room. Spends stock; returns false if it could not. */
+  applyFertigation: (f: FertigationInput) => boolean;
 
   // Grow Rooms & Climate/Irrigation Automation
   currentRoom: GrowRoomId;
@@ -2100,32 +2109,41 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   })();
 
   // --- NUTRIENT DOSING & BRAND FEEDING TABLES ---
+  /** Apply a prepared solution: spends abono + water from the warehouse and sets the plant's measured EC / pH / growth bonus. */
+  const applyFertigation = (f: FertigationInput): boolean => {
+    if (indoorPlants.length === 0) { showNotification('Siembra una planta para aplicarle la solución', 'info'); return false; }
+    const n = f.scope === 'all' ? indoorPlants.length : 1;
+    if (!takeResource('nutrient', USE.nutrientPerPlant * n)) return false;
+    playWaterSound();
+    // un abono NFT premium en la bodega suma la mitad de su bonus por encima de la calidad de la mezcla
+    const feedBonus = Math.min(1.15, f.feedBonus * (1 + (bestFeedBonus(assets) - 1) * 0.5));
+    const now = Date.now();
+    setIndoorPlants(prev => prev.map((p, idx) => (f.scope === 'all' || idx === selectedPlantIndex)
+      ? { ...p, feedBonus, ecLevel: f.ec, phLevel: f.ph, health: Math.max(30, Math.min(100, p.health + f.healthDelta)), lastFed: now, nutrientBrand: f.brandName ?? p.nutrientBrand }
+      : p));
+    const xp = Math.round(10 + f.score / 5);
+    addXp(xp, 'Fertirriego con receta propia');
+    showNotification(`${f.label}: EC ${f.ec} mS/cm · pH ${f.ph} · calidad ${f.score}/100 (+${xp} XP)`, f.score >= 55 ? 'success' : 'info');
+    return true;
+  };
+
+  /** Tabla de una marca aplicada con la ciencia real: proporciones de la tabla ajustadas a su EC objetivo con agua de grifo blando y pH corregido. */
   const applyNutrientStage = (stageIndex: number) => {
     if (!activePlant) return;
     const brand = nutrientBrands.find(b => b.id === selectedNutrientBrand);
-    if (!brand || !brand.stages[stageIndex]) return;
-
-    const targetStage = brand.stages[stageIndex];
-    playWaterSound();
-
-    // Parse EC target approx
-    const ecNum = parseFloat(targetStage.targetEc.split('-')[0]) || 1.8;
-    const phNum = parseFloat(targetStage.targetPh.split('-')[0]) || 6.2;
-
-    setActivePlant(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        nutrientBrand: brand.name,
-        ecLevel: ecNum,
-        phLevel: phNum,
-        health: Math.min(100, prev.health + 8),
-        lastFed: Date.now()
-      };
-    });
-
-    addXp(30, `Nutrición ${brand.name}`);
-    showNotification(`Tabla aplicada: ${targetStage.stageName} (${brand.name}). EC: ${ecNum} mS/cm, pH: ${phNum} (+30 XP)`, 'success');
+    const stage = brand?.stages[stageIndex];
+    if (!brand || !stage) return;
+    const mid = (s: string) => { const v = (s.match(/[\d.]+/g) ?? []).map(Number); return v.length ? v.reduce((a, x) => a + x, 0) / v.length : NaN; };
+    const ecMid = mid(stage.targetEc) || 1.8;
+    const phMid = mid(stage.targetPh) || 6.2;
+    const strength = strengthForEc(stage.dosageMlPerLiter, 'soft', ecMid);
+    const base: Mix = { waterId: 'soft', liters: 1, doses: dosesFromTable(stage.dosageMlPerLiter, strength) };
+    const corr = phCorrection(base, phMid, 'acid_nitric');
+    if (corr.ingredient) base.doses[corr.ingredient] = corr.dose;
+    const sol = solveMix(base);
+    const d = diagnoseMix(sol, stageOfProgress(activePlant.progressPercent), 'soil');
+    const e = feedEffect(sol, d);
+    applyFertigation({ ...e, score: d.score, label: `${brand.name} · ${stage.stageName}`, scope: 'one', brandName: brand.name });
   };
 
   // --- ROOMS & MICROCLIMATE ---
@@ -2837,6 +2855,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         selectedNutrientBrand,
         setSelectedNutrientBrand,
         applyNutrientStage,
+        applyFertigation,
 
         // Rooms & Microclimate Automation
         currentRoom,

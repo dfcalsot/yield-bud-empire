@@ -1,3 +1,4 @@
+import { V2pArt } from './art/GameArt';
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { 
@@ -228,7 +229,7 @@ export const DispensaryV2PView: React.FC = () => {
                   className="p-3 rounded-xl bg-neutral-950 border border-neutral-800 flex gap-3 items-center text-xs"
                 >
                   <div className="w-16 h-16 rounded-lg bg-neutral-900 overflow-hidden border border-neutral-800 shrink-0">
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                    <V2pArt id={item.id} className="w-full h-full" />
                   </div>
 
                   <div className="flex-1 space-y-0.5">
@@ -315,7 +316,7 @@ export const DispensaryV2PView: React.FC = () => {
             </div>
 
             <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800 flex gap-3 items-center">
-              <img src={selectedV2pItem.image} alt="" className="w-12 h-12 rounded-lg object-cover" />
+              <V2pArt id={selectedV2pItem.id} className="w-12 h-12 rounded-lg" />
               <div>
                 <h4 className="text-xs font-bold text-white">{selectedV2pItem.title}</h4>
                 <span className="text-xs font-mono text-amber-400 font-bold">

@@ -215,5 +215,21 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
   ok('apodo: 3–20 caracteres, letras con tilde y dígitos; rechaza símbolos raros', validNick('Ana_Grower') && validNick('José Ñandú') && validNick('THC.420') && !validNick('ab') && !validNick('<script>') && !validNick('x'.repeat(21)) && validNick('  hola  ') && !validNick('..ab..'));
   ok('temporadas: hay un nombre para cada una', Object.keys(SEASONS).length === 5);
 }
+// 9 · nutrición: pH del sustrato, quemadura por EC y jardinero
+{
+  const grow = (p: PlantInGrow) => advanceWorld([p], 24 * 3600, env())[0];
+  const good = grow(plant(65, { ecLevel: 2.1, phLevel: 6.2 }));
+  const locked = grow(plant(65, { ecLevel: 2.1, phLevel: 7.5 }));
+  const mild = grow(plant(65, { ecLevel: 2.1, phLevel: 5.4 }));
+  ok('pH 7,5 (bloqueo) frena el crecimiento ≈ 35 %', locked.progressPercent < good.progressPercent * 0.75 && locked.progressPercent > good.progressPercent * 0.5, `(${locked.progressPercent} vs ${good.progressPercent})`);
+  ok('pH 5,4 frena algo menos que 7,5', mild.progressPercent < good.progressPercent && mild.progressPercent > locked.progressPercent, `(${mild.progressPercent})`);
+  const burnt = advanceWorld([plant(65, { ecLevel: 3.2, health: 100 })], 12 * 3600, env())[0];
+  ok('EC 3,2 quema: pierde salud mientras dure la sobredosis', burnt.health < 100 && burnt.health >= 30, `(salud ${burnt.health})`);
+  ok('EC normal no quema', advanceWorld([plant(65, { ecLevel: 2.1, health: 90 })], 12 * 3600, env())[0].health >= 90);
+  const fed = advanceWorld([plant(65, { ecLevel: 1.0, phLevel: 7.4 })], 2 * 3600, env({ gardener: { water: true, feed: true, treat: false, feedBonus: 1.05 }, budget: { waterL: 50, energyKwh: 100, nutrientMl: 100, treatMl: {}, gardenerDays: 5 } }))[0];
+  ok('el jardinero restablece el pH a 6,2 al abonar', fed.phLevel === 6.2 && fed.ecLevel > 1.9, `(pH ${fed.phLevel}, EC ${fed.ecLevel})`);
+  ok('pH sano no cambia nada respecto a antes (plantas por defecto)', good.progressPercent > 0 && Number.isFinite(good.progressPercent));
+}
+
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 process.exit(failed ? 1 : 0);

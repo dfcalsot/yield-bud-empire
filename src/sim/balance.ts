@@ -33,6 +33,9 @@ export const BALANCE = {
   ecFloor: 0.2,
   ecOk: 1.2,
   ecFed: 2.1,
+  /** above this EC the roots burn: health falls by this much per hour (down to the floor) until the solution fades */
+  ecBurn: 2.7,
+  burnLossPerHour: 0.8,
 
   /** plagues: base hazard per plant-hour for each kind (≈ 3 % a day in total under normal conditions) */
   pestBaseHazardPerHour: 0.0006,

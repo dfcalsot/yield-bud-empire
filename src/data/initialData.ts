@@ -106,7 +106,7 @@ export const INITIAL_FACILITIES: GrowFacility[] = [
     environmentBonus: 1.0,
     description: 'Kit de inicio digital gratuito. Carpa de tela mylar reflectante, extractor básico y panel LED 150W.',
     unlocked: true,
-    image: 'https://images.unsplash.com/photo-1516253593875-bd7ba052fbc5?auto=format&fit=crop&w=600&q=80'
+    art: 'tent_starter'
   },
   {
     id: 'greenhouse_commercial',
@@ -117,7 +117,7 @@ export const INITIAL_FACILITIES: GrowFacility[] = [
     environmentBonus: 1.4,
     description: 'Control de clima computarizado, inyección de CO2 regulada (1200 ppm) y deshumidificación de alta capacidad.',
     unlocked: false,
-    image: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&w=600&q=80'
+    art: 'greenhouse_commercial'
   },
   {
     id: 'lab_pharma_hydro',
@@ -128,7 +128,7 @@ export const INITIAL_FACILITIES: GrowFacility[] = [
     environmentBonus: 2.2,
     description: 'Sistemas aeropónicos verticales, espectro LED dinámico Samsung LM301H EVO y esterilización UV continua.',
     unlocked: false,
-    image: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=600&q=80'
+    art: 'lab_pharma_hydro'
   }
 ];
 
@@ -241,7 +241,7 @@ export const INITIAL_V2P_ITEMS: V2pRedemptionItem[] = [
     category: 'Botanical Terpenes',
     requiredFlora: 850,
     stockPhysical: 142,
-    image: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=500&q=80',
+    art: 'v2p_terp_bottle',
     description: 'Perfil de terpenos idéntico al cultivado en juego, 100% orgánico certificado, grado alimentario y cosmético.',
     nftCertificateId: 'CERT-SOL-TRP-001'
   },
@@ -251,7 +251,7 @@ export const INITIAL_V2P_ITEMS: V2pRedemptionItem[] = [
     category: 'Premium Hemp CBD',
     requiredFlora: 1400,
     stockPhysical: 89,
-    image: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?auto=format&fit=crop&w=500&q=80',
+    art: 'v2p_cbd_drops',
     description: 'Extraído de cáñamo premium con cromatografía verificada por laboratorio externo y trazabilidad on-chain.',
     nftCertificateId: 'CERT-SOL-CBD-882'
   },
@@ -261,7 +261,7 @@ export const INITIAL_V2P_ITEMS: V2pRedemptionItem[] = [
     category: 'Chrono Merch',
     requiredFlora: 600,
     stockPhysical: 55,
-    image: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=500&q=80',
+    art: 'v2p_grow_hoodie',
     description: 'Tejido 55% fibra de cáñamo natural y 45% algodón orgánico con chip NFC integrado vinculado a tu billetera Solana.',
     nftCertificateId: 'CERT-SOL-MRCH-109'
   }

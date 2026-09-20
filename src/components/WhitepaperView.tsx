@@ -1,3 +1,4 @@
+import { FacilityArt, WhitepaperHeroArt } from './art/GameArt';
 import React, { useState } from 'react';
 import { 
   FileText, 
@@ -85,11 +86,7 @@ export const WhitepaperView: React.FC = () => {
       {/* Document Hero Card */}
       <div className="hud-panel relative overflow-hidden shadow-2xl">
         <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1516253593875-bd7ba052fbc5?auto=format&fit=crop&w=1400&q=80"
-            alt="ChronoFlora Banner"
-            className="w-full h-full object-cover opacity-25"
-          />
+          <WhitepaperHeroArt className="w-full h-full opacity-40" />
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/80 to-transparent"></div>
         </div>
 
@@ -325,11 +322,7 @@ export const WhitepaperView: React.FC = () => {
               </p>
 
               <div className="rounded-2xl overflow-hidden border border-neutral-800">
-                <img
-                  src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&w=1200&q=80"
-                  alt="Invernadero Automatizado"
-                  className="w-full h-64 object-cover"
-                />
+                <FacilityArt kind="greenhouse_commercial" slice className="w-full h-64" label="Invernadero automatizado de ChronoFlora" />
                 <div className="p-3 bg-neutral-950 text-[11px] text-neutral-400 text-center font-mono">
                   Render conceptual: Sala de cultivo automatizada e industrial dentro del multiverso de ChronoFlora.
                 </div>
