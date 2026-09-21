@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ShoppingBag, Droplets, Thermometer, Wind, Flame, Coins, Sliders, Zap, Wrench, Package, Lock, Plus, Minus,
-  Lightbulb, Snowflake, FlaskConical, Gauge, Sun, KeyRound, Activity, Check, Sparkles, Bug, Sprout, Recycle, Globe2,
+  Lightbulb, Snowflake, FlaskConical, Gauge, Sun, KeyRound, Activity, Check, Sparkles, Bug, Sprout, Recycle, Globe2, Users,
 } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { HudPanel, NeonButton, StatBar, RARITY_STYLE } from './game/GameUI';
@@ -10,6 +10,7 @@ import { ItemArt, rarityColor } from './market/ItemArt';
 import { Merchant, type Mood } from './market/Merchant';
 import { NpcMissions } from './missions/NpcMissions';
 import { LandMarket } from './market/LandMarket';
+import { StaffMarket } from './market/StaffMarket';
 import { useShopkeeper } from './npc/shopkeeper';
 import { flyCoins, flyToken, floatText } from './market/fx';
 import { PEST_INFO } from '../sim/engine';
@@ -155,12 +156,12 @@ const Slot: React.FC<{
 
 /* ───────────────────────── main view ───────────────────────── */
 
-export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () => void }> = ({ initialCat, onOpenPlanet }) => {
+export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () => void; onOpenBag?: () => void }> = ({ initialCat, onOpenPlanet, onOpenBag }) => {
   const {
-    assets, resources, equipStats, buyAsset, setAssetEquipped, repairAsset, floraBalance, solBalance, calibrateMeter, care, recycleGarbage,
+    assets, resources, equipStats, buyAsset, setAssetEquipped, repairAsset, floraBalance, solBalance, calibrateMeter, care, recycleGarbage, shopPrice, staffMods,
   } = useGame();
 
-  const [tab, setTab] = useState<'buy' | 'bag' | 'land'>(initialCat === 'land' ? 'land' : 'buy');
+  const [tab, setTab] = useState<'buy' | 'bag' | 'land' | 'staff'>(initialCat === 'land' ? 'land' : initialCat === 'staff' ? 'staff' : 'buy');
   const startCat = (CATEGORY_ORDER as string[]).includes(initialCat ?? '') ? (initialCat as AssetCategory) : 'all';
   const [cat, setCat] = useState<AssetCategory | 'all'>(startCat);
   const [currency, setCurrency] = useState<'FLORA' | 'SOL'>('FLORA');
@@ -184,7 +185,8 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
   const selected = CATALOG_BY_ID[selectedId] && items.some((c) => c.id === selectedId) ? CATALOG_BY_ID[selectedId] : items[0];
   const isConsumable = selected?.kind === 'consumable';
   const n = isConsumable ? qty : 1;
-  const unit = selected ? (currency === 'FLORA' ? selected.priceFlora : selected.priceSol) : 0;
+  const cut = (v: number) => (currency === 'FLORA' ? shopPrice(v) : Number((v * (1 - staffMods.shopDiscount)).toFixed(3)));
+  const unit = selected ? cut(currency === 'FLORA' ? selected.priceFlora : selected.priceSol) : 0;
   const total = Number((unit * n).toFixed(3));
   const balance = currency === 'FLORA' ? floraBalance : solBalance;
   const affordable = balance >= total;
@@ -342,7 +344,7 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
 
         {/* menu tabs */}
         <div className="flex items-center gap-2">
-          {([['buy', 'Comprar', ShoppingBag], ['land', 'Tierras', Globe2], ['bag', 'Mi bolsa', Package]] as const).map(([id, label, Icon]) => (
+          {([['buy', 'Comprar', ShoppingBag], ['land', 'Tierras', Globe2], ['staff', 'Personal', Users], ['bag', 'Mi bolsa', Package]] as const).map(([id, label, Icon]) => (
             <button key={id} data-mk-bag={id === 'bag' ? '' : undefined} onClick={() => setTab(id)} className={`mk-tab ${tab === id ? 'is-on' : ''}`}>
               <Icon className="w-4 h-4" /> {label}
               {id === 'bag' && <span className="text-[10px] font-mono opacity-70">{assets.length}</span>}
@@ -350,7 +352,9 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
           ))}
         </div>
 
-        {tab === 'land' ? (
+        {tab === 'staff' ? (
+          <StaffMarket onSay={(text, mood) => setSay((s) => ({ text, mood, key: s.key + 1 }))} onOpenBag={onOpenBag} />
+        ) : tab === 'land' ? (
           <LandMarket currency={currency} onSay={(text, mood) => setSay((s) => ({ text, mood, key: s.key + 1 }))} onOpenPlanet={onOpenPlanet} />
         ) : tab === 'buy' ? (
           <div className="grid gap-4 lg:grid-cols-[150px_minmax(0,1fr)_330px] items-start">
@@ -374,8 +378,8 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
               {items.map((it, i) => (
                 <Slot
                   key={it.id} it={it} index={i} selected={selected?.id === it.id} owned={ownedCount[it.id] ?? 0}
-                  price={currency === 'FLORA' ? it.priceFlora : it.priceSol} currency={currency}
-                  affordable={(currency === 'FLORA' ? floraBalance : solBalance) >= (currency === 'FLORA' ? it.priceFlora : it.priceSol)}
+                  price={cut(currency === 'FLORA' ? it.priceFlora : it.priceSol)} currency={currency}
+                  affordable={(currency === 'FLORA' ? floraBalance : solBalance) >= cut(currency === 'FLORA' ? it.priceFlora : it.priceSol)}
                   onSelect={() => selectItem(it)}
                 />
               ))}

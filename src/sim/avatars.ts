@@ -93,7 +93,7 @@ export type PityMap = Record<ChestId, PityState>;
 export const EMPTY_PITY: PityMap = { season: { sinceEpic: 0, sinceLegend: 0 }, premium: { sinceEpic: 0, sinceLegend: 0 } };
 
 /** Which rarity comes out (odds + pity). `rng` returns [0,1). */
-export function rollRarity(chest: ChestDef, pity: PityState, rng: () => number): AvatarRarity {
+export function rollRarity(chest: Pick<ChestDef, 'odds' | 'epicEvery' | 'legendEvery'>, pity: PityState, rng: () => number): AvatarRarity {
   if (pity.sinceLegend + 1 >= chest.legendEvery) return 'legendary';
   if (pity.sinceEpic + 1 >= chest.epicEvery) {
     const e = chest.odds.epic, l = chest.odds.legendary;

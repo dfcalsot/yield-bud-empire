@@ -427,6 +427,10 @@ export interface UserAccountData {
   /** the installation under construction (sim/facilities.ts) and the plants waiting beyond the current capacity */
   construction?: import('../sim/facilities').Construction | null;
   dormantPlants?: PlantInGrow[];
+  /** staff NFTs owned, who works where, and the recruitment chests' guarantee counters (sim/staff.ts) */
+  staff?: import('../sim/staff').StaffNft[];
+  staffAssign?: Partial<Record<import('../sim/staff').StaffRole, string>>;
+  staffPity?: import('../sim/staff').StaffPity;
   /** set on a local save whose contents were brought into a server account (kept as a hidden backup) */
   migratedTo?: string;
 }

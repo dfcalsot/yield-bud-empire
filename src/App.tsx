@@ -39,6 +39,7 @@ function YieldBudEmpireApp() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [bagOpen, setBagOpen] = useState<boolean>(false);
+  const [bagTab, setBagTab] = useState<string | undefined>(undefined);
   const [diaryOpen, setDiaryOpen] = useState<boolean>(false);
 
   // the tutorial counts when the briefcase is opened
@@ -109,7 +110,7 @@ function YieldBudEmpireApp() {
         onOpenWalletModal={() => setIsWalletModalOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
-        onOpenBag={() => setBagOpen(true)}
+        onOpenBag={() => { setBagTab(undefined); setBagOpen(true); }}
       />
 
       {/* Main Content Area */}
@@ -130,7 +131,7 @@ function YieldBudEmpireApp() {
         {currentTab === 'perfil' && <ProfileView onOpenAccountModal={() => setIsProfileModalOpen(true)} />}
         {currentTab === 'planeta' && <PlanetView onOpenSeedBank={() => goToTab('semillas')} onOpenMarket={openMarket} />}
         {currentTab === 'semillas' && <SeedBankView onNavigateToCultivation={() => goToTab('cultivo')} />}
-        {currentTab === 'market' && <GrowMarketView initialCat={marketCat} onOpenPlanet={() => goToTab('planeta')} />}
+        {currentTab === 'market' && <GrowMarketView initialCat={marketCat} onOpenPlanet={() => goToTab('planeta')} onOpenBag={() => { setBagTab('plantilla'); setBagOpen(true); }} />}
         {currentTab === 'nutrientes' && <NutrientTablesView />}
         {currentTab === 'extraccion' && <ExtractionLabView />}
         {currentTab === 'genetica' && <GeneticsLabView />}
@@ -143,7 +144,7 @@ function YieldBudEmpireApp() {
       <WelcomeSheet />
       <GuideChrono currentTab={currentTab} />
       <DiaryDrawer open={diaryOpen} onClose={() => setDiaryOpen(false)} />
-      <BriefcaseDrawer open={bagOpen} onClose={() => setBagOpen(false)} onNavigate={goToTab} />
+      <BriefcaseDrawer open={bagOpen} onClose={() => setBagOpen(false)} initialTab={bagTab} onNavigate={(t) => (t.startsWith('market:') ? openMarket(t.slice(7)) : goToTab(t))} />
 
       {/* Global Toast Alerts */}
       <NotificationToast />

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Briefcase, Crown, Droplets, FlaskConical, Globe2, Package, Search, Sprout, Wrench, X, Zap, Recycle, Sparkles } from 'lucide-react';
+import { Briefcase, Crown, Droplets, FlaskConical, Globe2, Package, Search, Sprout, Wrench, X, Zap, Recycle, Sparkles, Users } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { CATALOG_BY_ID, CATEGORY_LABEL, RARITY_BY_TIER, garbageOf, pestStock, repairCostOf, type OwnedAsset } from '../../economy/catalog';
 import { ItemArt } from '../market/ItemArt';
@@ -10,6 +10,7 @@ import { cardFromDonor, cardFromPatent, cardFromSeed } from '../../utils/nft';
 import { DESIGN_BY_ID } from '../../sim/avatars';
 import { REGION_BY_ID } from '../../sim/terroir';
 import { landRarity } from '../../sim/lands';
+import { RosterPanel } from '../staff/RosterPanel';
 
 /**
  * The player's briefcase: everything they own in one place, grouped into six tabs, searchable, with the quick actions
@@ -17,7 +18,7 @@ import { landRarity } from '../../sim/lands';
  * It only reads existing game state; the actions are the same ones the other screens call.
  */
 type Match = ((...xs: Array<string | undefined>) => boolean) & { searching: boolean };
-type TabId = 'recursos' | 'equipo' | 'semillas' | 'cosecha' | 'genetica' | 'coleccion';
+type TabId = 'recursos' | 'equipo' | 'semillas' | 'cosecha' | 'genetica' | 'coleccion' | 'plantilla';
 
 const SEEN_KEY = 'ybe_bag_seen_at';
 const readSeen = () => { try { return Number(localStorage.getItem(SEEN_KEY)) || 0; } catch { return 0; } };
@@ -25,17 +26,18 @@ const writeSeen = (t: number) => { try { localStorage.setItem(SEEN_KEY, String(t
 
 /** how many things the player carries (for the badge) */
 export const useBagCount = (): number => {
-  const { assets, seedInventory, processedProducts, avatars, mothersFathers, patents, plots } = useGame();
+  const { assets, seedInventory, processedProducts, avatars, mothersFathers, patents, plots, staff } = useGame();
   const seeds = Object.values(seedInventory).reduce((a, b) => a + (b > 0 ? 1 : 0), 0);
-  return assets.length + seeds + processedProducts.length + avatars.length + mothersFathers.length + patents.length + plots.length;
+  return assets.length + seeds + processedProducts.length + avatars.length + mothersFathers.length + patents.length + plots.length + staff.length;
 };
 
-export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onNavigate: (tab: string) => void }> = ({ open, onClose, onNavigate }) => {
+export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onNavigate: (tab: string) => void; initialTab?: string }> = ({ open, onClose, onNavigate, initialTab }) => {
   const g = useGame();
   const [tab, setTab] = useState<TabId>('recursos');
   const [q, setQ] = useState('');
   const [seenAt, setSeenAt] = useState(0);
 
+  useEffect(() => { if (open && initialTab && ['recursos', 'equipo', 'semillas', 'cosecha', 'genetica', 'coleccion', 'plantilla'].includes(initialTab)) setTab(initialTab as TabId); }, [open, initialTab]);
   useEffect(() => {
     if (open) { setSeenAt(readSeen()); return; }
     writeSeen(Date.now());
@@ -60,6 +62,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
     cosecha: g.processedProducts.length + (g.rawFlowerGrams > 0 ? 1 : 0) + (g.trimGrams > 0 ? 1 : 0),
     genetica: g.mothersFathers.length + g.patents.length,
     coleccion: g.avatars.length + g.plots.length,
+    plantilla: g.staff.length,
   };
   const newIn = (list: OwnedAsset[]) => list.filter((a) => a.mintedAt > seenAt && !a.starter).length;
 
@@ -70,6 +73,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
     { id: 'cosecha', label: 'Cosecha', icon: <Package className="w-4 h-4" /> },
     { id: 'genetica', label: 'Genética', icon: <FlaskConical className="w-4 h-4" /> },
     { id: 'coleccion', label: 'Colección', icon: <Crown className="w-4 h-4" /> },
+    { id: 'plantilla', label: 'Plantilla', icon: <Users className="w-4 h-4" /> },
   ];
 
   if (!open) return null;
@@ -111,6 +115,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
           {tab === 'semillas' && <SeedsTab match={match} rows={seedRows} onDone={onClose} onNavigate={onNavigate} />}
           {tab === 'cosecha' && <HarvestTab match={match} onNavigate={(t) => { onClose(); onNavigate(t); }} />}
           {tab === 'genetica' && <GeneticsTab match={match} />}
+          {tab === 'plantilla' && <RosterPanel onHire={() => { onClose(); onNavigate('market:staff'); }} />}
           {tab === 'coleccion' && <CollectionTab match={match} onOpenPlanet={() => { onClose(); onNavigate('planeta'); }} />}
         </div>
       </aside>

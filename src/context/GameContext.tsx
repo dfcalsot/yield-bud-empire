@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { diagnose as diagnoseMix, dosesFromTable, feedEffect, phCorrection, solve as solveMix, stageOfProgress, strengthForEc, type Mix } from '../sim/nutrition';
 import {
@@ -77,6 +77,10 @@ import {
 import { BALANCE } from '../sim/balance';
 import { applySpeedUp, buildHoursOf, fitToCapacity, isDone, normalizeConstruction, speedUpQuote, startConstruction, type Construction } from '../sim/facilities';
 import { bump as bumpMissions, claimErrand, claimStory, emptyMissions, normalizeMissions, rewardSummary, type MissionEvent, type MissionReward, type MissionState } from '../sim/missions';
+import {
+  EMPTY_STAFF_PITY, ROLE_INFO, STAFF_CHESTS, STAFF_ROLES, hireFromBoard, isActive as staffIsActive, modifiersOf, normalizeAssignments, normalizeRoster, rankUpCost, rollStaff, settleWages, wageOf, NO_MODS,
+  type Candidate, type Mods, type StaffChestId, type StaffNft, type StaffPity, type StaffRole,
+} from '../sim/staff';
 import type { NpcKind } from '../components/npc/Npc';
 import { claimStep as claimTutStep, emptyTutorial, normalizeTutorial, skipStep as skipTutStep, startTutorial as startTutState, type TutorialState } from '../sim/tutorial';
 export { calculateVpd };
@@ -141,6 +145,23 @@ interface GameContextType {
   /** the installation being built (null when none) and the paid speed-up (burns $FLORA, limited per day) */
   construction: Construction | null;
   speedUpConstruction: () => boolean;
+
+  // Staff NFTs: hires that replace the industry characters (bounded bonuses, daily wage burned)
+  staff: StaffNft[];
+  staffAssign: Partial<Record<StaffRole, string>>;
+  staffPity: StaffPity;
+  /** the sum of the bonuses of the hires that are assigned AND paid (capped, see sim/staff.ts) */
+  staffMods: Mods;
+  /** a $FLORA price after the shop keeper's discount */
+  shopPrice: (flora: number) => number;
+  /** the hire working in a role, and whether its wage is paid (working) */
+  staffIn: (role: StaffRole) => { staff: StaffNft; working: boolean } | null;
+  hireCandidate: (c: Candidate) => StaffNft | null;
+  openStaffChest: (id: StaffChestId) => StaffNft | null;
+  assignStaff: (role: StaffRole, staffId: string | null) => void;
+  rankUpStaff: (staffId: string) => boolean;
+  /** $FLORA per day the assigned hires cost */
+  staffWagesPerDay: number;
   strains: Strain[];
   activePlant: PlantInGrow | null;
   indoorPlants: PlantInGrow[];
@@ -457,6 +478,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [dormantPlants, setDormantPlants] = useState<PlantInGrow[]>([]);
   const [construction, setConstruction] = useState<Construction | null>(null);
+  const [staff, setStaff] = useState<StaffNft[]>([]);
+  const [staffAssign, setStaffAssign] = useState<Partial<Record<StaffRole, string>>>({});
+  const [staffPity, setStaffPity] = useState<StaffPity>(EMPTY_STAFF_PITY);
+  const [staffNow, setStaffNow] = useState(() => Date.now());
+  const staffMods = useMemo<Mods>(() => {
+    const working = STAFF_ROLES.map(r => staff.find(x => x.id === staffAssign[r])).filter((x): x is StaffNft => !!x && staffIsActive(x, staffNow));
+    return working.length ? modifiersOf(working) : NO_MODS;
+  }, [staff, staffAssign, staffNow]);
   const [selectedPlantIndex, setSelectedPlantIndex] = useState<number>(0);
 
   // Active plant refers to currently selected plant in the indoor room
@@ -686,7 +715,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // automation only works with the matching NFT equipment installed (and not broken)
     autoWater: autoWaterActive && equipStats.autoWater,
     autoClimate: autoClimateActive && equipStats.hasAc,
-    facilityBonus: currentFacility.environmentBonus,
+    facilityBonus: currentFacility.environmentBonus * (1 + staffMods.growth),
     co2Ppm: Math.max(co2Ppm, equipStats.co2Ppm),
     lightOn: 1,
     equip: equipStats,
@@ -739,6 +768,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unlockedFacilities: facilities.filter(f => f.unlocked).map(f => f.id),
       construction,
       dormantPlants,
+      staff,
+      staffAssign,
+      staffPity,
       savedAt: Date.now()
     });
   }, [
@@ -774,7 +806,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     currentFacility,
     facilities,
     construction,
-    dormantPlants
+    dormantPlants,
+    staff,
+    staffAssign,
+    staffPity
   ]);
 
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
@@ -789,6 +824,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentFacility(list.find(f => f.id === saved?.facilityId && f.unlocked) ?? list[0]);
       setConstruction(normalizeConstruction(saved?.construction));
       setDormantPlants(Array.isArray(saved?.dormantPlants) ? saved!.dormantPlants! : []);
+      const roster = normalizeRoster(saved?.staff);
+      setStaff(roster);
+      setStaffAssign(normalizeAssignments(saved?.staffAssign, roster));
+      setStaffPity(saved?.staffPity ?? EMPTY_STAFF_PITY);
     }
     if (saved) {
       if (typeof saved.floraBalance === 'number') setFloraBalance(saved.floraBalance);
@@ -1500,7 +1539,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const maleTarget = target.sex === 'male';
-    const flowerHarvested = maleTarget ? 0 : Math.round(target.estimatedDryYieldGrams * (target.health / 100));
+    const flowerHarvested = maleTarget ? 0 : Math.round(target.estimatedDryYieldGrams * (target.health / 100) * (1 + staffMods.roomYield));
     const trimHarvested = Math.round(flowerHarvested * 0.4);
     const seedsGot = !maleTarget && target.pollinated ? giveSeeds(target.strain, SEEDS_PER_POLLINATED) : 0;
 
@@ -1556,7 +1595,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const readySet = new Set(readyIndices.map(r => r.idx));
     readyIndices.forEach(({ p }) => {
       if (p.sex === 'male') { maleCut++; return; }
-      const flower = Math.round(p.estimatedDryYieldGrams * (p.health / 100));
+      const flower = Math.round(p.estimatedDryYieldGrams * (p.health / 100) * (1 + staffMods.roomYield));
       totalFlower += flower;
       totalTrim += Math.round(flower * 0.4);
       if (p.pollinated) totalSeeds += giveSeeds(p.strain, SEEDS_PER_POLLINATED);
@@ -1770,8 +1809,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showNotification('Ya tienes esta licencia.', 'info');
       return false;
     }
-    const totalFlora = item.priceFlora * n;
-    const totalSol = Number((item.priceSol * n).toFixed(3));
+    const totalFlora = Math.round(item.priceFlora * n * (1 - staffMods.shopDiscount));
+    const totalSol = Number((item.priceSol * n * (1 - staffMods.shopDiscount)).toFixed(3));
     const label = `${n > 1 ? `${n}× ` : ''}${item.name}`;
     if (currency === 'FLORA') {
       if (floraBalance < totalFlora) {
@@ -2060,7 +2099,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let flower = 0, trim = 0, seeds = 0, maleCut = 0;
     for (const p of ready) {
       if (isMale(p)) { maleCut++; continue; }
-      const f = Math.round(p.estimatedDryYieldGrams * (p.health / 100));
+      const f = Math.round(p.estimatedDryYieldGrams * (p.health / 100) * (1 + staffMods.plotYield));
       flower += f;
       trim += Math.round(f * 0.4);
       if (p.pollinated) seeds += giveSeeds(p.strain, SEEDS_PER_POLLINATED);
@@ -2369,7 +2408,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setSeedBank(prev => [newSeedItem, ...prev]);
-    setSeedInventory(prev => ({ ...prev, [hybridSeedId]: (prev[hybridSeedId] || 0) + 5 }));
+    setSeedInventory(prev => ({ ...prev, [hybridSeedId]: (prev[hybridSeedId] || 0) + 5 + staffMods.seedBonus }));
 
     confetti({ particleCount: 150, spread: 100 });
     addXp(160, 'Hibridación F1 Exitosa');
@@ -2416,6 +2455,82 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } });
     showNotification(`¡Obra terminada! ${target.name}: ahora caben ${target.capacityPlants} ${target.capacityPlants === 1 ? 'planta' : 'plantas'}.`, 'success');
   }, [showNotification]);
+
+  // --- STAFF NFTs ---
+  const staffRef = useRef<StaffNft[]>(staff); staffRef.current = staff;
+  const floraRef = useRef<number>(floraBalance); floraRef.current = floraBalance;
+  const unpaidToldRef = useRef<Set<string>>(new Set());
+
+  const staffIn = (role: StaffRole) => {
+    const st = staff.find(x => x.id === staffAssign[role]);
+    return st ? { staff: st, working: staffIsActive(st, staffNow) } : null;
+  };
+  const staffWagesPerDay = STAFF_ROLES.reduce((sum, r) => { const st = staff.find(x => x.id === staffAssign[r]); return sum + (st ? wageOf(st) : 0); }, 0);
+  const shopPrice = (flora: number) => Math.round(flora * (1 - staffMods.shopDiscount));
+
+  // wages: one day at a time, only for the assigned; a hire that cannot be paid stops working (see sim/staff.ts settleWages)
+  useEffect(() => {
+    const settle = () => {
+      const now = Date.now();
+      const ids = STAFF_ROLES.map(r => staffAssign[r]).filter((x): x is string => !!x);
+      if (ids.length) {
+        const r = settleWages(staffRef.current, ids, floraRef.current, now);
+        if (r.spent > 0) {
+          setStaff(r.roster);
+          recordBurnTransaction('BURN_PURCHASE', r.spent, `Yield Bud Empire: Sueldos del personal (${ids.length} ${ids.length === 1 ? 'asistente' : 'asistentes'})`);
+        }
+        const fresh = r.unpaid.filter(id => !unpaidToldRef.current.has(id));
+        if (fresh.length) {
+          fresh.forEach(id => unpaidToldRef.current.add(id));
+          const names = fresh.map(id => staffRef.current.find(x => x.id === id)?.name).filter(Boolean).join(', ');
+          showNotification(`Sin saldo para pagar el sueldo de ${names}: deja de trabajar hasta que puedas pagarle.`, 'info');
+        }
+      }
+      setStaffNow(now);
+    };
+    settle();
+    const t = setInterval(settle, 60000);
+    return () => clearInterval(t);
+  }, [staffAssign, staff.length, recordBurnTransaction, showNotification]);
+
+  const hireCandidate = (c: Candidate): StaffNft | null => {
+    if (staff.some(x => x.id === c.id)) { showNotification('Ese candidato ya es tuyo.', 'info'); return null; }
+    if (floraBalance < c.priceFlora) { showNotification(`Saldo insuficiente: contratar cuesta ${c.priceFlora} $FLORA`, 'info'); return null; }
+    const hire = hireFromBoard(c, Date.now());
+    recordBurnTransaction('BURN_PURCHASE', c.priceFlora, `Yield Bud Empire: Mint NFT de personal (${ROLE_INFO[hire.role].label} ${hire.name})`);
+    setStaff(prev => [...prev, hire]);
+    confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+    showNotification(`¡${hire.name} se une como ${ROLE_INFO[hire.role].label}! Asígnale su puesto en el Maletín → Plantilla.`, 'success');
+    return hire;
+  };
+
+  const openStaffChest = (id: StaffChestId): StaffNft | null => {
+    const chest = STAFF_CHESTS[id];
+    if (floraBalance < chest.priceFlora) { showNotification(`Saldo insuficiente: ${chest.name} cuesta ${chest.priceFlora} $FLORA`, 'info'); return null; }
+    recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `Yield Bud Empire: ${chest.name}`);
+    const r = rollStaff(chest, staffPity[id], Date.now() % 1_000_000_000 + staff.length, Date.now());
+    setStaffPity(prev => ({ ...prev, [id]: r.pity }));
+    setStaff(prev => [...prev, r.staff]);
+    return r.staff;
+  };
+
+  const assignStaff = (role: StaffRole, staffId: string | null) => {
+    const st = staffId ? staff.find(x => x.id === staffId) : null;
+    if (staffId && (!st || st.role !== role)) return;
+    setStaffAssign(prev => { const n = { ...prev }; if (staffId) n[role] = staffId; else delete n[role]; return n; });
+    if (st) showNotification(`${st.name} ocupa el puesto de ${ROLE_INFO[role].label} · sueldo ${wageOf(st)} $FLORA/día`, 'success');
+  };
+
+  const rankUpStaff = (staffId: string): boolean => {
+    const st = staff.find(x => x.id === staffId);
+    const cost = st ? rankUpCost(st) : null;
+    if (!st || cost === null) { showNotification('Ya está en el rango máximo.', 'info'); return false; }
+    if (floraBalance < cost) { showNotification(`Saldo insuficiente: subir de rango cuesta ${cost} $FLORA`, 'info'); return false; }
+    recordBurnTransaction('BURN_PURCHASE', cost, `Yield Bud Empire: Ascenso de ${st.name} a rango ${st.rank + 1}`);
+    setStaff(prev => prev.map(x => x.id === staffId ? { ...x, rank: x.rank + 1 } : x));
+    showNotification(`${st.name} asciende a rango ${st.rank + 1}. Su sueldo sube a ${wageOf({ rarity: st.rarity, rank: st.rank + 1 })} $FLORA/día.`, 'success');
+    return true;
+  };
 
   const speedUpConstruction = (): boolean => {
     if (!construction) return false;
@@ -2487,7 +2602,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return m;
     }));
 
-    // Generate output product
+    // Generate output product (the lab scientist's bonus raises the grams that come out)
+    const labMul = 1 + staffMods.labYield;
     let productYieldGrams = 0;
     let name = '';
     let potency = '';
@@ -2496,22 +2612,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const currentStrainName = activePlant?.strain.name || strains[0].name;
 
     if (type === 'live_rosin') {
-      productYieldGrams = Number((gramsInput * 0.22).toFixed(2));
+      productYieldGrams = Number((gramsInput * labMul * 0.22).toFixed(2));
       name = `${currentStrainName} Live Rosin Sin Solventes (90u)`;
       potency = '82.4% THC | 7.8% Terpenos';
       value = Math.round(productYieldGrams * 45);
     } else if (type === 'cured_flower') {
-      productYieldGrams = gramsInput;
+      productYieldGrams = Number((gramsInput * labMul).toFixed(2));
       name = `${currentStrainName} Flor Curada Prémium en Frío`;
       potency = '23.8% THC | 3.2% Terpenos';
       value = Math.round(productYieldGrams * 9);
     } else if (type === 'full_spec_oil') {
-      productYieldGrams = Number((gramsInput * 0.4).toFixed(2));
+      productYieldGrams = Number((gramsInput * labMul * 0.4).toFixed(2));
       name = `${currentStrainName} Aceite Concentrado Full Spectrum`;
       potency = '65.0% Cannabinoides Totales';
       value = Math.round(productYieldGrams * 25);
     } else {
-      productYieldGrams = Number((gramsInput * 0.08).toFixed(2));
+      productYieldGrams = Number((gramsInput * labMul * 0.08).toFixed(2));
       name = `Terpenos Puros Aislados de ${currentStrainName}`;
       potency = '99.2% Terpenos Volátiles Preservados';
       value = Math.round(productYieldGrams * 85);
@@ -2831,18 +2947,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!prod) return;
 
     playHarvestChime();
-    const fee = Math.max(1, Math.round(prod.marketValueFlora * USE.marketFee));
-    setFloraBalance(prev => prev + prod.marketValueFlora);
+    // the dispensary's budtender raises the price you get; the market fee is charged on the boosted price and burned
+    const gross = Math.round(prod.marketValueFlora * (1 + staffMods.sellBonus));
+    const fee = Math.max(1, Math.round(gross * USE.marketFee));
+    setFloraBalance(prev => prev + gross);
     recordBurnTransaction('BURN_PROCESS', fee, `Yield Bud Empire Dispensario: comisión de mercado ${(USE.marketFee * 100).toFixed(1)} % (${prod.name})`);
     setProcessedProducts(prev => prev.filter(p => p.id !== productId));
     setBrand(prev => ({
       ...prev,
-      totalSalesFlora: prev.totalSalesFlora + prod.marketValueFlora,
+      totalSalesFlora: prev.totalSalesFlora + gross,
       reputation: Math.min(100, prev.reputation + 1)
     }));
 
     reportEvent('sell', 1);
-    showNotification(`¡Venta realizada en el Dispensario! Recibiste +${prod.marketValueFlora - fee} $FLORA (comisión de mercado ${fee} quemados)`, 'success');
+    showNotification(`¡Venta realizada en el Dispensario! Recibiste +${gross - fee} $FLORA${staffMods.sellBonus > 0 ? ` (incluye +${Math.round(staffMods.sellBonus * 100)} % de tu dispensaria)` : ''} (comisión de mercado ${fee} quemados)`, 'success');
   };
 
   // Redeem V2P (Virtual to Physical)
@@ -2888,7 +3006,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return next;
       });
     }
-    addXp(r.xp, `Misión: ${title}`);
+    addXp(Math.round(r.xp * (1 + staffMods.missionBonus)), `Misión: ${title}`);
     playHarvestChime();
     confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#fbbf24', '#38bdf8'] });
     const list = rewardSummary(r, id => CATALOG_BY_ID[id]?.name ?? id, id => seedBank.find(x => x.id === id)?.name ?? id).join(' · ');
@@ -2961,6 +3079,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         upgradeFacility,
         construction,
         speedUpConstruction,
+        staff,
+        staffAssign,
+        staffPity,
+        staffMods,
+        shopPrice,
+        staffIn,
+        hireCandidate,
+        openStaffChest,
+        assignStaff,
+        rankUpStaff,
+        staffWagesPerDay,
         strains,
         activePlant,
         indoorPlants,
@@ -3100,4 +3229,10 @@ export const useGame = () => {
     throw new Error('useGame must be used within a GameProvider');
   }
   return context;
+};
+
+/** The hire working in a role (or assigned but unpaid), for the characters' portraits. Safe outside the provider (returns null). */
+export const useAssignedStaff = (role: StaffRole): { staff: StaffNft; working: boolean } | null => {
+  const c = useContext(GameContext);
+  return c ? c.staffIn(role) : null;
 };
