@@ -10,3 +10,10 @@ encaje con las coordenadas del mapa del juego (`proj(lon, lat)` en `WorldMap.tsx
   El dibujo es a mano, así que la línea del ecuador ondula un poco: es fiel al original, no un error.
 - Regenerar: `cd scripts/maps && curl -o monti.jpg <url del original> && python3 monti-build.py` (necesita Pillow).
   Los bordes norte y sur se funden con el fondo oscuro del juego (el borde sur del original son los pétalos decorativos).
+
+## Estilo del juego (por defecto)
+
+ es la misma geografía repintada con la paleta del juego: océano azul profundo, tierra verde iluminada por el dibujo original
+y costa en neón. El original tiene el mar amarillento de forma desigual, así que no se usa un color fijo: se calcula una medida suave de «cuánto se parece a mar»
+(clara, poco saturada, sin verde ni rojo pintados), se corta, se limpian motas y agujeros y se pinta. Script:  (necesita ,
+la reproyección sin desvanecer que genera ). Tres estilos en el Planeta: Monti (juego), pergamino 1587 y mapa clásico.

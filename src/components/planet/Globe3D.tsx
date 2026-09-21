@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { REGIONS } from '../../sim/terroir';
 import type { RegionId } from '../../types';
-import { CONTINENTS, MONTI_URL, proj } from './WorldMap';
+import { CONTINENTS, MONTI_GAME_URL, MONTI_URL, proj, type MapSkin } from './WorldMap';
 
 /**
  * Optional 3D globe for the Planet (behind a toggle, lazy-loaded). Same data as the flat map: the seven regions, your
@@ -17,7 +17,7 @@ interface Props {
   onSelect: (id: RegionId) => void;
   onHover: (id: RegionId | null) => void;
   nowMs: number;
-  antique?: boolean;
+  skin?: MapSkin;
 }
 
 /** local position of (lat, lon) on a three.js SphereGeometry (texture u=0 at lon -180) */
@@ -27,8 +27,8 @@ const toVec = (lat: number, lon: number, r = 1) => {
 };
 
 /** the antique chart as the sphere's texture (the file is already equirectangular, so it wraps as is) */
-function montiTexture(): THREE.Texture {
-  const t = new THREE.TextureLoader().load(MONTI_URL);
+function montiTexture(url: string): THREE.Texture {
+  const t = new THREE.TextureLoader().load(url);
   t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
   return t;
 }
@@ -68,10 +68,10 @@ const ATMO_FRAG = 'varying vec3 vN; void main(){ float i = pow(0.72 - dot(vN, ve
 
 interface Ctl { yaw: number; pitch: number; vy: number; dragging: boolean; dist: number; lx: number; ly: number; targetYaw: number | null; targetPitch: number }
 
-const Scene: React.FC<Props & { ctl: React.MutableRefObject<Ctl> }> = ({ owned, ready = {}, selected, onSelect, onHover, nowMs, ctl, antique = false }) => {
+const Scene: React.FC<Props & { ctl: React.MutableRefObject<Ctl> }> = ({ owned, ready = {}, selected, onSelect, onHover, nowMs, ctl, skin = 'monti' }) => {
   const group = useRef<THREE.Group>(null);
   const halos = useRef<Array<THREE.Mesh | null>>([]);
-  const texture = useMemo<THREE.Texture>(() => (antique ? montiTexture() : makeTexture()), [antique]);
+  const texture = useMemo<THREE.Texture>(() => (skin === 'classic' ? makeTexture() : montiTexture(skin === 'parchment' ? MONTI_URL : MONTI_GAME_URL)), [skin]);
   useEffect(() => () => texture.dispose(), [texture]);
   const sunLon = -(((nowMs / 3600000) % 24) - 12) * 15;
   const uniforms = useMemo(() => ({ map: { value: texture }, sunDir: { value: new THREE.Vector3() } }), [texture]);

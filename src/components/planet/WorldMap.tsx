@@ -6,6 +6,12 @@ import { MapTraffic, MapUfo } from './mapActors';
 
 /** The 1587 planisphere of Urbano Monti resampled to this map's equirectangular grid (see scripts/maps/README.md). Public domain. */
 export const MONTI_URL = '/maps/monti-1587.webp';
+/** the same geography restyled with the game's palette (deep ocean, green land, neon coast) */
+export const MONTI_GAME_URL = '/maps/monti-game.webp';
+/** monti = Monti's geography in the game's style · parchment = the antique chart as painted · classic = the game's own stylised continents */
+export type MapSkin = 'monti' | 'parchment' | 'classic';
+export const NEXT_SKIN: Record<MapSkin, MapSkin> = { monti: 'parchment', parchment: 'classic', classic: 'monti' };
+export const SKIN_LABEL: Record<MapSkin, string> = { monti: '🗺️ Estilo Monti', parchment: '📜 Pergamino 1587', classic: '🧭 Mapa clásico' };
 
 /** Stylised world map (equirectangular 1000×500) with the seven regions, a live day/night terminator and drifting clouds. */
 
@@ -46,9 +52,9 @@ export const WorldMap: React.FC<{
   nowMs: number;
   /** the player waved at a UFO (small prize is the caller's business) */
   onUfoCaught?: (region: string) => void;
-  /** draw the antique chart of Urbano Monti (1587) instead of the game's stylised continents */
-  antique?: boolean;
-}> = ({ owned, ready = {}, selected, onSelect, onHover, nowMs, onUfoCaught, antique = false }) => {
+  skin?: MapSkin;
+}> = ({ owned, ready = {}, selected, onSelect, onHover, nowMs, onUfoCaught, skin = 'monti' }) => {
+  const antique = skin !== 'classic';
   const land = useMemo(() => CONTINENTS.map(path), []);
   // sun is at local noon on the meridian where it is 12:00
   const utcH = (nowMs / 3600000) % 24;
@@ -68,9 +74,9 @@ export const WorldMap: React.FC<{
         <rect width="1000" height="500" fill="url(#plOcean)" />
         {antique ? (
           <>
-            <image href={MONTI_URL} x="0" y="0" width="1000" height="500" preserveAspectRatio="none" />
+            <image href={skin === 'parchment' ? MONTI_URL : MONTI_GAME_URL} x="0" y="0" width="1000" height="500" preserveAspectRatio="none" />
             {/* a dark veil so the pins, labels and the night side stay readable over the parchment */}
-            <rect width="1000" height="500" fill="#050a18" opacity=".18" />
+            {skin === 'parchment' && <rect width="1000" height="500" fill="#050a18" opacity=".18" />}
             <rect width="1000" height="500" fill="url(#plVignette)" />
           </>
         ) : (
@@ -154,7 +160,7 @@ export const WorldMap: React.FC<{
           );
         })}
         <MapUfo onUfoCaught={onUfoCaught} />
-        {antique && <text x="992" y="492" textAnchor="end" fontSize="9" fill="#e2e8f0" opacity=".7" fontFamily="ui-monospace, monospace" pointerEvents="none">Cartografía: Urbano Monti, planisferio de 1587 · dominio público</text>}
+        {antique && <text x="992" y="492" textAnchor="end" fontSize="9" fill="#e2e8f0" opacity=".7" fontFamily="ui-monospace, monospace" pointerEvents="none">Geografía: Urbano Monti, planisferio de 1587 · dominio público</text>}
       </g>
     </svg>
   );
