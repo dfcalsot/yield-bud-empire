@@ -105,8 +105,13 @@ ok('máximo de cuentas por IP (3 en 24 h): la cuarta se bloquea', last.status ==
 const ipFlood = newIp(); let codes = [];
 for (let i = 0; i < 7; i++) codes.push((await reg({ ip: ipFlood, body: { email: `flood${i}@example.com`, username: `Flood ${i}x` } })).status);
 ok('inundación de registros desde una IP: limitada (429)', codes.includes(429), codes.join(','));
-const powBits = (await call('GET', '/api/auth/challenge', { ip: ipFlood })).json.bits;
-ok('el captcha se encarece para una IP insistente (más bits)', powBits > 8, `(${powBits} bits vs 8 base)`);
+const powBase = (await call('GET', '/api/auth/challenge', { ip: newIp() })).json.bits;
+const ipBad = newIp();
+for (let i = 0; i < 6; i++) await reg({ ip: ipBad, captcha: { ...wrong, bits: 1 }, body: { email: `bad${i}@example.com`, username: `Bad Actor ${i}` } });
+const powBits = (await call('GET', '/api/auth/challenge', { ip: ipBad })).json.bits;
+ok('el captcha solo se encarece para una IP que FALLA la verificación (hasta +2 bits)', powBits > powBase && powBits <= powBase + 2, `(${powBits} bits vs ${powBase} base)`);
+const powOk = (await call('GET', '/api/auth/challenge', { ip: ipFlood })).json.bits;
+ok('acceder varias veces con éxito NO encarece la verificación', powOk === powBase, `(${powOk} vs ${powBase})`);
 
 // ── e-mail verification
 const token = new URL(alphaLink).hash.replace('#verify=', '');

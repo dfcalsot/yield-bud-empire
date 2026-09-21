@@ -25,6 +25,7 @@ import { Dock } from './components/Dock';
 import { BriefcaseDrawer } from './components/bag/BriefcaseDrawer';
 import { GuideChrono } from './components/guide/GuideChrono';
 import { DiaryDrawer } from './components/diary/DiaryDrawer';
+import { UpdateBanner, buildLabel } from './components/UpdateBanner';
 import { WelcomeSheet } from './components/guide/WelcomeSheet';
 import { ResourceBar } from './components/ResourceBar';
 import { SubTabs } from './components/SubTabs';
@@ -138,6 +139,7 @@ function YieldBudEmpireApp() {
         {currentTab === 'whitepaper' && <WhitepaperView />}
       </main>
 
+      <UpdateBanner />
       <WelcomeSheet />
       <GuideChrono currentTab={currentTab} />
       <DiaryDrawer open={diaryOpen} onClose={() => setDiaryOpen(false)} />
@@ -180,7 +182,7 @@ function YieldBudEmpireApp() {
       {/* Footer */}
       <footer className="mb-24 px-4 text-center text-[11px] text-neutral-600">
         <span className="font-serif text-neutral-400">Yield Bud Empire</span> · Solana SPL &amp; Anchor · Simulación agronómica educativa ·{' '}
-        <button onClick={() => goToTab('whitepaper')} className="hover:text-emerald-300 transition cursor-pointer">Libro Blanco</button>
+        <button onClick={() => goToTab('whitepaper')} className="hover:text-emerald-300 transition cursor-pointer">Libro Blanco</button> · <span title="Versión de este juego (si no coincide con la última, recarga con Ctrl+Shift+R)">{buildLabel()}</span>
       </footer>
 
       {/* Bottom dock */}

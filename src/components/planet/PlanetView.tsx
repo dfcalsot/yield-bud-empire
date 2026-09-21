@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Component, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Coins, Flame, MapPin, Sprout } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { Npc, useNpcSay, type Mood } from '../npc/Npc';
@@ -25,6 +25,17 @@ const Bar: React.FC<{ label: string; value: number; color: string }> = ({ label,
 
 const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
+const Globe3D = lazy(() => import('./Globe3D').then((m) => ({ default: m.Globe3D })));
+class GlobeBoundary extends Component<{ fallback: React.ReactNode; onFail: () => void; children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(err: unknown) { console.warn('Globo 3D no disponible, se usa el mapa plano', err); this.props.onFail(); }
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
+}
+const webglOk = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
+const GLOBE_KEY = 'ybe_globe';
+const readGlobe = () => { try { return webglOk && localStorage.getItem(GLOBE_KEY) === '1'; } catch { return false; } };
+
 /** The Planet: world map, the seven regions, the plots you own and Tomás, the farmer who guides you. */
 export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (cat?: string) => void }> = ({ onOpenSeedBank, onOpenMarket }) => {
   const { plots, plotsForSale, buyPlot, floraBalance, solBalance, seedBank } = useGame();
@@ -32,6 +43,10 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
   const [region, setRegion] = useState<RegionId | null>(null);
   const [hover, setHover] = useState<RegionId | null>(null);
   const [plotId, setPlotId] = useState<string | null>(null);
+  /** the map zooms into the region of the plot you open (origin in % of the map) before the plot screen replaces it */
+  const [globe, setGlobe] = useState<boolean>(readGlobe);
+  const toggleGlobe = () => setGlobe((g) => { const next = !g; try { localStorage.setItem(GLOBE_KEY, next ? '1' : '0'); } catch { /* private mode */ } return next; });
+  const [zoom, setZoom] = useState<{ ox: number; oy: number } | null>(null);
   const [currency, setCurrency] = useState<'FLORA' | 'SOL'>('FLORA');
   const { say, speak } = useNpcSay('¡Buenas, patrón! Soy Tomás. Toca una región del mapa: cada tierra tiene su clima… y sus landrace.');
   const lastSpoke = useRef(Date.now());
@@ -97,7 +112,13 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
     else say2('Uy, no te alcanza para esa parcela. Junta más y volvemos.', 'sad');
   };
 
-  const openPlot = (p: OwnedPlot) => { setPlotId(p.id); say2(`${p.name}, en ${REGION_BY_ID[p.region].name}. Toca una planta para verla de cerca.`); };
+  const openPlot = (p: OwnedPlot) => {
+    const rr = REGION_BY_ID[p.region];
+    const calm = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (calm) setPlotId(p.id);
+    else { setZoom({ ox: ((rr.lon + 180) / 360) * 100, oy: ((90 - rr.lat) / 180) * 100 }); window.setTimeout(() => { setPlotId(p.id); setZoom(null); }, 460); }
+    say2(`${p.name}, en ${REGION_BY_ID[p.region].name}. Toca una planta para verla de cerca.`);
+  };
 
   return (
     <div className="pl-stage animate-fade-in">
@@ -112,6 +133,7 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
               <span className="mk-panel px-2.5 py-1.5 text-neutral-200">🗺️ <b className="text-amber-300">{plots.length}</b> parcelas</span>
               <span className="mk-panel px-2.5 py-1.5 text-neutral-200">🌱 <b className="text-emerald-300">{totalPlants}</b> plantas</span>
               <span className={`mk-panel px-2.5 py-1.5 ${totalReady ? 'text-amber-300 border-amber-400/50' : 'text-neutral-200'}`}>🌾 <b>{totalReady}</b> listas</span>
+              {webglOk && <button onClick={toggleGlobe} className="mk-panel px-2.5 py-1.5 text-sky-200 cursor-pointer hover:border-sky-400/60" title="Cambia entre el mapa plano y un globo 3D (usa más GPU)">{globe ? '🗺️ Mapa plano' : '🌐 Globo 3D'}</button>}
               <button onClick={() => onOpenMarket('service')} className="mk-panel px-2.5 py-1.5 text-emerald-200 cursor-pointer hover:border-emerald-400/60" title="Grow Market → Servicios de vivero">🧑‍🌾 Contratar jardinero</button>
               <button onClick={onOpenSeedBank} className="mk-panel px-2.5 py-1.5 text-emerald-200 cursor-pointer hover:border-emerald-400/60" title="Banco de semillas">🌱 Semillas</button>
               <button onClick={() => setCurrency((c) => (c === 'FLORA' ? 'SOL' : 'FLORA'))} className="mk-panel px-2.5 py-1.5 text-neutral-200 cursor-pointer hover:border-amber-400/50" title="Cambiar moneda de pago">
@@ -124,11 +146,21 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
         <NpcMissions npc="farmer" onSay={say2} />
 
         {plot ? (
-          <PlotScreen plot={plot} nowMs={now} onBack={() => setPlotId(null)} onOpenSeedBank={onOpenSeedBank} onSpeak={say2} />
+          <div className="pl-plot-in"><PlotScreen plot={plot} nowMs={now} onBack={() => setPlotId(null)} onOpenSeedBank={onOpenSeedBank} onSpeak={say2} /></div>
         ) : (
           <>
             <div className="rounded-2xl overflow-hidden border border-sky-400/20 shadow-[0_0_40px_-20px_rgba(56,189,248,0.6)]">
-              <WorldMap owned={owned} ready={readyByRegion} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} />
+              <div className={`pl-zoomwrap ${zoom ? 'pl-zooming' : ''}`} style={zoom ? { transformOrigin: `${zoom.ox}% ${zoom.oy}%` } : undefined}>
+              {(() => {
+                const flat = <WorldMap owned={owned} ready={readyByRegion} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} />;
+                if (!globe) return flat;
+                return (
+                  <GlobeBoundary fallback={flat} onFail={() => setGlobe(false)}>
+                    <Suspense fallback={flat}><Globe3D owned={owned} ready={readyByRegion} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} /></Suspense>
+                  </GlobeBoundary>
+                );
+              })()}
+              </div>
             </div>
 
             {r && sale ? (

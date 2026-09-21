@@ -1,3 +1,5 @@
+import { hasZeroBits, sha256Words } from './sha256';
+
 /** Tiny client for the account service (same origin, cookie session, CSRF header). */
 export interface ApiResult<T = any> { status: number; data: T }
 
@@ -14,19 +16,71 @@ export async function api<T = any>(method: 'GET' | 'POST', path: string, body?: 
 
 export interface Solution { id: string; salt: string; bits: number; exp: number; sig: string; nonce: number }
 
-/** Ask for a challenge and burn a little CPU (in a Web Worker) to prove the visitor is running a real browser. */
-export async function solveCaptcha(purpose: string, onProgress?: (p: number) => void): Promise<Solution> {
+/** Ask for a challenge and burn a little CPU to prove the visitor is running a real browser.
+ *  Uses up to 3 Web Workers in parallel (one core is left for the page); if workers are blocked or fail, it falls back to
+ *  solving on the main thread in small slices so the page stays usable. `signal` cancels the search. */
+export async function solveCaptcha(purpose: string, onProgress?: (p: number) => void, signal?: AbortSignal): Promise<Solution> {
   const ch = await api('GET', `/api/auth/challenge?purpose=${encodeURIComponent(purpose)}`);
   if (ch.status !== 200) throw new Error(ch.data?.error ?? 'challenge_failed');
   const { salt, bits } = ch.data;
-  return new Promise<Solution>((resolve, reject) => {
-    const w = new Worker(new URL('./pow.worker.ts', import.meta.url), { type: 'module' });
-    w.onmessage = (e: MessageEvent<{ nonce?: number; progress?: number }>) => {
-      if (e.data.nonce !== undefined) { w.terminate(); onProgress?.(1); resolve({ ...ch.data, nonce: e.data.nonce }); }
-      else if (e.data.progress !== undefined) onProgress?.(e.data.progress);
+  let nonce: number;
+  try { nonce = await solveWithWorkers(salt, bits, onProgress, signal); }
+  catch (e) {
+    if (e instanceof Error && e.message === 'cancelled') throw e;
+    nonce = await solveInline(salt, bits, onProgress, signal);
+  }
+  return { ...ch.data, nonce };
+}
+
+function solveWithWorkers(salt: string, bits: number, onProgress?: (p: number) => void, signal?: AbortSignal): Promise<number> {
+  return new Promise<number>((resolve, reject) => {
+    const n = Math.max(1, Math.min(3, (navigator.hardwareConcurrency || 2) - 1));
+    const workers: Worker[] = [];
+    const stop = () => workers.forEach((w) => w.terminate());
+    const seen = new Array(n).fill(0);
+    let done = false;
+    const finish = (fn: () => void) => { if (done) return; done = true; stop(); signal?.removeEventListener('abort', onAbort); fn(); };
+    const onAbort = () => finish(() => reject(new Error('cancelled')));
+    if (signal?.aborted) return onAbort();
+    signal?.addEventListener('abort', onAbort);
+    try {
+      for (let i = 0; i < n; i++) {
+        const w = new Worker(new URL('./pow.worker.ts', import.meta.url), { type: 'module' });
+        workers.push(w);
+        w.onmessage = (e: MessageEvent<{ nonce?: number; progress?: number }>) => {
+          if (e.data.nonce !== undefined) { const v = e.data.nonce; finish(() => { onProgress?.(1); resolve(v); }); }
+          else if (e.data.progress !== undefined) { seen[i] = e.data.progress; onProgress?.(Math.max(...seen)); }
+        };
+        w.onerror = () => finish(() => reject(new Error('worker_failed')));
+        w.postMessage({ salt, bits, start: i, step: n });
+      }
+    } catch { finish(() => reject(new Error('worker_failed'))); }
+  });
+}
+
+function solveInline(salt: string, bits: number, onProgress?: (p: number) => void, signal?: AbortSignal): Promise<number> {
+  return new Promise<number>((resolve, reject) => {
+    const prefix = new TextEncoder().encode(salt);
+    const buf = new Uint8Array(prefix.length + 16);
+    buf.set(prefix);
+    const out = new Uint32Array(8);
+    const expected = 2 ** bits;
+    let nonce = 0;
+    const slice = () => {
+      if (signal?.aborted) return reject(new Error('cancelled'));
+      const until = performance.now() + 12;
+      while (performance.now() < until) {
+        for (let k = 0; k < 2000; k++, nonce++) {
+          let len = prefix.length; let x = nonce;
+          if (x === 0) buf[len++] = 48; else { const s0 = len; while (x > 0) { buf[len++] = 48 + (x % 10); x = Math.floor(x / 10); } buf.subarray(s0, len).reverse(); }
+          sha256Words(buf, len, out);
+          if (hasZeroBits(out, bits)) { onProgress?.(1); return resolve(nonce); }
+        }
+      }
+      onProgress?.(Math.min(0.97, nonce / expected));
+      setTimeout(slice, 0);
     };
-    w.onerror = () => { w.terminate(); reject(new Error('worker_failed')); };
-    w.postMessage({ salt, bits });
+    slice();
   });
 }
 
@@ -42,6 +96,6 @@ export const ERR: Record<string, string> = {
   token_invalid: 'El enlace no es válido, caducó o ya se usó.', provider_not_configured: 'Este método aún no está activado en el servidor.', x_account_too_new: 'Tu cuenta de X es demasiado reciente (mínimo 60 días).',
   x_account_too_small: 'Tu cuenta de X no cumple el mínimo de actividad.', email_not_verified: 'Google no confirmó tu correo.', state_invalid: 'El inicio de sesión caducó. Inténtalo de nuevo.', denied: 'Cancelaste el inicio de sesión.',
   provider_error: 'El proveedor no respondió. Inténtalo de nuevo.', token_exchange: 'No pudimos completar el inicio de sesión con el proveedor.', profile: 'No pudimos leer tu perfil del proveedor.', signup_race: 'No se pudo crear la cuenta. Inténtalo de nuevo.',
-  server_error: 'Error del servidor. Inténtalo de nuevo en un momento.', bad_request: 'Revisa los datos.', csrf: 'Petición rechazada por seguridad. Recarga la página.', bad_origin: 'Petición rechazada por seguridad. Recarga la página.',
+  cancelled: 'Verificación cancelada.', challenge_failed: 'No se pudo pedir la verificación al servidor. Revisa tu conexión e inténtalo de nuevo.', server_error: 'Error del servidor. Inténtalo de nuevo en un momento.', bad_request: 'Revisa los datos.', csrf: 'Petición rechazada por seguridad. Recarga la página.', bad_origin: 'Petición rechazada por seguridad. Recarga la página.',
 };
 export const errText = (d: any): string => (d?.error === 'password_weak' && d.message) || ERR[d?.error] || 'No se pudo completar la operación.';

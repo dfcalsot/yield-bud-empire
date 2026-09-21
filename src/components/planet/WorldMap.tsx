@@ -4,7 +4,7 @@ import type { RegionId } from '../../types';
 
 /** Stylised world map (equirectangular 1000×500) with the seven regions, a live day/night terminator and drifting clouds. */
 
-const proj = (lon: number, lat: number): [number, number] => [((lon + 180) / 360) * 1000, ((90 - lat) / 180) * 500];
+export const proj = (lon: number, lat: number): [number, number] => [((lon + 180) / 360) * 1000, ((90 - lat) / 180) * 500];
 const path = (pts: Array<[number, number]>) => 'M' + pts.map(([lo, la]) => proj(lo, la).map((v) => v.toFixed(1)).join(' ')).join(' L') + 'Z';
 
 /** label placement per region so the crowded Caribbean stays readable */
@@ -15,7 +15,7 @@ const LABEL: Partial<Record<RegionId, { dx: number; dy: number; anchor: 'start' 
   south_america: { dx: 18, dy: 16, anchor: 'start' },
 };
 
-const CONTINENTS: Array<Array<[number, number]>> = [
+export const CONTINENTS: Array<Array<[number, number]>> = [
   // North America
   [[-168, 66], [-160, 71], [-140, 70], [-125, 72], [-95, 72], [-80, 70], [-62, 66], [-55, 52], [-67, 44], [-76, 38], [-81, 31], [-80, 25], [-84, 30], [-90, 29], [-97, 26], [-98, 20], [-105, 20], [-110, 24], [-113, 31], [-118, 34], [-124, 40], [-125, 49], [-135, 58], [-150, 60], [-165, 60]],
   // Central America

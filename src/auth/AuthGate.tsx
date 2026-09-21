@@ -65,6 +65,14 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
   const [hp, setHp] = useState('');
   const [busy, setBusy] = useState(false);
   const [prog, setProg] = useState<number | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const abort = useRef<AbortController | null>(null);
+  useEffect(() => {
+    if (prog === null) { setElapsed(0); return; }
+    const t0 = Date.now();
+    const id = window.setInterval(() => setElapsed(Math.round((Date.now() - t0) / 1000)), 500);
+    return () => window.clearInterval(id);
+  }, [prog === null]);
   const [err, setErr] = useState(initialMsg ?? '');
   const [devLink, setDevLink] = useState('');
   const openedAt = useRef(Date.now());
@@ -73,10 +81,10 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setErr('');
-    try { await fn(); } catch (e) { setErr(e instanceof Error && e.message !== 'worker_failed' ? errText({ error: e.message }) : 'Tu navegador no pudo hacer la verificación.'); }
+    try { await fn(); } catch (e) { setErr(e instanceof Error && e.message !== 'worker_failed' ? errText({ error: e.message }) : 'Tu navegador no pudo hacer la verificación. Prueba a recargar la página o a desactivar bloqueadores para este sitio.'); }
     finally { setBusy(false); setProg(null); }
   };
-  const captcha = async (purpose: string) => { npc.speak('Verificando que eres humano… ¡un momento!', 'busy'); const s = await solveCaptcha(purpose, setProg); npc.speak('¡Verificado!', 'happy'); return s; };
+  const captcha = async (purpose: string) => { npc.speak('Verificando que eres humano… ¡un momento!', 'busy'); abort.current = new AbortController(); setProg(0); const s = await solveCaptcha(purpose, setProg, abort.current.signal); npc.speak('¡Verificado!', 'happy'); return s; };
 
   const doRegister = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
     const sol = await captcha('register');
@@ -203,10 +211,17 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
             </form>
           )}
 
+          {(mode === 'login' || mode === 'register') && prog === null && (
+            <p className="flex items-start gap-2 text-[10.5px] leading-snug text-neutral-400"><ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-300" aria-hidden /><span><b className="text-neutral-200">Verificación anti-bots automática.</b> Al enviar, tu navegador resuelve un cálculo corto (unos segundos). No hay nada que pulsar ni resolver.</span></p>
+          )}
           {prog !== null && (
-            <div className="space-y-1" role="status" aria-live="polite">
-              <div className="flex justify-between text-[10px] font-mono text-emerald-300"><span>Verificando que eres humano…</span><span>{Math.round(prog * 100)}%</span></div>
+            <div className="rounded-xl border border-emerald-300/30 bg-emerald-400/[0.06] p-3 space-y-2" role="status" aria-live="polite">
+              <div className="flex items-center gap-2 text-[11px] font-semibold text-emerald-100"><ShieldCheck className="w-4 h-4 text-emerald-300" aria-hidden />Verificando que eres humano…<span className="ml-auto font-mono text-emerald-300">{Math.round(prog * 100)}%</span></div>
               <div className="mk-bar"><i style={{ ['--to' as string]: Math.max(0.05, prog), background: 'linear-gradient(90deg,#059669,#6ee7b7)' } as React.CSSProperties} /></div>
+              <div className="flex items-center gap-2 text-[10.5px] text-neutral-400">
+                <span>{elapsed < 12 ? 'Tu navegador está haciendo un cálculo corto; no hay nada que resolver.' : 'Tu equipo va algo lento; sigue en marcha, ya casi.'}</span>
+                <button type="button" onClick={() => abort.current?.abort()} className="ml-auto shrink-0 underline underline-offset-2 hover:text-white cursor-pointer">Cancelar</button>
+              </div>
             </div>
           )}
           {err && <p className="text-[12px] font-mono text-red-300 bg-red-500/10 border border-red-400/30 rounded-lg px-3 py-2" role="alert">{err}</p>}

@@ -11,27 +11,27 @@ window.addEventListener('vite:preloadError', (e) => { if (reloadOnceForNewBuild(
 // Dev-only plant gallery: http://localhost:3010/#plantlab (stripped from production builds)
 const PlantLab = import.meta.env.DEV ? lazy(() => import('./dev/PlantLab.tsx').then((m) => ({default: m.PlantLab}))) : null;
 const ModelLab = import.meta.env.DEV ? lazy(() => import('./dev/ModelLab.tsx').then((m) => ({default: m.ModelLab}))) : null;
-// Style lab (palette + NPC rig proposals): http://<host>/#stylelab — also in production builds while the style is being chosen
-const StyleLab = lazy(() => import('./dev/StyleLab.tsx').then((m) => ({default: m.StyleLab})));
+// Style lab (palette + NPC rig proposals): http://localhost:3010/#stylelab (dev only; the style is chosen, so it is stripped from production builds)
+const StyleLab = import.meta.env.DEV ? lazy(() => import('./dev/StyleLab.tsx').then((m) => ({default: m.StyleLab}))) : null;
 const LogoLab = lazy(() => import('./dev/LogoLab.tsx').then((m) => ({default: m.LogoLab})));
-const LogoStage = lazy(() => import('./dev/LogoLab.tsx').then((m) => ({default: m.LogoStage})));
+const LogoStage = import.meta.env.DEV ? lazy(() => import('./dev/LogoLab.tsx').then((m) => ({default: m.LogoStage}))) : null;
 const hashIs = (h: string) => window.location.hash === h;
 const showLab = import.meta.env.DEV && hashIs('#plantlab');
 const showModelLab = import.meta.env.DEV && hashIs('#modellab');
 
 /** The style lab follows the URL hash live, so pasting `/#stylelab` into a tab that already has the game open works without a reload. */
 function Root() {
-  const [styleLab, setStyleLab] = useState(hashIs('#stylelab'));
+  const [styleLab, setStyleLab] = useState(import.meta.env.DEV && hashIs('#stylelab'));
   const [logoLab, setLogoLab] = useState(hashIs('#logo'));
-  const [logoStage, setLogoStage] = useState(hashIs('#logo-stage'));
+  const [logoStage, setLogoStage] = useState(import.meta.env.DEV && hashIs('#logo-stage'));
   useEffect(() => {
-    const on = () => { setStyleLab(hashIs('#stylelab')); setLogoLab(hashIs('#logo')); setLogoStage(hashIs('#logo-stage')); };
+    const on = () => { setStyleLab(import.meta.env.DEV && hashIs('#stylelab')); setLogoLab(hashIs('#logo')); setLogoStage(import.meta.env.DEV && hashIs('#logo-stage')); };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
-  if (logoStage) return <Suspense fallback={null}><LogoStage /></Suspense>;
+  if (logoStage && LogoStage) return <Suspense fallback={null}><LogoStage /></Suspense>;
   if (logoLab) return <Suspense fallback={null}><LogoLab /></Suspense>;
-  if (styleLab) return <Suspense fallback={null}><StyleLab /></Suspense>;
+  if (styleLab && StyleLab) return <Suspense fallback={null}><StyleLab /></Suspense>;
   if (showModelLab && ModelLab) return <Suspense fallback={null}><ModelLab /></Suspense>;
   if (showLab && PlantLab) return <Suspense fallback={null}><PlantLab /></Suspense>;
   return <App />;

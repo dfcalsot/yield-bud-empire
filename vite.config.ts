@@ -28,9 +28,15 @@ const secure = {
   'Cross-Origin-Opener-Policy': 'same-origin',
 };
 
+const BUILD = new Date().toISOString();
+
+/** Emits dist/version.json so an open tab can tell that a newer build was published (see components/UpdateBanner.tsx). */
+const versionFile = { name: 'ybe-version', generateBundle(this: { emitFile: (f: { type: 'asset'; fileName: string; source: string }) => void }) { this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ build: BUILD }) }); } };
+
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), versionFile],
+    define: { __BUILD__: JSON.stringify(BUILD) },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

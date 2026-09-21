@@ -129,7 +129,6 @@ body::before {
   animation: frostBreath 3.6s ease-in-out infinite;
 }
 
-
 /* Procedural cannabis plant (CannabisPlant.tsx): CSS-only motion, opacity/transform only */
 @keyframes cfSway {
   0%, 100% { transform: rotate(calc(var(--amp, 2deg) * -1)); }
@@ -176,7 +175,6 @@ body::before {
   50% { box-shadow: 0 0 0 10px rgba(251, 191, 36, 0); }
 }
 .cf-ring { animation: cfRing 1.8s ease-out infinite; }
-
 
 /* NFT genetics cards + mint ceremony */
 .nft-tilt {
@@ -226,13 +224,11 @@ body::before {
 }
 .mint-ring { animation: mintRing 1.2s ease-out infinite; }
 
-
 @keyframes cfFloatIn {
   from { transform: translate3d(24px, 0, 0); opacity: 0; }
   to { transform: translate3d(0, 0, 0); opacity: 1; }
 }
 .cf-float-in { animation: cfFloatIn 0.35s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
-
 
 /* Animated seed art (SeedArt.tsx): rolling stripes, float, germination loop, orbiting packs */
 @keyframes saFloat { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(4px); } }
@@ -273,7 +269,6 @@ body::before {
 
 @keyframes nftTurn { 0% { transform: rotateY(0deg); } 50% { transform: rotateY(90deg); } 100% { transform: rotateY(0deg); } }
 .nft-turn { animation: nftTurn 0.35s ease-in-out; }
-
 
 /* Industrial lab stations (StationScenes.tsx): .lb-run only moves while the wrapper has .is-run */
 .lb-scene .lb-run { animation-play-state: paused; }
@@ -347,7 +342,6 @@ body::before {
   .lb-run, .lb-blink, .sa-float, .sa-roll, .sa-shake, .sa-radicle, .sa-coty, .sa-orbit, .sa-halo, .nft-turn, .cf-float-in, .mint-reveal, .mint-burst, .mint-spin, .mint-ring, .frost-breath, .cf-sway, .cf-breeze, .cf-wind, .cf-twinkle, .cf-spore, .cf-ring { animation: none; }
   .rarity-frame, .rarity-frame::after { transition: none; }
 }
-
 
 @layer base {
   body {
@@ -616,25 +610,7 @@ body::before {
 @keyframes mkFlicker { 0%, 100% { opacity: 0.95; } 8% { opacity: 0.7; } 12% { opacity: 1; } 55% { opacity: 0.86; } 60% { opacity: 1; } }
 
 /* keeper */
-.mk-npc { transform-origin: 50% 100%; }
-.mk-npc--happy { animation: mkHop 0.7s ease-out; }
-.mk-npc--sad { animation: mkShake 0.5s ease; }
-@keyframes mkHop { 0% { transform: translateY(0) scale(1, 1); } 22% { transform: translateY(0) scale(1.07, 0.92); } 52% { transform: translateY(-18px) scale(0.96, 1.06); } 78% { transform: translateY(0) scale(1.06, 0.94); } 100% { transform: none; } }
-@keyframes mkShake { 0%, 100% { transform: translateX(0) rotate(0); } 20% { transform: translateX(-6px) rotate(-3deg); } 40% { transform: translateX(6px) rotate(3deg); } 60% { transform: translateX(-4px) rotate(-2deg); } 80% { transform: translateX(3px) rotate(1deg); } }
-.mk-breath { transform-origin: 80px 192px; animation: mkBreath 3.4s ease-in-out infinite; }
-@keyframes mkBreath { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.012, 1.026); } }
-.mk-eye { transform-box: fill-box; transform-origin: center; animation: mkBlinkEye 4.6s infinite; }
-@keyframes mkBlinkEye { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.08); } }
-.mk-lantern { animation: mkLantern 3.2s ease-in-out infinite; }
-@keyframes mkLantern { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
-.mk-flicker { animation: mkFlicker 2.2s ease-in-out infinite; }
-.mk-mouth { transform-box: fill-box; transform-origin: center; animation: mkTalk 0.26s ease-in-out infinite alternate; }
-@keyframes mkTalk { from { transform: scaleY(0.5); } to { transform: scaleY(1.7); } }
-.mk-bubble { flex: 1 1 0; min-width: 0; max-width: 470px; border-radius: 16px; border: 1px solid rgba(217, 249, 157, 0.42); background: rgba(24, 19, 50, 0.94);
-  box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.8), 0 0 24px -10px rgba(184, 243, 90, 0.5); animation: mkBubbleIn 0.3s ease-out; transform-origin: 0% 100%; }
-.mk-bubble::before { content: ''; position: absolute; left: -7px; bottom: 16px; width: 12px; height: 12px; transform: rotate(45deg); background: rgba(24, 19, 50, 0.94); border-left: 1px solid rgba(217, 249, 157, 0.42); border-bottom: 1px solid rgba(217, 249, 157, 0.42); }
-@keyframes mkBubbleIn { from { opacity: 0; transform: translateY(6px) scale(0.92); } to { opacity: 1; transform: none; } }
-.mk-caret { display: inline-block; width: 6px; height: 1em; margin-left: 2px; vertical-align: -2px; background: #d9f99d; animation: mkBlinkS 0.6s infinite; }
+
 @keyframes mkBlinkS { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
 
 /* hanging sign */
@@ -788,32 +764,6 @@ body::before {
 .care-btn--hot { border-color: rgba(244, 114, 182, 0.5); background: rgba(236, 72, 153, 0.12); color: #fbcfe8; }
 
 /* ───────── cast of characters (animated NPCs) ───────── */
-.mk-npc--busy { animation: npcBusy 0.9s ease-in-out infinite; }
-@keyframes npcBusy { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-.npc-hat { animation: npcHat 6s ease-in-out infinite; }
-@keyframes npcHat { 0%, 78%, 100% { transform: rotate(0); } 84% { transform: rotate(-4deg); } 92% { transform: rotate(3deg); } }
-.npc-can { animation: npcPour 4.2s ease-in-out infinite; }
-@keyframes npcPour { 0%, 55%, 100% { transform: rotate(0); } 68%, 88% { transform: rotate(-22deg); } }
-.npc-drop { transform-box: fill-box; animation: npcDrop 4.2s ease-in infinite; }
-@keyframes npcDrop { 0%, 62% { opacity: 0; transform: translate(0, 0); } 68% { opacity: 1; } 90% { opacity: 1; transform: translate(6px, 34px); } 94%, 100% { opacity: 0; transform: translate(7px, 40px); } }
-.npc-sprout { animation: npcSway 3.4s ease-in-out infinite; }
-@keyframes npcSway { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
-.npc-bub { transform-box: fill-box; animation: npcBub 1.6s ease-in infinite; }
-@keyframes npcBub { 0% { transform: translateY(6px) scale(0.6); opacity: 0; } 25% { opacity: 0.9; } 100% { transform: translateY(-22px) scale(1.1); opacity: 0; } }
-.mk-npc--busy .npc-bub { animation-duration: 0.7s; }
-.npc-glow { transform-box: fill-box; transform-origin: center; animation: npcGlow 2.2s ease-in-out infinite; }
-@keyframes npcGlow { 0%, 100% { transform: scale(0.9); } 50% { transform: scale(1.15); } }
-.npc-flask { animation: npcFlask 3s ease-in-out infinite; }
-@keyframes npcFlask { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
-.mk-npc--busy .npc-flask { animation-duration: 0.5s; }
-.npc-helix { animation: npcJar 3.2s ease-in-out infinite; }
-.npc-rung { transform-box: fill-box; animation: npcRung 1.6s ease-in-out infinite; }
-@keyframes npcRung { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.12); } }
-.mk-npc--busy .npc-rung { animation-duration: 0.7s; }
-.npc-jar { animation: npcJar 3.6s ease-in-out infinite; }
-@keyframes npcJar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-.npc-spark { transform-box: fill-box; transform-origin: center; animation: mkSparkS 1.8s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .mk-npc * { animation: none !important; } .mk-npc { animation: none !important; } }
 
 /* ───────── the planet ───────── */
 .pl-stage { position: relative; isolation: isolate; overflow: hidden; border-radius: 24px; border: 1px solid rgba(56, 189, 248, 0.28);
@@ -1115,3 +1065,11 @@ body::before {
 .pl-flare { transform-box: fill-box; transform-origin: center; animation: plFlare 1.6s ease-out infinite; }
 @keyframes plFlare { 0% { transform: scale(0.7); opacity: 0.95; } 100% { transform: scale(1.9); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .pl-route, .pl-flare { animation: none; } }
+
+/* map -> plot: the map zooms into the region, the plot settles in; and back */
+.pl-zoomwrap { animation: plMapIn 0.45s ease-out; transition: transform 0.46s cubic-bezier(0.5, 0, 0.9, 0.4), opacity 0.46s ease-in; will-change: transform; }
+.pl-zoomwrap.pl-zooming { transform: scale(3.4); opacity: 0; }
+@keyframes plMapIn { from { opacity: 0; transform: scale(1.05); } to { opacity: 1; transform: none; } }
+.pl-plot-in { animation: plPlotIn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1); }
+@keyframes plPlotIn { from { opacity: 0; transform: scale(1.1); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .pl-zoomwrap, .pl-plot-in { animation: none; transition: none; } }

@@ -19,7 +19,7 @@ export const cfg = {
   publicUrl: (env.PUBLIC_URL ?? 'http://localhost:3012').replace(/\/$/, ''),
   dataDir: env.DATA_DIR ?? path.join(HERE, 'data'),
   trustProxy: env.TRUST_PROXY === '1',
-  powBits: Number(env.POW_BITS ?? 20),
+  powBits: Number(env.POW_BITS ?? 18),
   maxAccountsPerIp: Number(env.MAX_ACCOUNTS_PER_IP ?? 3),
   skipMx: env.SKIP_MX === '1',
   devLinks: env.DEV_EXPOSE_LINKS === '1',
@@ -128,17 +128,17 @@ function sessionAccount(ctx) {
   return q.byId.get(s.account_id) ?? null;
 }
 
-/** Proof-of-work: required difficulty grows with the recent attempts of the same IP (each extra bit doubles the cost). */
+/** Proof-of-work. The base cost is small on purpose (a real browser solves it in a couple of seconds); it only rises, by at most
+ *  two bits, for a network that keeps FAILING the check. A successful check never makes the next one harder (it used to,
+ *  up to 26 bits, which locked out people who simply logged in a few times from the same address). */
 function requiredBits(ctx, purpose) {
-  const attempts = limiter.count(`pow:${purpose}:${ctx.ip}`, 3600_000);
-  return Math.min(26, cfg.powBits + Math.floor(attempts / 2));
+  const failures = limiter.count(`powfail:${purpose}:${ctx.ip}`, 3600_000);
+  return cfg.powBits + Math.min(2, Math.floor(failures / 3));
 }
 function requireCaptcha(ctx, purpose, sol) {
-  const bits = requiredBits(ctx, purpose);
-  const err = checkPow(SECRET, sol, Math.min(bits, cfg.powBits));
-  if (err) throw new HttpError(400, err, { bits });
+  const err = checkPow(SECRET, sol, cfg.powBits);
+  if (err) { limiter.hit(`powfail:${purpose}:${ctx.ip}`, 1e9, 3600_000); throw new HttpError(400, err, { bits: requiredBits(ctx, purpose) }); }
   try { q.burnPow.run(sol.id, sol.exp); } catch { throw new HttpError(400, 'captcha_replayed'); }   // one use only
-  limiter.hit(`pow:${purpose}:${ctx.ip}`, 1e9, 3600_000);
 }
 function limit(ctx, key, max, windowMs, code = 'rate_limited') {
   const wait = limiter.hit(key, max, windowMs);
