@@ -69,7 +69,7 @@ import {
 
 import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
 import { landOffers } from '../sim/lands';
-import { fetchState, importLocal, intent, REASON, type Snapshot } from '../economy/ledger';
+import { fetchState, importLocal, intent, REASON, type ListingView, type Snapshot } from '../economy/ledger';
 import { mintAddressFor } from '../utils/nft';
 import { siteConditions, plotOffer, terroirOf, REGION_BY_ID, PLOT_SIZE, type PlotOffer } from '../sim/terroir';
 import { CHESTS, DUPLICATE_REFUND, EMPTY_PITY, DESIGN_BY_ID, rollChest, seasonOf, type AvatarDesign, type ChestId, type OwnedAvatar, type PityMap } from '../sim/avatars';
@@ -131,6 +131,13 @@ interface GameContextType {
   requestAirdrop: () => void;
   /** the wallet and NFTs belong to the server (false only when there is no account service: the game then plays with a local economy) */
   ledgerOn: boolean;
+  /** player market: my active offers, and the actions (every NFT kind: staff, land, avatar) */
+  myListings: ListingView[];
+  p2pInfo: Snapshot['p2p'];
+  /** put an NFT on sale (it stays in escrow until it sells or you take it back). Avatars go by design id, one copy at a time. */
+  listNft: (ref: { nftId?: string; designId?: string }, price: number) => Promise<boolean>;
+  cancelListing: (listingId: number) => Promise<boolean>;
+  buyListing: (listingId: number) => Promise<ListingView | null>;
   /** the small daily claim that replaced the unlimited faucet */
   claimDaily: () => Promise<void>;
   faucetAt: number;
@@ -696,6 +703,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // --- SERVER-OWNED ECONOMY (server/economy.mjs): the wallet and the NFTs are the server's; this state is a mirror of its last answer ---
   const [ledgerOn, setLedgerOn] = useState(false);
+  const [myListings, setMyListings] = useState<ListingView[]>([]);
+  const [p2pInfo, setP2pInfo] = useState<Snapshot['p2p']>({ feeRate: 0.05, minPrice: 1, maxPrice: 100000, maxListings: 20 });
   const [srvOffers, setSrvOffers] = useState<Snapshot['offers'] | null>(null);
   const ledgerRef = useRef(false); ledgerRef.current = ledgerOn;
   const hadLocalSaveRef = useRef(false);
@@ -721,6 +730,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAvatars(snap.avatars.map(a => ({ ...a, mint: mintAddressFor(`av-${a.designId}`) })));
     setChestPity(snap.avatarPity);
     setSrvOffers(snap.offers);
+    setMyListings(snap.listings ?? []);
+    if (snap.p2p) setP2pInfo(snap.p2p);
   }, []);
 
   /** take the server's word for everything (login, and every minute after); the first time, a local save is imported with caps */
@@ -2657,6 +2668,30 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return r.staff;
   };
 
+  const listNft = async (ref: { nftId?: string; designId?: string }, price: number): Promise<boolean> => {
+    if (!ledgerRef.current) { showNotification('El mercado entre jugadores necesita conexión con el servidor.', 'info'); return false; }
+    const r = await intent<{ listingId: number; price: number }>('list', { ...ref, price });
+    if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo listar (${r.error})`, 'info'); return false; }
+    applySnapshot(r.snapshot);
+    showNotification(`Puesto en el mercado por ${r.result.price} $FLORA. Queda en depósito hasta que se venda o lo retires.`, 'success');
+    return true;
+  };
+  const cancelListing = async (listingId: number): Promise<boolean> => {
+    const r = await intent('cancel_listing', { listingId });
+    if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo retirar (${r.error})`, 'info'); return false; }
+    applySnapshot(r.snapshot);
+    showNotification('Oferta retirada: el NFT vuelve a tu colección.', 'success');
+    return true;
+  };
+  const buyListing = async (listingId: number): Promise<ListingView | null> => {
+    const r = await intent<{ kind: ListingView['kind']; nftId: string; price: number; fee: number; data: Record<string, unknown> }>('buy_listing', { listingId });
+    if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo comprar (${r.error})`, 'info'); return null; }
+    applySnapshot(r.snapshot);
+    recordBurnTransaction('BURN_PROCESS', r.result.fee, 'Mercado entre jugadores: comisión de la venta', true);
+    showNotification(`¡Compra hecha! −${r.result.price} $FLORA (la comisión de ${r.result.fee} se quema).`, 'success');
+    return { id: listingId, nftId: r.result.nftId, kind: r.result.kind, rarity: '', price: r.result.price, createdAt: 0, sellerId: 0, data: r.result.data };
+  };
+
   const assignStaff = async (role: StaffRole, staffId: string | null): Promise<void> => {
     if (ledgerRef.current) {
       const r = await intent('assign', { role, staffId });
@@ -3265,7 +3300,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         burnStats,
         transactions,
         requestAirdrop,
-        ledgerOn,
+        ledgerOn, myListings, p2pInfo, listNft, cancelListing, buyListing,
         claimDaily,
         faucetAt,
         quoteSale,

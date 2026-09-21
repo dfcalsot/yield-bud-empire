@@ -4,6 +4,7 @@ import { useGame } from '../../context/GameContext';
 import { StaffCard, StaffPortrait, fmtStat } from './StaffCard';
 import { CAPS, ROLE_INFO, STAFF_ROLES, STAT_LABEL, rankUpCost, wageOf, type StatId } from '../../sim/staff';
 import { RARITY_STYLE } from '../game/GameUI';
+import { ListNftButton } from '../market/ListNft';
 
 /** The briefcase's "Plantilla" tab: who works where, what it costs a day, the bonuses in force, and the hires waiting on the bench. */
 export const RosterPanel: React.FC<{ onHire: () => void }> = ({ onHire }) => {
@@ -71,6 +72,7 @@ export const RosterPanel: React.FC<{ onHire: () => void }> = ({ onHire }) => {
                 footer={
                   <div className="flex gap-1.5">
                     {!on && <button type="button" className="sr-btn sr-btn--lime flex-1 justify-center" onClick={() => assignStaff(s.role, s.id)}>Asignar</button>}
+                    <ListNftButton what={{ nftId: s.id }} name={s.name} rarity={s.rarity} />
                     {cost !== null
                       ? <button type="button" className="sr-btn flex-1 justify-center" disabled={floraBalance < cost} onClick={() => rankUpStaff(s.id)} data-rankup={s.id} style={floraBalance < cost ? { opacity: 0.5 } : undefined}><ArrowUp className="w-3.5 h-3.5" />Rango · {cost}</button>
                       : <span className="flex-1 text-center text-[10.5px] font-mono text-amber-300 py-1.5">Rango máximo</span>}

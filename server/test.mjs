@@ -336,6 +336,55 @@ const legend = sim.staff.makeStaff('staff-import-1', 'foreman', 'legendary', 5, 
 const imp = await call('POST', '/api/econ/import-local', { jar: E9.jar, ip: E9.ip, body: { flora: 9_999_999, tier: 3, staff: [legend, { id: 3 }], staffAssign: { foreman: 'staff-import-1' }, avatars: [{ designId: 'classic-1', count: 2, firstAt: 1, serial: 1234 }, { designId: 'no-existe', count: 1 }], plots: [{ id: 'plot-asia-20', mintedAt: 5 }, { id: 'plot-mars-1' }] } });
 ok('importar guardado local: el saldo se limita, los NFT se validan y la tierra se calcula con la fórmula del servidor', imp.status === 200 && imp.json.snapshot.flora === 1500 && imp.json.snapshot.tier === 3 && imp.json.snapshot.staff.length === 1 && imp.json.snapshot.avatars.length === 1 && imp.json.snapshot.plots.length === 1 && imp.json.snapshot.plots[0].landRating === sim.terroir.plotOffer('asia', 20).landRating);
 ok('importar: solo una vez', (await call('POST', '/api/econ/import-local', { jar: E9.jar, ip: E9.ip, body: { flora: 500 } })).json.error === 'already_imported');
+const owner = (nid) => db.prepare('SELECT account_id FROM nfts WHERE id = ?').get(nid)?.account_id;
+
+// ── player market (P2P): escrow, one-transaction sales, burned fee
+const B = await mkPlayer(10); await state(B); setFlora(B, 5000);
+const supply = () => db.prepare('SELECT SUM(flora) f, SUM(burned) b FROM wallets').get();
+const market = async (P, qs = '') => (await call('GET', '/api/econ/market' + qs, { jar: P.jar, ip: P.ip })).json;
+let ls = await intent(E9, 'list', { nftId: 'staff-import-1', price: 0 });
+ok('P2P: precio fuera de rango se rechaza', ls.status === 400 && (await intent(E9, 'list', { nftId: 'staff-import-1', price: 5_000_000 })).status === 400);
+ok('P2P: no se puede listar lo ajeno', (await intent(B, 'list', { nftId: 'staff-import-1', price: 100 })).json.error === 'not_yours' && (await intent(E9, 'list', { nftId: 'inventado', price: 100 })).json.error === 'not_yours');
+ls = await intent(E9, 'list', { nftId: 'staff-import-1', price: 400 });
+ok('P2P: listar al personal asignado lo quita del puesto y de la plantilla usable', ls.status === 200 && ls.json.snapshot.staff.length === 0 && !ls.json.snapshot.staffAssign.foreman && ls.json.snapshot.listings.length === 1 && stateRow(E9).staffAssign.foreman === undefined);
+ok('P2P: lo listado está en depósito (no se asigna, no sube de rango, no se lista dos veces)',
+  (await intent(E9, 'assign', { role: 'foreman', staffId: 'staff-import-1' })).json.error === 'not_yours' && (await intent(E9, 'rank_up', { staffId: 'staff-import-1' })).json.error === 'not_yours' && (await intent(E9, 'list', { nftId: 'staff-import-1', price: 10 })).json.error === 'not_yours');
+const lid = ls.json.result.listingId;
+ok('P2P: el mercado lo muestra con vendedor y filtro por tipo', (await market(B, '?kind=staff')).listings.some((x) => x.id === lid && x.price === 400 && x.seller === 'Econ Player 9' && x.mine === false) && (await market(B, '?kind=land')).listings.length === 0 && (await market(E9)).listings.find((x) => x.id === lid).mine === true);
+ok('P2P: no se compra la propia oferta', (await intent(E9, 'buy_listing', { listingId: lid })).json.error === 'own_listing');
+setFlora(B, 100);
+ok('P2P: sin saldo no se compra y nada se mueve', (await intent(B, 'buy_listing', { listingId: lid })).json.error === 'insufficient' && owner('staff-import-1') === E9.id);
+setFlora(B, 5000);
+const sup0 = supply(), sellerBefore = wallet(E9).flora;
+const buy = await intent(B, 'buy_listing', { listingId: lid });
+const fee = Math.max(1, Math.round(400 * 0.05));
+ok('P2P: comprar mueve el NFT, cobra el precio y paga al vendedor menos la comisión', buy.status === 200 && buy.json.snapshot.staff.some((x) => x.id === 'staff-import-1') && wallet(B).flora === 4600 && wallet(E9).flora === sellerBefore + 400 - fee && owner('staff-import-1') === B.id);
+ok('P2P: la comisión se quema exacta (solo ella sale del sistema)', supply().f === sup0.f - fee && supply().b === sup0.b + fee);
+ok('P2P: una oferta vendida ya no se puede comprar ni cancelar, y queda en el historial', (await intent(B, 'buy_listing', { listingId: lid })).json.error === 'listing_gone' && (await intent(E9, 'cancel_listing', { listingId: lid })).json.error === 'not_yours' && (await market(B)).recent.some((x) => x.id === lid && x.price === 400));
+ok('P2P: el comprador puede asignar lo comprado', (await intent(B, 'assign', { role: 'foreman', staffId: 'staff-import-1' })).status === 200);
+
+// cancel and land
+const l2 = await intent(E9, 'list', { nftId: 'plot-asia-20', price: 250 });
+ok('P2P: una tierra listada desaparece de las propias', l2.status === 200 && l2.json.snapshot.plots.length === 0 && l2.json.snapshot.listings[0].kind === 'land' && l2.json.snapshot.listings[0].rarity.length > 0);
+ok('P2P: solo el dueño cancela y devuelve el NFT', (await intent(B, 'cancel_listing', { listingId: l2.json.result.listingId })).json.error === 'not_yours' && (await intent(E9, 'cancel_listing', { listingId: l2.json.result.listingId })).json.snapshot.plots.length === 1);
+const l3 = await intent(E9, 'list', { nftId: 'plot-asia-20', price: 250 });
+const bl = await intent(B, 'buy_listing', { listingId: l3.json.result.listingId });
+ok('P2P: la tierra cambia de dueño y sigue sin poder comprarse en la tienda', bl.status === 200 && bl.json.snapshot.plots.some((x) => x.id === 'plot-asia-20') && !(await state(E9)).snapshot.offers.asia.ids.includes('plot-asia-20') && !(await state(B)).snapshot.offers.asia.ids.includes('plot-asia-20'));
+
+// avatars: one copy leaves the stack
+const avId = `av-${E9.id}-classic-1`;
+const la = await intent(E9, 'list', { nftId: avId, price: 60 });
+ok('P2P: de un avatar con 2 copias sale solo una', la.status === 200 && la.json.snapshot.avatars.find((x) => x.designId === 'classic-1').count === 1 && la.json.snapshot.listings[0].data.count === 1);
+const ca = await intent(E9, 'cancel_listing', { listingId: la.json.result.listingId });
+ok('P2P: cancelarlo devuelve la copia a su pila', ca.json.snapshot.avatars.find((x) => x.designId === 'classic-1').count === 2 && ca.json.snapshot.listings.length === 0);
+const lb = await intent(E9, 'list', { nftId: avId, price: 60 });
+const bb = await intent(B, 'buy_listing', { listingId: lb.json.result.listingId });
+ok('P2P: el comprador recibe la copia y el vendedor conserva la otra', bb.status === 200 && bb.json.snapshot.avatars.find((x) => x.designId === 'classic-1').count === 1 && (await state(E9)).snapshot.avatars.find((x) => x.designId === 'classic-1').count === 1);
+// two buyers, one item
+const B2 = await mkPlayer(11); await state(B2); setFlora(B2, 5000);
+const lr = await intent(B, 'list', { nftId: 'staff-import-1', price: 90 });
+const [r1, r2] = await Promise.all([intent(B2, 'buy_listing', { listingId: lr.json.result.listingId }), intent(E9, 'buy_listing', { listingId: lr.json.result.listingId })]);
+ok('P2P: dos compradores, un solo ganador', [r1.status, r2.status].filter((x) => x === 200).length === 1 && owner('staff-import-1') !== B.id);
 const totalSupply = db.prepare('SELECT SUM(flora) f, SUM(minted) m, SUM(burned) b FROM wallets').get();
 ok('el libro mayor de todos cuadra con los saldos (nada se crea ni se pierde fuera del libro)', typeof totalSupply.f === 'number' && totalSupply.m >= 0 && totalSupply.b >= 0);
 

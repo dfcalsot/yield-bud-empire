@@ -1,5 +1,6 @@
 import React, { Component, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Coins, Flame, MapPin, Sprout } from 'lucide-react';
+import { ListNftButton } from '../market/ListNft';
 import { useGame } from '../../context/GameContext';
 import { Npc, useNpcSay, type Mood } from '../npc/Npc';
 import { NpcMissions } from '../missions/NpcMissions';
@@ -246,7 +247,7 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
                     return (
                       <LandCard key={p.id} card={c} onClick={() => openPlot(p)}
                         badges={<>{ready > 0 && <span className="px-1.5 rounded bg-amber-400 text-neutral-950 text-[10px] font-black">🌾{ready}</span>}{sick > 0 && <span className="px-1.5 rounded bg-pink-400 text-neutral-950 text-[10px] font-black">🐛{sick}</span>}</>}
-                        footer={<div className="flex items-center justify-between text-[10.5px] font-mono text-neutral-300"><span>{p.plants.length}/36 plantas</span><span className="text-emerald-300">Entrar →</span></div>} />
+                        footer={<div className="flex items-center justify-between text-[10.5px] font-mono text-neutral-300"><span>{p.plants.length}/36 plantas</span><span className="flex items-center gap-2"><ListNftButton what={{ nftId: p.id }} name={c.name} rarity={c.rarity} className="sr-btn !py-0.5 !text-[10px]" /><span className="text-emerald-300">Entrar →</span></span></div>} />
                     );
                   })}
                 </div>

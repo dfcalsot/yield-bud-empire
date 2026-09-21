@@ -8,6 +8,7 @@ import { ShopkeeperPicker } from '../npc/ShopkeeperPicker';
 import { RestartGuide } from '../guide/RestartGuide';
 import { Bump } from '../ResourceBar';
 import { LocalSavesPanel } from './LocalSaves';
+import { ListNftButton } from '../market/ListNft';
 import { CHESTS, DESIGNS, DESIGN_BY_ID, RARITIES, SEASONS, daysLeftInSeason, seasonOf, validNick, type AvatarDesign, type ChestDef, type ChestId, type SeasonId } from '../../sim/avatars';
 
 const EMOJIS = ['🌱', '🌿', '🍃', '🌵', '🌴', '🪴', '🧑‍🌾', '👩‍🔬', '🧬', '🐝', '🦎', '🦉', '🔥', '⚡', '🌙', '👑'];
@@ -223,13 +224,16 @@ export const ProfileView: React.FC<{ onOpenAccountModal: () => void }> = ({ onOp
                 const o = owned.get(d.id);
                 const equipped = currentUser.avatarNft === d.id;
                 return (
-                  <button key={d.id} disabled={!o} onClick={() => equipAvatar(equipped ? null : d.id)} className={`pf-tile shop-in ${equipped ? 'is-eq' : ''}`} style={{ ['--rc' as string]: RARITY_COLOR[d.rarity], ['--d' as string]: `${Math.min(i, 14) * 30}ms` } as React.CSSProperties} title={o ? `${d.name} — ${RARITY_LABEL[d.rarity]}${o.count > 1 ? ` ×${o.count}` : ''}` : `${RARITY_LABEL[d.rarity]} · aún no lo tienes`}>
+                  <div key={d.id} className="flex flex-col gap-1">
+                  <button disabled={!o} onClick={() => equipAvatar(equipped ? null : d.id)} className={`pf-tile shop-in ${equipped ? 'is-eq' : ''}`} style={{ ['--rc' as string]: RARITY_COLOR[d.rarity], ['--d' as string]: `${Math.min(i, 14) * 30}ms` } as React.CSSProperties} title={o ? `${d.name} — ${RARITY_LABEL[d.rarity]}${o.count > 1 ? ` ×${o.count}` : ''}` : `${RARITY_LABEL[d.rarity]} · aún no lo tienes`}>
                     <span className={`block w-full aspect-square ${o ? '' : 'pf-locked'}`}><AvatarArt design={d} className="w-full h-full" /></span>
                     {!o && <Lock className="pf-lock w-4 h-4" />}
                     <span className="block text-[10px] font-bold text-neutral-200 leading-tight truncate mt-1">{o ? d.name : '???'}</span>
                     {equipped && <span className="pf-eq">EQUIPADO</span>}
                     {o && o.count > 1 && <span className="mk-owned" style={{ top: 4, right: 4, bottom: 'auto' }}>×{o.count}</span>}
                   </button>
+                  {o && <ListNftButton what={{ designId: d.id }} name={d.name} rarity={d.rarity} className="sr-btn !py-0.5 !text-[10px] justify-center" />}
+                  </div>
                 );
               })}
             </div>

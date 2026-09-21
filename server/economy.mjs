@@ -16,6 +16,8 @@ const QUEST_FLORA = Object.fromEntries(INITIAL_QUESTS.map((q) => [q.id, q.reward
 const FACILITY_BY_ID = Object.fromEntries(INITIAL_FACILITIES.map((f) => [f.id, f]));
 const MAX_SPEND = 30000;
 const CAPS = { staff: 24, avatars: 60, plots: 12, floraOnImport: 1500 };
+// Player-to-player market: what is listed sits in escrow, the sale is one transaction, and a slice of every sale is burned.
+const P2P = { feeRate: 0.05, minPrice: 1, maxPrice: 100000, maxListings: 20, pageSize: 24, kinds: ['staff', 'land', 'avatar'] };
 const rng = () => crypto.randomInt(0, 2 ** 32) / 2 ** 32;
 
 export function installEconomy({ db, route, HttpError, sessionAccount, audit, limit, readJson }) {
@@ -27,6 +29,10 @@ CREATE INDEX IF NOT EXISTS idx_ledger_acc ON ledger(account_id, id);
 CREATE TABLE IF NOT EXISTS econ_state (account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE, json TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS nfts (id TEXT PRIMARY KEY, account_id INTEGER NOT NULL, kind TEXT NOT NULL, data TEXT NOT NULL, minted_at INTEGER NOT NULL, escrow INTEGER NOT NULL DEFAULT 0);
 CREATE INDEX IF NOT EXISTS idx_nfts_acc ON nfts(account_id, kind);
+CREATE TABLE IF NOT EXISTS listings (id INTEGER PRIMARY KEY AUTOINCREMENT, seller_id INTEGER NOT NULL, nft_id TEXT NOT NULL, kind TEXT NOT NULL, rarity TEXT NOT NULL DEFAULT '',
+  data TEXT NOT NULL, price INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'active', buyer_id INTEGER, fee INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, closed_at INTEGER);
+CREATE INDEX IF NOT EXISTS idx_listings_active ON listings(status, kind, price);
+CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller_id, status);
 CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT NULL, response TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (account_id, idem));
 `);
   const q = {
@@ -48,6 +54,16 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
     idem: db.prepare('SELECT response FROM econ_idem WHERE account_id = ? AND idem = ?'),
     putIdem: db.prepare('INSERT OR REPLACE INTO econ_idem (account_id, idem, response, ts) VALUES (?,?,?,?)'),
     sweepIdem: db.prepare('DELETE FROM econ_idem WHERE ts < ?'),
+    setEscrow: db.prepare('UPDATE nfts SET escrow = ? WHERE id = ?'),
+    moveNft: db.prepare('UPDATE nfts SET account_id = ?, escrow = 0 WHERE id = ?'),
+    delNft: db.prepare('DELETE FROM nfts WHERE id = ?'),
+    newListing: db.prepare('INSERT INTO listings (seller_id, nft_id, kind, rarity, data, price, created_at) VALUES (?,?,?,?,?,?,?)'),
+    listing: db.prepare('SELECT * FROM listings WHERE id = ?'),
+    closeListing: db.prepare('UPDATE listings SET status = ?, buyer_id = ?, fee = ?, closed_at = ? WHERE id = ?'),
+    activeOf: db.prepare("SELECT * FROM listings WHERE seller_id = ? AND status = 'active' ORDER BY id DESC"),
+    activeCount: db.prepare("SELECT COUNT(*) n FROM listings WHERE seller_id = ? AND status = 'active'"),
+    recentSales: db.prepare("SELECT l.id, l.kind, l.rarity, l.price, l.closed_at, l.data FROM listings l WHERE l.status = 'sold' ORDER BY l.closed_at DESC LIMIT 20"),
+    userName: db.prepare('SELECT username FROM accounts WHERE id = ?'),
   };
   setInterval(() => { try { q.sweepIdem.run(Date.now() - 2 * DAY); } catch { /* */ } }, 3600_000).unref();
 
@@ -61,8 +77,11 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
   const stateOf = (id) => { const r = q.state.get(id); return r ? JSON.parse(r.json) : freshState(Date.now()); };
   const saveState = (id, st) => q.putState.run(id, JSON.stringify(st));
   const nftRows = (id, kind) => q.nftsOf.all(id).filter((r) => !kind || r.kind === kind).map((r) => ({ ...r, data: JSON.parse(r.data) }));
-  const roster = (id) => nftRows(id, 'staff').map((r) => r.data);
+  const roster = (id) => nftRows(id, 'staff').map((r) => r.data);                       // includes listed ones (they still count toward the cap)
+  const free = (id, kind) => nftRows(id, kind).filter((r) => !r.escrow).map((r) => r.data);   // what the player can actually use
   const saveStaff = (s) => q.setNft.run(JSON.stringify(s), s.id);
+
+  const listingView = (r) => ({ id: r.id, nftId: r.nft_id, kind: r.kind, rarity: r.rarity, price: r.price, createdAt: r.created_at, data: JSON.parse(r.data), sellerId: r.seller_id });
 
   /* ───────────── money ───────────── */
   // All money moves inside one SQLite transaction (see `run`), so an intent either happens entirely or not at all.
@@ -77,6 +96,15 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
     if (w.flora < amount) throw new HttpError(400, 'insufficient', { need: amount, have: w.flora });
     const bal = w.flora - amount;
     q.setBalance.run(bal, 0, amount, id); q.ledger.run(id, now, kind, -amount, bal, ref ?? null);
+  };
+
+  /** buyer pays `price`, seller receives it minus the fee, and the fee leaves the game (only it counts as burned) */
+  const transfer = (buyer, seller, price, fee, ref, now) => {
+    const b = q.wallet.get(buyer);
+    if (b.flora < price) throw new HttpError(400, 'insufficient', { need: price, have: b.flora });
+    q.setBalance.run(b.flora - price, 0, fee, buyer); q.ledger.run(buyer, now, 'p2p_buy', -price, b.flora - price, ref);
+    const s = q.wallet.get(seller);
+    q.setBalance.run(s.flora + price - fee, 0, 0, seller); q.ledger.run(seller, now, 'p2p_sale', price - fee, s.flora + price - fee, ref);
   };
 
   /* ───────────── time-driven changes: builds finish, wages are paid ───────────── */
@@ -114,15 +142,16 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
     const offers = {};
     for (const region of L.allRegions()) { const o = L.landOffers(region, taken); offers[region] = { ids: o.offers.map((x) => x.id), left: o.left }; }
     const claim = E.claimStatus(w.faucet_at, now);
-    const plots = nftRows(id, 'land').map((r) => r.data);
-    const avatars = nftRows(id, 'avatar').map((r) => r.data);
+    const plots = free(id, 'land');
+    const avatars = free(id, 'avatar');
     return {
       serverNow: now, flora: w.flora, faucetAt: w.faucet_at, claim,
       depth: { sold: w.depth_sold, at: w.depth_at },
       tier: st.tier, unlocked: st.unlocked, construction: st.construction,
-      staff: roster(id), staffAssign: st.staffAssign, staffPity: st.staffPity,
+      staff: free(id, 'staff'), staffAssign: st.staffAssign, staffPity: st.staffPity,
       plots, avatars, avatarPity: st.avatarPity, offers,
       imported: !!w.imported, minted: w.minted, burned: w.burned,
+      listings: q.activeOf.all(id).map(listingView), p2p: { feeRate: P2P.feeRate, minPrice: P2P.minPrice, maxPrice: P2P.maxPrice, maxListings: P2P.maxListings },
     };
   }
 
@@ -130,6 +159,14 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
   const need = (cond, code, extra) => { if (!cond) throw new HttpError(400, code, extra); };
   const num = (v, lo, hi) => { const n = Number(v); need(Number.isFinite(n) && n >= lo && n <= hi, 'bad_params'); return n; };
   const str = (v, max = 80) => { need(typeof v === 'string' && v.length > 0 && v.length <= max, 'bad_params'); return v; };
+
+  /** an avatar copy joins the owner's stack for that design (or starts one); the temporary escrow NFT is deleted */
+  function giveAvatar(id, copy, escrowId, now) {
+    q.delNft.run(escrowId);
+    const nid = `av-${id}-${copy.designId}`, row = q.nft.get(nid);
+    if (row) { const o = JSON.parse(row.data); o.count += 1; q.setNft.run(JSON.stringify(o), nid); }
+    else q.putNft.run(nid, id, 'avatar', JSON.stringify({ ...copy, count: 1 }), now);
+  }
 
   const INTENTS = {
     claim_daily({ id, now }) {
@@ -256,6 +293,48 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
       throw new HttpError(400, 'bad_params');
     },
 
+    /* ── player market ── */
+    list({ id, now, p }) {
+      const nftId = p.designId ? `av-${id}-${str(p.designId, 40)}` : str(p.nftId, 70), price = Math.floor(num(p.price, P2P.minPrice, P2P.maxPrice));
+      need(q.activeCount.get(id).n < P2P.maxListings, 'too_many_listings');
+      let row = q.nft.get(nftId); need(row && row.account_id === id && P2P.kinds.includes(row.kind) && !row.escrow, 'not_yours');
+      let data = JSON.parse(row.data), rarity = '';
+      if (row.kind === 'staff') {
+        rarity = data.rarity;
+        const st = stateOf(id);
+        for (const r of Object.keys(st.staffAssign)) if (st.staffAssign[r] === row.id) delete st.staffAssign[r];   // a listed assistant stops working
+        saveState(id, st);
+      } else if (row.kind === 'land') rarity = L.landRarity(data.landRating);
+      else if (row.kind === 'avatar') {
+        rarity = A.DESIGN_BY_ID[data.designId]?.rarity ?? '';
+        // one copy leaves the stack: the listing is its own NFT until it is sold or taken back
+        const copy = { designId: data.designId, count: 1, firstAt: data.firstAt, serial: data.serial };
+        if (data.count > 1) { data.count -= 1; q.setNft.run(JSON.stringify(data), row.id); } else q.delNft.run(row.id);
+        const lid = `avl-${id}-${now}-${crypto.randomInt(1e6)}`;
+        q.putNft.run(lid, id, 'avatar', JSON.stringify(copy), now); row = q.nft.get(lid); data = copy;
+      }
+      q.setEscrow.run(1, row.id);
+      const info = q.newListing.run(id, row.id, row.kind, String(rarity ?? ''), JSON.stringify(data), price, now);
+      return { listingId: Number(info.lastInsertRowid), price };
+    },
+    cancel_listing({ id, now, p }) {
+      const l = q.listing.get(Math.floor(num(p.listingId, 1, 2 ** 40))); need(l && l.seller_id === id && l.status === 'active', 'not_yours');
+      if (l.kind === 'avatar') giveAvatar(id, JSON.parse(l.data), l.nft_id, now); else q.setEscrow.run(0, l.nft_id);
+      q.closeListing.run('cancelled', null, 0, now, l.id);
+      return {};
+    },
+    buy_listing({ id, now, p }) {
+      const l = q.listing.get(Math.floor(num(p.listingId, 1, 2 ** 40))); need(l && l.status === 'active', 'listing_gone');
+      need(l.seller_id !== id, 'own_listing');
+      if (l.kind === 'staff') need(roster(id).length < CAPS.staff, 'roster_full');
+      if (l.kind === 'land') need(nftRows(id, 'land').length < CAPS.plots, 'too_many_lands');
+      const fee = Math.max(1, Math.round(l.price * P2P.feeRate));
+      transfer(id, l.seller_id, l.price, fee, `${l.kind} #${l.nft_id}`, now);
+      if (l.kind === 'avatar') giveAvatar(id, JSON.parse(l.data), l.nft_id, now); else q.moveNft.run(id, l.nft_id);
+      q.closeListing.run('sold', id, fee, now, l.id);
+      return { kind: l.kind, nftId: l.nft_id, price: l.price, fee, data: JSON.parse(l.data) };
+    },
+
     // burns that are not modelled yet (market items, seeds, repairs, patents…): the server only debits, it never credits
     spend({ id, now, p }) {
       const amount = num(p.amount, 1, MAX_SPEND); debit(id, amount, 'spend', String(p.memo ?? '').slice(0, 120), now);
@@ -322,6 +401,22 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
   route('POST', '/api/econ/intent', async (ctx) => {
     const a = who(ctx); const b = await readJson(ctx.req, 16 * 1024);
     return run(a, String(b.type ?? ''), b.params, typeof b.idem === 'string' ? b.idem.slice(0, 80) : '');
+  });
+  route('GET', '/api/econ/market', (ctx) => {
+    const a = who(ctx); const u = ctx.url;
+    const kind = u.searchParams.get('kind') ?? '', rarity = u.searchParams.get('rarity') ?? '', sort = u.searchParams.get('sort') ?? 'new';
+    const page = Math.max(0, Math.min(200, Math.floor(Number(u.searchParams.get('page')) || 0)));
+    const where = ["status = 'active'"], args = [];
+    if (P2P.kinds.includes(kind)) { where.push('kind = ?'); args.push(kind); }
+    if (/^[a-z]{3,12}$/.test(rarity)) { where.push('rarity = ?'); args.push(rarity); }
+    const order = sort === 'cheap' ? 'price ASC, id DESC' : sort === 'dear' ? 'price DESC, id DESC' : 'id DESC';
+    const rows = db.prepare(`SELECT * FROM listings WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ? OFFSET ?`).all(...args, P2P.pageSize + 1, page * P2P.pageSize);
+    const more = rows.length > P2P.pageSize;
+    return {
+      listings: rows.slice(0, P2P.pageSize).map((r) => ({ ...listingView(r), seller: q.userName.get(r.seller_id)?.username ?? '—', mine: r.seller_id === a.id })),
+      more, feeRate: P2P.feeRate,
+      recent: q.recentSales.all().map((r) => ({ id: r.id, kind: r.kind, rarity: r.rarity, price: r.price, at: r.closed_at })),
+    };
   });
   route('POST', '/api/econ/import-local', async (ctx) => { const a = who(ctx); return importLocal(a, await readJson(ctx.req, 96 * 1024)); });
 
