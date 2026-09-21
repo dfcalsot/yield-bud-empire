@@ -21,7 +21,7 @@ export const Bump: React.FC<{ value: string }> = ({ value }) => {
  * Live stock of the three consumables that keep the room running (tank water, nutrients, electricity).
  * Sits above every view so the player sees the lamps are about to go dark before it happens.
  */
-export const ResourceBar: React.FC<{ onOpenMarket: (cat?: string) => void }> = ({ onOpenMarket }) => {
+export const ResourceBar: React.FC<{ onOpenMarket: (cat?: string) => void; /** vertical list for a side rail, without the three stocks that the orbs already show */ stacked?: boolean }> = ({ onOpenMarket, stacked }) => {
   const { resources, equipStats, care } = useGame();
   const energyLow = Number.isFinite(resources.energyDays) && resources.energyDays < 0.5 && equipStats.lampWatts > 0;
   const energyOut = resources.energy <= 0.05 && resources.solarKwhPerDay < resources.kwhPerDay && equipStats.lampWatts > 0;
@@ -50,12 +50,12 @@ export const ResourceBar: React.FC<{ onOpenMarket: (cat?: string) => void }> = (
   );
 
   return (
-    <div className="flex flex-wrap items-center gap-2" aria-label="Recursos de la sala">
-      {chip('energy', Zap, '#fbbf24', `${resources.energy.toFixed(1)} kWh`,
+    <div className={stacked ? 'flex flex-col items-stretch gap-1.5 [&>button]:w-full' : 'flex flex-wrap items-center gap-2'} aria-label="Recursos de la sala">
+      {!stacked && chip('energy', Zap, '#fbbf24', `${resources.energy.toFixed(1)} kWh`,
         energyOut ? 'sin energía' : `autonomía ${fmtRunway(resources.energyDays)}`, energyOut ? 'out' : energyLow ? 'low' : 'ok', 'Electricidad', 'energy')}
-      {chip('water', Droplets, '#38bdf8', `${resources.water.toFixed(resources.water < 100 ? 1 : 0)} L`,
+      {!stacked && chip('water', Droplets, '#38bdf8', `${resources.water.toFixed(resources.water < 100 ? 1 : 0)} L`,
         resources.water <= 0 ? 'tanque vacío' : waterLow ? 'agua baja' : 'agua', resources.water <= 0 ? 'out' : waterLow ? 'low' : 'ok', 'Agua', 'water')}
-      {chip('nutrient', FlaskConical, '#a78bfa', `${Math.floor(resources.nutrient)} ml`,
+      {!stacked && chip('nutrient', FlaskConical, '#a78bfa', `${Math.floor(resources.nutrient)} ml`,
         resources.nutrient <= 0 ? 'sin abono' : nutrientLow ? 'abono bajo' : 'abono', resources.nutrient <= 0 ? 'out' : nutrientLow ? 'low' : 'ok', 'Nutrientes', 'nutrient')}
       {chip('care', ShieldCheck, care.rating >= 75 ? '#34d399' : care.rating >= 45 ? '#fbbf24' : '#f87171', `${care.rating} %`,
         care.rating >= 75 ? 'sala impecable' : care.rating >= 45 ? 'calificación' : 'sala sucia', care.rating < 30 ? 'out' : care.rating < 55 ? 'low' : 'ok', 'Calificación de jardinero', 'service')}
@@ -68,7 +68,7 @@ export const ResourceBar: React.FC<{ onOpenMarket: (cat?: string) => void }> = (
           <Sun className="w-3.5 h-3.5" /> +{resources.solarKwhPerDay.toFixed(1)} kWh/día solar
         </span>
       )}
-      <span className="hidden md:block text-[10px] font-mono text-neutral-500 ml-auto">
+      <span className={stacked ? 'text-[10px] font-mono text-neutral-500' : 'hidden md:block text-[10px] font-mono text-neutral-500 ml-auto'}>
         consumo ≈ {resources.kwhPerDay.toFixed(1)} kWh/día
       </span>
     </div>

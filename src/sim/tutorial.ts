@@ -29,7 +29,7 @@ export const STEPS: TutorialStep[] = [
     reward: { lots: [{ id: 'water_50' }], xp: 20 }, thanks: '¡Así se viaja! Aquí tienes agua para empezar.' },
   { id: 'bag', title: 'Tu maletín', event: 'openbag', goal: 1, tab: 'any', tour: 'bag', say: 'Todo lo que tienes vive en tu maletín: recursos, equipo, semillas y cosecha. Ábrelo con este botón o con la tecla I.', hint: 'Abre el maletín (tecla I)',
     reward: { lots: [{ id: 'nut_biobizz' }], xp: 25 }, thanks: 'Ahora sabes dónde está todo. Un poco de abono de regalo.' },
-  { id: 'water', title: 'Riega tu planta', event: 'water', goal: 1, tab: 'cultivo', tour: 'water', say: 'Las plantas beben agua. Toca la gota de la izquierda para regar tu planta.', hint: 'Toca «Regar»',
+  { id: 'water', title: 'Riega tu planta', event: 'water', goal: 1, tab: 'cultivo', tour: 'water', say: 'Las plantas beben agua. Toca «Regar» en la barra de abajo (tecla 1) o toca la maceta de la planta.', hint: 'Toca «Regar»',
     reward: { xp: 30 }, thanks: '¡Bien regada! El sustrato ya respira.' },
   { id: 'feed', title: 'Dale de comer', event: 'feed', goal: 1, tab: 'cultivo', tour: 'feed', say: 'Además de agua necesita nutrientes. Toca el frasco para abonar.', hint: 'Toca «Abonar»',
     reward: { xp: 30 }, thanks: 'Plantita feliz y alimentada.' },

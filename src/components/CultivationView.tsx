@@ -29,6 +29,7 @@ import {
 import { Strain, GrowRoomId } from '../types';
 import { GROW_ROOMS_CONFIG } from '../data/initialData';
 import { CultivationScene } from './CultivationScene';
+import { LeftRail, RightRail } from './cultivo/CultivoRails';
 import { FacilityPanel } from './hud/FacilityPanel';
 import { X as CloseIcon } from 'lucide-react';
 
@@ -83,6 +84,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
 
   const [displayMode, setDisplayMode] = useState<'scene' | 'indoor_room' | 'single_detail'>('scene');
   const [showPanel, setShowPanel] = useState(false);
+  const [careOpen, setCareOpen] = useState(false);
   const [selectedSeedToPlant, setSelectedSeedToPlant] = useState<Strain>(strains[0]);
   const [showSeedModal, setShowSeedModal] = useState(false);
   const [showFacilityModal, setShowFacilityModal] = useState(false);
@@ -405,185 +407,27 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
 
   return (
     <div className="space-y-6">
-      {displayMode !== 'scene' && (<>
-      {/* Top Banner: Facility info & Inventory Overview */}
-      <div className="hud-panel p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
-            <FacilityArt kind={currentFacility.id} slice className="w-full h-full" label={currentFacility.name} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono font-medium">
-                NIVEL {currentFacility.tier}: F2P & INDUSTRIAL
-              </span>
-              <span className="text-xs text-neutral-400 font-mono">
-                Bono Ambiental: +{Math.round((currentFacility.environmentBonus - 1) * 100)}%
-              </span>
-            </div>
-            <h2 className="text-base sm:text-lg font-bold text-white mt-0.5">
-              {currentFacility.name}
-            </h2>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          {/* Inventory summary pill */}
-          <div className="bg-neutral-950/80 border border-neutral-800 px-3 py-1.5 rounded-xl flex items-center gap-3 text-xs font-mono">
-            <div>
-              <span className="text-neutral-500 block text-[10px]">FLOR CRUDA</span>
-              <span className="text-emerald-400 font-bold">{rawFlowerGrams}g</span>
-            </div>
-            <div className="w-px h-6 bg-neutral-800"></div>
-            <div>
-              <span className="text-neutral-500 block text-[10px]">BIOMASA TRIM</span>
-              <span className="text-amber-400 font-bold">{trimGrams}g</span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setShowFacilityModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-xs font-medium text-neutral-200 rounded-xl transition cursor-pointer"
-          >
-            <Layers className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Cambiar Instalación</span>
-          </button>
-        </div>
+      {/* Cultivo panel: left rail · the stage (scene / Sala / lupa) · right rail */}
+      <div className="cv-shell">
+      <LeftRail onOpenFacility={() => setShowFacilityModal(true)} onOpenMarket={onOpenMarket} onOpenSeedModal={() => setShowSeedModal(true)} />
+      <div className="cv-main space-y-3">
+      <div className="gh-frame cv-modebar" role="tablist" aria-label="Modo de vista">
+        {([['scene', 'Escena', '', Eye], ['indoor_room', 'Sala', ` · ${indoorPlants.length} ${indoorPlants.length === 1 ? 'planta' : 'plantas'}`, Grid3X3], ['single_detail', 'Lupa', ` · planta #${selectedPlantIndex + 1}`, FlaskConical]] as const).map(([id, label, extra, Icon]) => (
+          <button key={id} type="button" role="tab" aria-selected={displayMode === id} onClick={() => setDisplayMode(id)} className={`cv-mode ${displayMode === id ? 'is-on' : ''}`} data-mode={id}><Icon className="w-4 h-4" />{label}<span className="hidden sm:inline">{extra}</span></button>
+        ))}
       </div>
-
-      {/* Grow Rooms Selection Bar */}
-      <div className="hud-panel p-3 sm:p-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-300 font-mono">
-              Salas & Cuartos de Cultivo Especializados
-            </h3>
-          </div>
-          <span className="text-[11px] font-mono text-neutral-400">
-            Microclima fotoperiódico específico
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-          {GROW_ROOMS_CONFIG.map(room => {
-            const isSelected = currentRoom === room.id;
-            return (
-              <button
-                key={room.id}
-                onClick={() => switchGrowRoom(room.id)}
-                className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between space-y-1.5 ${
-                  isSelected
-                    ? 'bg-emerald-950/40 border-emerald-500 shadow-md shadow-emerald-950/40 ring-1 ring-emerald-500/40'
-                    : 'bg-neutral-950/80 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/60'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
-                    {room.name}
-                  </span>
-                  {isSelected && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>}
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-mono text-neutral-400 flex items-center gap-1.5">
-                  <span>{room.targetTempC}°C</span>
-                  <span>•</span>
-                  <span>{room.targetRhPercent}% RH</span>
-                  <span>•</span>
-                  <span>{room.recommendedLightSchedule}</span>
-                </div>
-                <div className="text-[10px] text-neutral-500 truncate">
-                  {room.description}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* View Mode Switcher: Sala Indoor (3 Filas x 10 en Pares de 2) vs Detalle Macro */}
-      <div className="hud-panel flex flex-wrap items-center justify-between gap-3 p-2.5 sm:p-3">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setDisplayMode('scene')}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer text-neutral-400 hover:text-white hover:bg-neutral-800/60"
-          >
-            <Eye className="w-4 h-4" />
-            <span>Escena de cultivo</span>
-          </button>
-
-          <button
-            onClick={() => setDisplayMode('indoor_room')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-              displayMode === 'indoor_room'
-                ? 'bg-emerald-500 text-neutral-950 shadow-md shadow-emerald-500/20'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60'
-            }`}
-          >
-            <Grid3X3 className="w-4 h-4" />
-            <span>Sala de cultivo ({indoorPlants.length} {indoorPlants.length === 1 ? 'planta' : 'plantas'})</span>
-          </button>
-
-          <button
-            onClick={() => setDisplayMode('single_detail')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-              displayMode === 'single_detail'
-                ? 'bg-emerald-500 text-neutral-950 shadow-md shadow-emerald-500/20'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60'
-            }`}
-          >
-            <Eye className="w-4 h-4" />
-            <span>Microscopio / Detalle Planta #{selectedPlantIndex + 1}</span>
-          </button>
-        </div>
-
-        {/* Fast Room Quick Action Pills */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <button
-            onClick={waterAllPlants}
-            className="px-2.5 py-1.5 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-900/40 transition text-[11px] font-mono flex items-center gap-1.5 cursor-pointer"
-            title={`Regar simultáneamente las ${indoorPlants.length} plantas de la sala`}
-          >
-            <Droplet className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Riego Sala ({indoorPlants.length})</span>
-          </button>
-
-          <button
-            onClick={feedAllPlants}
-            className="px-2.5 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-900/40 transition text-[11px] font-mono flex items-center gap-1.5 cursor-pointer"
-            title="Fertirriego N-P-K para la canopia completa"
-          >
-            <Activity className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Abonar Sala</span>
-          </button>
-
-          <button
-            onClick={harvestAllReadyPlants}
-            className="px-2.5 py-1.5 rounded-lg bg-amber-950/40 border border-amber-500/30 text-amber-300 hover:bg-amber-900/40 transition text-[11px] font-mono flex items-center gap-1.5 cursor-pointer"
-            title="Cosechar todas las plantas maduras de la sala"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Cosechar Maduras</span>
-          </button>
-        </div>
-      </div>
-
-      </>)}
-
-      {/* Main Grow Layout: Plant / Room Visualizer + Microclimate Controls */}
       {displayMode === 'scene' ? (
         <CultivationScene
           onOpenSeedModal={() => setShowSeedModal(true)}
-          onOpenFacility={() => setShowFacilityModal(true)}
           onOpenNutrients={() => setShowNutrientModal(true)}
-          onOpenPanel={() => setShowPanel(true)}
           onShowRoom={() => setDisplayMode('indoor_room')}
-          onOpenMarket={onOpenMarket}
-          onOpenPlanet={onOpenPlanet}
+          onOpenCare={() => setCareOpen(true)}
         />
       ) : (
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Visualizer + Quick Actions (7 or 8 Cols) */}
-        <div className={`${displayMode === 'indoor_room' ? 'lg:col-span-8' : 'lg:col-span-7'} space-y-4`}>
+      <div className="space-y-4">
+        {/* Visualizer + quick actions (the instruments are in the right rail and in the Panel drawer) */}
+        <div className="space-y-4">
           {displayMode === 'indoor_room' ? (
             <IndoorRoomVisualizer onOpenFacility={() => setShowFacilityModal(true)} />
           ) : (
@@ -700,12 +544,21 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
           )}
         </div>
 
-        {renderControls(false)}
       </div>
       )}
+      </div>
+      <RightRail
+        onShowRoom={() => setDisplayMode('indoor_room')}
+        onOpenPanel={() => setShowPanel(true)}
+        onOpenPlanet={onOpenPlanet}
+        onOpenMarket={onOpenMarket}
+        careOpen={careOpen}
+        setCareOpen={setCareOpen}
+      />
+      </div>
 
       {/* Slide-over with the full climate / instrument panel (scene mode) */}
-      {displayMode === 'scene' && showPanel && (
+      {showPanel && (
         <div className="fixed inset-0 z-[70] flex justify-end" role="dialog" aria-label="Panel de control">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowPanel(false)} />
           <aside className="relative w-full sm:w-[540px] h-full overflow-y-auto bg-neutral-950/95 border-l border-emerald-400/30 p-4 space-y-4">

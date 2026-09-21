@@ -49,7 +49,7 @@ export const PlantView: React.FC<CannabisPlantProps & { pest?: PestKind }> = ({ 
   };
 
   return (
-    <div className="relative h-full w-full max-w-[560px]">
+    <div className="relative h-full w-full max-w-[760px]">
       {canvasMode ? (
         <Boundary fallback={svg}>
           <Suspense fallback={svg}>

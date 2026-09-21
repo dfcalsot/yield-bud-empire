@@ -293,8 +293,8 @@ export const Plant3D: React.FC<Plant3DProps> = (props) => {
       frameloop="demand"
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-      camera={{ position: [0, 0.58, 2.15], fov: 30, near: 0.1, far: 20 }}
-      onCreated={({ camera }) => camera.lookAt(0, 0.5, 0)}
+      camera={{ position: [0, 0.56, 1.95], fov: 30, near: 0.1, far: 20 }}
+      onCreated={({ camera }) => camera.lookAt(0, 0.46, 0)}
     >
       <hemisphereLight args={[flowering ? '#ffe8f6' : '#e6fbff', '#16281c', 1.9]} />
       <directionalLight position={[1.6, 3.2, 2.2]} intensity={2.6} color={flowering ? '#ffd9ee' : '#f2fff4'} />

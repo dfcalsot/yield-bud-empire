@@ -114,7 +114,7 @@ function YieldBudEmpireApp() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 pb-32 space-y-6">
+      <main className={`flex-1 ${currentTab === 'cultivo' ? 'max-w-[1780px]' : 'max-w-7xl'} w-full mx-auto p-4 sm:p-6 md:p-8 pb-32 space-y-6`}>
         {/* Quest / level bar and the sub-sections of the active dock group share one row */}
         <div className="flex flex-wrap items-start gap-3">
           <SubTabs currentTab={currentTab} setCurrentTab={goToTab} />
@@ -125,7 +125,7 @@ function YieldBudEmpireApp() {
 
         <LocalSavesBanner onOpenProfile={() => goToTab('perfil')} />
 
-        {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && <ResourceBar onOpenMarket={openMarket} />}
+        {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && currentTab !== 'cultivo' && <ResourceBar onOpenMarket={openMarket} />}
 
         {currentTab === 'cultivo' && <CultivationView onOpenMarket={openMarket} onOpenPlanet={() => goToTab('planeta')} />}
         {currentTab === 'perfil' && <ProfileView onOpenAccountModal={() => setIsProfileModalOpen(true)} />}
