@@ -1,3 +1,4 @@
+import { WoliCbdCard } from './partners/WoliCbdCard';
 import { V2pArt } from './art/GameArt';
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
@@ -210,6 +211,7 @@ export const DispensaryV2PView: React.FC = () => {
 
         {/* Right Column: V2P (Virtual to Physical) E-Commerce Bridge (6 Cols) */}
         <div className="lg:col-span-6 space-y-4">
+          <WoliCbdCard />
           <div className="hud-panel p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
