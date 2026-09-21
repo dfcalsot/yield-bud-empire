@@ -443,6 +443,19 @@ const cWrong = await wpost(W3, '/api/wallet/challenge', { chain: 'solana', addre
 ok('nonce: la firma de un mensaje distinto (otra cuenta) no vincula', (await wpost(W3, '/api/wallet/link', { chain: 'solana', address: SK2.address, nonce: cWrong.json.nonce, signature: SK2.sign(cWrong.json.message.replace(`#${W3.id}`, `#${W1.id}`)) })).json.error === 'bad_signature');
 const un = await wpost(W1, '/api/wallet/unlink', { chain: 'solana' });
 ok('desvincular libera la billetera para vincularla de nuevo (o a otra cuenta)', un.status === 200 && un.json.links.every((l) => l.chain !== 'solana') && (await linkFlow(W3, 'solana', SK)).ln.status === 200);
+
+// ── operator gifts: a chest that credits once
+const G1 = await mkPlayer(30), G2 = await mkPlayer(31); await state(G1); await state(G2);
+const giftRow = db.prepare('INSERT INTO gifts (account_id, amount, note, created_at) VALUES (?,?,?,?)').run(G1.id, 2_000_000, 'prueba', Date.now());
+const gid = Number(giftRow.lastInsertRowid);
+const gs = await state(G1);
+ok('regalo: aparece pendiente en la cartera de su dueño y no en la de otro', gs.snapshot.gifts.length === 1 && gs.snapshot.gifts[0].amount === 2_000_000 && (await state(G2)).snapshot.gifts.length === 0);
+ok('regalo: otra cuenta no puede abrir el cofre ajeno', (await intent(G2, 'open_gift', { giftId: gid })).json.error === 'not_yours');
+const og = await intent(G1, 'open_gift', { giftId: gid });
+ok('regalo: abrirlo acredita el monto y el cofre desaparece', og.status === 200 && og.json.result.amount === 2_000_000 && og.json.snapshot.flora === gs.snapshot.flora + 2_000_000 && og.json.snapshot.gifts.length === 0);
+ok('regalo: no se abre dos veces', (await intent(G1, 'open_gift', { giftId: gid })).json.error === 'not_yours' && wallet(G1).flora === gs.snapshot.flora + 2_000_000);
+ok('regalo: queda en el libro mayor', db.prepare("SELECT COUNT(*) n FROM ledger WHERE account_id = ? AND kind = 'gift' AND delta = 2000000").get(G1.id).n === 1);
+ok('regalo: un id inventado se rechaza', (await intent(G1, 'open_gift', { giftId: 999999 })).json.error === 'not_yours');
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 server.close(); mock.close();
 fs.rmSync(dir, { recursive: true, force: true });

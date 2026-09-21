@@ -16,6 +16,7 @@ import { DispensaryV2PView } from './components/DispensaryV2PView';
 import { TokenomicsView } from './components/TokenomicsView';
 import { WhitepaperView } from './components/WhitepaperView';
 import { WalletModal } from './components/wallet/WalletModal';
+import { GiftChest } from './components/wallet/GiftChest';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { NotificationToast } from './components/NotificationToast';
@@ -148,6 +149,7 @@ function YieldBudEmpireApp() {
 
       {/* Global Toast Alerts */}
       <NotificationToast />
+      <GiftChest />
       <TxToast />
 
       {/* Game wallet: in-game address, balances, and linked Solana / Ronin wallets */}

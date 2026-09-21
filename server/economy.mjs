@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS listings (id INTEGER PRIMARY KEY AUTOINCREMENT, selle
   data TEXT NOT NULL, price INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'active', buyer_id INTEGER, fee INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, closed_at INTEGER);
 CREATE INDEX IF NOT EXISTS idx_listings_active ON listings(status, kind, price);
 CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller_id, status);
+CREATE TABLE IF NOT EXISTS gifts (id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, amount INTEGER NOT NULL, note TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, opened_at INTEGER);
+CREATE INDEX IF NOT EXISTS idx_gifts_acc ON gifts(account_id, opened_at);
 CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT NULL, response TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (account_id, idem));
 `);
   const q = {
@@ -54,6 +56,9 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
     idem: db.prepare('SELECT response FROM econ_idem WHERE account_id = ? AND idem = ?'),
     putIdem: db.prepare('INSERT OR REPLACE INTO econ_idem (account_id, idem, response, ts) VALUES (?,?,?,?)'),
     sweepIdem: db.prepare('DELETE FROM econ_idem WHERE ts < ?'),
+    giftsOf: db.prepare('SELECT id, amount, note, created_at FROM gifts WHERE account_id = ? AND opened_at IS NULL ORDER BY id'),
+    gift: db.prepare('SELECT * FROM gifts WHERE id = ?'),
+    openGift: db.prepare('UPDATE gifts SET opened_at = ? WHERE id = ? AND opened_at IS NULL'),
     setEscrow: db.prepare('UPDATE nfts SET escrow = ? WHERE id = ?'),
     moveNft: db.prepare('UPDATE nfts SET account_id = ?, escrow = 0 WHERE id = ?'),
     delNft: db.prepare('DELETE FROM nfts WHERE id = ?'),
@@ -151,6 +156,7 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
       staff: free(id, 'staff'), staffAssign: st.staffAssign, staffPity: st.staffPity,
       plots, avatars, avatarPity: st.avatarPity, offers,
       imported: !!w.imported, minted: w.minted, burned: w.burned,
+      gifts: q.giftsOf.all(id).map((g) => ({ id: g.id, amount: g.amount, note: g.note, createdAt: g.created_at })),
       listings: q.activeOf.all(id).map(listingView), p2p: { feeRate: P2P.feeRate, minPrice: P2P.minPrice, maxPrice: P2P.maxPrice, maxListings: P2P.maxListings },
     };
   }
@@ -291,6 +297,15 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
         return { amount: E.ECON.levelBonus };
       }
       throw new HttpError(400, 'bad_params');
+    },
+
+    /* ── operator gifts: a chest the house sends to one account (`node server/admin.mjs gift <correo> <monto>`); opening it credits once ── */
+    open_gift({ id, now, p }) {
+      const g = q.gift.get(Math.floor(num(p.giftId, 1, 2 ** 40)));
+      need(g && g.account_id === id && g.opened_at === null, 'not_yours');
+      need(q.openGift.run(now, g.id).changes === 1, 'already_claimed');
+      credit(id, g.amount, 'gift', g.note || 'regalo de la casa', now);
+      return { amount: g.amount, note: g.note };
     },
 
     /* ── player market ── */

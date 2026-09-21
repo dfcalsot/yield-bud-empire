@@ -1,4 +1,4 @@
-// Operator tool: node server/admin.mjs stats | flagged | audit [n] | ban <username> | unban <username> | setpass <email>
+// Operator tool: node server/admin.mjs stats | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -37,4 +37,14 @@ if (cmd === 'stats') {
   db.prepare('DELETE FROM sessions WHERE account_id = ?').run(a.id);
   db.prepare('INSERT INTO audit (ts, event, account_id, ip_hash, detail) VALUES (?,?,?,?,?)').run(Date.now(), 'admin_setpass', a.id, null, 'operator');
   console.log(`cuenta #${a.id} (${a.username}) · correo verificado · contraseña temporal: ${pw}`);
-} else console.log('uso: node server/admin.mjs stats | flagged | audit [n] | ban <usuario> | unban <usuario> | setpass <correo>');
+} else if (cmd === 'gift') {
+  // a chest for one account: it shows up in their game and credits the amount when they open it (needs the service to have run once, which creates the table)
+  const a = db.prepare('SELECT id, username FROM accounts WHERE email_key = ?').get(String(arg ?? '').trim().toLowerCase());
+  const amount = Math.floor(Number(extra));
+  if (!a) { console.error('no existe una cuenta con ese correo'); process.exit(1); }
+  if (!Number.isFinite(amount) || amount < 1 || amount > 10_000_000) { console.error('monto inválido (1 a 10 000 000)'); process.exit(1); }
+  const note = process.argv.slice(5).join(' ').slice(0, 120) || 'Regalo de la casa';
+  const r = db.prepare('INSERT INTO gifts (account_id, amount, note, created_at) VALUES (?,?,?,?)').run(a.id, amount, note, Date.now());
+  db.prepare('INSERT INTO audit (ts, event, account_id, ip_hash, detail) VALUES (?,?,?,?,?)').run(Date.now(), 'admin_gift', a.id, null, String(amount));
+  console.log(`cofre #${r.lastInsertRowid} enviado a la cuenta #${a.id} (${a.username}): ${amount} $FLORA · «${note}»`);
+} else console.log('uso: node server/admin.mjs stats | flagged | audit [n] | ban <usuario> | unban <usuario> | setpass <correo> | gift <correo> <monto> [nota]');

@@ -17,6 +17,7 @@ export interface Snapshot {
   plots: ServerPlot[]; avatars: ServerAvatar[]; avatarPity: PityMap;
   offers: Record<string, { ids: string[]; left: number }>;
   imported: boolean; minted: number; burned: number;
+  gifts: Array<{ id: number; amount: number; note: string; createdAt: number }>;
   listings: ListingView[]; p2p: { feeRate: number; minPrice: number; maxPrice: number; maxListings: number };
 }
 export type ListingKind = 'staff' | 'land' | 'avatar';

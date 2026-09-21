@@ -133,6 +133,9 @@ interface GameContextType {
   ledgerOn: boolean;
   /** player market: my active offers, and the actions (every NFT kind: staff, land, avatar) */
   myListings: ListingView[];
+  /** chests the house sent to this account (operator gifts): opening one credits it once */
+  gifts: Snapshot['gifts'];
+  openGift: (giftId: number) => Promise<{ amount: number; note: string } | null>;
   p2pInfo: Snapshot['p2p'];
   /** put an NFT on sale (it stays in escrow until it sells or you take it back). Avatars go by design id, one copy at a time. */
   listNft: (ref: { nftId?: string; designId?: string }, price: number) => Promise<boolean>;
@@ -704,6 +707,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // --- SERVER-OWNED ECONOMY (server/economy.mjs): the wallet and the NFTs are the server's; this state is a mirror of its last answer ---
   const [ledgerOn, setLedgerOn] = useState(false);
   const [myListings, setMyListings] = useState<ListingView[]>([]);
+  const [gifts, setGifts] = useState<Snapshot['gifts']>([]);
   const [p2pInfo, setP2pInfo] = useState<Snapshot['p2p']>({ feeRate: 0.05, minPrice: 1, maxPrice: 100000, maxListings: 20 });
   const [srvOffers, setSrvOffers] = useState<Snapshot['offers'] | null>(null);
   const ledgerRef = useRef(false); ledgerRef.current = ledgerOn;
@@ -731,6 +735,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setChestPity(snap.avatarPity);
     setSrvOffers(snap.offers);
     setMyListings(snap.listings ?? []);
+    setGifts(snap.gifts ?? []);
     if (snap.p2p) setP2pInfo(snap.p2p);
   }, []);
 
@@ -2668,6 +2673,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return r.staff;
   };
 
+  const openGift = async (giftId: number): Promise<{ amount: number; note: string } | null> => {
+    const r = await intent<{ amount: number; note: string }>('open_gift', { giftId });
+    if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo abrir el cofre (${r.error})`, 'info'); void fetchState().then(x => x && applySnapshot(x)); return null; }
+    applySnapshot(r.snapshot);
+    return r.result;
+  };
   const listNft = async (ref: { nftId?: string; designId?: string }, price: number): Promise<boolean> => {
     if (!ledgerRef.current) { showNotification('El mercado entre jugadores necesita conexión con el servidor.', 'info'); return false; }
     const r = await intent<{ listingId: number; price: number }>('list', { ...ref, price });
@@ -3300,7 +3311,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         burnStats,
         transactions,
         requestAirdrop,
-        ledgerOn, myListings, p2pInfo, listNft, cancelListing, buyListing,
+        ledgerOn, gifts, openGift, myListings, p2pInfo, listNft, cancelListing, buyListing,
         claimDaily,
         faucetAt,
         quoteSale,
