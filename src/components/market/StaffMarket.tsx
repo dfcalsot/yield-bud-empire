@@ -16,16 +16,16 @@ export const StaffMarket: React.FC<{ onSay: (text: string, mood: 'idle' | 'happy
   const { staff, staffPity, floraBalance, hireCandidate, openStaffChest } = useGame();
   const [minted, setMinted] = useState<StaffNft | null>(null);
   const day = dayIndexOf(Date.now());
-  const board = useMemo(() => jobBoard(day).filter((c) => !staff.some((s) => s.id === c.id)), [day, staff]);
+  const board = useMemo(() => jobBoard(day).filter((c) => !staff.some((s) => s.id === c.id || s.id.startsWith(`${c.id}-`))), [day, staff]);
 
-  const hire = (id: string) => {
+  const hire = async (id: string) => {
     const c = board.find((x) => x.id === id);
     if (!c) return;
-    const h = hireCandidate(c);
+    const h = await hireCandidate(c);
     if (h) { setMinted(h); onSay(`¡Buen fichaje! ${h.name} sabe lo suyo.`, 'happy'); } else onSay('No te alcanza para ese fichaje, jefe.', 'sad');
   };
-  const open = (id: StaffChestId) => {
-    const h = openStaffChest(id);
+  const open = async (id: StaffChestId) => {
+    const h = await openStaffChest(id);
     if (h) { setMinted(h); onSay(h.rarity === 'legendary' ? '¡Una estrella! ¡Esto no se ve todos los días!' : `Llega ${h.name}. A ver qué tal trabaja.`, 'happy'); } else onSay('Junta más $FLORA y volvemos con los cofres.', 'sad');
   };
 

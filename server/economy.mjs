@@ -14,7 +14,7 @@ const DAY = 86400_000;
 const PRODUCT_PRICE = { live_rosin: 45, cured_flower: 9, full_spec_oil: 25, pure_terpenes: 85 };   // per product gram, before ECON.priceScale
 const QUEST_FLORA = Object.fromEntries(INITIAL_QUESTS.map((q) => [q.id, q.rewardFlora]));
 const FACILITY_BY_ID = Object.fromEntries(INITIAL_FACILITIES.map((f) => [f.id, f]));
-const MAX_SPEND = 1500;
+const MAX_SPEND = 30000;
 const CAPS = { staff: 24, avatars: 60, plots: 12, floraOnImport: 1500 };
 const rng = () => crypto.randomInt(0, 2 ** 32) / 2 ** 32;
 

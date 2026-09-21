@@ -36,11 +36,11 @@ export const LandMarket: React.FC<{ currency: 'FLORA' | 'SOL'; onSay: (text: str
 
   const leftIn = (id: RegionId) => plotsForSale(id).left;
 
-  const buy = (c: LandCardData) => {
-    if (buyPlot(c.id, currency)) {
+  const buy = async (c: LandCardData) => {
+    if (await buyPlot(c.id, currency)) {
       setMinted(c);
       onSay(`¡Ya es tuya, la ${c.name}! ${c.rarity === 'legendary' ? '¡Una legendaria, jefe!' : 'Ahora a sembrar.'}`, 'happy');
-    } else onSay('Uy, no te alcanza para esa tierra. Junta más y volvemos.', 'sad');
+    } else onSay('Uy, no pudo ser: no te alcanza o alguien se te adelantó con esa tierra.', 'sad');
   };
 
   return (

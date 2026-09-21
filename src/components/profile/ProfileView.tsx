@@ -101,8 +101,8 @@ export const ProfileView: React.FC<{ onOpenAccountModal: () => void }> = ({ onOp
     finally { setBusy(false); if (fileRef.current) fileRef.current.value = ''; }
   };
 
-  const startOpen = (id: ChestId) => {
-    const r = openChest(id, currency);
+  const startOpen = async (id: ChestId) => {
+    const r = await openChest(id, currency);
     if (!r) { npc.speak('Uy, no te alcanza para ese cofre. ¡Vuelve con más!', 'sad'); return; }
     const chest = CHESTS[id];
     setOpening({ chest, phase: 'shake', design: r.design, isNew: r.isNew, refund: r.refund, serial: r.owned.serial });

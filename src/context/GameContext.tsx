@@ -69,6 +69,8 @@ import {
 
 import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
 import { landOffers } from '../sim/lands';
+import { fetchState, importLocal, intent, REASON, type Snapshot } from '../economy/ledger';
+import { mintAddressFor } from '../utils/nft';
 import { siteConditions, plotOffer, terroirOf, REGION_BY_ID, PLOT_SIZE, type PlotOffer } from '../sim/terroir';
 import { CHESTS, DUPLICATE_REFUND, EMPTY_PITY, DESIGN_BY_ID, rollChest, seasonOf, type AvatarDesign, type ChestId, type OwnedAvatar, type PityMap } from '../sim/avatars';
 import {
@@ -127,8 +129,10 @@ interface GameContextType {
   };
   transactions: SolanaTransaction[];
   requestAirdrop: () => void;
+  /** the wallet and NFTs belong to the server (false only when there is no account service: the game then plays with a local economy) */
+  ledgerOn: boolean;
   /** the small daily claim that replaced the unlimited faucet */
-  claimDaily: () => void;
+  claimDaily: () => Promise<void>;
   faucetAt: number;
   /** what selling a product would pay right now (market depth, the sale fee and the licence of your installation) */
   quoteSale: (productId: string) => { gross: number; fee: number; net: number; ratio: number } | null;
@@ -148,10 +152,10 @@ interface GameContextType {
   // Cultivation & Indoor Grow Room (3 filas de 10 plantas en pares de 2)
   facilities: GrowFacility[];
   currentFacility: GrowFacility;
-  upgradeFacility: (facilityId: string) => void;
+  upgradeFacility: (facilityId: string) => Promise<void>;
   /** the installation being built (null when none) and the paid speed-up (burns $FLORA, limited per day) */
   construction: Construction | null;
-  speedUpConstruction: () => boolean;
+  speedUpConstruction: () => Promise<boolean>;
 
   // Staff NFTs: hires that replace the industry characters (bounded bonuses, daily wage burned)
   staff: StaffNft[];
@@ -163,10 +167,10 @@ interface GameContextType {
   shopPrice: (flora: number) => number;
   /** the hire working in a role, and whether its wage is paid (working) */
   staffIn: (role: StaffRole) => { staff: StaffNft; working: boolean } | null;
-  hireCandidate: (c: Candidate) => StaffNft | null;
-  openStaffChest: (id: StaffChestId) => StaffNft | null;
-  assignStaff: (role: StaffRole, staffId: string | null) => void;
-  rankUpStaff: (staffId: string) => boolean;
+  hireCandidate: (c: Candidate) => Promise<StaffNft | null>;
+  openStaffChest: (id: StaffChestId) => Promise<StaffNft | null>;
+  assignStaff: (role: StaffRole, staffId: string | null) => Promise<void>;
+  rankUpStaff: (staffId: string) => Promise<boolean>;
   /** $FLORA per day the assigned hires cost */
   staffWagesPerDay: number;
   strains: Strain[];
@@ -247,7 +251,7 @@ interface GameContextType {
   plots: OwnedPlot[];
   /** plots still for sale in a region (the next few, cheapest number first) and how many are left in total */
   plotsForSale: (region: RegionId) => { offers: PlotOffer[]; left: number };
-  buyPlot: (offerId: string, currency?: 'FLORA' | 'SOL') => boolean;
+  buyPlot: (offerId: string, currency?: 'FLORA' | 'SOL') => Promise<boolean>;
   plantPlot: (plotId: string, seedId: string, count?: number) => boolean;
   waterPlot: (plotId: string, all?: boolean) => void;
   feedPlot: (plotId: string) => void;
@@ -259,7 +263,7 @@ interface GameContextType {
   avatars: OwnedAvatar[];
   chestPity: PityMap;
   showNotification: (message: string, type: 'success' | 'burn' | 'info') => void;
-  openChest: (id: ChestId, currency?: 'FLORA' | 'SOL') => { design: AvatarDesign; isNew: boolean; refund: number; owned: OwnedAvatar } | null;
+  openChest: (id: ChestId, currency?: 'FLORA' | 'SOL') => Promise<{ design: AvatarDesign; isNew: boolean; refund: number; owned: OwnedAvatar } | null>;
   equipAvatar: (designId: string | null) => void;
   /** keep a male of a plot as a pollen donor in the Sanctuary of mothers & fathers */
   keepMaleAsFather: (plotId: string, slot: number) => void;
@@ -645,6 +649,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
+  /** $FLORA earned by levelling up or finishing a quest: the server validates and pays it (or, with no service, it is added locally) */
+  const mintFlora = (localAmount: number, kind: 'level' | 'quest', params: Record<string, unknown>) => {
+    if (!ledgerRef.current) { setFloraBalance(b => b + localAmount); return; }
+    void intent('reward', { kind, ...params }).then(r => { if (r.ok) applySnapshot(r.snapshot); });
+  };
+
   const addXp = (amount: number, reason?: string) => {
     setPlayerXp(prev => {
       const total = prev + amount;
@@ -652,7 +662,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (total >= needed) {
         const nextLvl = playerLevel + 1;
         setPlayerLevel(nextLvl);
-        setFloraBalance(b => b + ECON.levelBonus);
+        mintFlora(ECON.levelBonus, 'level', { level: nextLvl });
         playLevelUpSound();
         confetti({
           particleCount: 130,
@@ -673,7 +683,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     playQuestCompleteSound();
     setQuests(prev => prev.map(q => q.id === questId ? { ...q, isClaimed: true } : q));
-    setFloraBalance(prev => prev + targetQuest.rewardFlora);
+    mintFlora(targetQuest.rewardFlora, 'quest', { id: targetQuest.id });
     addXp(targetQuest.rewardXp, `Misión: ${targetQuest.title}`);
     showNotification(`¡Recompensa reclamada! +${targetQuest.rewardFlora} $FLORA y +${targetQuest.rewardXp} XP`, 'success');
   };
@@ -684,8 +694,64 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSoundEnabled(next);
   };
 
+  // --- SERVER-OWNED ECONOMY (server/economy.mjs): the wallet and the NFTs are the server's; this state is a mirror of its last answer ---
+  const [ledgerOn, setLedgerOn] = useState(false);
+  const [srvOffers, setSrvOffers] = useState<Snapshot['offers'] | null>(null);
+  const ledgerRef = useRef(false); ledgerRef.current = ledgerOn;
+  const hadLocalSaveRef = useRef(false);
+  const localSrcRef = useRef<Record<string, unknown>>({});
+  // what a local save would bring to the server the first time (it caps and validates all of it)
+  localSrcRef.current = {
+    flora: floraBalance, tier: currentFacility.tier, staff, staffAssign,
+    avatars: avatars.map(a => ({ designId: a.designId, count: a.count, firstAt: a.firstAt, serial: a.serial })),
+    plots: plots.map(p => ({ id: p.id, mintedAt: p.mintedAt })),
+  };
+
+  const applySnapshot = useCallback((snap: Snapshot) => {
+    setFloraBalance(snap.flora);
+    setFaucetAt(snap.faucetAt);
+    setMarketDepth(snap.depth);
+    setConstruction(snap.construction);
+    const list = INITIAL_FACILITIES.map(f => ({ ...f, unlocked: f.unlocked || snap.unlocked.includes(f.id) }));
+    setFacilities(list);
+    setCurrentFacility(prev => list.filter(f => f.unlocked).sort((a, b) => b.tier - a.tier)[0] ?? prev);
+    setStaff(snap.staff); setStaffAssign(snap.staffAssign); setStaffPity(snap.staffPity);
+    setStaffNow(Date.now());
+    setPlots(prev => snap.plots.map(sp => prev.find(p => p.id === sp.id) ?? ({ ...sp, region: sp.region as RegionId, plants: [] })));
+    setAvatars(snap.avatars.map(a => ({ ...a, mint: mintAddressFor(`av-${a.designId}`) })));
+    setChestPity(snap.avatarPity);
+    setSrvOffers(snap.offers);
+  }, []);
+
+  /** take the server's word for everything (login, and every minute after); the first time, a local save is imported with caps */
+  // (see the effects right below the function)
+  const syncFromServer = useCallback(async (): Promise<boolean> => {
+    const snap = await fetchState();
+    if (!snap) return false;
+    let use = snap;
+    if (!snap.imported) {
+      // first time on the server: bring the local save (capped), or close the window with an empty one so a save made later can never be imported over live progress
+      const imp = await importLocal(hadLocalSaveRef.current ? localSrcRef.current : { flora: 0, tier: 1 });
+      if (imp) use = imp;
+    }
+    setLedgerOn(true);
+    applySnapshot(use);
+    return true;
+  }, [applySnapshot]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    const t = setTimeout(() => { void syncFromServer(); }, 500);   // after the local save has been loaded
+    return () => clearTimeout(t);
+  }, [currentUser?.id, syncFromServer]);
+  useEffect(() => {
+    if (!ledgerOn) return;
+    const t = setInterval(async () => { const snap = await fetchState(); if (snap) applySnapshot(snap); }, 45000);
+    return () => clearInterval(t);
+  }, [ledgerOn, applySnapshot]);
+
   // Add Solana burn transaction
-  const recordBurnTransaction = useCallback((type: SolanaTransaction['type'], amount: number, memo: string) => {
+  const recordBurnTransaction = useCallback((type: SolanaTransaction['type'], amount: number, memo: string, reported = false) => {
     const sig = generateSolanaSignature();
     const newTx: SolanaTransaction = {
       id: `tx-${Date.now()}`,
@@ -701,6 +767,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTransactions(prev => [newTx, ...prev.slice(0, 24)]);
     setFloraBalance(prev => Math.max(0, prev - amount));
     setTotalFloraBurned(prev => prev + amount);
+    // a burn the server does not model yet (market items, seeds, repairs…): it debits the wallet, and its answer is the truth
+    if (ledgerRef.current && !reported) {
+      void intent('spend', { amount: Math.max(1, Math.round(amount)), memo }).then(r => { if (r.ok) applySnapshot(r.snapshot); else if (r.error !== 'offline') void fetchState().then(x => x && applySnapshot(x)); });
+    }
 
     playBurnSound();
 
@@ -828,6 +898,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
     const saved = loadUserData(userId);
+    hadLocalSaveRef.current = !!saved;
     applyMissions(normalizeMissions(saved?.missions));
     applyTutorial(normalizeTutorial(saved?.tutorial));
     {
@@ -997,7 +1068,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [solanaNetwork, walletAddress, showNotification]);
 
   // One small claim every 24 h (replaces the unlimited +500 faucet: see sim/economy.ts)
-  const claimDaily = () => {
+  const claimDaily = async (): Promise<void> => {
+    if (ledgerRef.current) {
+      const r = await intent<{ amount: number }>('claim_daily');
+      if (!r.ok) {
+        const left = Number((r.extra as { leftMs?: number } | undefined)?.leftMs ?? 0);
+        if (r.error === 'too_early' && left > 0) showNotification(`El reclamo diario vuelve en ${Math.floor(left / 3600_000)} h ${Math.ceil((left % 3600_000) / 60_000)} min.`, 'info');
+        else showNotification(REASON[r.error] ?? `No se pudo reclamar (${r.error})`, 'info');
+        void fetchState().then(x => x && applySnapshot(x));
+        return;
+      }
+      applySnapshot(r.snapshot);
+      showNotification(`Reclamo diario: +${r.result.amount} $FLORA. Vuelve mañana; lo demás se gana cultivando.`, 'success');
+      return;
+    }
     const st = claimStatus(faucetAt, Date.now());
     if (!st.ok) {
       const h = Math.floor(st.leftMs / 3600_000), m = Math.ceil((st.leftMs % 3600_000) / 60_000);
@@ -1960,9 +2044,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // --- LAND PLOTS (the planet) ---
-  const plotsForSale = (region: RegionId): { offers: PlotOffer[]; left: number } => landOffers(region, new Set(plots.map(pl => pl.id)));
+  const plotsForSale = (region: RegionId): { offers: PlotOffer[]; left: number } => {
+    // with the server, the plots for sale are the ones nobody in the world owns yet (its answer); without it, the local formula
+    if (ledgerOn && srvOffers?.[region]) {
+      const o = srvOffers[region];
+      return { offers: o.ids.map(id => plotOffer(region, Number(id.split('-').pop()))), left: o.left };
+    }
+    return landOffers(region, new Set(plots.map(pl => pl.id)));
+  };
 
-  const buyPlot = (offerId: string, currency: 'FLORA' | 'SOL' = 'FLORA'): boolean => {
+  const buyPlot = async (offerId: string, currency: 'FLORA' | 'SOL' = 'FLORA'): Promise<boolean> => {
+    if (ledgerRef.current && currency === 'FLORA') {
+      const r = await intent<{ plot: { name: string; landRating: number; region: RegionId; priceFlora?: number } }>('buy_plot', { offerId });
+      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo comprar la tierra (${r.error})`, 'info'); void fetchState().then(x => x && applySnapshot(x)); return false; }
+      applySnapshot(r.snapshot);
+      const offer = plotOffer(r.result.plot.region, Number(offerId.split('-').pop()));
+      recordBurnTransaction('BURN_PURCHASE', offer.priceFlora, `Yield Bud Empire Planeta: Mint NFT parcela ${offer.name}`, true);
+      confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+      reportEvent('plot', 1);
+      addXp(80, 'Compra de parcela');
+      showNotification(`🌎 Parcela minteada: ${offer.name} en ${REGION_BY_ID[offer.region].name} · nota ${offer.landRating}/10 · 36 plantas`, 'success');
+      return true;
+    }
     const m = /^plot-([a-z_]+)-(\d+)$/.exec(offerId);
     const region = m?.[1] as RegionId | undefined;
     if (!m || !region || !REGION_BY_ID[region]) return false;
@@ -2120,8 +2223,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const plotEta = (plot: OwnedPlot, plant: PlantInGrow) => plotEtaSeconds(plant, plot.region, plot.ratings);
 
   // --- PROFILE: chests that mint seasonal NFT avatars ---
-  const openChest = (id: ChestId, currency: 'FLORA' | 'SOL' = 'FLORA'): { design: AvatarDesign; isNew: boolean; refund: number; owned: OwnedAvatar } | null => {
+  const openChest = async (id: ChestId, currency: 'FLORA' | 'SOL' = 'FLORA'): Promise<{ design: AvatarDesign; isNew: boolean; refund: number; owned: OwnedAvatar } | null> => {
     const chest = CHESTS[id];
+    if (ledgerRef.current && currency === 'FLORA') {
+      const r = await intent<{ designId: string; isNew: boolean; refund: number; owned: { designId: string; count: number; firstAt: number; serial: number } }>('avatar_chest', { chestId: id });
+      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo abrir el cofre (${r.error})`, 'info'); return null; }
+      applySnapshot(r.snapshot);
+      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `Yield Bud Empire: ${chest.name} (mint de avatar NFT)`, true);
+      const design = DESIGN_BY_ID[r.result.designId];
+      playLevelUpSound();
+      addXp(design.rarity === 'legendary' ? 200 : design.rarity === 'epic' ? 80 : 30, 'Cofre de avatar');
+      return { design, isNew: r.result.isNew, refund: r.result.refund, owned: { ...r.result.owned, mint: mintAddressFor(`av-${design.id}`) } };
+    }
     if (currency === 'FLORA') {
       if (floraBalance < chest.priceFlora) { showNotification(`Saldo insuficiente: el ${chest.name} cuesta ${chest.priceFlora} $FLORA`, 'info'); return null; }
       recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `Yield Bud Empire: ${chest.name} (mint de avatar NFT)`);
@@ -2419,9 +2532,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Facilities are built, not bought: each rung costs $FLORA (burned) and real time, you cannot skip a rung, and speeding up is capped
-  const upgradeFacility = (facilityId: string) => {
+  const upgradeFacility = async (facilityId: string): Promise<void> => {
     const target = facilities.find(f => f.id === facilityId);
     if (!target) return;
+    if (ledgerRef.current) {
+      // the server owns the ladder: it checks the rung, the money and the single build at a time, and starts the clock
+      if (target.unlocked) { showNotification(target.tier < currentFacility.tier ? `${target.name} ya la superaste: tu instalación actual es mejor.` : 'Esa es tu instalación actual.', 'info'); return; }
+      const r = await intent<{ hours: number }>('start_build', { facilityId });
+      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo empezar la obra (${r.error})`, 'info'); return; }
+      applySnapshot(r.snapshot);
+      recordBurnTransaction('BURN_SPEEDUP', target.costFlora, `Yield Bud Empire: Obra de ${target.name}`, true);
+      const h = r.result.hours;
+      showNotification(`¡Obra iniciada: ${target.name}! Tardará ${h >= 24 ? `${Math.round(h / 24 * 10) / 10} días` : `${h} h`}. Puedes seguir cultivando mientras tanto.`, 'success');
+      return;
+    }
     if (target.unlocked) {
       if (target.tier < currentFacility.tier) showNotification(`${target.name} ya la superaste: tu instalación actual es mejor.`, 'info');
       else setCurrentFacility(target);
@@ -2474,6 +2598,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const settle = () => {
       const now = Date.now();
+      if (ledgerRef.current) { setStaffNow(now); return; }   // with the server, wages are settled there
       const ids = STAFF_ROLES.map(r => staffAssign[r]).filter((x): x is string => !!x);
       if (ids.length) {
         const r = settleWages(staffRef.current, ids, floraRef.current, now);
@@ -2493,9 +2618,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     settle();
     const t = setInterval(settle, 60000);
     return () => clearInterval(t);
-  }, [staffAssign, staff.length, recordBurnTransaction, showNotification]);
+  }, [staffAssign, staff.length, ledgerOn, recordBurnTransaction, showNotification]);
 
-  const hireCandidate = (c: Candidate): StaffNft | null => {
+  const hireCandidate = async (c: Candidate): Promise<StaffNft | null> => {
+    if (ledgerRef.current) {
+      const r = await intent<{ staff: StaffNft }>('hire', { candidateId: c.id });
+      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo contratar (${r.error})`, 'info'); return null; }
+      applySnapshot(r.snapshot);
+      recordBurnTransaction('BURN_PURCHASE', c.priceFlora, `Yield Bud Empire: Mint NFT de personal (${ROLE_INFO[r.result.staff.role].label} ${r.result.staff.name})`, true);
+      confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+      showNotification(`¡${r.result.staff.name} se une como ${ROLE_INFO[r.result.staff.role].label}! Asígnale su puesto en el Maletín → Plantilla.`, 'success');
+      return r.result.staff;
+    }
     if (staff.some(x => x.id === c.id)) { showNotification('Ese candidato ya es tuyo.', 'info'); return null; }
     if (floraBalance < c.priceFlora) { showNotification(`Saldo insuficiente: contratar cuesta ${c.priceFlora} $FLORA`, 'info'); return null; }
     const hire = hireFromBoard(c, Date.now());
@@ -2506,8 +2640,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return hire;
   };
 
-  const openStaffChest = (id: StaffChestId): StaffNft | null => {
+  const openStaffChest = async (id: StaffChestId): Promise<StaffNft | null> => {
     const chest = STAFF_CHESTS[id];
+    if (ledgerRef.current) {
+      const r = await intent<{ staff: StaffNft }>('staff_chest', { chestId: id });
+      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo abrir el cofre (${r.error})`, 'info'); return null; }
+      applySnapshot(r.snapshot);
+      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `Yield Bud Empire: ${chest.name}`, true);
+      return r.result.staff;
+    }
     if (floraBalance < chest.priceFlora) { showNotification(`Saldo insuficiente: ${chest.name} cuesta ${chest.priceFlora} $FLORA`, 'info'); return null; }
     recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `Yield Bud Empire: ${chest.name}`);
     const r = rollStaff(chest, staffPity[id], Date.now() % 1_000_000_000 + staff.length, Date.now());
@@ -2516,14 +2657,29 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return r.staff;
   };
 
-  const assignStaff = (role: StaffRole, staffId: string | null) => {
+  const assignStaff = async (role: StaffRole, staffId: string | null): Promise<void> => {
+    if (ledgerRef.current) {
+      const r = await intent('assign', { role, staffId });
+      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo asignar (${r.error})`, 'info'); return; }
+      applySnapshot(r.snapshot);
+      const st = staffId ? r.snapshot.staff.find(x => x.id === staffId) : null;
+      if (st) showNotification(`${st.name} ocupa el puesto de ${ROLE_INFO[role].label} · sueldo ${wageOf(st)} $FLORA/día`, 'success');
+      return;
+    }
     const st = staffId ? staff.find(x => x.id === staffId) : null;
     if (staffId && (!st || st.role !== role)) return;
     setStaffAssign(prev => { const n = { ...prev }; if (staffId) n[role] = staffId; else delete n[role]; return n; });
     if (st) showNotification(`${st.name} ocupa el puesto de ${ROLE_INFO[role].label} · sueldo ${wageOf(st)} $FLORA/día`, 'success');
   };
 
-  const rankUpStaff = (staffId: string): boolean => {
+  const rankUpStaff = async (staffId: string): Promise<boolean> => {
+    if (ledgerRef.current) {
+      const r = await intent<{ staff: StaffNft }>('rank_up', { staffId });
+      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo ascender (${r.error})`, 'info'); return false; }
+      applySnapshot(r.snapshot);
+      showNotification(`${r.result.staff.name} asciende a rango ${r.result.staff.rank}. Su sueldo sube a ${wageOf(r.result.staff)} $FLORA/día.`, 'success');
+      return true;
+    }
     const st = staff.find(x => x.id === staffId);
     const cost = st ? rankUpCost(st) : null;
     if (!st || cost === null) { showNotification('Ya está en el rango máximo.', 'info'); return false; }
@@ -2534,8 +2690,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
-  const speedUpConstruction = (): boolean => {
+  const speedUpConstruction = async (): Promise<boolean> => {
     if (!construction) return false;
+    if (ledgerRef.current) {
+      const r = await intent<{ cutMs: number; cost: number; left: number }>('speedup_build');
+      if (!r.ok) { showNotification(r.error === 'speedup_limit' ? 'Ya usaste todas las aceleraciones de hoy. Mañana podrás recortar más; el resto lo pone el tiempo.' : REASON[r.error] ?? `No se pudo acelerar (${r.error})`, 'info'); return false; }
+      applySnapshot(r.snapshot);
+      const cutH = Math.round(r.result.cutMs / 360000) / 10;
+      recordBurnTransaction('BURN_SPEEDUP', r.result.cost, `Yield Bud Empire: Aceleración de obra (−${cutH} h)`, true);
+      showNotification(`Obra acelerada: −${cutH} h por ${r.result.cost} $FLORA quemados. Te quedan ${r.result.left} aceleraciones hoy.`, 'burn');
+      return true;
+    }
     const q = speedUpQuote(construction, Date.now());
     if (!q) { showNotification('Ya usaste todas las aceleraciones de hoy. Mañana podrás recortar más; el resto lo pone el tiempo.', 'info'); return false; }
     if (floraBalance < q.costFlora) { showNotification(`Saldo insuficiente: acelerar cuesta ${q.costFlora} $FLORA`, 'info'); return false; }
@@ -2550,7 +2715,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // the build finishes by itself (also when you were away)
   useEffect(() => {
-    if (!construction) return;
+    if (!ledgerOn || !construction) return;
+    // with the server the build finishes there: ask for the new state when the time is up
+    const t = setTimeout(async () => {
+      const snap = await fetchState();
+      if (snap) { applySnapshot(snap); if (!snap.construction) { confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } }); showNotification('¡Obra terminada! Tu nueva instalación ya está lista.', 'success'); } }
+    }, Math.min(2_000_000_000, Math.max(1500, construction.endsAt - Date.now() + 1500)));
+    return () => clearTimeout(t);
+  }, [ledgerOn, construction?.endsAt]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (ledgerRef.current || !construction) return;
     if (isDone(construction, Date.now())) { finishConstruction(construction); return; }
     const t = setInterval(() => { if (isDone(construction, Date.now())) finishConstruction(construction); }, 5000);
     return () => clearInterval(t);
@@ -2955,10 +3130,24 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { gross, fee, net: gross - fee, ratio: prod.marketValueFlora > 0 ? gross / prod.marketValueFlora : 1 };
   };
 
-  const sellProduct = (productId: string) => {
+  const sellProduct = async (productId: string): Promise<void> => {
     const prod = processedProducts.find(p => p.id === productId);
     const q = quoteSale(productId);
     if (!prod || !q) return;
+    if (ledgerRef.current) {
+      // the server prices the sale (its market depth is the one that counts); the batch leaves the warehouse right away and comes back if refused
+      playHarvestChime();
+      setProcessedProducts(prev => prev.filter(p => p.id !== productId));
+      const r = await intent<{ gross: number; fee: number; net: number; ratio: number }>('sell', { type: prod.type, grams: prod.quantityGrams });
+      if (!r.ok) { setProcessedProducts(prev => [prod, ...prev]); showNotification(REASON[r.error] ?? `No se pudo vender (${r.error})`, 'info'); return; }
+      applySnapshot(r.snapshot);
+      setBrand(prev => ({ ...prev, totalSalesFlora: prev.totalSalesFlora + r.result.gross, reputation: Math.min(100, prev.reputation + 1) }));
+      reportEvent('sell', 1);
+      recordBurnTransaction('BURN_PROCESS', r.result.fee, `Yield Bud Empire Dispensario: comisión y licencia (${prod.name})`, true);
+      const sat = r.result.ratio < 0.8 ? ` · el mercado está saturado: pagó al ${Math.round(r.result.ratio * 100)} % del precio` : '';
+      showNotification(`¡Venta realizada en el Dispensario! Recibiste +${r.result.net} $FLORA (comisión y licencia ${r.result.fee} quemados${sat})`, 'success');
+      return;
+    }
 
     playHarvestChime();
     // the depth is updated with the sale itself (splitting a sale never pays more), then the fee and the licence are burned
@@ -3076,6 +3265,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         burnStats,
         transactions,
         requestAirdrop,
+        ledgerOn,
         claimDaily,
         faucetAt,
         quoteSale,

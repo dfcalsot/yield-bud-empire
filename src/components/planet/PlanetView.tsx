@@ -114,9 +114,9 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
   const landrace = r ? seedBank.find((s) => s.strainTemplate.id === r.landrace) : undefined;
   const forecast = r ? [0, 1, 2, 3].map((k) => weatherOn(r, dayIndexOf(now) + k)) : [];
 
-  const doBuy = (offerId: string, name: string) => {
-    if (buyPlot(offerId, currency)) say2(`¡Ya es tuya, la ${name}! Ahora a sembrar.`, 'happy');
-    else say2('Uy, no te alcanza para esa parcela. Junta más y volvemos.', 'sad');
+  const doBuy = async (offerId: string, name: string) => {
+    if (await buyPlot(offerId, currency)) say2(`¡Ya es tuya, la ${name}! Ahora a sembrar.`, 'happy');
+    else say2('Uy, no pudo ser: no te alcanza o alguien se te adelantó con esa parcela.', 'sad');
   };
 
   const openPlot = (p: OwnedPlot) => {
