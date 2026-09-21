@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { FarmScene } from './FarmScene';
 import { ArrowLeft, Droplets, FlaskConical, Bug, Scissors, Sprout, Sun, Moon, Thermometer, Wind, Sparkles } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { PlantView } from '../PlantView';
@@ -83,6 +84,8 @@ export const PlotScreen: React.FC<{
   const region = REGION_BY_ID[plot.region];
   const [sel, setSel] = useState<number | null>(null);
   const [planting, setPlanting] = useState(false);
+  const [shower, setShower] = useState(0);
+  useEffect(() => { if (!shower) return; const t = window.setTimeout(() => setShower(0), 1700); return () => window.clearTimeout(t); }, [shower]);
 
   const now = siteConditions(plot.region, plot.ratings, nowMs);
   const forecast = [0, 1, 2, 3].map((k) => weatherOn(region, dayIndexOf(nowMs) + k));
@@ -119,7 +122,9 @@ export const PlotScreen: React.FC<{
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         {/* field */}
         <div className="space-y-3">
-          <div className="pl-field p-2.5 sm:p-3">
+          <div className={`pl-field p-2.5 sm:p-3 ${shower ? 'is-wet' : ''}`} style={{ ['--sway' as string]: w.kind === 'storm' ? '1.1s' : w.kind === 'rain' ? '2.2s' : w.kind === 'cold' ? '4.2s' : '3.4s' }}>
+            <div className="-mx-2.5 -mt-2.5 sm:-mx-3 sm:-mt-3 mb-2.5 sm:mb-3 overflow-hidden rounded-t-[16px]"><FarmScene regionId={plot.region} color={region.color} lon={region.lon} nowMs={nowMs} weather={w.kind} /></div>
+            {shower > 0 && <div key={shower} className="pl-shower" aria-hidden>{Array.from({ length: 26 }, (_, i) => <i key={i} style={{ left: `${(i * 37) % 100}%`, animationDelay: `${(i % 9) * 0.07}s`, ['--fall' as string]: `${170 + (i % 5) * 26}px` }} />)}</div>}
             {!now.daylight && <div className="pl-night" />}
             {(w.kind === 'rain' || w.kind === 'storm') && <div className={`pl-rain ${w.kind === 'storm' ? 'pl-storm' : ''}`} />}
             {w.kind === 'storm' && <div className="pl-flash" />}
@@ -134,7 +139,7 @@ export const PlotScreen: React.FC<{
 
           <div className="flex flex-wrap gap-2">
             <button className="care-btn" onClick={() => setPlanting((v) => !v)}><Sprout className="w-3.5 h-3.5" /> Sembrar</button>
-            <button className="care-btn" onClick={() => act(() => waterPlot(plot.id), thirsty ? '¡A regar se ha dicho!' : 'Todas tienen agua de sobra, patrón.', thirsty ? 'happy' : 'idle')}><Droplets className="w-3.5 h-3.5" /> Regar sedientas{thirsty ? ` (${thirsty})` : ''}</button>
+            <button className="care-btn" onClick={() => act(() => { waterPlot(plot.id); setShower((k) => k + 1); }, thirsty ? '¡A regar se ha dicho!' : 'Todas tienen agua de sobra, patrón.', thirsty ? 'happy' : 'idle')}><Droplets className="w-3.5 h-3.5" /> Regar sedientas{thirsty ? ` (${thirsty})` : ''}</button>
             <button className="care-btn" onClick={() => act(() => feedPlot(plot.id), 'Un buen abono y a crecer.')}><FlaskConical className="w-3.5 h-3.5" /> Abonar</button>
             <button className={`care-btn ${sick ? 'care-btn--hot' : ''}`} disabled={sick === 0} onClick={() => act(() => treatPests('all', plot.id), 'Plaga controlada. ¡Bicho fuera!')}><Bug className="w-3.5 h-3.5" /> Tratar plagas{sick ? ` (${sick})` : ''}</button>
             {males > 0 && <button className="care-btn care-btn--male" onClick={() => act(() => removeMales(plot.id), '¡Fuera los machos! Así no polinizan a las hembras.')}>♂ Quitar machos ({males})</button>}

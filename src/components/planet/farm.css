@@ -1,0 +1,35 @@
+/* Farm scene above a plot: transform/opacity only, and switched off by prefers-reduced-motion. */
+.fs-scene { position: relative; display: block; width: 100%; height: 118px; }
+@media (min-width: 640px) { .fs-scene { height: 140px; } }
+.fs-cloud { animation: fsCloud linear infinite; }
+@keyframes fsCloud { from { transform: translateX(-140px); } to { transform: translateX(760px); } }
+.fs-far { animation: fsParaFar 40s ease-in-out infinite alternate; }
+.fs-mid { animation: fsParaMid 32s ease-in-out infinite alternate; }
+@keyframes fsParaFar { from { transform: translateX(-6px); } to { transform: translateX(6px); } }
+@keyframes fsParaMid { from { transform: translateX(8px); } to { transform: translateX(-8px); } }
+.fs-star { animation: fsTwinkle 3s ease-in-out infinite; }
+@keyframes fsTwinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+.fs-fly { animation: fsFly 2.2s ease-in-out infinite; }
+@keyframes fsFly { 0%, 100% { opacity: 0.15; transform: translate(0, 0); } 30% { opacity: 1; } 50% { transform: translate(8px, -7px); opacity: 0.9; } 80% { opacity: 0.8; transform: translate(-6px, 4px); } }
+.fs-bfly { animation: fsBfly 9s ease-in-out infinite; }
+@keyframes fsBfly { 0% { transform: translate(0, 0); } 25% { transform: translate(90px, -22px); } 50% { transform: translate(170px, 6px); } 75% { transform: translate(80px, 20px); } 100% { transform: translate(0, 0); } }
+.fs-wing { transform-box: fill-box; transform-origin: center; animation: fsFlap 0.28s ease-in-out infinite alternate; }
+@keyframes fsFlap { from { transform: scaleX(1); } to { transform: scaleX(0.25); } }
+.fs-sunray { transform-box: fill-box; transform-origin: center; animation: fsSun 60s linear infinite; }
+@keyframes fsSun { to { transform: rotate(360deg); } }
+.fs-mist { animation: fsMist 12s ease-in-out infinite alternate; }
+@keyframes fsMist { from { transform: translateX(-30px); opacity: 0.35; } to { transform: translateX(30px); opacity: 0.6; } }
+.fs-sea { animation: fsSea 3.4s ease-in-out infinite alternate; }
+@keyframes fsSea { from { transform: translateY(0); } to { transform: translateY(2px); } }
+
+/* watering shower over the field */
+.pl-shower { position: absolute; inset: 0; z-index: 7; pointer-events: none; overflow: hidden; }
+.pl-shower i { position: absolute; top: -12px; width: 2px; height: 14px; border-radius: 2px; background: linear-gradient(#e0f2fe, #38bdf8); opacity: 0; animation: plDrop 0.9s ease-in forwards; }
+@keyframes plDrop { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 0.95; } 100% { transform: translateY(var(--fall, 200px)); opacity: 0; } }
+.pl-field.is-wet .pl-tile { transition: background 0.6s; background: radial-gradient(circle at 50% 82%, rgba(20, 40, 60, 0.55), transparent 66%); }
+.pl-field .pl-sway { animation-duration: var(--sway, 3.4s); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-scene *, .pl-shower i { animation: none !important; }
+  .pl-shower { display: none; }
+}

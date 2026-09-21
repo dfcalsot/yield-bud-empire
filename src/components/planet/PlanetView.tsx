@@ -40,6 +40,8 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
   const plot = plots.find((p) => p.id === plotId) ?? null;
   const owned: Partial<Record<RegionId, number>> = {};
   plots.forEach((p) => { owned[p.region] = (owned[p.region] ?? 0) + 1; });
+  const readyByRegion: Partial<Record<RegionId, number>> = {};
+  plots.forEach((p) => { const n = p.plants.filter((x) => x.stage === 'ready_harvest').length; if (n) readyByRegion[p.region] = (readyByRegion[p.region] ?? 0) + n; });
   const totalPlants = plots.reduce((n, p) => n + p.plants.length, 0);
   const totalReady = plots.reduce((n, p) => n + p.plants.filter((x) => x.stage === 'ready_harvest').length, 0);
 
@@ -126,7 +128,7 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
         ) : (
           <>
             <div className="rounded-2xl overflow-hidden border border-sky-400/20 shadow-[0_0_40px_-20px_rgba(56,189,248,0.6)]">
-              <WorldMap owned={owned} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} />
+              <WorldMap owned={owned} ready={readyByRegion} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} />
             </div>
 
             {r && sale ? (

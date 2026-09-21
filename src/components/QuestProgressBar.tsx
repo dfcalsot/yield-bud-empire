@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { openDiary } from '../ui/events';
 import { 
   Trophy, 
   Sparkles, 
@@ -91,7 +92,7 @@ export const QuestProgressBar: React.FC = () => {
         <div className="flex items-center gap-2.5 ml-auto sm:ml-0">
           {completedUnclaimed.length > 0 ? (
             <button
-              onClick={() => setIsExpanded(true)}
+              onClick={openDiary}
               className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 rounded-lg text-xs font-bold font-mono transition cursor-pointer shadow-sm animate-pulse"
             >
               <Gift className="w-3.5 h-3.5" />
@@ -105,9 +106,9 @@ export const QuestProgressBar: React.FC = () => {
           )}
 
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={openDiary}
             className="flex items-center gap-1 text-xs text-neutral-400 hover:text-white bg-neutral-800/80 hover:bg-neutral-800 px-2.5 py-1.5 rounded-lg transition cursor-pointer font-mono"
-            aria-label={isExpanded ? 'Contraer misiones' : 'Expandir misiones'}
+            aria-label="Abrir el diario (tecla D)"
           >
             <span className="hidden sm:inline">{isExpanded ? 'Ocultar' : 'Ver Misiones'}</span>
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

@@ -77,6 +77,7 @@ import {
 import { BALANCE } from '../sim/balance';
 import { bump as bumpMissions, claimErrand, claimStory, emptyMissions, normalizeMissions, rewardSummary, type MissionEvent, type MissionReward, type MissionState } from '../sim/missions';
 import type { NpcKind } from '../components/npc/Npc';
+import { claimStep as claimTutStep, emptyTutorial, normalizeTutorial, skipStep as skipTutStep, startTutorial as startTutState, type TutorialState } from '../sim/tutorial';
 export { calculateVpd };
 
 // Generate realistic Solana signature
@@ -199,6 +200,12 @@ interface GameContextType {
   reportEvent: (event: MissionEvent, n?: number) => void;
   claimStoryMission: (id: string) => string | null;
   claimErrandMission: (npc: NpcKind) => string | null;
+  /** Chrono's tutorial (sim/tutorial.ts) */
+  tutorial: TutorialState;
+  startTutorial: () => void;
+  claimTutorialStep: () => string | null;
+  skipTutorialStep: () => void;
+  patchTutorial: (p: Partial<TutorialState>) => void;
   care: { rating: number; cleanReadyInHours: number; pests: number; plotPests: number; males: number; plotMales: number; pollinated: number; garbage: number; gardenerLevel: 0 | 1 | 2; gardenerDays: number };
   treatPests: (scope: 'selected' | 'all', plotId?: string) => void;
   cleanRoom: () => boolean;
@@ -428,6 +435,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const missionsRef = useRef<MissionState>(missions);
   const applyMissions = useCallback((next: MissionState) => { missionsRef.current = next; setMissions(next); }, []);
   const reportEvent = useCallback((event: MissionEvent, n = 1) => { applyMissions(bumpMissions(missionsRef.current, event, n)); }, [applyMissions]);
+  const [tutorial, setTutorial] = useState<TutorialState>(emptyTutorial);
+  const tutorialRef = useRef<TutorialState>(tutorial);
+  const applyTutorial = useCallback((next: TutorialState) => { tutorialRef.current = next; setTutorial(next); }, []);
   const plotsRef = useRef<OwnedPlot[]>(plots);
   plotsRef.current = plots;
   const [autoWaterActive, setAutoWaterActive] = useState<boolean>(false);
@@ -717,6 +727,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       avatars,
       chestPity,
       missions,
+      tutorial,
       savedAt: Date.now()
     });
   }, [
@@ -747,12 +758,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     plots,
     avatars,
     chestPity,
-    missions
+    missions,
+    tutorial
   ]);
 
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
     const saved = loadUserData(userId);
     applyMissions(normalizeMissions(saved?.missions));
+    applyTutorial(normalizeTutorial(saved?.tutorial));
     if (saved) {
       if (typeof saved.floraBalance === 'number') setFloraBalance(saved.floraBalance);
       if (typeof saved.solBalance === 'number') setSolBalance(saved.solBalance);
@@ -811,7 +824,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSeedInventory({ seed_chrono_og: 1 });
       }
     }
-  }, [applyMissions]);
+  }, [applyMissions, applyTutorial]);
 
   // --- SOLANA NETWORKS & WALLETS ---
   const refreshLiveBalance = useCallback(async (): Promise<number> => {
@@ -2814,6 +2827,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return c.say;
   };
 
+  // --- CHRONO'S TUTORIAL ---
+  const startTutorial = () => applyTutorial(startTutState(tutorialRef.current, missionsRef.current));
+  const claimTutorialStep = (): string | null => {
+    const c = claimTutStep(tutorialRef.current, missionsRef.current);
+    if (!c) return null;
+    applyTutorial(c.state);
+    grantReward(c.reward, c.title);
+    return c.say;
+  };
+  const skipTutorialStep = () => applyTutorial(skipTutStep(tutorialRef.current, missionsRef.current));
+  const patchTutorial = (p: Partial<TutorialState>) => applyTutorial({ ...tutorialRef.current, ...p });
+
   return (
     <GameContext.Provider
       value={{
@@ -2875,6 +2900,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         reportEvent,
         claimStoryMission,
         claimErrandMission,
+        tutorial,
+        startTutorial,
+        claimTutorialStep,
+        skipTutorialStep,
+        patchTutorial,
         plots,
         plotsForSale,
         buyPlot,

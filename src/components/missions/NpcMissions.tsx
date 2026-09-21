@@ -1,5 +1,5 @@
-import React from 'react';
-import { CalendarClock, Check, Gift, MessageCircle, ScrollText } from 'lucide-react';
+import React, { useState } from 'react';
+import { CalendarClock, Check, ChevronDown, Gift, MessageCircle, ScrollText } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { CATALOG_BY_ID } from '../../economy/catalog';
 import { npcName, type Mood, type NpcKind } from '../npc/Npc';
@@ -10,7 +10,8 @@ import { activeStory, claimableCount, errandOf, rewardSummary, storyOf, storyPro
  * The missions a character hands out: the next story mission (they unlock in order) and today's errand.
  * `onSay` lets the view's character speak — the request when you ask, the thanks when you claim.
  */
-export const NpcMissions: React.FC<{ npc: NpcKind; onSay?: (text: string, mood: Mood) => void; className?: string }> = ({ npc, onSay, className = '' }) => {
+export const NpcMissions: React.FC<{ npc: NpcKind; onSay?: (text: string, mood: Mood) => void; className?: string; defaultOpen?: boolean }> = ({ npc, onSay, className = '', defaultOpen = false }) => {
+  const [open, setOpen] = useState(defaultOpen);
   const { missions, claimStoryMission, claimErrandMission, seedBank } = useGame();
   const story = activeStory(missions, npc);
   const errand = errandOf(missions, npc);
@@ -24,19 +25,21 @@ export const NpcMissions: React.FC<{ npc: NpcKind; onSay?: (text: string, mood: 
   const say = (text: string | null, mood: Mood = 'happy') => { if (text) onSay?.(text, mood); };
 
   return (
-    <section className={`hud-panel p-3.5 ${className}`} aria-label={`Misiones de ${firstName}`}>
-      <header className="flex items-center gap-2 mb-2.5">
-        <ScrollText className="w-4 h-4 text-amber-300" aria-hidden />
+    <section className={`hud-panel ${open ? 'p-3.5' : 'px-3.5 py-2.5'} ${className}`} aria-label={`Misiones de ${firstName}`}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className={`flex w-full items-center gap-2 text-left cursor-pointer ${open ? 'mb-2.5' : ''}`}>
+        <ScrollText className="w-4 h-4 text-amber-300 shrink-0" aria-hidden />
         <h3 className="text-[13px] font-semibold text-emerald-50 tracking-wide">Misiones de {firstName}</h3>
         <span className="text-[10.5px] font-mono text-emerald-300/70">{doneCount}/{line.length}</span>
+        {!open && !ready && <span className="hidden sm:inline text-[11px] text-neutral-400 truncate">· {story ? story.title : 'historia completada'}{errand && !errand.claimed ? ` · recado: ${errand.def.title}` : ''}</span>}
         {ready > 0 && (
           <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-amber-400/15 border border-amber-300/50 px-2 py-0.5 text-[10.5px] font-mono text-amber-200 animate-pulse">
             <Gift className="w-3 h-3" aria-hidden /> {ready} por reclamar
           </span>
         )}
-      </header>
+        <ChevronDown className={`w-4 h-4 text-neutral-400 transition ${ready > 0 ? '' : 'ml-auto'} ${open ? 'rotate-180' : ''}`} aria-hidden />
+      </button>
 
-      <div className="grid gap-2.5 md:grid-cols-2">
+      {open && <div className="grid gap-2.5 md:grid-cols-2">
         {story ? (
           <MissionRow
             kind="Historia"
@@ -66,7 +69,7 @@ export const NpcMissions: React.FC<{ npc: NpcKind; onSay?: (text: string, mood: 
             onClaim={() => say(claimErrandMission(npc))}
           />
         ))}
-      </div>
+      </div>}
     </section>
   );
 };

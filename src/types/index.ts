@@ -419,6 +419,8 @@ export interface UserAccountData {
   chestPity?: import('../sim/avatars').PityMap;
   /** NPC missions: event counters and claims (sim/missions.ts) */
   missions?: import('../sim/missions').MissionState;
+  /** Chrono's tutorial progress (sim/tutorial.ts) */
+  tutorial?: import('../sim/tutorial').TutorialState;
   /** set on a local save whose contents were brought into a server account (kept as a hidden backup) */
   migratedTo?: string;
 }

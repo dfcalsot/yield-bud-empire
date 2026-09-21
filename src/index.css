@@ -1101,3 +1101,17 @@ body::before {
   box-shadow: -30px 0 60px -20px rgba(0, 0, 0, 0.8); animation: bagIn 0.28s ease-out; }
 @keyframes bagIn { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .bag-drawer { animation: none; } }
+
+/* Chrono's tour ring (never blocks clicks) */
+.tour-ring { position: fixed; z-index: 70; pointer-events: none; border-radius: 14px; border: 2px solid #b8f35a;
+  box-shadow: 0 0 0 4px rgba(184, 243, 90, 0.18), 0 0 26px 4px rgba(184, 243, 90, 0.55); transition: left 0.25s, top 0.25s, width 0.25s, height 0.25s;
+  animation: tourPulse 1.4s ease-in-out infinite; }
+@keyframes tourPulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(184, 243, 90, 0.15), 0 0 18px 2px rgba(184, 243, 90, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(184, 243, 90, 0.10), 0 0 34px 8px rgba(184, 243, 90, 0.7); } }
+@media (prefers-reduced-motion: reduce) { .tour-ring { animation: none; } }
+
+/* World map: trade routes and harvest-ready flare */
+.pl-route { stroke-dasharray: 5 7; animation: plRoute 2.2s linear infinite; }
+@keyframes plRoute { to { stroke-dashoffset: -24; } }
+.pl-flare { transform-box: fill-box; transform-origin: center; animation: plFlare 1.6s ease-out infinite; }
+@keyframes plFlare { 0% { transform: scale(0.7); opacity: 0.95; } 100% { transform: scale(1.9); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pl-route, .pl-flare { animation: none; } }

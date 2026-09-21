@@ -23,17 +23,34 @@ import { TxToast } from './components/TxToast';
 import { QuestProgressBar } from './components/QuestProgressBar';
 import { Dock } from './components/Dock';
 import { BriefcaseDrawer } from './components/bag/BriefcaseDrawer';
+import { GuideChrono } from './components/guide/GuideChrono';
+import { DiaryDrawer } from './components/diary/DiaryDrawer';
+import { WelcomeSheet } from './components/guide/WelcomeSheet';
 import { ResourceBar } from './components/ResourceBar';
 import { SubTabs } from './components/SubTabs';
 import { ParticleField } from './components/game/GameUI';
 import { NAV_GROUPS, TAB_ZONE, groupOfTab, type TabId } from './nav';
 
 function YieldBudEmpireApp() {
+  const { indoorPlants, reportEvent } = useGame();
   const [currentTab, setCurrentTab] = useState<string>('cultivo');
   const [isWalletModalOpen, setIsWalletModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [bagOpen, setBagOpen] = useState<boolean>(false);
+  const [diaryOpen, setDiaryOpen] = useState<boolean>(false);
+
+  // the tutorial counts when the briefcase is opened
+  useEffect(() => { if (bagOpen) reportEvent('openbag'); }, [bagOpen, reportEvent]);
+
+  // any component can ask App to open the briefcase (see ui/events.ts)
+  useEffect(() => {
+    const on = () => setBagOpen(true);
+    const onDiary = () => setDiaryOpen(true);
+    window.addEventListener('ybe:open-bag', on);
+    window.addEventListener('ybe:open-diary', onDiary);
+    return () => { window.removeEventListener('ybe:open-bag', on); window.removeEventListener('ybe:open-diary', onDiary); };
+  }, []);
 
   // `I` opens / closes the briefcase (ignored while typing)
   useEffect(() => {
@@ -42,6 +59,7 @@ function YieldBudEmpireApp() {
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === 'i' || e.key === 'I') setBagOpen((v) => !v);
+      if (e.key === 'd' || e.key === 'D') setDiaryOpen((v) => !v);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -52,13 +70,13 @@ function YieldBudEmpireApp() {
   const [marketCat, setMarketCat] = useState<string | undefined>(undefined);
 
   // tab title flags plants that need water (this is a real-time game: the player has to come back)
-  const { indoorPlants } = useGame();
   useEffect(() => {
     const thirsty = indoorPlants.filter(isThirsty).length;
     document.title = `${thirsty ? `(💧${thirsty}) ` : ''}Yield Bud Empire: El Multiverso Botánico Descentralizado`;
   }, [indoorPlants]);
 
   const goToTab = (tab: string) => {
+    if (tab !== currentTab) { reportEvent('visit'); if (tab === 'planeta') reportEvent('planet'); }
     setMarketCat(undefined);
     setCurrentTab(tab);
     setLastTabByGroup((prev) => ({ ...prev, [groupOfTab(tab).id]: tab }));
@@ -120,6 +138,9 @@ function YieldBudEmpireApp() {
         {currentTab === 'whitepaper' && <WhitepaperView />}
       </main>
 
+      <WelcomeSheet />
+      <GuideChrono currentTab={currentTab} />
+      <DiaryDrawer open={diaryOpen} onClose={() => setDiaryOpen(false)} />
       <BriefcaseDrawer open={bagOpen} onClose={() => setBagOpen(false)} onNavigate={goToTab} />
 
       {/* Global Toast Alerts */}

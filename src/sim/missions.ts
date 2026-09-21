@@ -15,7 +15,8 @@ export type MissionEvent =
   | 'water' | 'feed' | 'plant' | 'harvest' | 'plot'      // cultivation
   | 'buy' | 'seedbuy' | 'sell'                            // trade
   | 'fertigate' | 'lab' | 'certify'                       // science
-  | 'breed' | 'patent';                                   // genetics
+  | 'breed' | 'patent'                                    // genetics
+  | 'visit' | 'planet' | 'openbag' | 'gauges';            // UI moments (used by the tutorial)
 
 export interface MissionReward {
   /** catalogue ids granted as fresh lots (qty defaults to 1) */

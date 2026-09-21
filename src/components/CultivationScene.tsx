@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Droplet, Scissors, Flame, Zap, Crown, Layers, Grid3X3, SlidersHorizontal, ChevronDown, Sprout, Bug } from 'lucide-react';
+import { Droplet, Scissors, Flame, Zap, Crown, Layers, Grid3X3, SlidersHorizontal, ChevronDown, Sprout, Bug, Briefcase, Hand } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { GROW_ROOMS_CONFIG } from '../data/initialData';
 import { PlantView } from './PlantView';
@@ -9,6 +9,8 @@ import { NutrientBottle, FlaskLeaf, CannabisLeaf } from './icons/CannabisIcons';
 import { StatBar } from './game/GameUI';
 import type { GrowStage } from '../types';
 import { formatDuration, hoursUntilMoisture, isHungry, isThirsty, PEST_INFO } from '../sim/engine';
+import { nextActionFor } from '../sim/nextAction';
+import { openBag } from '../ui/events';
 
 interface CultivationSceneProps {
   onOpenSeedModal: () => void;
@@ -82,15 +84,43 @@ const MiniGauge: React.FC<{
   );
 };
 
+
+/** One of the three gauge groups (Clima / Raíz / Luz y aire): a status dot, a one-line summary, and the detail on demand.
+ *  A group with something out of range opens by itself and says what is wrong. */
+interface GaugeSpec { label: string; value: number; display: string; min: number; max: number; okMin: number; okMax: number }
+const GaugeGroup: React.FC<{ title: string; items: GaugeSpec[]; onOpen?: () => void }> = ({ title, items, onOpen }) => {
+  const [open, setOpen] = useState(false);
+  const bad = items.filter((g) => g.value < g.okMin || g.value > g.okMax);
+  const show = open || bad.length > 0;
+  const dot = bad.length ? '#fbbf24' : '#a3e635';
+  return (
+    <div className="shrink-0 rounded-xl bg-neutral-950/80 border" style={{ borderColor: bad.length ? 'rgba(251,191,36,0.5)' : 'rgba(163,230,53,0.22)' }}>
+      <button onClick={() => { if (!open) onOpen?.(); setOpen((v) => !v); }} aria-expanded={show} className="flex items-center gap-1.5 w-full px-2 py-1.5 text-left cursor-pointer">
+        <span className="text-[9.5px] font-mono uppercase tracking-[0.16em] text-neutral-200">{title}</span>
+        <span className="ml-auto w-2 h-2 rounded-full" style={{ background: dot, boxShadow: `0 0 8px ${dot}` }} aria-label={bad.length ? 'Atención' : 'Óptimo'} />
+        <ChevronDown className={`w-3 h-3 text-neutral-400 transition ${show ? 'rotate-180' : ''}`} />
+      </button>
+      {!show && <div className="px-2 pb-1.5 -mt-0.5 text-[10px] font-mono text-neutral-400 truncate">{items.map((g) => g.display).join(' · ')}</div>}
+      {show && (
+        <div className="px-1 pb-1.5 space-y-1">
+          {items.map((g) => <MiniGauge key={g.label} {...g} />)}
+          {bad.map((g) => <p key={g.label} className="px-1 text-[10px] leading-snug text-amber-300">{g.label} {g.value < g.okMin ? 'bajo' : 'alto'}: lo ideal es {g.okMin}–{g.okMax}.</p>)}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const SkillButton: React.FC<{
   label: string;
   sub?: string;
   badge?: string;
   tone: 'cyan' | 'emerald' | 'purple' | 'amber' | 'neutral';
   pulse?: boolean;
+  tour?: string;
   onClick: () => void;
   children: React.ReactNode;
-}> = ({ label, sub, badge, tone, pulse, onClick, children }) => {
+}> = ({ label, sub, badge, tone, pulse, tour, onClick, children }) => {
   const tones = {
     cyan: 'border-cyan-300/40 text-cyan-200 hover:bg-cyan-400/15 hover:shadow-[0_0_18px_rgba(34,211,238,0.5)]',
     emerald: 'border-emerald-300/40 text-emerald-200 hover:bg-emerald-400/15 hover:shadow-[0_0_18px_rgba(52,211,153,0.5)]',
@@ -103,6 +133,7 @@ const SkillButton: React.FC<{
       onClick={onClick}
       title={label}
       aria-label={label}
+      data-tour={tour}
       className={`relative shrink-0 w-14 h-[3.75rem] sm:w-[3.3rem] sm:h-[3.05rem] flex flex-col items-center justify-center gap-0.5 rounded-xl bg-neutral-950/80 border transition active:scale-95 cursor-pointer ${tones[tone]} ${pulse ? 'cf-ring' : ''}`}
     >
       {children}
@@ -120,7 +151,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const {
     activePlant, indoorPlants, selectedPlantIndex, selectPlant,
     waterPlant, feedNutrients, trainPlant, speedUpGrowth, harvestPlant, saveCurrentPlantAsMotherOrFather,
-    currentRoom, switchGrowRoom, currentFacility, rawFlowerGrams, trimGrams, co2Ppm, getPlantEta, care,
+    currentRoom, switchGrowRoom, currentFacility, rawFlowerGrams, trimGrams, co2Ppm, getPlantEta, care, reportEvent,
   } = useGame();
 
   const [roomMenu, setRoomMenu] = useState(false);
@@ -326,6 +357,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
             <div><span className="text-neutral-500 block leading-none">TRIM</span><span className="text-amber-300 font-bold text-xs">{trimGrams}g</span></div>
           </div>
           <div className="flex gap-1.5">
+            <button onClick={openBag} data-tour="bag-scene" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-emerald-300/40 text-[11px] font-semibold text-emerald-200 hover:bg-emerald-400/10 cursor-pointer" title="Maletín (I)"><Briefcase className="w-3.5 h-3.5" /> Maletín</button>
             <button onClick={onShowRoom} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-neutral-600/40 text-[11px] font-semibold text-neutral-200 hover:border-emerald-300/50 cursor-pointer transition" title="Ver las 30 plantas de la sala">
               <Grid3X3 className="w-3.5 h-3.5 text-emerald-300" /> Sala{thirstyCount > 0 && <span className="px-1 rounded bg-cyan-400 text-neutral-950 text-[9px] font-black" title="Plantas con sed">💧{thirstyCount}</span>}{readyCount > 0 && <span className="px-1 rounded bg-amber-400 text-neutral-950 text-[9px] font-black">{readyCount}</span>}
             </button>
@@ -350,19 +382,22 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
 
       {/* ── action rail ── */}
       {activePlant && (
-        <div className="absolute z-30 flex gap-2 left-2 right-2 overflow-x-auto scrollbar-none bottom-[10.6rem] sm:right-auto sm:overflow-visible sm:left-3 sm:bottom-[5.3rem] sm:top-[9.4rem] sm:flex-col sm:justify-center sm:gap-1.5 pointer-events-none [&>*]:pointer-events-auto">
-          <SkillButton label="Regar" sub={`Hum ${activePlant.soilMoisture}%`} tone="cyan" pulse={thirsty || activePlant.soilMoisture < 55} onClick={() => { waterPlant(); pop('+ Riego', '#22d3ee'); }}>
+        <div className="absolute z-30 flex gap-2 left-2 right-2 overflow-x-auto scrollbar-none bottom-[10.6rem] sm:right-auto sm:overflow-visible sm:left-3 sm:bottom-[5.3rem] sm:top-[10.9rem] sm:flex-col sm:justify-center sm:gap-1.5 pointer-events-none [&>*]:pointer-events-auto">
+          <span className="hidden sm:block text-center text-[8px] font-mono uppercase tracking-[0.2em] text-neutral-500">Cuidar</span>
+          <SkillButton tour="water" label="Regar" sub={`Hum ${activePlant.soilMoisture}%`} tone="cyan" pulse={thirsty || activePlant.soilMoisture < 55} onClick={() => { waterPlant(); pop('+ Riego', '#22d3ee'); }}>
             <Droplet className="w-5 h-5" />
           </SkillButton>
-          <SkillButton label="Abonar N-P-K" sub={`EC ${activePlant.ecLevel}`} tone="emerald" pulse={hungry} onClick={() => { feedNutrients(); pop('+ N-P-K', '#34d399'); }}>
+          <SkillButton tour="feed" label="Abonar N-P-K" sub={`EC ${activePlant.ecLevel}`} tone="emerald" pulse={hungry} onClick={() => { feedNutrients(); pop('+ N-P-K', '#34d399'); }}>
             <NutrientBottle className="w-5 h-5" />
           </SkillButton>
           <SkillButton label="Entrenamiento LST" sub="LST +12%" tone="purple" onClick={() => { trainPlant('Topping & LST'); pop('LST +12%', '#e879f9'); }}>
             <Scissors className="w-5 h-5" />
           </SkillButton>
+          <span className="hidden sm:block text-center text-[8px] font-mono uppercase tracking-[0.2em] text-neutral-500">Acelerar</span>
           <SkillButton label="Acelerar ciclo (quema 25 $FLORA)" sub="Acelerar" badge="25" tone="amber" pulse onClick={() => { if (speedUpGrowth()) pop('- 25 $FLORA', '#fbbf24'); }}>
             <span className="flex items-center"><Flame className="w-5 h-5" /><Zap className="w-3 h-3 -ml-1" /></span>
           </SkillButton>
+          <span className="hidden sm:block text-center text-[8px] font-mono uppercase tracking-[0.2em] text-neutral-500">Más</span>
           <SkillButton label="Tablas de nutrición" sub="Nutrición" tone="neutral" onClick={onOpenNutrients}>
             <FlaskLeaf className="w-5 h-5" />
           </SkillButton>
@@ -374,17 +409,57 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
 
       {/* ── gauges ── */}
       {activePlant && (
-        <div className="absolute z-30 flex gap-1.5 overflow-x-auto scrollbar-none inset-x-2 bottom-[6.2rem] sm:inset-x-auto sm:right-3 sm:bottom-[5.3rem] sm:top-[9.4rem] sm:flex-col sm:justify-center sm:gap-1 sm:overflow-visible sm:w-[8.6rem] pointer-events-none [&>*]:pointer-events-auto">
-          <MiniGauge label="Temp" value={activePlant.temperatureC} display={`${activePlant.temperatureC}°C`} min={15} max={35} okMin={22} okMax={28} />
-          <MiniGauge label="Humedad" value={activePlant.relativeHumidity} display={`${activePlant.relativeHumidity}%`} min={20} max={90} okMin={40} okMax={65} />
-          <MiniGauge label="VPD" value={activePlant.vpdKpa} display={`${activePlant.vpdKpa} kPa`} min={0} max={2.5} okMin={0.8} okMax={1.4} />
-          <MiniGauge label="Sustrato" value={activePlant.soilMoisture} display={`${activePlant.soilMoisture}%`} min={0} max={100} okMin={40} okMax={85} />
-          <MiniGauge label="pH" value={activePlant.phLevel} display={`${activePlant.phLevel}`} min={5} max={8} okMin={5.8} okMax={6.5} />
-          <MiniGauge label="EC" value={activePlant.ecLevel} display={`${activePlant.ecLevel} mS`} min={0} max={4} okMin={1} okMax={2.4} />
-          <MiniGauge label="PPFD" value={activePlant.ppfdLightIntensity} display={`${activePlant.ppfdLightIntensity}`} min={0} max={1200} okMin={400} okMax={1000} />
-          <MiniGauge label="CO₂" value={co2Ppm} display={`${co2Ppm}`} min={300} max={1600} okMin={700} okMax={1400} />
+        <div className="absolute z-30 flex gap-1.5 overflow-x-auto scrollbar-none inset-x-2 bottom-[6.2rem] sm:inset-x-auto sm:right-3 sm:bottom-[5.3rem] sm:top-[9.4rem] sm:flex-col sm:justify-center sm:gap-1.5 sm:overflow-visible sm:w-[9.6rem] pointer-events-none [&>*]:pointer-events-auto" data-tour="gauges">
+          <GaugeGroup title="Clima" onOpen={() => reportEvent('gauges')} items={[
+            { label: 'Temp', value: activePlant.temperatureC, display: `${activePlant.temperatureC}°C`, min: 15, max: 35, okMin: 22, okMax: 28 },
+            { label: 'Humedad', value: activePlant.relativeHumidity, display: `${activePlant.relativeHumidity}%`, min: 20, max: 90, okMin: 40, okMax: 65 },
+            { label: 'VPD', value: activePlant.vpdKpa, display: `${activePlant.vpdKpa} kPa`, min: 0, max: 2.5, okMin: 0.8, okMax: 1.4 },
+          ]} />
+          <GaugeGroup title="Raíz" onOpen={() => reportEvent('gauges')} items={[
+            { label: 'Sustrato', value: activePlant.soilMoisture, display: `${activePlant.soilMoisture}%`, min: 0, max: 100, okMin: 40, okMax: 85 },
+            { label: 'pH', value: activePlant.phLevel, display: `${activePlant.phLevel}`, min: 5, max: 8, okMin: 5.8, okMax: 6.5 },
+            { label: 'EC', value: activePlant.ecLevel, display: `${activePlant.ecLevel} mS`, min: 0, max: 4, okMin: 1, okMax: 2.4 },
+          ]} />
+          <GaugeGroup title="Luz y aire" onOpen={() => reportEvent('gauges')} items={[
+            { label: 'PPFD', value: activePlant.ppfdLightIntensity, display: `${activePlant.ppfdLightIntensity}`, min: 0, max: 1200, okMin: 400, okMax: 1000 },
+            { label: 'CO₂', value: co2Ppm, display: `${co2Ppm}`, min: 300, max: 1600, okMin: 700, okMax: 1400 },
+          ]} />
         </div>
       )}
+
+      {/* ── next recommended action ── */}
+      {!canHarvest && (() => {
+        const next = nextActionFor({
+          hasPlant: !!activePlant,
+          harvestReady: false,
+          pest: activePlant?.pest ? PEST_INFO[activePlant.pest.kind].label : null,
+          thirsty, hungry,
+          maleWarn: !!activePlant && activePlant.sex === 'male' && activePlant.progressPercent >= 30,
+          thirstyOthers: Math.max(0, thirstyCount - (thirsty ? 1 : 0)),
+          etaText: isFinite(eta) ? formatDuration(eta) : '—',
+        });
+        const run = () => {
+          if (next.kind === 'seed') onOpenSeedModal();
+          else if (next.kind === 'water') { waterPlant(); pop('+ Riego', '#22d3ee'); }
+          else if (next.kind === 'feed') { feedNutrients(); pop('+ N-P-K', '#34d399'); }
+          else if (next.kind === 'pest' || next.kind === 'male') setCareOpen(true);
+          else if (next.kind === 'room-thirst') onShowRoom();
+        };
+        return (
+          <div className="absolute z-30 inset-x-0 bottom-[15.4rem] sm:bottom-[5.9rem] flex justify-center px-4 sm:px-16 pointer-events-none" data-tour="next-action">
+            <button
+              onClick={run}
+              disabled={!next.actionable}
+              title={next.hint}
+              className={`pointer-events-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-bold transition ${next.actionable ? 'bg-emerald-300 text-neutral-950 shadow-[0_0_24px_-4px_rgba(190,242,100,.9)] hover:bg-emerald-200 cf-ring cursor-pointer' : 'bg-neutral-950/80 text-neutral-300 border border-white/10 cursor-default'}`}
+            >
+              {next.actionable ? <Hand className="w-4 h-4" aria-hidden /> : <Sprout className="w-4 h-4 text-emerald-300" aria-hidden />}
+              <span className="text-[9px] font-mono uppercase tracking-[0.18em] opacity-70">{next.actionable ? 'Siguiente' : 'Estado'}</span>
+              {next.label}
+            </button>
+          </div>
+        );
+      })()}
 
       {/* ── harvest call-to-action ── */}
       {canHarvest && activePlant && (

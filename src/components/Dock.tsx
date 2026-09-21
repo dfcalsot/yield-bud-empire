@@ -15,13 +15,14 @@ export const Dock: React.FC<DockProps> = ({ currentTab, onSelectGroup }) => {
       <nav
         aria-label="Navegación principal"
         className="pointer-events-auto flex items-end gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-2xl bg-neutral-950/85 backdrop-blur-xl border border-emerald-400/25 shadow-[0_0_30px_-6px_rgba(52,211,153,0.35),0_10px_40px_rgba(0,0,0,0.6)]"
-      >
+       data-tour="dock">
         {NAV_GROUPS.map((group) => {
           const Icon = group.icon;
           const isActive = group.id === activeGroup.id;
           return (
             <button
               key={group.id}
+              data-tour={`dock-${group.id}`}
               onClick={() => onSelectGroup(group.id)}
               aria-current={isActive ? 'page' : undefined}
               title={group.tabs.map((t) => NAV_TABS[t].label).join(' · ')}
