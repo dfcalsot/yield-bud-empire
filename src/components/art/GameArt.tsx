@@ -214,7 +214,7 @@ export const WhitepaperHeroArt: React.FC<{ className?: string }> = ({ className 
   const nodes = [[90, 70], [230, 150], [380, 60], [520, 140], [660, 50], [800, 130], [940, 70], [1080, 150], [1220, 60], [300, 250], [610, 260], [900, 250], [1160, 270]];
   const links = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [1, 9], [3, 10], [5, 11], [7, 12], [9, 10], [10, 11], [11, 12], [2, 4], [6, 8]];
   return (
-    <svg viewBox="0 0 1400 320" className={`fa-art ${className ?? ''}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label="Red de ChronoFlora">
+    <svg viewBox="0 0 1400 320" className={`fa-art ${className ?? ''}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label="Red de Yield Bud Empire">
       <defs><radialGradient id={`${p}n`} cx="50%" cy="50%" r="50%"><stop offset="0" stopColor="#34d399" stopOpacity="0.9" /><stop offset="1" stopColor="#34d399" stopOpacity="0" /></radialGradient></defs>
       {links.map(([a, b], i) => <line key={i} className="fa-flow" x1={nodes[a][0]} y1={nodes[a][1]} x2={nodes[b][0]} y2={nodes[b][1]} stroke="#34d399" strokeOpacity="0.4" strokeWidth="1.4" style={{ animationDuration: `${1.6 + (i % 4) * 0.5}s` }} />)}
       {nodes.map(([x, y], i) => <g key={i}><circle className="fa-pulse" cx={x} cy={y} r="26" fill={`url(#${p}n)`} style={{ animationDelay: `${i * 0.3}s` }} /><circle cx={x} cy={y} r="4.5" fill="#a7f3d0" /></g>)}

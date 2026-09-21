@@ -8,17 +8,21 @@ import {
   Wallet,
   Cpu,
   Award,
-  User
+  User,
+  Briefcase
 } from 'lucide-react';
 import { CannabisLeaf, LeafCoin } from './icons/CannabisIcons';
 import { Avatar } from './profile/AvatarArt';
 import { SOLANA_NETWORKS } from '../utils/solana';
+import { useBagCount } from './bag/BriefcaseDrawer';
+import { YieldMark } from './brand/YieldLogo';
 
 interface NavbarProps {
   setCurrentTab: (tab: string) => void;
   onOpenWalletModal: () => void;
   onOpenAuthModal: () => void;
   onOpenProfileModal: () => void;
+  onOpenBag?: () => void;
 }
 
 /** Top HUD: identity, balances and wallet. Section navigation lives in the bottom Dock. */
@@ -26,8 +30,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentTab,
   onOpenWalletModal,
   onOpenAuthModal,
-  onOpenProfileModal
+  onOpenProfileModal,
+  onOpenBag
 }) => {
+  const bagCount = useBagCount();
   const { 
     floraBalance, 
     solBalance, 
@@ -98,15 +104,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={() => setCurrentTab('cultivo')}
           className="flex items-center gap-2.5 cursor-pointer select-none group shrink-0"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 via-emerald-800 to-neutral-950 p-0.5 shadow-lg shadow-emerald-950/50 flex items-center justify-center border border-emerald-500/30 group-hover:border-emerald-400 transition">
-            <div className="w-full h-full bg-neutral-950/80 rounded-[10px] flex items-center justify-center">
-              <CannabisLeaf className="w-6 h-6 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.8)] group-hover:scale-110 transition-transform" />
-            </div>
-          </div>
+          <YieldMark size={46} animated className="shrink-0 group-hover:scale-105 transition-transform" />
           <div className="hidden sm:block">
             <div className="flex items-center gap-1.5">
               <span className="text-lg font-bold tracking-tight text-white font-serif">
-                CHRONO<span className="text-emerald-400">FLORA</span>
+                YIELD BUD <span className="text-emerald-400">EMPIRE</span>
               </span>
               <span className="hidden md:inline text-[10px] uppercase font-mono px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 text-neutral-300 rounded">
                 Solana
@@ -148,6 +150,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="font-mono text-xs font-bold text-amber-300 leading-tight">Nv. {playerLevel}</span>
             </div>
           </div>
+
+          {/* Player briefcase */}
+          {onOpenBag && (
+            <button
+              onClick={onOpenBag}
+              data-tour="bag"
+              aria-label="Abrir maletín (tecla I)"
+              title="Maletín (I)"
+              className="relative p-2 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition cursor-pointer"
+            >
+              <Briefcase className="w-4 h-4 text-emerald-400" />
+              <span className="absolute -top-1.5 -right-1.5 min-w-[1.1rem] px-1 rounded-full bg-emerald-400 text-neutral-950 text-[9px] font-black leading-[1.1rem] text-center font-mono">{bagCount > 99 ? '99+' : bagCount}</span>
+            </button>
+          )}
 
           {/* Sound Toggle */}
           <button

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Eye, EyeOff, Loader2, Mail, ShieldCheck } from 'lucide-react';
 import { api, errText, solveCaptcha, logoutServer } from './api';
+import { YieldLogo } from '../components/brand/YieldLogo';
 import { Npc, useNpcSay } from '../components/npc/Npc';
 import { getStoredUserProfiles, saveUserProfile, setActiveUserId } from '../utils/auth';
 import type { UserProfile } from '../types';
@@ -67,7 +68,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
   const [err, setErr] = useState(initialMsg ?? '');
   const [devLink, setDevLink] = useState('');
   const openedAt = useRef(Date.now());
-  const npc = useNpcSay('¡Bienvenido a ChronoFlora! Para cuidar el juego de los bots, tu navegador hará una pequeña prueba antes de crear la cuenta.');
+  const npc = useNpcSay('¡Hola! Soy Chrono, tu guía en Yield Bud Empire. Para cuidar el juego de los bots, tu navegador hará una pequeña prueba antes de crear la cuenta.');
   const pwScore = useMemo(() => strength(password), [password]);
 
   const run = async (fn: () => Promise<void>) => {
@@ -125,10 +126,11 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
       <div className="pl-stars" />
       <div className="relative z-10 w-full max-w-md space-y-4">
         <div className="text-center">
-          <h1 className="font-serif text-3xl font-black tracking-[0.14em] text-emerald-100">CHRONO<span className="text-emerald-300">FLORA</span></h1>
+          <h1 className="sr-only">Yield Bud Empire</h1>
+          <YieldLogo animated size={168} className="mx-auto" />
           <p className="text-[10.5px] font-mono uppercase tracking-[0.2em] text-emerald-300/60 mt-1">Acceso seguro · una cuenta por persona</p>
         </div>
-        <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="merchant" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>
+        <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="chrono" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>
 
         <div className="hud-panel p-5 space-y-4" style={{ background: 'rgba(3, 14, 11, 0.96)' }}>
           {(mode === 'login' || mode === 'register') && (

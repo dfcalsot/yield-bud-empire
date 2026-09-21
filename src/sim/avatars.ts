@@ -20,7 +20,7 @@ export const SEASONS: Record<SeasonId, Season> = {
   verano: { id: 'verano', name: 'Verano · Sol de Plata', emoji: '☀️', tagline: 'Luz a raudales, farolillos de playa y frascos dorados.', colors: ['#fbbf24', '#fb923c'] },
   otono: { id: 'otono', name: 'Otoño · Cosecha Dorada', emoji: '🍂', tagline: 'Calabazas chrono, hojas ámbar y lunas de cosecha.', colors: ['#f97316', '#a16207'] },
   invierno: { id: 'invierno', name: 'Invierno · Escarcha Neón', emoji: '❄️', tagline: 'Copos de neón, hielo cristalino y auroras boreales.', colors: ['#7dd3fc', '#c4b5fd'] },
-  classic: { id: 'classic', name: 'Clásicos de Chrono', emoji: '🧬', tagline: 'Diseños atemporales: salen de cualquier cofre.', colors: ['#34d399', '#a78bfa'] },
+  classic: { id: 'classic', name: 'Clásicos de Yield', emoji: '🧬', tagline: 'Diseños atemporales: salen de cualquier cofre.', colors: ['#34d399', '#a78bfa'] },
 };
 
 /** Season by calendar month (Dec–Feb winter, Mar–May spring, Jun–Aug summer, Sep–Nov autumn). */
@@ -56,9 +56,9 @@ type Row = [string, Motif, AvatarRarity];
 const TABLE: Record<SeasonId, Row[]> = {
   primavera: [['Brote Tierno', 'seed', 'common'], ['Gota de Rocío', 'drop', 'common'], ['Abeja Curiosa', 'bee', 'common'], ['Flor de Cerezo', 'flower', 'rare'], ['Hoja Fresca', 'leaf', 'rare'], ['Cogollo Rosa', 'bud', 'epic'], ['Luna de Mayo', 'moon', 'epic'], ['Reina de la Floración', 'crown', 'legendary']],
   verano: [['Rayo de Sol', 'sun', 'common'], ['Gota Fresca', 'drop', 'common'], ['Farol de Playa', 'lantern', 'common'], ['Hoja Tropical', 'leaf', 'rare'], ['Frasco de Verano', 'jar', 'rare'], ['Cogollo Dorado', 'bud', 'epic'], ['Planeta Ardiente', 'planet', 'epic'], ['Rey del Sol', 'crown', 'legendary']],
-  otono: [['Semilla de Cosecha', 'seed', 'common'], ['Calabaza Chrono', 'pumpkin', 'common'], ['Farol de Otoño', 'lantern', 'common'], ['Hoja Ámbar', 'leaf', 'rare'], ['Matraz de Sidra', 'flask', 'rare'], ['Cogollo Cobrizo', 'bud', 'epic'], ['Luna de Cosecha', 'moon', 'epic'], ['Rey Cosechador', 'crown', 'legendary']],
+  otono: [['Semilla de Cosecha', 'seed', 'common'], ['Calabaza Yield', 'pumpkin', 'common'], ['Farol de Otoño', 'lantern', 'common'], ['Hoja Ámbar', 'leaf', 'rare'], ['Matraz de Sidra', 'flask', 'rare'], ['Cogollo Cobrizo', 'bud', 'epic'], ['Luna de Cosecha', 'moon', 'epic'], ['Rey Cosechador', 'crown', 'legendary']],
   invierno: [['Copo Neón', 'snow', 'common'], ['Gota Helada', 'drop', 'common'], ['Farol de Escarcha', 'lantern', 'common'], ['Hoja de Hielo', 'leaf', 'rare'], ['Frasco de Nieve', 'jar', 'rare'], ['Cogollo Cristal', 'bud', 'epic'], ['Luna Boreal', 'moon', 'epic'], ['Reina de la Escarcha', 'crown', 'legendary']],
-  classic: [['Botánico Original', 'leaf', 'common'], ['Guardián de ADN', 'dna', 'rare'], ['Alquimista', 'flask', 'epic'], ['Chrono Fundador', 'planet', 'legendary']],
+  classic: [['Botánico Original', 'leaf', 'common'], ['Guardián de ADN', 'dna', 'rare'], ['Alquimista', 'flask', 'epic'], ['Yield Fundador', 'planet', 'legendary']],
 };
 
 export const DESIGNS: AvatarDesign[] = (Object.keys(TABLE) as SeasonId[]).flatMap((season) =>

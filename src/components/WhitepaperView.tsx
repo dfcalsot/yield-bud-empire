@@ -75,7 +75,7 @@ export const WhitepaperView: React.FC = () => {
 
   const handleCopySummary = () => {
     navigator.clipboard.writeText(
-      'ChronoFlora: El Multiverso Botánico Descentralizado. Libro Blanco y Modelo Económico v1.0 construido en Solana.'
+      'Yield Bud Empire: El Multiverso Botánico Descentralizado. Libro Blanco y Modelo Económico v1.0 construido en Solana.'
     );
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -101,7 +101,7 @@ export const WhitepaperView: React.FC = () => {
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-serif">
-            ChronoFlora: El Multiverso Botánico Descentralizado
+            Yield Bud Empire: El Multiverso Botánico Descentralizado
           </h1>
           <p className="text-sm sm:text-base text-neutral-300 leading-relaxed">
             Libro Blanco y Modelo Económico de simulación botánica de alta precisión, microclimas interactivos, extracción comercial y tokenómica deflacionaria autosostenible en la red Solana.
@@ -158,7 +158,7 @@ export const WhitepaperView: React.FC = () => {
                 1. Resumen Ejecutivo
               </h2>
               <p>
-                <strong>ChronoFlora</strong> es un videojuego de simulación de próxima generación, accesible desde navegador y dispositivos móviles, construido sobre la <strong>blockchain de Solana</strong>. Fusiona la simulación agrícola inmersiva —específicamente enfocada en el cultivo de cannabis y cáñamo prémium— con un modelo económico <strong>deflacionario, estricto y sostenible</strong>.
+                <strong>Yield Bud Empire</strong> es un videojuego de simulación de próxima generación, accesible desde navegador y dispositivos móviles, construido sobre la <strong>blockchain de Solana</strong>. Fusiona la simulación agrícola inmersiva —específicamente enfocada en el cultivo de cannabis y cáñamo prémium— con un modelo económico <strong>deflacionario, estricto y sostenible</strong>.
               </p>
               <p>
                 Comenzando como cultivadores independientes bajo un modelo totalmente gratuito (<em>Free-to-Play</em> o F2P), los jugadores evolucionan desde una configuración casera básica hasta convertirse en maestros cultivadores. Gestionan microclimas, cruces genéticos, procesamiento comercial y la creación de marcas virtuales globales.
@@ -168,7 +168,7 @@ export const WhitepaperView: React.FC = () => {
                   Propuesta de Valor Única (V2P):
                 </span>
                 <p className="text-neutral-400">
-                  Al integrar marcos de utilidad del mundo real, lógica de trazabilidad y puentes directos hacia futuros mercados de comercio electrónico virtual-físico (V2P), ChronoFlora establece una economía digital autosuficiente respaldada por bienes tangibles.
+                  Al integrar marcos de utilidad del mundo real, lógica de trazabilidad y puentes directos hacia futuros mercados de comercio electrónico virtual-físico (V2P), Yield Bud Empire establece una economía digital autosuficiente respaldada por bienes tangibles.
                 </p>
               </div>
             </div>
@@ -181,7 +181,7 @@ export const WhitepaperView: React.FC = () => {
                 2. Bucle de Jugabilidad y Progresión
               </h2>
               <p>
-                ChronoFlora utiliza una combinación equilibrada de estrategia tipo <em>idle</em> y microgestión activa, inspirada en los simuladores móviles y de gestión agrícola de mayor éxito.
+                Yield Bud Empire utiliza una combinación equilibrada de estrategia tipo <em>idle</em> y microgestión activa, inspirada en los simuladores móviles y de gestión agrícola de mayor éxito.
               </p>
 
               {/* Interactive Gameplay Flow Diagram */}
@@ -246,7 +246,7 @@ export const WhitepaperView: React.FC = () => {
                 3. Tokenómica Deflacionaria ($FLORA)
               </h2>
               <p>
-                Para combatir los fallos hiperinflacionarios observados históricamente en los proyectos GameFi convencionales, ChronoFlora implementa un motor económico de circuito cerrado impulsado por <strong>sumideros (sinks) de tokens obligatorios y agresivos</strong>.
+                Para combatir los fallos hiperinflacionarios observados históricamente en los proyectos GameFi convencionales, Yield Bud Empire implementa un motor económico de circuito cerrado impulsado por <strong>sumideros (sinks) de tokens obligatorios y agresivos</strong>.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
@@ -290,7 +290,7 @@ export const WhitepaperView: React.FC = () => {
                 3.2 Ventajas de la Arquitectura de Solana
               </h2>
               <p>
-                ChronoFlora aprovecha la arquitectura ultra-escalable de Solana para hacer viables mecánicas complejas que en otras redes resultarían prohibitivas en costo o latencia.
+                Yield Bud Empire aprovecha la arquitectura ultra-escalable de Solana para hacer viables mecánicas complejas que en otras redes resultarían prohibitivas en costo o latencia.
               </p>
 
               <div className="space-y-3">
@@ -318,13 +318,13 @@ export const WhitepaperView: React.FC = () => {
                 4. Identidad Visual y Tecnológica
               </h2>
               <p>
-                ChronoFlora aprovecha tuberías avanzadas de generación por IA (similares a herramientas de vanguardia como Higgsfield) para la producción de activos dinámicos, garantizando una alta fidelidad visual en los clientes web sin inflar los tamaños de descarga.
+                Yield Bud Empire aprovecha tuberías avanzadas de generación por IA (similares a herramientas de vanguardia como Higgsfield) para la producción de activos dinámicos, garantizando una alta fidelidad visual en los clientes web sin inflar los tamaños de descarga.
               </p>
 
               <div className="rounded-2xl overflow-hidden border border-neutral-800">
-                <FacilityArt kind="greenhouse_commercial" slice className="w-full h-64" label="Invernadero automatizado de ChronoFlora" />
+                <FacilityArt kind="greenhouse_commercial" slice className="w-full h-64" label="Invernadero automatizado de Yield Bud Empire" />
                 <div className="p-3 bg-neutral-950 text-[11px] text-neutral-400 text-center font-mono">
-                  Render conceptual: Sala de cultivo automatizada e industrial dentro del multiverso de ChronoFlora.
+                  Render conceptual: Sala de cultivo automatizada e industrial dentro del multiverso de Yield Bud Empire.
                 </div>
               </div>
             </div>
@@ -379,7 +379,7 @@ export const WhitepaperView: React.FC = () => {
                 6. Conclusión
               </h2>
               <p>
-                <strong>ChronoFlora</strong> redefine los juegos en blockchain al anclar una jugabilidad divertida y accesible a un modelo deflacionario matemáticamente sólido. Al estructurar la simulación en torno a una forma de arte agrícola universalmente reconocida —el cultivo de cannabis y cáñamo— y respaldarla de forma segura en Solana, el proyecto fusiona los juegos casuales, los activos digitales y la utilidad del mundo real de manera fluida.
+                <strong>Yield Bud Empire</strong> redefine los juegos en blockchain al anclar una jugabilidad divertida y accesible a un modelo deflacionario matemáticamente sólido. Al estructurar la simulación en torno a una forma de arte agrícola universalmente reconocida —el cultivo de cannabis y cáñamo— y respaldarla de forma segura en Solana, el proyecto fusiona los juegos casuales, los activos digitales y la utilidad del mundo real de manera fluida.
               </p>
               <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 font-mono">
                 ✓ Listo para el multiverso botánico. Comienza ahora tu viaje F2P como cultivador novato.

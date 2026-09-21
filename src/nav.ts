@@ -65,5 +65,20 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: 'perfil', label: 'Perfil', icon: ProfileBadge, tabs: ['perfil'] },
 ];
 
+/** Accent colour of each zone (palette B "Noche Botánica"): panels, borders and glows follow it through the --zone variable. */
+export const TAB_ZONE: Record<TabId, string> = {
+  cultivo: '#b8f35a',      // lime
+  planeta: '#5eead4',      // teal
+  nutrientes: '#c4b5fd',   // violet (chemistry)
+  semillas: '#f9a8d4',     // pink (genetics)
+  extraccion: '#c4b5fd',   // violet (lab)
+  genetica: '#f9a8d4',     // pink
+  market: '#fcd34d',       // gold
+  dispensario: '#fdba74',  // peach
+  tokenomica: '#fcd34d',   // gold
+  whitepaper: '#c4b5fd',   // violet
+  perfil: '#b8f35a',       // lime
+};
+
 export const groupOfTab = (tab: string): NavGroup =>
   NAV_GROUPS.find((g) => g.tabs.includes(tab as TabId)) ?? NAV_GROUPS[0];

@@ -1,0 +1,72 @@
+/* NPC rig v2 — animation only uses transform/opacity so it stays cheap on the laptop's iGPU. */
+.v2-npc { transform-origin: 50% 100%; }
+.v2-npc--happy { animation: v2Hop 0.7s ease-out; }
+.v2-npc--sad { animation: v2Shake 0.5s ease; }
+@keyframes v2Hop { 0% { transform: none; } 22% { transform: scale(1.07, 0.92); } 52% { transform: translateY(-18px) scale(0.96, 1.06); } 78% { transform: scale(1.04, 0.95); } 100% { transform: none; } }
+@keyframes v2Shake { 0%, 100% { transform: none; } 20% { transform: translateX(-6px) rotate(-3deg); } 40% { transform: translateX(6px) rotate(3deg); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+
+.v2-breath { transform-origin: 80px 188px; animation: v2Breath 3.4s ease-in-out infinite; }
+@keyframes v2Breath { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.012, 1.028); } }
+.v2-npc--busy .v2-breath { animation-duration: 0.9s; }
+
+.v2-tilt { transform-origin: 80px 188px; transition: transform 0.4s ease; }
+.v2-npc--think .v2-tilt { transform: rotate(-3.5deg); }
+
+.v2-blink { animation: v2Blink 4.8s infinite; }
+@keyframes v2Blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.08); } }
+.v2-brow { transition: d 0.2s ease; }
+
+/* Chrono */
+.v2-sprout { transform-origin: 80px 48px; animation: v2Sprout 3.6s ease-in-out infinite; }
+@keyframes v2Sprout { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+.v2-cot-l { transform-origin: 78px 46px; animation: v2CotL 3.1s ease-in-out infinite; }
+.v2-cot-r { transform-origin: 82px 46px; animation: v2CotR 3.1s ease-in-out infinite; }
+@keyframes v2CotL { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-9deg); } }
+@keyframes v2CotR { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(9deg); } }
+.v2-min { transform-origin: 80px 27px; animation: v2Spin 8s linear infinite; }
+.v2-hour { transform-origin: 80px 27px; animation: v2Spin 96s linear infinite; }
+@keyframes v2Spin { to { transform: rotate(360deg); } }
+.v2-dots circle { animation: v2Dot 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.v2-dots circle:nth-child(2) { animation-delay: 0.2s; } .v2-dots circle:nth-child(3) { animation-delay: 0.4s; }
+@keyframes v2Dot { 0%, 100% { transform: scale(0.8); opacity: 0.6; } 50% { transform: scale(1.15); opacity: 1; } }
+
+/* props */
+.v2-float { animation: v2Float 3.2s ease-in-out infinite; }
+@keyframes v2Float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.v2-dna { animation: v2Dna 3.4s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes v2Dna { from { transform: scaleX(1); } to { transform: scaleX(0.5); } }
+.v2-bub { animation: v2Bub 1.8s ease-in infinite; transform-box: fill-box; }
+.v2-bub2 { animation-delay: 0.6s; } .v2-bub3 { animation-delay: 1.2s; }
+@keyframes v2Bub { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-14px); opacity: 0; } }
+.v2-mini { transform-origin: 0 0; animation: v2MiniSway 4s ease-in-out infinite; }
+@keyframes v2MiniSway { 0%, 100% { transform: rotate(-1.4deg); } 50% { transform: rotate(1.4deg); } }
+
+/* dreadlocks sway a little (each side on its own phase) */
+.v2-dread-l { transform-origin: 52px 86px; animation: v2Dread 3.8s ease-in-out infinite; }
+.v2-dread-r { transform-origin: 108px 86px; animation: v2Dread 3.8s ease-in-out infinite reverse; }
+@keyframes v2Dread { 0%, 100% { transform: rotate(-1.8deg); } 50% { transform: rotate(1.8deg); } }
+
+/* gestures */
+.v2-arm-r, .v2-arm-l { transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.v2-npc--wave .v2-arm-r:not(.v2-arm-hold) { animation: v2Wave 1.05s ease-in-out infinite; }
+@keyframes v2Wave { 0%, 100% { transform: rotate(-104deg); } 50% { transform: rotate(-70deg); } }
+.v2-npc--wave .v2-arm-wl { animation: v2WaveL 1.05s ease-in-out infinite; }
+@keyframes v2WaveL { 0%, 100% { transform: rotate(128deg); } 50% { transform: rotate(98deg); } }
+.v2-npc--think .v2-arm-l { transform: rotate(-64deg); }
+.v2-npc--think .v2-arm-wl { transform: rotate(-100deg); }   /* Flora: hand up to the chin */
+.v2-npc--happy .v2-arm-r { animation: v2Cheer 0.7s ease-out; }
+@keyframes v2Cheer { 0% { transform: none; } 40% { transform: rotate(-150deg); } 100% { transform: none; } }
+
+/* speech bubble (colours come from the surrounding theme, defaults match the game) */
+.v2-bubble { position: relative; flex: 1 1 0; min-width: 0; max-width: 470px; border-radius: 16px; padding: 10px 14px; margin-bottom: 2.4rem;
+  border: 1px solid var(--bubble-line, rgba(184, 243, 90, 0.5)); background: var(--bubble-bg, rgba(24, 19, 50, 0.95)); color: var(--bubble-ink, #ecebfa);
+  box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.8), 0 0 24px -10px var(--bubble-line, rgba(184, 243, 90, 0.4)); animation: v2BubbleIn 0.3s ease-out; transform-origin: 0% 100%; }
+.v2-bubble::before { content: ''; position: absolute; left: -7px; bottom: 16px; width: 12px; height: 12px; transform: rotate(45deg); background: var(--bubble-bg, rgba(24, 19, 50, 0.95));
+  border-left: 1px solid var(--bubble-line, rgba(184, 243, 90, 0.5)); border-bottom: 1px solid var(--bubble-line, rgba(184, 243, 90, 0.5)); }
+@keyframes v2BubbleIn { from { opacity: 0; transform: translateY(6px) scale(0.92); } to { opacity: 1; transform: none; } }
+.v2-caret { display: inline-block; width: 6px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--bubble-line, #b8f35a); animation: v2Caret 0.6s infinite; }
+@keyframes v2Caret { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-npc *, .v2-npc { animation: none !important; transition: none !important; }
+}

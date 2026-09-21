@@ -69,7 +69,7 @@ export const TokenomicsView: React.FC = () => {
             Tokenómica Sostenible & Mecanismos de Quema
           </h2>
           <p className="text-xs text-neutral-400 mt-0.5">
-            A diferencia de los juegos GameFi inflacionarios tradicionales, ChronoFlora integra sumideros obligatorios de circuito cerrado para garantizar la apreciación y escasez del token.
+            A diferencia de los juegos GameFi inflacionarios tradicionales, Yield Bud Empire integra sumideros obligatorios de circuito cerrado para garantizar la apreciación y escasez del token.
           </p>
         </div>
 

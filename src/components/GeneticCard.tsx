@@ -26,7 +26,7 @@ export const GeneticCardBack: React.FC<{ color: string; rarity: GeneticCardData[
       <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(30deg, #34d39922 12%, transparent 12.5%, transparent 87%, #34d39922 87.5%), linear-gradient(150deg, #34d39922 12%, transparent 12.5%, transparent 87%, #34d39922 87.5%)', backgroundSize: '28px 48px' }} />
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
         <CannabisLeaf className="w-24 h-24" />
-        <div className="font-serif font-black tracking-[0.3em] text-sm" style={{ color: rc, textShadow: `0 0 14px ${rc}` }}>CHRONOFLORA</div>
+        <div className="font-serif font-black tracking-[0.3em] text-sm" style={{ color: rc, textShadow: `0 0 14px ${rc}` }}>YIELD BUD EMPIRE</div>
       </div>
     </div>
   );

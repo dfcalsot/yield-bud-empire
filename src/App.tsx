@@ -22,16 +22,30 @@ import { NotificationToast } from './components/NotificationToast';
 import { TxToast } from './components/TxToast';
 import { QuestProgressBar } from './components/QuestProgressBar';
 import { Dock } from './components/Dock';
+import { BriefcaseDrawer } from './components/bag/BriefcaseDrawer';
 import { ResourceBar } from './components/ResourceBar';
 import { SubTabs } from './components/SubTabs';
 import { ParticleField } from './components/game/GameUI';
-import { NAV_GROUPS, groupOfTab } from './nav';
+import { NAV_GROUPS, TAB_ZONE, groupOfTab, type TabId } from './nav';
 
-function ChronoFloraApp() {
+function YieldBudEmpireApp() {
   const [currentTab, setCurrentTab] = useState<string>('cultivo');
   const [isWalletModalOpen, setIsWalletModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  const [bagOpen, setBagOpen] = useState<boolean>(false);
+
+  // `I` opens / closes the briefcase (ignored while typing)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'i' || e.key === 'I') setBagOpen((v) => !v);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   // Remember the last sub-tab visited in each dock group
   const [lastTabByGroup, setLastTabByGroup] = useState<Record<string, string>>({});
   // shortcuts ("Contratar jardinero", "Tratamientos"…) open the market straight on that shelf
@@ -41,7 +55,7 @@ function ChronoFloraApp() {
   const { indoorPlants } = useGame();
   useEffect(() => {
     const thirsty = indoorPlants.filter(isThirsty).length;
-    document.title = `${thirsty ? `(💧${thirsty}) ` : ''}ChronoFlora: El Multiverso Botánico Descentralizado`;
+    document.title = `${thirsty ? `(💧${thirsty}) ` : ''}Yield Bud Empire: El Multiverso Botánico Descentralizado`;
   }, [indoorPlants]);
 
   const goToTab = (tab: string) => {
@@ -64,7 +78,10 @@ function ChronoFloraApp() {
   };
 
   return (
-    <div className="relative z-10 min-h-screen text-neutral-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-neutral-950">
+    <div
+      className="relative z-10 min-h-screen text-neutral-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-neutral-950"
+      style={{ ['--zone' as string]: TAB_ZONE[currentTab as TabId] ?? '#b8f35a' }}
+    >
       <ParticleField />
 
       {/* Top HUD */}
@@ -73,6 +90,7 @@ function ChronoFloraApp() {
         onOpenWalletModal={() => setIsWalletModalOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenBag={() => setBagOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -101,6 +119,8 @@ function ChronoFloraApp() {
         {currentTab === 'tokenomica' && <TokenomicsView />}
         {currentTab === 'whitepaper' && <WhitepaperView />}
       </main>
+
+      <BriefcaseDrawer open={bagOpen} onClose={() => setBagOpen(false)} onNavigate={goToTab} />
 
       {/* Global Toast Alerts */}
       <NotificationToast />
@@ -138,7 +158,7 @@ function ChronoFloraApp() {
 
       {/* Footer */}
       <footer className="mb-24 px-4 text-center text-[11px] text-neutral-600">
-        <span className="font-serif text-neutral-400">ChronoFlora</span> · Solana SPL &amp; Anchor · Simulación agronómica educativa ·{' '}
+        <span className="font-serif text-neutral-400">Yield Bud Empire</span> · Solana SPL &amp; Anchor · Simulación agronómica educativa ·{' '}
         <button onClick={() => goToTab('whitepaper')} className="hover:text-emerald-300 transition cursor-pointer">Libro Blanco</button>
       </footer>
 
@@ -154,7 +174,7 @@ export default function App() {
     <AuthGate>
       {() => (
         <GameProvider>
-          <ChronoFloraApp />
+          <YieldBudEmpireApp />
         </GameProvider>
       )}
     </AuthGate>

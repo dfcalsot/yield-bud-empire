@@ -1,4 +1,4 @@
-import {StrictMode, lazy, Suspense} from 'react';
+import {StrictMode, lazy, Suspense, useEffect, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
@@ -11,23 +11,36 @@ window.addEventListener('vite:preloadError', (e) => { if (reloadOnceForNewBuild(
 // Dev-only plant gallery: http://localhost:3010/#plantlab (stripped from production builds)
 const PlantLab = import.meta.env.DEV ? lazy(() => import('./dev/PlantLab.tsx').then((m) => ({default: m.PlantLab}))) : null;
 const ModelLab = import.meta.env.DEV ? lazy(() => import('./dev/ModelLab.tsx').then((m) => ({default: m.ModelLab}))) : null;
-const showLab = import.meta.env.DEV && window.location.hash === '#plantlab';
-const showModelLab = import.meta.env.DEV && window.location.hash === '#modellab';
+// Style lab (palette + NPC rig proposals): http://<host>/#stylelab — also in production builds while the style is being chosen
+const StyleLab = lazy(() => import('./dev/StyleLab.tsx').then((m) => ({default: m.StyleLab})));
+const LogoLab = lazy(() => import('./dev/LogoLab.tsx').then((m) => ({default: m.LogoLab})));
+const LogoStage = lazy(() => import('./dev/LogoLab.tsx').then((m) => ({default: m.LogoStage})));
+const hashIs = (h: string) => window.location.hash === h;
+const showLab = import.meta.env.DEV && hashIs('#plantlab');
+const showModelLab = import.meta.env.DEV && hashIs('#modellab');
+
+/** The style lab follows the URL hash live, so pasting `/#stylelab` into a tab that already has the game open works without a reload. */
+function Root() {
+  const [styleLab, setStyleLab] = useState(hashIs('#stylelab'));
+  const [logoLab, setLogoLab] = useState(hashIs('#logo'));
+  const [logoStage, setLogoStage] = useState(hashIs('#logo-stage'));
+  useEffect(() => {
+    const on = () => { setStyleLab(hashIs('#stylelab')); setLogoLab(hashIs('#logo')); setLogoStage(hashIs('#logo-stage')); };
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
+  if (logoStage) return <Suspense fallback={null}><LogoStage /></Suspense>;
+  if (logoLab) return <Suspense fallback={null}><LogoLab /></Suspense>;
+  if (styleLab) return <Suspense fallback={null}><StyleLab /></Suspense>;
+  if (showModelLab && ModelLab) return <Suspense fallback={null}><ModelLab /></Suspense>;
+  if (showLab && PlantLab) return <Suspense fallback={null}><PlantLab /></Suspense>;
+  return <App />;
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
    <AppErrorBoundary>
-    {showModelLab && ModelLab ? (
-      <Suspense fallback={null}>
-        <ModelLab />
-      </Suspense>
-    ) : showLab && PlantLab ? (
-      <Suspense fallback={null}>
-        <PlantLab />
-      </Suspense>
-    ) : (
-      <App />
-    )}
+    <Root />
    </AppErrorBoundary>
   </StrictMode>,
 );

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Coins, Flame, MapPin, Sprout } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
-import { Npc, useNpcSay } from '../npc/Npc';
+import { Npc, useNpcSay, type Mood } from '../npc/Npc';
 import { NpcMissions } from '../missions/NpcMissions';
 import { WorldMap } from './WorldMap';
 import { PlotScreen } from './PlotScreen';
@@ -25,7 +25,7 @@ const Bar: React.FC<{ label: string; value: number; color: string }> = ({ label,
 
 const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
-/** The Planet: world map, the seven regions, the plots you own and Don Tomás, the farmer who guides you. */
+/** The Planet: world map, the seven regions, the plots you own and Tomás, the farmer who guides you. */
 export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (cat?: string) => void }> = ({ onOpenSeedBank, onOpenMarket }) => {
   const { plots, plotsForSale, buyPlot, floraBalance, solBalance, seedBank } = useGame();
   const now = useNow(30000);
@@ -33,9 +33,9 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
   const [hover, setHover] = useState<RegionId | null>(null);
   const [plotId, setPlotId] = useState<string | null>(null);
   const [currency, setCurrency] = useState<'FLORA' | 'SOL'>('FLORA');
-  const { say, speak } = useNpcSay('¡Buenas, patrón! Soy Don Tomás. Toca una región del mapa: cada tierra tiene su clima… y sus landrace.');
+  const { say, speak } = useNpcSay('¡Buenas, patrón! Soy Tomás. Toca una región del mapa: cada tierra tiene su clima… y sus landrace.');
   const lastSpoke = useRef(Date.now());
-  const say2 = (text: string, mood: 'idle' | 'happy' | 'sad' | 'busy' = 'idle') => { lastSpoke.current = Date.now(); speak(text, mood); };
+  const say2 = (text: string, mood: Mood = 'idle') => { lastSpoke.current = Date.now(); speak(text, mood); };
 
   const plot = plots.find((p) => p.id === plotId) ?? null;
   const owned: Partial<Record<RegionId, number>> = {};
@@ -104,7 +104,7 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-end">
           <Npc kind="farmer" text={say.text} mood={say.mood} moodKey={say.key} />
           <div className="space-y-2.5">
-            <h1 className="font-serif text-2xl sm:text-3xl font-black tracking-[0.12em] text-sky-100 leading-none">PLANETA CHRONO</h1>
+            <h1 className="font-serif text-2xl sm:text-3xl font-black tracking-[0.12em] text-sky-100 leading-none">PLANETA YIELD</h1>
             <p className="text-[10.5px] font-mono uppercase tracking-[0.2em] text-sky-300/70">Parcelas NFT · 7 regiones · clima real</p>
             <div className="flex flex-wrap gap-2 text-[11px] font-mono">
               <span className="mk-panel px-2.5 py-1.5 text-neutral-200">🗺️ <b className="text-amber-300">{plots.length}</b> parcelas</span>

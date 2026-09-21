@@ -48,7 +48,7 @@ const flora = (n: number) => `${n} $FLORA`;
 
 export const CATALOG: CatalogItem[] = [
   /* ── Lámparas ── */
-  { id: 'lamp_led600', category: 'lamp', kind: 'equipment', name: 'Panel LED Starter 600 W', brand: 'ChronoLight', tier: 1, priceFlora: 120, priceSol: 0.12, watts: 600, maxPpfd: 480, wearPerDay: 1.0,
+  { id: 'lamp_led600', category: 'lamp', kind: 'equipment', name: 'Panel LED Starter 600 W', brand: 'YieldLight', tier: 1, priceFlora: 120, priceSol: 0.12, watts: 600, maxPpfd: 480, wearPerDay: 1.0,
     description: 'Panel LED de espectro completo para la carpa casera. Eficiente y sin complicaciones.',
     specs: [{ label: 'Potencia', value: '600 W' }, { label: 'PPFD máx.', value: '480 µmol/m²s' }, { label: 'Desgaste', value: '1 %/día' }] },
   { id: 'lamp_bar1200', category: 'lamp', kind: 'equipment', name: 'Barra LED Quantum 1 200 W', brand: 'Samsung LM301H', tier: 2, priceFlora: 340, priceSol: 0.34, watts: 1200, maxPpfd: 820, wearPerDay: 0.9,
@@ -57,7 +57,7 @@ export const CATALOG: CatalogItem[] = [
   { id: 'lamp_board2400', category: 'lamp', kind: 'equipment', name: 'Quantum Board Pro 2 400 W + Far-Red', brand: 'Spider Farmer', tier: 3, priceFlora: 780, priceSol: 0.78, watts: 2400, maxPpfd: 1150, wearPerDay: 0.8,
     description: 'Matriz de alta densidad con far-red 730 nm y UV: rendimiento de resina superior.',
     specs: [{ label: 'Potencia', value: '2 400 W' }, { label: 'PPFD máx.', value: '1 150 µmol/m²s' }, { label: 'Desgaste', value: '0.8 %/día' }] },
-  { id: 'lamp_matrix4000', category: 'lamp', kind: 'equipment', name: 'Matriz Full-Spectrum Industrial 4 000 W', brand: 'Chrono Labs', tier: 4, priceFlora: 1600, priceSol: 1.6, watts: 4000, maxPpfd: 1400, wearPerDay: 0.7,
+  { id: 'lamp_matrix4000', category: 'lamp', kind: 'equipment', name: 'Matriz Full-Spectrum Industrial 4 000 W', brand: 'Yield Labs', tier: 4, priceFlora: 1600, priceSol: 1.6, watts: 4000, maxPpfd: 1400, wearPerDay: 0.7,
     description: 'La lámpara de los maestros cultivadores: PPFD extremo con óptica de haz uniforme.',
     specs: [{ label: 'Potencia', value: '4 000 W' }, { label: 'PPFD máx.', value: '1 400 µmol/m²s' }, { label: 'Desgaste', value: '0.7 %/día' }] },
 
@@ -79,7 +79,7 @@ export const CATALOG: CatalogItem[] = [
   { id: 'irr_drip', category: 'irrigation', kind: 'equipment', name: 'Goteo Presurizado con Bomba 24 V', brand: 'Netafim', tier: 2, priceFlora: 260, priceSol: 0.26, autoWater: true, waterEff: 0.45, pumpKw: 0.04, wearPerDay: 0.9,
     description: 'Goteo por emisores con bomba y temporizador: riego uniforme en toda la sala.',
     specs: [{ label: 'Riego', value: 'Automático' }, { label: 'Consumo', value: '0.04 kW' }, { label: 'Agua', value: '0.45 L/planta' }] },
-  { id: 'irr_hydro', category: 'irrigation', kind: 'equipment', name: 'Hidroponía NFT Recirculante', brand: 'Chrono Hydro', tier: 3, priceFlora: 640, priceSol: 0.64, autoWater: true, waterEff: 0.25, pumpKw: 0.08, wearPerDay: 0.8,
+  { id: 'irr_hydro', category: 'irrigation', kind: 'equipment', name: 'Hidroponía NFT Recirculante', brand: 'Yield Hydro', tier: 3, priceFlora: 640, priceSol: 0.64, autoWater: true, waterEff: 0.25, pumpKw: 0.08, wearPerDay: 0.8,
     description: 'Recircula la solución nutritiva: ahorra casi la mitad del agua.',
     specs: [{ label: 'Riego', value: 'Automático' }, { label: 'Consumo', value: '0.08 kW' }, { label: 'Agua', value: '0.25 L/planta' }] },
 
@@ -131,25 +131,25 @@ export const CATALOG: CatalogItem[] = [
     description: 'Fungicida biológico contra el moho y el oídio. Protege 72 h.', specs: [{ label: 'Contenido', value: '250 ml' }, { label: 'Trata', value: 'Moho' }, { label: 'Protección', value: '72 h' }] },
   { id: 'pest_tricho', category: 'pest', kind: 'consumable', name: 'Trichoderma Radicular 250 ml', brand: 'RootGuard', tier: 2, priceFlora: 55, priceSol: 0.06, amount: 250, unit: 'ml', treats: ['rot'], guardHours: 72,
     description: 'Hongos beneficiosos que desplazan a los patógenos de la raíz. Protege 72 h.', specs: [{ label: 'Contenido', value: '250 ml' }, { label: 'Trata', value: 'Pudrición de raíz' }, { label: 'Protección', value: '72 h' }] },
-  { id: 'pest_shield', category: 'pest', kind: 'consumable', name: 'Bio-Shield Total 500 ml', brand: 'Chrono Labs', tier: 3, priceFlora: 150, priceSol: 0.15, amount: 500, unit: 'ml', treats: ['mites', 'mold', 'rot'], guardHours: 96,
+  { id: 'pest_shield', category: 'pest', kind: 'consumable', name: 'Bio-Shield Total 500 ml', brand: 'Yield Labs', tier: 3, priceFlora: 150, priceSol: 0.15, amount: 500, unit: 'ml', treats: ['mites', 'mold', 'rot'], guardHours: 96,
     description: 'Amplio espectro: cura ácaros, moho y pudrición. Protege 96 h.', specs: [{ label: 'Contenido', value: '500 ml' }, { label: 'Trata', value: 'Las 3 plagas' }, { label: 'Protección', value: '96 h' }] },
 
   /* ── Servicios de vivero (modo vivero: jardineros contratados) ── */
-  { id: 'svc_apprentice_7', category: 'service', kind: 'consumable', name: 'Jardinero Aprendiz · 7 días', brand: 'Vivero de Doña Flora', tier: 2, priceFlora: 90, priceSol: 0.09, amount: 7, unit: 'días', gardener: 1,
+  { id: 'svc_apprentice_7', category: 'service', kind: 'consumable', name: 'Jardinero Aprendiz · 7 días', brand: 'Vivero de Flora', tier: 2, priceFlora: 90, priceSol: 0.09, amount: 7, unit: 'días', gardener: 1,
     description: 'Riega y abona a tus plantas por ti con lo que haya en tu almacén. Tú solo cosechas.', specs: [{ label: 'Duración', value: '7 días' }, { label: 'Hace', value: 'Riega y abona' }] },
-  { id: 'svc_master_7', category: 'service', kind: 'consumable', name: 'Jardinero Maestro · 7 días', brand: 'Vivero de Doña Flora', tier: 3, priceFlora: 260, priceSol: 0.26, amount: 7, unit: 'días', gardener: 2,
+  { id: 'svc_master_7', category: 'service', kind: 'consumable', name: 'Jardinero Maestro · 7 días', brand: 'Vivero de Flora', tier: 3, priceFlora: 260, priceSol: 0.26, amount: 7, unit: 'días', gardener: 2,
     description: 'Además de regar y abonar, trata las plagas y mantiene la sala impecable (la calificación no baja).', specs: [{ label: 'Duración', value: '7 días' }, { label: 'Hace', value: 'Riega, abona, trata y limpia' }] },
-  { id: 'svc_master_30', category: 'service', kind: 'consumable', name: 'Jardinero Maestro · 30 días', brand: 'Vivero de Doña Flora', tier: 4, priceFlora: 900, priceSol: 0.9, amount: 30, unit: 'días', gardener: 2,
+  { id: 'svc_master_30', category: 'service', kind: 'consumable', name: 'Jardinero Maestro · 30 días', brand: 'Vivero de Flora', tier: 4, priceFlora: 900, priceSol: 0.9, amount: 30, unit: 'días', gardener: 2,
     description: 'Un mes de cuidado profesional completo. El mejor precio por día.', specs: [{ label: 'Duración', value: '30 días' }, { label: 'Hace', value: 'Riega, abona, trata y limpia' }] },
 
   /* ── Licencias de estaciones del laboratorio ── */
-  { id: 'lic_rosin', category: 'license', kind: 'license', name: 'Licencia Prensa de Rosin', brand: 'Chrono Labs', tier: 1, priceFlora: 0, priceSol: 0, stationId: 'rosin', description: 'Incluida en el Kit de Inicio F2P.', specs: [{ label: 'Estación', value: 'Prensa de Rosin' }] },
-  { id: 'lic_kief', category: 'license', kind: 'license', name: 'Licencia Tamizadora de Kief', brand: 'Chrono Labs', tier: 1, priceFlora: 0, priceSol: 0, stationId: 'kief', description: 'Incluida en el Kit de Inicio F2P.', specs: [{ label: 'Estación', value: 'Tamizadora de Kief' }] },
-  { id: 'lic_roller', category: 'license', kind: 'license', name: 'Licencia Enrolladora de Puros', brand: 'Chrono Labs', tier: 2, priceFlora: 120, priceSol: 0.12, stationId: 'roller', description: 'Desbloquea pre-rolls y puros premium.', specs: [{ label: 'Estación', value: 'Enrolladora' }] },
-  { id: 'lic_bubble', category: 'license', kind: 'license', name: 'Licencia Lavadora Bubble Hash', brand: 'Chrono Labs', tier: 2, priceFlora: 150, priceSol: 0.15, stationId: 'bubble', description: 'Desbloquea la extracción con agua y hielo.', specs: [{ label: 'Estación', value: 'Lavadora Bubble Hash' }] },
-  { id: 'lic_terpsoup', category: 'license', kind: 'license', name: 'Licencia Sopa de Terpenos', brand: 'Chrono Labs', tier: 3, priceFlora: 300, priceSol: 0.3, stationId: 'terpsoup', description: 'Desbloquea el reactor de sauce y diamantes de THCa.', specs: [{ label: 'Estación', value: 'Reactor de Terpenos' }] },
-  { id: 'lic_rotavap', category: 'license', kind: 'license', name: 'Licencia Rotavapor (RSO · Aceites · Gomitas)', brand: 'Chrono Labs', tier: 3, priceFlora: 400, priceSol: 0.4, stationId: 'rotavap', description: 'Desbloquea la destilación al vacío y las gomitas.', specs: [{ label: 'Estación', value: 'Rotavapor' }] },
-  { id: 'lic_hplc', category: 'license', kind: 'license', name: 'Licencia Cromatógrafo HPLC', brand: 'Chrono Labs', tier: 4, priceFlora: 500, priceSol: 0.5, stationId: 'hplc', description: 'Desbloquea el análisis de cannabinoides y los COA.', specs: [{ label: 'Estación', value: 'Cromatógrafo HPLC' }] },
+  { id: 'lic_rosin', category: 'license', kind: 'license', name: 'Licencia Prensa de Rosin', brand: 'Yield Labs', tier: 1, priceFlora: 0, priceSol: 0, stationId: 'rosin', description: 'Incluida en el Kit de Inicio F2P.', specs: [{ label: 'Estación', value: 'Prensa de Rosin' }] },
+  { id: 'lic_kief', category: 'license', kind: 'license', name: 'Licencia Tamizadora de Kief', brand: 'Yield Labs', tier: 1, priceFlora: 0, priceSol: 0, stationId: 'kief', description: 'Incluida en el Kit de Inicio F2P.', specs: [{ label: 'Estación', value: 'Tamizadora de Kief' }] },
+  { id: 'lic_roller', category: 'license', kind: 'license', name: 'Licencia Enrolladora de Puros', brand: 'Yield Labs', tier: 2, priceFlora: 120, priceSol: 0.12, stationId: 'roller', description: 'Desbloquea pre-rolls y puros premium.', specs: [{ label: 'Estación', value: 'Enrolladora' }] },
+  { id: 'lic_bubble', category: 'license', kind: 'license', name: 'Licencia Lavadora Bubble Hash', brand: 'Yield Labs', tier: 2, priceFlora: 150, priceSol: 0.15, stationId: 'bubble', description: 'Desbloquea la extracción con agua y hielo.', specs: [{ label: 'Estación', value: 'Lavadora Bubble Hash' }] },
+  { id: 'lic_terpsoup', category: 'license', kind: 'license', name: 'Licencia Sopa de Terpenos', brand: 'Yield Labs', tier: 3, priceFlora: 300, priceSol: 0.3, stationId: 'terpsoup', description: 'Desbloquea el reactor de sauce y diamantes de THCa.', specs: [{ label: 'Estación', value: 'Reactor de Terpenos' }] },
+  { id: 'lic_rotavap', category: 'license', kind: 'license', name: 'Licencia Rotavapor (RSO · Aceites · Gomitas)', brand: 'Yield Labs', tier: 3, priceFlora: 400, priceSol: 0.4, stationId: 'rotavap', description: 'Desbloquea la destilación al vacío y las gomitas.', specs: [{ label: 'Estación', value: 'Rotavapor' }] },
+  { id: 'lic_hplc', category: 'license', kind: 'license', name: 'Licencia Cromatógrafo HPLC', brand: 'Yield Labs', tier: 4, priceFlora: 500, priceSol: 0.5, stationId: 'hplc', description: 'Desbloquea el análisis de cannabinoides y los COA.', specs: [{ label: 'Estación', value: 'Cromatógrafo HPLC' }] },
 ];
 
 export const CATALOG_BY_ID: Record<string, CatalogItem> = Object.fromEntries(CATALOG.map((c) => [c.id, c]));

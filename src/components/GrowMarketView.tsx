@@ -9,6 +9,7 @@ import { Bump, fmtRunway } from './ResourceBar';
 import { ItemArt, rarityColor } from './market/ItemArt';
 import { Merchant, type Mood } from './market/Merchant';
 import { NpcMissions } from './missions/NpcMissions';
+import { useShopkeeper } from './npc/shopkeeper';
 import { flyCoins, flyToken, floatText } from './market/fx';
 import { PEST_INFO } from '../sim/engine';
 import {
@@ -164,7 +165,8 @@ export const GrowMarketView: React.FC<{ initialCat?: string }> = ({ initialCat }
   const [currency, setCurrency] = useState<'FLORA' | 'SOL'>('FLORA');
   const [qty, setQty] = useState(1);
   const [selectedId, setSelectedId] = useState<string>((startCat !== 'all' ? CATALOG.find((c) => c.category === startCat) : CATALOG.find((c) => c.category === 'energy'))?.id ?? CATALOG[0].id);
-  const [say, setSay] = useState<{ text: string; mood: Mood; key: number }>({ text: '¡Bienvenido al Mercado Chrono, cultivador! Mira los estantes; todo lo que compres se acuña como NFT.', mood: 'idle', key: 0 });
+  const [shop, setShop] = useShopkeeper();
+  const [say, setSay] = useState<{ text: string; mood: Mood; key: number }>({ text: '¡Bienvenido al Mercado Yield, cultivador! Mira los estantes; todo lo que compres se acuña como NFT.', mood: 'idle', key: 0 });
   const speak = useCallback((text: string, mood: Mood = 'idle') => setSay((s) => ({ text, mood, key: s.key + 1 })), []);
 
   const buyRef = useRef<HTMLButtonElement>(null);
@@ -260,12 +262,15 @@ export const GrowMarketView: React.FC<{ initialCat?: string }> = ({ initialCat }
       <div className="relative z-10 px-4 sm:px-6 pt-14 pb-6 space-y-5">
         {/* keeper + sign + wallet */}
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-end">
-          <Merchant text={say.text} mood={say.mood} moodKey={say.key} />
+          <div className="min-w-0">
+            <Merchant text={say.text} mood={say.mood} moodKey={say.key} />
+            <button type="button" onClick={() => setShop(shop === 'flora' ? 'floro' : 'flora')} className="mt-1 ml-1 text-[10.5px] font-mono text-neutral-400 hover:text-white underline underline-offset-2 cursor-pointer">⇄ Cambiar de tendero ({shop === 'flora' ? 'Floro' : 'Flora'})</button>
+          </div>
           <div className="space-y-3">
             <div className="mk-sign">
               <span className="mk-chain mk-chain--l" /><span className="mk-chain mk-chain--r" />
               <div className="mk-board">
-                <div className="font-serif text-xl sm:text-2xl font-black tracking-[0.14em] text-amber-100 leading-none">MERCADO CHRONO</div>
+                <div className="font-serif text-xl sm:text-2xl font-black tracking-[0.14em] text-amber-100 leading-none">MERCADO YIELD</div>
                 <div className="text-[9.5px] font-mono uppercase tracking-[0.22em] text-amber-200/70 mt-1">Suministros para cultivadores</div>
               </div>
             </div>

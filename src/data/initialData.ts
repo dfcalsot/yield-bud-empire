@@ -14,7 +14,7 @@ import {
 export const INITIAL_STRAINS: Strain[] = [
   {
     id: 'chrono_foundation_og',
-    name: 'Chrono Foundation OG',
+    name: 'Yield Foundation OG',
     lineage: 'Solana Landrace x Northern Lights',
     type: 'Híbrido',
     thcPercentage: 19.5,
@@ -75,7 +75,7 @@ export const INITIAL_STRAINS: Strain[] = [
   {
     id: 'emerald_terp_queen',
     name: 'Emerald Terp Queen',
-    lineage: 'Gelato 41 x Chrono Flora Gene v2',
+    lineage: 'Gelato 41 x Yield Bud Gene v2',
     type: 'Híbrido',
     thcPercentage: 25.4,
     cbdPercentage: 3.5,
@@ -237,7 +237,7 @@ export const INITIAL_MACHINES: MachineEquipment[] = [
 export const INITIAL_V2P_ITEMS: V2pRedemptionItem[] = [
   {
     id: 'v2p_terp_bottle',
-    title: 'Frasco 15ml Terpenos Botánicos Puros (Chrono Terps)',
+    title: 'Frasco 15ml Terpenos Botánicos Puros (Yield Terps)',
     category: 'Botanical Terpenes',
     requiredFlora: 850,
     stockPhysical: 142,
@@ -258,7 +258,7 @@ export const INITIAL_V2P_ITEMS: V2pRedemptionItem[] = [
   {
     id: 'v2p_grow_hoodie',
     title: 'Sudadera Orgánica de Cáñamo "Master Cultivator"',
-    category: 'Chrono Merch',
+    category: 'Yield Merch',
     requiredFlora: 600,
     stockPhysical: 55,
     art: 'v2p_grow_hoodie',
@@ -393,8 +393,8 @@ export const GROW_ROOMS_CONFIG: GrowRoomConfig[] = [
 export const INITIAL_SEED_BANK: SeedBankItem[] = [
   {
     id: 'seed_chrono_og',
-    name: 'Chrono Foundation OG (Fem)',
-    breeder: 'ChronoFlora Genetics',
+    name: 'Yield Foundation OG (Fem)',
+    breeder: 'Yield Bud Empire Genetics',
     seedType: 'Feminizada',
     lineage: 'Solana Landrace x Northern Lights #5',
     thcPercentage: 21.0,
@@ -414,7 +414,7 @@ export const INITIAL_SEED_BANK: SeedBankItem[] = [
   {
     id: 'seed_super_silver_haze',
     name: 'Solana Super Silver Haze (Fem)',
-    breeder: 'Green House / Chrono Vault',
+    breeder: 'Green House / Yield Vault',
     seedType: 'Feminizada',
     lineage: 'Skunk #1 x Northern Lights x Haze',
     thcPercentage: 24.5,
@@ -434,7 +434,7 @@ export const INITIAL_SEED_BANK: SeedBankItem[] = [
   {
     id: 'seed_neon_kush_rosin',
     name: 'Neon Kush Live Rosin Cut (Fem)',
-    breeder: 'Exotic Genetix x Chrono',
+    breeder: 'Exotic Genetix x Yield',
     seedType: 'Feminizada',
     lineage: 'Hindu Kush x Neon Gas #8',
     thcPercentage: 28.2,
@@ -456,7 +456,7 @@ export const INITIAL_SEED_BANK: SeedBankItem[] = [
     name: 'Royal Gelato Auto (Fast Flowering)',
     breeder: 'FastBuds Botánica',
     seedType: 'Autofloreciente',
-    lineage: 'Gelato 33 x Chrono Ruderalis F4',
+    lineage: 'Gelato 33 x Yield Ruderalis F4',
     thcPercentage: 23.0,
     cbdPercentage: 1.0,
     floweringWeeks: 9,
@@ -521,7 +521,7 @@ export const INITIAL_SEED_BANK: SeedBankItem[] = [
   {
     id: 'seed_runtz_terp_bomb',
     name: 'Runtz Terpene Bomb S1 (Fem)',
-    breeder: 'Barney’s Farm x Chrono',
+    breeder: 'Barney’s Farm x Yield',
     seedType: 'Feminizada',
     lineage: 'Zkittlez x Gelato #33',
     thcPercentage: 29.0,
@@ -584,7 +584,7 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
     name: 'Sistema de CO2 Presurizado con Solenoide & Sensor NDIR',
     category: 'co2',
     categoryLabel: 'Sistemas de CO2',
-    brand: 'TrolMaster / ChronoGas',
+    brand: 'TrolMaster / YieldGas',
     priceFlora: 280,
     priceSol: 0.35,
     spec: 'Botella 10kg + Regulador Dual + Sensor Infrarrojo NDIR (0-2500 PPM)',
@@ -996,7 +996,7 @@ export const INITIAL_MOTHERS_FATHERS: MotherFatherPlant[] = [
     id: 'mother_chrono_og_cut',
     role: 'Madre (Esquejes / Clones)',
     strain: INITIAL_STRAINS[0],
-    name: 'Madre #1 Chrono Foundation OG (Fenotipo Campeón)',
+    name: 'Madre #1 Yield Foundation OG (Fenotipo Campeón)',
     health: 98,
     clonesCutCount: 14,
     pollenCollectedMg: 0,

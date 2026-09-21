@@ -1,4 +1,4 @@
-// Security primitives for the ChronoFlora account service. No third-party dependencies: Node's crypto, sqlite and http only.
+// Security primitives for the Yield Bud Empire account service. No third-party dependencies: Node's crypto, sqlite and http only.
 import crypto from 'node:crypto';
 import dns from 'node:dns/promises';
 

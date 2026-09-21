@@ -380,7 +380,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timestamp: Date.now() - 3600000 * 4,
       status: 'finalized',
       blockSlot: 248910243,
-      memo: 'ChronoFlora: Speedup Boost (Anchor Instruction #4)'
+      memo: 'Yield Bud Empire: Speedup Boost (Anchor Instruction #4)'
     },
     {
       id: 'tx-init-2',
@@ -390,7 +390,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timestamp: Date.now() - 3600000 * 2,
       status: 'finalized',
       blockSlot: 248914890,
-      memo: 'ChronoFlora: Prensa Hidráulica 10T Overhaul (Permanent Burn)'
+      memo: 'Yield Bud Empire: Prensa Hidráulica 10T Overhaul (Permanent Burn)'
     }
   ]);
 
@@ -476,9 +476,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [processedProducts, setProcessedProducts] = useState<ProcessedProduct[]>([
     {
       id: 'prod-init-1',
-      name: 'Chrono OG Live Rosin 90u',
+      name: 'Yield OG Live Rosin 90u',
       type: 'live_rosin',
-      strainOrigin: 'Chrono Foundation OG',
+      strainOrigin: 'Yield Foundation OG',
       quantityGrams: 8.5,
       potency: '78.5% THC | 6.2% Terps',
       qualityScore: 94,
@@ -511,7 +511,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       patentNumber: 'SOL-PAT-9941-X',
       solanaSignature: '4gR7TxW9zL1m...AnchorPat',
       parentA: 'Gelato 41',
-      parentB: 'Chrono Flora Gene v2',
+      parentB: 'Yield Bud Gene v2',
       creatorWallet: '7xKX...sU',
       registeredDate: '2026-03-12',
       thc: 25.4,
@@ -523,7 +523,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Brand & V2P
   const [brand, setBrand] = useState<VirtualBrand>({
-    name: 'ChronoSol Botanicals',
+    name: 'YieldSol Botanicals',
     tagline: 'Genéticas de Cáñamo y Cannabis de Alta Pureza On-Chain',
     level: 2,
     reputation: 98,
@@ -878,7 +878,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signAuthMessageTest = useCallback(async (): Promise<boolean> => {
     try {
-      const msg = `ChronoFlora Botanical Web3 Auth | Cultivador: ${currentUser?.displayName || 'Anónimo'} | Red: ${solanaNetwork} | Timestamp: ${Date.now()}`;
+      const msg = `Yield Bud Empire Botanical Web3 Auth | Cultivador: ${currentUser?.displayName || 'Anónimo'} | Red: ${solanaNetwork} | Timestamp: ${Date.now()}`;
       const res = await signSolanaMessage(activeProviderInstance, msg);
       showNotification(`¡Firma criptográfica verificada con éxito! Hash: ${res.signature.slice(0, 10)}...`, 'success');
       return true;
@@ -1043,7 +1043,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       trimGrams: 0,
       brand: {
         name: `${newProfile.displayName}'s Craft Botanicals`,
-        tagline: 'Genéticas puras cultivadas en ChronoFlora',
+        tagline: 'Genéticas puras cultivadas en Yield Bud Empire',
         level: 1,
         reputation: 100,
         dispensaryOpen: true,
@@ -1055,7 +1055,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     switchUserAccount(newId);
-    showNotification(`¡Bienvenido a ChronoFlora, ${newProfile.displayName}! Paquete de inicio activado (+500 $FLORA, 2.0 SOL).`, 'success');
+    showNotification(`¡Bienvenido a Yield Bud Empire, ${newProfile.displayName}! Paquete de inicio activado (+500 $FLORA, 2.0 SOL).`, 'success');
     return true;
   }, [walletAddress, switchUserAccount, showNotification]);
 
@@ -1405,7 +1405,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
 
-    recordBurnTransaction('BURN_SPEEDUP', 25, 'ChronoFlora: Aceleración Fotónica Planta Individual (Quema de 25 $FLORA)');
+    recordBurnTransaction('BURN_SPEEDUP', 25, 'Yield Bud Empire: Aceleración Fotónica Planta Individual (Quema de 25 $FLORA)');
     
     setIndoorPlants(prev => prev.map((p, idx) => {
       if (idx !== selectedPlantIndex) return p;
@@ -1431,7 +1431,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
 
-    recordBurnTransaction('BURN_SPEEDUP', 50, 'ChronoFlora: Aceleración Fotónica Sala Indoor Completa (30 Plantas)');
+    recordBurnTransaction('BURN_SPEEDUP', 50, 'Yield Bud Empire: Aceleración Fotónica Sala Indoor Completa (30 Plantas)');
 
     setIndoorPlants(prev => prev.map(p => {
       const nextProgress = Math.min(100, p.progressPercent + 30);
@@ -1608,7 +1608,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         showNotification(`Saldo insuficiente: Requiere ${seed.priceFlora} $FLORA`, 'info');
         return false;
       }
-      recordBurnTransaction('BURN_PATENT', seed.priceFlora, `ChronoFlora: Compra de Pack de Semillas (${seed.name})`);
+      recordBurnTransaction('BURN_PATENT', seed.priceFlora, `Yield Bud Empire: Compra de Pack de Semillas (${seed.name})`);
     } else {
       if (solBalance < seed.priceSol) {
         showNotification(`Saldo insuficiente: Requiere ${seed.priceSol} SOL`, 'info');
@@ -1625,7 +1625,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         timestamp: Date.now(),
         status: 'confirmed',
         blockSlot: 248926000,
-        memo: `ChronoFlora: Adquisición de Semillas ${seed.name} con SOL`
+        memo: `Yield Bud Empire: Adquisición de Semillas ${seed.name} con SOL`
       };
       setTransactions(prev => [newTx, ...prev]);
     }
@@ -1677,7 +1677,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         showNotification(`Saldo insuficiente: Requiere ${supply.priceFlora} $FLORA`, 'info');
         return false;
       }
-      recordBurnTransaction('BURN_REPAIR', supply.priceFlora, `ChronoFlora: Instalación de Equipo de Cultivo (${supply.name})`);
+      recordBurnTransaction('BURN_REPAIR', supply.priceFlora, `Yield Bud Empire: Instalación de Equipo de Cultivo (${supply.name})`);
     } else {
       if (solBalance < supply.priceSol) {
         showNotification(`Saldo insuficiente: Requiere ${supply.priceSol} SOL`, 'info');
@@ -1694,7 +1694,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         timestamp: Date.now(),
         status: 'confirmed',
         blockSlot: 248928000,
-        memo: `ChronoFlora: Compra de Hardware Botánico ${supply.name}`
+        memo: `Yield Bud Empire: Compra de Hardware Botánico ${supply.name}`
       };
       setTransactions(prev => [newTx, ...prev]);
     }
@@ -1738,7 +1738,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         showNotification(`Saldo insuficiente: requiere ${totalFlora} $FLORA`, 'info');
         return false;
       }
-      recordBurnTransaction('BURN_PURCHASE', totalFlora, `ChronoFlora: Mint NFT ${label} (${item.kind === 'consumable' ? 'consumible' : item.kind === 'license' ? 'licencia' : 'equipo'})`);
+      recordBurnTransaction('BURN_PURCHASE', totalFlora, `Yield Bud Empire: Mint NFT ${label} (${item.kind === 'consumable' ? 'consumible' : item.kind === 'license' ? 'licencia' : 'equipo'})`);
     } else {
       if (solBalance < totalSol) {
         showNotification(`Saldo insuficiente: requiere ${totalSol} SOL`, 'info');
@@ -1754,7 +1754,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         timestamp: Date.now(),
         status: 'confirmed',
         blockSlot: 248928000 + Math.floor(Math.random() * 5000),
-        memo: `ChronoFlora: Mint NFT ${label}`
+        memo: `Yield Bud Empire: Mint NFT ${label}`
       }, ...prev.slice(0, 24)]);
     }
     // equipment goes straight into an empty slot (lamp / AC / irrigation); racks like solar, CO₂ and meters always install
@@ -1801,7 +1801,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showNotification(`Saldo insuficiente: la reparación cuesta ${cost} $FLORA`, 'info');
       return false;
     }
-    recordBurnTransaction('BURN_REPAIR', cost, `ChronoFlora: Reparación de ${item.name} (quema permanente)`);
+    recordBurnTransaction('BURN_REPAIR', cost, `Yield Bud Empire: Reparación de ${item.name} (quema permanente)`);
     setAssets(prev => prev.map(a => a.id === assetId ? { ...a, durability: 100 } : a));
     showNotification(`${item.name} reparado al 100 % (${cost} $FLORA quemados)`, 'success');
     return true;
@@ -1896,7 +1896,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         showNotification(`Saldo insuficiente: la parcela ${offer.name} cuesta ${offer.priceFlora} $FLORA`, 'info');
         return false;
       }
-      recordBurnTransaction('BURN_PURCHASE', offer.priceFlora, `ChronoFlora Planeta: Mint NFT parcela ${offer.name} (${r.name}, nota ${offer.landRating}/10)`);
+      recordBurnTransaction('BURN_PURCHASE', offer.priceFlora, `Yield Bud Empire Planeta: Mint NFT parcela ${offer.name} (${r.name}, nota ${offer.landRating}/10)`);
     } else {
       if (solBalance < offer.priceSol) {
         showNotification(`Saldo insuficiente: la parcela cuesta ${offer.priceSol} SOL`, 'info');
@@ -1905,7 +1905,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSolBalance(prev => Number(Math.max(0, prev - offer.priceSol).toFixed(3)));
       setTransactions(prev => [{
         id: `tx-plot-${Date.now()}`, signature: generateSolanaSignature(), type: 'BURN_PURCHASE', amountFlora: 0, amountSol: offer.priceSol,
-        timestamp: Date.now(), status: 'confirmed', blockSlot: 248928000 + Math.floor(Math.random() * 5000), memo: `ChronoFlora Planeta: Mint NFT parcela ${offer.name}`
+        timestamp: Date.now(), status: 'confirmed', blockSlot: 248928000 + Math.floor(Math.random() * 5000), memo: `Yield Bud Empire Planeta: Mint NFT parcela ${offer.name}`
       }, ...prev.slice(0, 24)]);
     }
     setPlots(prev => [...prev, { id: offer.id, region, index: offer.index, name: offer.name, ratings: offer.ratings, landRating: offer.landRating, mintedAt: Date.now(), plants: [] }]);
@@ -2043,11 +2043,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const chest = CHESTS[id];
     if (currency === 'FLORA') {
       if (floraBalance < chest.priceFlora) { showNotification(`Saldo insuficiente: el ${chest.name} cuesta ${chest.priceFlora} $FLORA`, 'info'); return null; }
-      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `ChronoFlora: ${chest.name} (mint de avatar NFT)`);
+      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `Yield Bud Empire: ${chest.name} (mint de avatar NFT)`);
     } else {
       if (solBalance < chest.priceSol) { showNotification(`Saldo insuficiente: el ${chest.name} cuesta ${chest.priceSol} SOL`, 'info'); return null; }
       setSolBalance(prev => Number(Math.max(0, prev - chest.priceSol).toFixed(3)));
-      setTransactions(prev => [{ id: `tx-chest-${Date.now()}`, signature: generateSolanaSignature(), type: 'BURN_PURCHASE', amountFlora: 0, amountSol: chest.priceSol, timestamp: Date.now(), status: 'confirmed', blockSlot: 248928000 + Math.floor(Math.random() * 5000), memo: `ChronoFlora: ${chest.name}` }, ...prev.slice(0, 24)]);
+      setTransactions(prev => [{ id: `tx-chest-${Date.now()}`, signature: generateSolanaSignature(), type: 'BURN_PURCHASE', amountFlora: 0, amountSol: chest.priceSol, timestamp: Date.now(), status: 'confirmed', blockSlot: 248928000 + Math.floor(Math.random() * 5000), memo: `Yield Bud Empire: ${chest.name}` }, ...prev.slice(0, 24)]);
     }
     // fair randomness: the browser's cryptographic generator, not Math.random
     const rng = () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
@@ -2347,7 +2347,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (target.costFlora > 0) {
-      recordBurnTransaction('BURN_SPEEDUP', target.costFlora, `ChronoFlora: Desbloqueo de Instalación ${target.name}`);
+      recordBurnTransaction('BURN_SPEEDUP', target.costFlora, `Yield Bud Empire: Desbloqueo de Instalación ${target.name}`);
     }
 
     setFacilities(prev => prev.map(f => f.id === facilityId ? { ...f, unlocked: true } : f));
@@ -2463,7 +2463,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playClickSound();
     if (spec.inputKind === 'flower') setRawFlowerGrams(prev => Math.max(0, Number((prev - spec.grams).toFixed(2))));
     else setTrimGrams(prev => Math.max(0, Number((prev - spec.grams).toFixed(2))));
-    recordBurnTransaction('BURN_PROCESS', spec.feeFlora, `ChronoFlora Lab: ${spec.label} (${spec.grams}g)`);
+    recordBurnTransaction('BURN_PROCESS', spec.feeFlora, `Yield Bud Empire Lab: ${spec.label} (${spec.grams}g)`);
 
     const wear = machine?.wearPercentage ?? 100;
     setMachines(prev => prev.map(m => {
@@ -2512,7 +2512,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return null;
     }
     if (!takeStation('hplc')) return null;
-    recordBurnTransaction('BURN_PROCESS', feeFlora, `ChronoFlora Lab: Análisis HPLC de ${prod.name}`);
+    recordBurnTransaction('BURN_PROCESS', feeFlora, `Yield Bud Empire Lab: Análisis HPLC de ${prod.name}`);
     setMachines(prev => prev.map(m => {
       if (m.id !== 'hplc_analyzer') return m;
       const next = Math.max(0, m.wearPercentage - m.wearRatePerCycle);
@@ -2618,7 +2618,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
 
-    recordBurnTransaction('BURN_REPAIR', machine.repairCostFlora, `ChronoFlora: Mantenimiento y Restauración de ${machine.name}`);
+    recordBurnTransaction('BURN_REPAIR', machine.repairCostFlora, `Yield Bud Empire: Mantenimiento y Restauración de ${machine.name}`);
 
     setMachines(prev => prev.map(m => {
       if (m.id === machineId) {
@@ -2664,7 +2664,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       cycleDurationSeconds: Math.round((parentA.cycleDurationSeconds + parentB.cycleDurationSeconds) / 2),
       resinYieldMultiplier: Number((Math.max(parentA.resinYieldMultiplier, parentB.resinYieldMultiplier) * 1.15).toFixed(2)),
       colorTheme: '#ec4899',
-      description: `Cruzamiento genético experimental desarrollado en el laboratorio ChronoFlora entre ${parentA.name} y ${parentB.name}.`
+      description: `Cruzamiento genético experimental desarrollado en el laboratorio Yield Bud Empire entre ${parentA.name} y ${parentB.name}.`
     };
 
     setStrains(prev => [...prev, newStrain]);
@@ -2683,7 +2683,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const sig = generateSolanaSignature();
-    recordBurnTransaction('BURN_PATENT', 250, `ChronoFlora: Registro On-Chain de Patente Genómica (${strain.name})`);
+    recordBurnTransaction('BURN_PATENT', 250, `Yield Bud Empire: Registro On-Chain de Patente Genómica (${strain.name})`);
 
     const newPatent: GenomicPatent = {
       id: `pat-${Date.now()}`,
@@ -2736,7 +2736,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playHarvestChime();
     const fee = Math.max(1, Math.round(prod.marketValueFlora * USE.marketFee));
     setFloraBalance(prev => prev + prod.marketValueFlora);
-    recordBurnTransaction('BURN_PROCESS', fee, `ChronoFlora Dispensario: comisión de mercado ${(USE.marketFee * 100).toFixed(1)} % (${prod.name})`);
+    recordBurnTransaction('BURN_PROCESS', fee, `Yield Bud Empire Dispensario: comisión de mercado ${(USE.marketFee * 100).toFixed(1)} % (${prod.name})`);
     setProcessedProducts(prev => prev.filter(p => p.id !== productId));
     setBrand(prev => ({
       ...prev,
@@ -2760,7 +2760,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const sig = generateSolanaSignature();
-    recordBurnTransaction('V2P_CLAIM', item.requiredFlora, `ChronoFlora: Canje Físico V2P (${item.title}) a ${shippingDetails.country}`);
+    recordBurnTransaction('V2P_CLAIM', item.requiredFlora, `Yield Bud Empire: Canje Físico V2P (${item.title}) a ${shippingDetails.country}`);
 
     setV2pItems(prev => prev.map(i => i.id === item.id ? { ...i, stockPhysical: i.stockPhysical - 1 } : i));
     setRedeemedV2pList(prev => [

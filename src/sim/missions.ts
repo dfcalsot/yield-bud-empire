@@ -41,7 +41,7 @@ export interface MissionDef {
 /* ───────────────────────────── story lines (ordered per NPC) ───────────────────────────── */
 
 export const STORY: MissionDef[] = [
-  // Doña Flora · Mercader
+  // Flora · Grow Shop
   { id: 'flora_1', npc: 'merchant', title: 'Primera compra', event: 'buy', goal: 1, reward: { lots: [{ id: 'water_50' }], xp: 30 },
     ask: 'Mire, jefe, un cultivador que no compra no crece. Llévese cualquier cosa de la tienda y le regalo agua.', thanks: '¡Trato hecho! Agua limpia de la casa.' },
   { id: 'flora_2', npc: 'merchant', title: 'Cliente de confianza', event: 'buy', goal: 3, reward: { lots: [{ id: 'nut_biobizz' }], xp: 50 },
@@ -49,7 +49,7 @@ export const STORY: MissionDef[] = [
   { id: 'flora_3', npc: 'merchant', title: 'Mayorista', event: 'buy', goal: 6, reward: { lots: [{ id: 'energy_20' }, { id: 'pest_neem' }], xp: 90 },
     ask: 'Seis compras y ya es mayorista. Le tengo un bono de energía y neem para las plagas.', thanks: '¡Mayorista oficial! Que no le falte luz ni le sobren bichos.' },
 
-  // Don Tomás · Agricultor
+  // Tomás · Cultivador
   { id: 'tomas_1', npc: 'farmer', title: 'Manos a la tierra', event: 'water', goal: 3, reward: { lots: [{ id: 'water_50' }], xp: 30 },
     ask: 'Una planta sedienta es una planta triste. Riegue tres veces y le paso agua de mi pozo.', thanks: '¡Así se hace! Aquí tiene su agua.' },
   { id: 'tomas_2', npc: 'farmer', title: 'A sembrar', event: 'plant', goal: 2, reward: { seeds: { seed_gelato_auto: 1 }, xp: 50 },
@@ -57,7 +57,7 @@ export const STORY: MissionDef[] = [
   { id: 'tomas_3', npc: 'farmer', title: 'Dueño de tierra', event: 'plot', goal: 1, reward: { lots: [{ id: 'pest_neem' }, { id: 'water_200' }], xp: 120 },
     ask: 'Un agricultor de verdad tiene su terreno. Compre una parcela en el Planeta y le ayudo con el arranque.', thanks: '¡Ya tiene tierra propia! Agua y neem, que arranca la faena.' },
   { id: 'tomas_4', npc: 'farmer', title: 'Primera cosecha', event: 'harvest', goal: 1, reward: { seeds: { seed_chrono_og: 2 }, xp: 100 },
-    ask: 'Ahora lo más lindo: coseche una planta. Se lo ha ganado.', thanks: '¡Esa sí es cosecha! Dos semillas Chrono OG de premio.' },
+    ask: 'Ahora lo más lindo: coseche una planta. Se lo ha ganado.', thanks: '¡Esa sí es cosecha! Dos semillas Yield OG de premio.' },
 
   // Dra. Lucía · Científica
   { id: 'lucia_1', npc: 'scientist', title: 'Receta a medida', event: 'fertigate', goal: 1, reward: { lots: [{ id: 'nut_biobizz' }], xp: 40 },

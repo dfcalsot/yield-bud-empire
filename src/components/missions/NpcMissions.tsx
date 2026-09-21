@@ -2,7 +2,8 @@ import React from 'react';
 import { CalendarClock, Check, Gift, MessageCircle, ScrollText } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { CATALOG_BY_ID } from '../../economy/catalog';
-import { NPC_NAMES, type Mood, type NpcKind } from '../npc/Npc';
+import { npcName, type Mood, type NpcKind } from '../npc/Npc';
+import { useShopkeeper } from '../npc/shopkeeper';
 import { activeStory, claimableCount, errandOf, rewardSummary, storyOf, storyProgress, type MissionReward, type Progress } from '../../sim/missions';
 
 /**
@@ -16,7 +17,8 @@ export const NpcMissions: React.FC<{ npc: NpcKind; onSay?: (text: string, mood: 
   const line = storyOf(npc);
   const doneCount = line.filter(m => missions.claimed.includes(m.id)).length;
   const ready = claimableCount(missions, npc);
-  const firstName = NPC_NAMES[npc].split(' · ')[0];
+  const [shop] = useShopkeeper();
+  const firstName = npcName(npc, shop).split(' · ')[0];
   const rewardLabels = (r: MissionReward) => rewardSummary(r, id => CATALOG_BY_ID[id]?.name ?? id, id => seedBank.find(s => s.id === id)?.name ?? id);
 
   const say = (text: string | null, mood: Mood = 'happy') => { if (text) onSay?.(text, mood); };

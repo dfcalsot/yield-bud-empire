@@ -1,4 +1,4 @@
-// Web Audio API synthesized sound effects for ChronoFlora
+// Web Audio API synthesized sound effects for Yield Bud Empire
 let audioCtx: AudioContext | null = null;
 let soundEnabled = true;
 

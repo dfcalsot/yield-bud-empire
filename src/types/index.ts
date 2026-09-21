@@ -306,7 +306,7 @@ export interface SolanaTransaction {
 export interface V2pRedemptionItem {
   id: string;
   title: string;
-  category: 'Botanical Terpenes' | 'Premium Hemp CBD' | 'Chrono Merch' | 'Vip Dispensary Pass';
+  category: 'Botanical Terpenes' | 'Premium Hemp CBD' | 'Yield Merch' | 'Vip Dispensary Pass';
   requiredFlora: number;
   stockPhysical: number;
   /** id of the animated illustration (components/art/GameArt) */

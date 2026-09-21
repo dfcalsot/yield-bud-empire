@@ -1,4 +1,4 @@
-// ChronoFlora account service: e-mail sign-up with verification, Google / X login, sessions, anti-bot and abuse protection.
+// Yield Bud Empire account service: e-mail sign-up with verification, Google / X login, sessions, anti-bot and abuse protection.
 // Zero runtime dependencies (Node ≥ 22: http, crypto, sqlite, dns). Optional: nodemailer for real e-mail delivery.
 import http from 'node:http';
 import fs from 'node:fs';
@@ -26,7 +26,7 @@ export const cfg = {
   xMinAgeDays: Number(env.X_MIN_AGE_DAYS ?? 60),
   xMinFollowers: Number(env.X_MIN_FOLLOWERS ?? 0),
   smtpUrl: env.SMTP_URL ?? '',
-  mailFrom: env.MAIL_FROM ?? 'ChronoFlora <no-reply@chronoflora.local>',
+  mailFrom: env.MAIL_FROM ?? 'Yield Bud Empire <no-reply@yieldbudempire.local>',
 };
 const secure = cfg.publicUrl.startsWith('https://');
 const allowedOrigins = new Set((env.ALLOWED_ORIGINS ?? cfg.publicUrl).split(',').map((s) => s.trim().replace(/\/$/, '')));
@@ -223,7 +223,7 @@ route('POST', '/api/auth/register', async (ctx) => {
   const existing = q.byEmailKey.get(eKey);
   if (existing) {
     // never reveal that the address is registered: same answer, and the owner gets a notice
-    await sendMail(email, 'Ya tienes una cuenta en ChronoFlora', `Alguien intentó crear una cuenta con este correo, pero ya tienes una (usuario: ${existing.username}).\nSi fuiste tú, entra con tu contraseña o usa «Olvidé mi contraseña». Si no, ignora este mensaje.`);
+    await sendMail(email, 'Ya tienes una cuenta en Yield Bud Empire', `Alguien intentó crear una cuenta con este correo, pero ya tienes una (usuario: ${existing.username}).\nSi fuiste tú, entra con tu contraseña o usa «Olvidé mi contraseña». Si no, ignora este mensaje.`);
     audit('signup_existing_email', existing.id, ctx.ipHash);
     return { ok: true, pending: true };
   }
@@ -234,7 +234,7 @@ route('POST', '/api/auth/register', async (ctx) => {
   suspicious(ctx, id);
   const token = rand(32);
   q.addToken.run(hashToken(token), id, 'verify', Date.now() + 24 * 3600_000);
-  const sent = await sendMail(email, 'Confirma tu cuenta de ChronoFlora', `¡Bienvenido, ${username}!\n\nConfirma tu correo para empezar a jugar (el enlace vale 24 h):\n${linkFor('verify', token)}\n\nSi no creaste esta cuenta, ignora este mensaje.`);
+  const sent = await sendMail(email, 'Confirma tu cuenta de Yield Bud Empire', `¡Bienvenido, ${username}!\n\nConfirma tu correo para empezar a jugar (el enlace vale 24 h):\n${linkFor('verify', token)}\n\nSi no creaste esta cuenta, ignora este mensaje.`);
   audit('signup', id, ctx.ipHash);
   issueSession(ctx, id);
   return { ok: true, pending: true, emailSent: sent, ...(cfg.devLinks ? { devLink: linkFor('verify', token) } : {}) };
@@ -260,7 +260,7 @@ route('POST', '/api/auth/resend', async (ctx) => {
     limit(ctx, `resend:acc:${a.id}`, 1, 60_000);
     const token = rand(32);
     q.addToken.run(hashToken(token), a.id, 'verify', Date.now() + 24 * 3600_000);
-    await sendMail(a.email, 'Confirma tu cuenta de ChronoFlora', `Confirma tu correo (vale 24 h):\n${linkFor('verify', token)}`);
+    await sendMail(a.email, 'Confirma tu cuenta de Yield Bud Empire', `Confirma tu correo (vale 24 h):\n${linkFor('verify', token)}`);
     if (cfg.devLinks) return { ok: true, devLink: linkFor('verify', token) };
   }
   return { ok: true };   // same answer whether or not the address exists
@@ -308,7 +308,7 @@ route('POST', '/api/auth/reset/request', async (ctx) => {
     limit(ctx, `reset:acc:${a.id}`, 3, 3600_000);
     const token = rand(32);
     q.addToken.run(hashToken(token), a.id, 'reset', Date.now() + 3600_000);
-    await sendMail(a.email, 'Restablece tu contraseña de ChronoFlora', `Usa este enlace para elegir una contraseña nueva (vale 1 hora):\n${linkFor('reset', token)}\n\nSi no lo pediste, ignóralo: tu cuenta sigue segura.`);
+    await sendMail(a.email, 'Restablece tu contraseña de Yield Bud Empire', `Usa este enlace para elegir una contraseña nueva (vale 1 hora):\n${linkFor('reset', token)}\n\nSi no lo pediste, ignóralo: tu cuenta sigue segura.`);
     audit('reset_request', a.id, ctx.ipHash);
     if (cfg.devLinks) return { ok: true, devLink: linkFor('reset', token) };
   }
@@ -475,6 +475,6 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (cfg.devLinks) console.warn('⚠  DEV_EXPOSE_LINKS=1: los enlaces de verificación se devuelven a la web. La verificación de correo NO protege nada. Solo para desarrollo.');
   if (!cfg.smtpUrl) console.warn('⚠  SMTP_URL sin configurar: los correos se guardan en data/outbox.log y no llegan a nadie.');
   if (!secure) console.warn('⚠  PUBLIC_URL sin HTTPS: las cookies de sesión no llevan el atributo Secure. Ponlo detrás de HTTPS en producción.');
-  createServer().listen(cfg.port, cfg.host, () => console.log(`ChronoFlora accounts on http://${cfg.host}:${cfg.port} (public ${cfg.publicUrl}) · google=${!!providers.google.id} x=${!!providers.x.id} smtp=${!!cfg.smtpUrl}`));
+  createServer().listen(cfg.port, cfg.host, () => console.log(`Yield Bud Empire accounts on http://${cfg.host}:${cfg.port} (public ${cfg.publicUrl}) · google=${!!providers.google.id} x=${!!providers.x.id} smtp=${!!cfg.smtpUrl}`));
 }
 export { db, q, limiter };

@@ -22,7 +22,7 @@ export class AppErrorBoundary extends Component<{ children: React.ReactNode }, {
   state = { error: null as Error | null };
   static getDerivedStateFromError(error: Error) { return { error }; }
   componentDidCatch(error: Error) {
-    console.error('ChronoFlora: error no controlado', error);
+    console.error('Yield Bud Empire: error no controlado', error);
     if (STALE_RE.test(String(error?.message))) reloadOnceForNewBuild();
   }
   render() {
