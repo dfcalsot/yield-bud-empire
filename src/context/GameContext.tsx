@@ -68,6 +68,7 @@ import {
 } from '../utils/audio';
 
 import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
+import { landOffers } from '../sim/lands';
 import { siteConditions, plotOffer, terroirOf, REGION_BY_ID, PLOT_SIZE, type PlotOffer } from '../sim/terroir';
 import { CHESTS, DUPLICATE_REFUND, EMPTY_PITY, DESIGN_BY_ID, rollChest, seasonOf, type AvatarDesign, type ChestId, type OwnedAvatar, type PityMap } from '../sim/avatars';
 import {
@@ -1959,20 +1960,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // --- LAND PLOTS (the planet) ---
-  /** plots already sold to other growers, per region (the market looks alive; your own purchases come on top) */
-  const SOLD_BASE: Record<RegionId, number> = { afghanistan: 14, mexico: 22, jamaica: 31, central_america: 9, south_america: 27, africa: 18, asia: 12 };
-
-  const plotsForSale = (region: RegionId): { offers: PlotOffer[]; left: number } => {
-    const r = REGION_BY_ID[region];
-    const owned = new Set(plots.map(pl => pl.id));
-    const left = Math.max(0, r.supply - SOLD_BASE[region] - plots.filter(pl => pl.region === region).length);
-    const offers: PlotOffer[] = [];
-    for (let i = SOLD_BASE[region] + 1; i <= r.supply && offers.length < Math.min(6, left); i++) {
-      const o = plotOffer(region, i);
-      if (!owned.has(o.id)) offers.push(o);
-    }
-    return { offers, left };
-  };
+  const plotsForSale = (region: RegionId): { offers: PlotOffer[]; left: number } => landOffers(region, new Set(plots.map(pl => pl.id)));
 
   const buyPlot = (offerId: string, currency: 'FLORA' | 'SOL' = 'FLORA'): boolean => {
     const m = /^plot-([a-z_]+)-(\d+)$/.exec(offerId);

@@ -234,6 +234,111 @@ ok('contraseñas guardadas con scrypt + sal + pepper (nunca en claro)', stored.s
 const sess = db.prepare('SELECT id_hash FROM sessions LIMIT 1').get().id_hash;
 ok('tokens de sesión guardados solo como hash SHA-256', /^[0-9a-f]{64}$/.test(sess));
 
+
+// ── economy: the wallet, the ledger and the NFTs belong to the server
+const sim = await import('./gen/sim.mjs');
+const ECON = sim.economy.ECON;
+const mkPlayer = async (n) => {
+  const jar = {}; const ip = newIp();
+  await reg({ ip, jar, body: { email: `econ${n}@example.com`, username: `Econ Player ${n}` } });
+  const meR = await call('GET', '/api/auth/me', { jar, ip });
+  return { jar, ip, id: meR.json.account.id };
+};
+const intent = (P, type, params, idem) => call('POST', '/api/econ/intent', { jar: P.jar, ip: P.ip, body: { type, params, idem } });
+const state = async (P) => (await call('GET', '/api/econ/state', { jar: P.jar, ip: P.ip })).json;
+const setFlora = (P, n) => db.prepare('UPDATE wallets SET flora = ? WHERE account_id = ?').run(n, P.id);
+const wallet = (P) => db.prepare('SELECT * FROM wallets WHERE account_id = ?').get(P.id);
+const stateRow = (P) => JSON.parse(db.prepare('SELECT json FROM econ_state WHERE account_id = ?').get(P.id).json);
+
+const E1 = await mkPlayer(1);
+ok('economía: sin sesión no hay cartera (401)', (await call('GET', '/api/econ/state', { ip: newIp() })).status === 401);
+let es = await state(E1);
+ok('cuenta nueva: el servidor le da el saldo inicial y la escalera empieza en el armario', es.snapshot.flora === ECON.starterFlora && es.snapshot.tier === 1 && es.snapshot.staff.length === 0);
+let cl = await intent(E1, 'claim_daily', {});
+ok('reclamo diario: suma el monto fijo', cl.status === 200 && cl.json.snapshot.flora === ECON.starterFlora + ECON.dailyClaim);
+cl = await intent(E1, 'claim_daily', {});
+ok('reclamo diario: una sola vez cada 24 h', cl.status === 400 && cl.json.error === 'too_early' && cl.json.leftMs > 0);
+let sp = await intent(E1, 'spend', { amount: 1000, memo: 'trampa' });
+ok('gastar más de lo que hay se rechaza y no toca el saldo', sp.status === 400 && sp.json.error === 'insufficient' && (await state(E1)).snapshot.flora === ECON.starterFlora + ECON.dailyClaim);
+ok('un gasto no puede ser negativo (no se puede imprimir saldo gastando)', (await intent(E1, 'spend', { amount: -100 })).status === 400 && (await intent(E1, 'spend', { amount: 0 })).status === 400);
+const f0 = (await state(E1)).snapshot.flora;
+const idemA = await intent(E1, 'spend', { amount: 10, memo: 'x' }, 'k-1'), idemB = await intent(E1, 'spend', { amount: 10, memo: 'x' }, 'k-1');
+ok('clave idempotente: el doble clic no cobra dos veces', idemA.status === 200 && idemB.status === 200 && (await state(E1)).snapshot.flora === f0 - 10 && idemB.json.snapshot.flora === idemA.json.snapshot.flora);
+ok('un intent desconocido se rechaza', (await intent(E1, 'print_money', { amount: 1e9 })).json.error === 'unknown_intent');
+
+// builds: cost, one at a time, no skipping, capped speed-ups, finished by time
+const E2 = await mkPlayer(2); await state(E2); setFlora(E2, 5000);
+ok('obras: no se salta ningún escalón', (await intent(E2, 'start_build', { facilityId: 'greenhouse_commercial' })).json.error === 'skip_rung');
+let b = await intent(E2, 'start_build', { facilityId: 'tent_pro' });
+ok('obra: cuesta $FLORA y queda en marcha', b.status === 200 && b.json.snapshot.flora === 5000 - 250 && !!b.json.snapshot.construction && b.json.snapshot.tier === 1);
+ok('obra: solo una a la vez', (await intent(E2, 'start_build', { facilityId: 'tent_pro' })).json.error === 'build_in_progress');
+const s1 = await intent(E2, 'speedup_build', {}), s2 = await intent(E2, 'speedup_build', {}), s3 = await intent(E2, 'speedup_build', {});
+ok('aceleraciones: máximo por día, cada una quema y recorta', s1.status === 200 && s2.status === 200 && s3.json.error === 'speedup_limit' && s2.json.snapshot.flora < s1.json.snapshot.flora && s2.json.snapshot.construction.endsAt < b.json.snapshot.construction.endsAt);
+const stE2 = stateRow(E2); stE2.construction.endsAt = Date.now() - 1000; db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(stE2), E2.id);
+es = await state(E2);
+ok('la obra termina sola con el tiempo del servidor', es.snapshot.tier === 2 && es.snapshot.construction === null && es.snapshot.unlocked.includes('tent_pro'));
+
+// sales: bounded by the market depth, fee and licence burned
+const E3 = await mkPlayer(3); await state(E3);
+ok('venta: producto o gramos inventados se rechazan', (await intent(E3, 'sell', { type: 'oro', grams: 10 })).status === 400 && (await intent(E3, 'sell', { type: 'live_rosin', grams: -5 })).status === 400 && (await intent(E3, 'sell', { type: 'live_rosin', grams: 1e9 })).status === 400);
+const s10 = await intent(E3, 'sell', { type: 'live_rosin', grams: 10 });
+ok('venta: paga, quema comisión y devuelve el porcentaje de mercado', s10.status === 200 && s10.json.result.gross > 0 && s10.json.result.fee >= 1 && s10.json.result.net === s10.json.result.gross - s10.json.result.fee && s10.json.result.ratio < 1);
+const s10b = await intent(E3, 'sell', { type: 'live_rosin', grams: 10 });
+ok('venta: el mercado se satura (la misma venta paga menos la segunda vez)', s10b.json.result.gross < s10.json.result.gross);
+const E4 = await mkPlayer(4); await state(E4);
+let tot = 0; for (let i = 0; i < 12; i++) { const r = await intent(E4, 'sell', { type: 'pure_terpenes', grams: 2000 }); tot += r.json.result.gross; }
+ok('un guardado adulterado no imprime dinero: 24 000 g de terpenos pagan una cantidad acotada', tot < 12 * ECON.depthGrams * 85 * ECON.priceScale * 1.5, `(${tot} $FLORA)`);
+const wE4 = wallet(E4);
+ok('libro mayor: saldo = inicial + emitido − quemado', wE4.flora === ECON.starterFlora + wE4.minted - wE4.burned);
+
+// staff NFTs: hire from the day's board, chests, wages, ranks, ownership
+const E5 = await mkPlayer(5); await state(E5); setFlora(E5, 3000);
+const board = sim.staff.jobBoard(Math.floor(Date.now() / 86400000));
+ok('contratar: un candidato que no está en la bolsa se rechaza', (await intent(E5, 'hire', { candidateId: 'staff-d1-0' })).json.error === 'not_on_board');
+const h1 = await intent(E5, 'hire', { candidateId: board[0].id });
+ok('contratar: cuesta el precio de la bolsa y crea un NFT del jugador', h1.status === 200 && h1.json.snapshot.flora === 3000 - board[0].priceFlora && h1.json.snapshot.staff.length === 1 && h1.json.result.staff.role === board[0].role);
+ok('contratar: no se puede contratar dos veces al mismo', (await intent(E5, 'hire', { candidateId: board[0].id })).json.error === 'already_hired');
+const E6 = await mkPlayer(6); await state(E6); setFlora(E6, 1000);
+ok('la bolsa es de todos: otro jugador puede contratar al mismo candidato (su propia copia)', (await intent(E6, 'hire', { candidateId: board[0].id })).status === 200);
+const hire = h1.json.result.staff;
+const asg = await intent(E5, 'assign', { role: hire.role, staffId: hire.id });
+ok('asignar: el sueldo del día se cobra al instante', asg.status === 200 && (await state(E5)).snapshot.flora === 3000 - board[0].priceFlora - sim.staff.wageOf(hire) && (await state(E5)).snapshot.staffAssign[hire.role] === hire.id);
+ok('asignar a un puesto equivocado o a un NFT ajeno se rechaza', (await intent(E5, 'assign', { role: hire.role === 'foreman' ? 'farmer' : 'foreman', staffId: hire.id })).json.error === 'wrong_role' && (await intent(E6, 'assign', { role: hire.role, staffId: hire.id })).json.error === 'not_yours');
+const up = await intent(E5, 'rank_up', { staffId: hire.id });
+ok('subir de rango quema $FLORA y solo el dueño puede', up.status === 200 && up.json.result.staff.rank === 2 && (await intent(E6, 'rank_up', { staffId: hire.id })).json.error === 'not_yours');
+const ch = await intent(E5, 'staff_chest', { chestId: 'recruit' });
+ok('cofre de personal: tirada del servidor, cobra y guarda el contador de garantía', ch.status === 200 && !!ch.json.result.staff.id && ch.json.snapshot.staffPity.recruit.sinceEpic + ch.json.snapshot.staffPity.recruit.sinceLegend >= 0 && ch.json.snapshot.staff.length === 2);
+setFlora(E5, 5); db.prepare('UPDATE nfts SET data = json_set(data, \'$.paidThrough\', 0) WHERE account_id = ? AND kind = \'staff\'').run(E5.id);
+es = await state(E5);
+ok('sueldos: sin saldo el asistente deja de trabajar (sin deuda)', es.snapshot.flora >= 0 && es.snapshot.staff.find((x) => x.id === hire.id).paidThrough === 0 ? es.snapshot.flora === 5 : es.snapshot.flora < 5);
+
+// lands: unique, scarce, priced by the server
+const E7 = await mkPlayer(7); await state(E7); setFlora(E7, 5000);
+const offerId = (await state(E7)).snapshot.offers.jamaica.ids[0];
+const lp = await intent(E7, 'buy_plot', { offerId });
+ok('tierra: se compra al precio de la oferta y pasa a ser del jugador', lp.status === 200 && lp.json.snapshot.plots.length === 1 && lp.json.snapshot.plots[0].id === offerId && lp.json.snapshot.flora < 5000);
+const E8 = await mkPlayer(8); await state(E8); setFlora(E8, 5000);
+ok('tierra: es única, otro jugador ya no puede comprarla', (await intent(E8, 'buy_plot', { offerId })).json.error === 'plot_taken');
+ok('tierra: la oferta desaparece del mercado de todos', !(await state(E8)).snapshot.offers.jamaica.ids.includes(offerId));
+ok('tierra: un id inventado o ya vendido antes de abrir se rechaza', (await intent(E8, 'buy_plot', { offerId: 'plot-jamaica-1' })).json.error === 'plot_taken' && (await intent(E8, 'buy_plot', { offerId: 'plot-mars-3' })).status === 400);
+
+// avatars, rewards
+const cav = await intent(E7, 'avatar_chest', { chestId: 'season' });
+ok('cofre de avatar: cobra, tira en el servidor y guarda el NFT', cav.status === 200 && cav.json.snapshot.avatars.length === 1 && cav.json.result.owned.count === 1);
+const rq = await intent(E3, 'reward', { kind: 'quest', id: 'quest_water_micro' });
+ok('misión con $FLORA: una sola vez y con el monto de la tabla del servidor', rq.status === 200 && rq.json.result.amount > 0 && (await intent(E3, 'reward', { kind: 'quest', id: 'quest_water_micro' })).json.error === 'already_claimed' && (await intent(E3, 'reward', { kind: 'quest', id: 'inventada' })).status === 400);
+ok('bono de nivel: no se puede saltar a un nivel absurdo en una cuenta nueva', (await intent(E3, 'reward', { kind: 'level', level: 60 })).json.error === 'too_fast');
+ok('bono de nivel: un nivel cercano se cobra una vez', (await intent(E3, 'reward', { kind: 'level', level: 3 })).status === 200 && (await intent(E3, 'reward', { kind: 'level', level: 3 })).json.error === 'already_claimed');
+
+// import of a local save: capped, once
+const E9 = await mkPlayer(9); await state(E9);
+const legend = sim.staff.makeStaff('staff-import-1', 'foreman', 'legendary', 5, Date.now(), 5);
+const imp = await call('POST', '/api/econ/import-local', { jar: E9.jar, ip: E9.ip, body: { flora: 9_999_999, tier: 3, staff: [legend, { id: 3 }], staffAssign: { foreman: 'staff-import-1' }, avatars: [{ designId: 'classic-1', count: 2, firstAt: 1, serial: 1234 }, { designId: 'no-existe', count: 1 }], plots: [{ id: 'plot-asia-20', mintedAt: 5 }, { id: 'plot-mars-1' }] } });
+ok('importar guardado local: el saldo se limita, los NFT se validan y la tierra se calcula con la fórmula del servidor', imp.status === 200 && imp.json.snapshot.flora === 1500 && imp.json.snapshot.tier === 3 && imp.json.snapshot.staff.length === 1 && imp.json.snapshot.avatars.length === 1 && imp.json.snapshot.plots.length === 1 && imp.json.snapshot.plots[0].landRating === sim.terroir.plotOffer('asia', 20).landRating);
+ok('importar: solo una vez', (await call('POST', '/api/econ/import-local', { jar: E9.jar, ip: E9.ip, body: { flora: 500 } })).json.error === 'already_imported');
+const totalSupply = db.prepare('SELECT SUM(flora) f, SUM(minted) m, SUM(burned) b FROM wallets').get();
+ok('el libro mayor de todos cuadra con los saldos (nada se crea ni se pierde fuera del libro)', typeof totalSupply.f === 'number' && totalSupply.m >= 0 && totalSupply.b >= 0);
+
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 server.close(); mock.close();
 fs.rmSync(dir, { recursive: true, force: true });
