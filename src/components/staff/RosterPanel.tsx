@@ -41,7 +41,7 @@ export const RosterPanel: React.FC<{ onHire: () => void }> = ({ onHire }) => {
           const candidates = staff.filter((s) => s.role === role && s.id !== cur?.staff.id);
           return (
             <div key={role} className="rounded-xl border border-white/10 bg-black/20 p-2.5 flex items-center gap-3" data-role-slot={role}>
-              {cur ? <StaffPortrait staff={cur.staff} className="w-12 h-14 rounded-lg border border-white/10 shrink-0" /> : <span className="grid place-items-center w-12 h-14 rounded-lg border border-dashed border-white/15 text-neutral-500 text-lg shrink-0">?</span>}
+              {cur ? <StaffPortrait staff={cur.staff} animated={false} className="w-12 h-14 rounded-lg border border-white/10 shrink-0" /> : <span className="grid place-items-center w-12 h-14 rounded-lg border border-dashed border-white/15 text-neutral-500 text-lg shrink-0">?</span>}
               <div className="min-w-0 flex-1">
                 <div className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">{ROLE_INFO[role].label} · {ROLE_INFO[role].place}</div>
                 {cur ? (

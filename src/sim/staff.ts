@@ -44,6 +44,13 @@ const TRAIT_ORDER: Trait['id'][] = ['especialista', 'mentor', 'veloz'];
 /** how many traits a hire has, by rarity (the first `n` of a per-hire shuffle) */
 const TRAIT_COUNT: Record<StaffRarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 
+/** Each role has 6 hand-designed characters: 2 common, 2 rare, 1 epic and 1 legendary (the higher the rarity, the more elaborate). */
+export const VARIANTS_PER_ROLE = 6;
+export const VARIANT_TIER: Record<StaffRarity, number[]> = { common: [0, 1], rare: [2, 3], epic: [4], legendary: [5] };
+export const variantFor = (rarity: StaffRarity, seed: number): number => { const t = VARIANT_TIER[rarity]; return t[Math.abs(Math.floor(seed)) % t.length]; };
+/** the design of a hire (old saves without one get it from their seed) */
+export const variantOf = (s: Pick<StaffNft, 'rarity' | 'seed'> & { variant?: number }): number => (typeof s.variant === 'number' && VARIANT_TIER[s.rarity].includes(s.variant) ? s.variant : variantFor(s.rarity, s.seed));
+
 export interface StaffNft {
   id: string;
   role: StaffRole;
@@ -53,6 +60,8 @@ export interface StaffNft {
   /** decides the portrait variation; stable */
   seed: number;
   traits: Trait['id'][];
+  /** which of the role's 6 designs this is (see VARIANT_TIER) */
+  variant?: number;
   hiredAt: number;
   /** the wage is paid one day at a time: the hire works until this moment */
   paidThrough: number;
@@ -156,7 +165,7 @@ export function lookFor(seed: number): { hue: number; sat: number; bright: numbe
 export function makeStaff(id: string, role: StaffRole, rarity: StaffRarity, seed: number, now: number, rank = 1): StaffNft {
   const r = mulberry(seed ^ 0x2545f491);
   const order = [...TRAIT_ORDER].sort(() => r() - 0.5);
-  return { id, role, rarity, rank: clampRank(rank), name: nameFor(seed), seed, traits: order.slice(0, TRAIT_COUNT[rarity]), hiredAt: now, paidThrough: 0 };
+  return { id, role, rarity, rank: clampRank(rank), name: nameFor(seed), seed, variant: variantFor(rarity, seed), traits: order.slice(0, TRAIT_COUNT[rarity]), hiredAt: now, paidThrough: 0 };
 }
 
 /* ── job board: a few candidates a day, fixed prices, only common and rare ── */

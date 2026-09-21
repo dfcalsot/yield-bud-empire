@@ -1,0 +1,27 @@
+/* premium staff bust: soft, slow motion only (transform and opacity), off with prefers-reduced-motion */
+.pb { display: block; width: 100%; height: 100%; overflow: hidden; }
+.pb-anim .pb-body { animation: pbBreath 5.5s ease-in-out infinite; transform-origin: 120px 300px; }
+@keyframes pbBreath { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-1.2px) scale(1.004); } }
+.pb-anim .pb-eye { animation: pbBlink 5.2s infinite; }
+@keyframes pbBlink { 0%, 94%, 100% { transform: scaleY(1); } 96.5% { transform: scaleY(0.08); } }
+.pb-anim .pb-aura { transform-origin: 120px 110px; animation: pbAura 4s ease-in-out infinite; }
+@keyframes pbAura { 0%, 100% { opacity: 0.75; transform: scale(0.97); } 50% { opacity: 1; transform: scale(1.03); } }
+.pb-anim .pb-rays { animation: pbSpin 60s linear infinite; }
+.pb-anim .pb-ring { animation: pbSpin 36s linear infinite reverse; }
+@keyframes pbSpin { to { transform: rotate(360deg); } }
+.pb-anim .pb-halo { animation: pbHalo 3.4s ease-in-out infinite; transform-origin: 120px 30px; }
+@keyframes pbHalo { 0%, 100% { opacity: 0.7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.06); } }
+.pb-anim .pb-mote { animation: pbMote 6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pbMote { 0%, 100% { transform: translateY(0); opacity: 0.35; } 50% { transform: translateY(-9px); opacity: 1; } }
+.pb-anim .pb-spark { transform-box: fill-box; transform-origin: center; animation: pbSpark 2.8s ease-in-out infinite; }
+@keyframes pbSpark { 0%, 100% { transform: scale(0.2) rotate(0); opacity: 0; } 45% { transform: scale(1) rotate(45deg); opacity: 1; } 70% { transform: scale(0.6) rotate(90deg); opacity: 0.6; } }
+.pb-anim .pb-foil { animation: pbFoil 5.5s ease-in-out infinite; }
+@keyframes pbFoil { 0%, 55% { transform: skewX(-18deg) translateX(0); } 100% { transform: skewX(-18deg) translateX(520px); } }
+.pb-anim .pb-float { animation: pbFloat 3.6s ease-in-out infinite; }
+@keyframes pbFloat { 0%, 100% { transform: translate(184px, 254px); } 50% { transform: translate(184px, 251px); } }
+.pb-anim .pb-pulse { animation: pbPulse 1.6s ease-in-out infinite; }
+@keyframes pbPulse { 50% { opacity: 0.35; } }
+.pb-anim .pb-bub { animation: pbPulse 1.4s ease-in-out infinite; }
+.pb-anim .pb-dna { animation: pbDna 4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes pbDna { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.55); } }
+@media (prefers-reduced-motion: reduce) { .pb-anim * { animation: none !important; } }

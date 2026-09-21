@@ -1,5 +1,5 @@
 import {
-  CAPS, EMPTY_STAFF_PITY, MAX_RANK, RARITIES, STAFF_CHESTS, STAFF_ROLES, ROLE_INFO, effectsOf, hireFromBoard, isActive, jobBoard, lookFor, makeStaff, mulberry, modifiersOf,
+  CAPS, EMPTY_STAFF_PITY, VARIANTS_PER_ROLE, VARIANT_TIER, variantFor, variantOf, MAX_RANK, RARITIES, STAFF_CHESTS, STAFF_ROLES, ROLE_INFO, effectsOf, hireFromBoard, isActive, jobBoard, lookFor, makeStaff, mulberry, modifiersOf,
   nameFor, normalizeAssignments, normalizeRoster, rankUpCost, rollStaff, settleWages, wageOf, type StatId, type StaffNft,
 } from '../src/sim/staff';
 
@@ -65,6 +65,12 @@ ok('nombre y aspecto estables', nameFor(5) === nameFor(5) && JSON.stringify(look
 ok('la variación visual está acotada', Array.from({ length: 300 }, (_, i) => lookFor(i)).every((l) => Math.abs(l.hue) <= 38 && l.sat >= 0.85 && l.sat <= 1.2));
 ok('normalizeRoster descarta basura', normalizeRoster([a, { id: 3 }, null, { ...b, rank: 99 }]).length === 2 && normalizeRoster([{ ...b, rank: 99 }])[0].rank === MAX_RANK && normalizeRoster('x').length === 0);
 ok('asignación: un rol solo acepta a alguien de ese rol', JSON.stringify(normalizeAssignments({ foreman: b.id, merchant: b.id, zz: 1 }, [a, b])) === JSON.stringify({ merchant: b.id }));
+
+// ── six designs per role, tied to the rarity
+ok('cada rol tiene 6 diseños: 2 comunes, 2 raros, 1 épico y 1 legendario', VARIANTS_PER_ROLE === 6 && VARIANT_TIER.common.length === 2 && VARIANT_TIER.rare.length === 2 && VARIANT_TIER.epic.length === 1 && VARIANT_TIER.legendary.length === 1 && [...Object.values(VARIANT_TIER).flat()].sort().join() === '0,1,2,3,4,5');
+ok('el diseño depende de la rareza y de la semilla, y es estable', RARITIES.every((r) => Array.from({ length: 50 }, (_, i) => variantFor(r, i)).every((v) => VARIANT_TIER[r].includes(v))) && variantFor('common', 7) === variantFor('common', 7));
+ok('los dos comunes y los dos raros aparecen', new Set(Array.from({ length: 40 }, (_, i) => variantFor('common', i))).size === 2 && new Set(Array.from({ length: 40 }, (_, i) => variantFor('rare', i))).size === 2);
+ok('makeStaff guarda el diseño y las partidas viejas lo recuperan', mk('farmer', 'epic').variant === 4 && variantOf({ rarity: 'legendary', seed: 3 }) === 5 && variantOf({ rarity: 'common', seed: 3, variant: 5 }) === variantFor('common', 3));
 
 console.log(failed === 0 ? '\nALL OK' : `\n${failed} FAILED`);
 process.exit(failed ? 1 : 0);

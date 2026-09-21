@@ -5,7 +5,8 @@ import { Chrono, type FigureV2 } from './figures';
 import { Flora, Floro, Tomas, Lucia, Rafa, Marta, Nico } from './cast';
 import { shopkeeperName, useShopkeeper, type Shopkeeper } from '../shopkeeper';
 import { useAssignedStaff } from '../../../context/GameContext';
-import { lookFor, ROLE_INFO, type StaffRole } from '../../../sim/staff';
+import { ROLE_INFO, variantOf, type StaffRole } from '../../../sim/staff';
+import { PremiumBust } from '../../staff/premium/PremiumBust';
 import { RARITY_STYLE } from '../../game/GameUI';
 
 /**
@@ -44,7 +45,6 @@ export const NpcV2: React.FC<{
   const hiredRaw = useAssignedStaff(kind as StaffRole);
   const hired = kind === 'chrono' || plain ? null : hiredRaw;
   const shop = variant ?? (hired && kind === 'merchant' ? (hired.staff.seed % 2 ? 'floro' : 'flora') : chosen);
-  const skin = hired ? lookFor(hired.staff.seed) : null;
   const aura = hired ? RARITY_STYLE[hired.staff.rarity].color : undefined;
   const [shown, setShown] = useState(text);
   const ref = useRef<HTMLDivElement>(null);
@@ -70,13 +70,18 @@ export const NpcV2: React.FC<{
 
   return (
     <div className={`flex items-end gap-1 min-w-0 ${className}`}>
-      <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} shrink-0`}
-        style={skin ? { filter: `hue-rotate(${skin.hue}deg) saturate(${skin.sat}) brightness(${skin.bright})${hired!.staff.rarity !== 'common' ? ` drop-shadow(0 0 7px ${aura})` : ''}` } : undefined} data-staff={hired?.staff.id}>
+      {hired ? (
+        <div ref={ref} className={`shrink-0 rounded-2xl overflow-hidden ring-1 ${bare ? 'w-[92px] h-[115px]' : 'w-[132px] h-[165px] sm:w-[156px] sm:h-[195px]'}`} style={{ ['--tw-ring-color' as string]: aura, boxShadow: hired.staff.rarity === 'common' ? undefined : `0 0 22px -6px ${aura}` }} data-staff={hired.staff.id}>
+          <PremiumBust role={kind as StaffRole} variant={variantOf(hired.staff)} rarity={hired.staff.rarity} seed={hired.staff.seed} mood={mood} talking={talking} viseme={visemeOf(shown[shown.length - 1])} crop />
+        </div>
+      ) : (
+      <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} shrink-0`}>
         <svg viewBox="0 0 160 200" className={`overflow-visible ${bare ? 'w-[92px] h-[115px]' : 'w-[132px] h-[165px] sm:w-[156px] sm:h-[195px]'}`} aria-hidden>
           <RigDefs />
           <Fig mood={mood} talking={talking} viseme={visemeOf(shown[shown.length - 1])} look={gaze} />
         </svg>
       </div>
+      )}
       {!bare && (
         <div key={text} className="v2-bubble text-[12.5px] leading-snug min-h-[3.2rem]">
           <span className="block text-[9.5px] font-mono uppercase tracking-[0.18em] opacity-70 mb-0.5">{label}</span>
