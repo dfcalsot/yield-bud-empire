@@ -105,3 +105,19 @@ export const MiniPlant: React.FC<{ x: number; y: number; s?: number }> = ({ x, y
     <path d="M-16 -16 h32 l-1 4 h-30Z" fill="#d97706" stroke={OUTLINE} strokeWidth="2" strokeLinejoin="round" />
   </g></g>
 );
+
+/** Clipboard with a checklist (the foreman's). Origin = centre of the board. */
+export const Clipboard: React.FC<{ x: number; y: number; s?: number; rot?: number }> = ({ x, y, s = 1, rot = 0 }) => (
+  <g transform={`translate(${x} ${y}) rotate(${rot}) scale(${s})`}>
+    <rect x="-13" y="-17" width="26" height="34" rx="3.4" fill="#b7791f" stroke={OUTLINE} strokeWidth="2.2" />
+    <rect x="-10" y="-13" width="20" height="28" rx="1.6" fill="#fffdf5" stroke="#8a7346" strokeWidth="1" />
+    <rect x="-6" y="-19.5" width="12" height="7" rx="2" fill="#9ca3af" stroke={OUTLINE} strokeWidth="1.8" />
+    {[-6, 0, 6].map((yy, i) => (
+      <g key={yy}>
+        <rect x="-8" y={yy - 2} width="4" height="4" rx=".8" fill="none" stroke="#64748b" strokeWidth="1" />
+        {i < 2 && <path d={`M-7.4 ${yy} l1.3 1.4 l2.6 -3`} stroke="#16a34a" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />}
+        <path d={`M-2 ${yy} h9`} stroke="#94a3b8" strokeWidth="1.3" strokeLinecap="round" />
+      </g>
+    ))}
+  </g>
+);

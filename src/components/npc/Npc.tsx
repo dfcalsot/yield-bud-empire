@@ -53,7 +53,7 @@ export function useNpc(initial: string) {
 }
 
 export const Npc: React.FC<{
-  kind: NpcKind | 'chrono';
+  kind: NpcKind | 'chrono' | 'foreman';
   variant?: Shopkeeper;
   text: string;
   mood: Mood;

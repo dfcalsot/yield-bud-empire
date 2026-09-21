@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import './rig.css';
 import { RigDefs, reducedMotion, useLook, visemeOf, type Mood2 } from './parts';
 import { Chrono, type FigureV2 } from './figures';
-import { Flora, Floro, Tomas, Lucia, Rafa, Marta } from './cast';
+import { Flora, Floro, Tomas, Lucia, Rafa, Marta, Nico } from './cast';
 import { shopkeeperName, useShopkeeper, type Shopkeeper } from '../shopkeeper';
 
 /**
@@ -10,12 +10,13 @@ import { shopkeeperName, useShopkeeper, type Shopkeeper } from '../shopkeeper';
  * plus the new moods `think` and `wave`. Eyes follow the cursor and the mouth lip-syncs to the typed letters.
  * Cast: Chrono (guide) plus the five industry characters (grow shop, outdoor grower, lab, genetics, dispensary).
  */
-export type NpcKindV2 = 'chrono' | 'merchant' | 'farmer' | 'scientist' | 'geneticist' | 'budtender';
+export type NpcKindV2 = 'chrono' | 'foreman' | 'merchant' | 'farmer' | 'scientist' | 'geneticist' | 'budtender';
 
-const FIGURES: Record<NpcKindV2, FigureV2> = { chrono: Chrono, merchant: Flora, farmer: Tomas, scientist: Lucia, geneticist: Rafa, budtender: Marta };
+const FIGURES: Record<NpcKindV2, FigureV2> = { chrono: Chrono, foreman: Nico, merchant: Flora, farmer: Tomas, scientist: Lucia, geneticist: Rafa, budtender: Marta };
 
 export const NPC_NAMES_V2: Record<NpcKindV2, string> = {
   chrono: 'Chrono · Guía',
+  foreman: 'Nico · Capataz',
   merchant: 'Flora · Grow Shop',
   farmer: 'Tomás · Cultivador',
   scientist: 'Dra. Lucía · Laboratorio',

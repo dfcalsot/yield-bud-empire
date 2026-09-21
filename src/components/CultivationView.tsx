@@ -520,7 +520,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
             }`}
           >
             <Grid3X3 className="w-4 h-4" />
-            <span>Sala Indoor 30 Plantas (3 Filas × 10 en Pares de 2)</span>
+            <span>Sala de cultivo ({indoorPlants.length} {indoorPlants.length === 1 ? 'planta' : 'plantas'})</span>
           </button>
 
           <button
@@ -541,10 +541,10 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
           <button
             onClick={waterAllPlants}
             className="px-2.5 py-1.5 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-900/40 transition text-[11px] font-mono flex items-center gap-1.5 cursor-pointer"
-            title="Regar simultáneamente las 30 plantas de la sala"
+            title={`Regar simultáneamente las ${indoorPlants.length} plantas de la sala`}
           >
             <Droplet className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Riego Sala (30 Plantas)</span>
+            <span>Riego Sala ({indoorPlants.length})</span>
           </button>
 
           <button
@@ -585,7 +585,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
         {/* Left Column: Visualizer + Quick Actions (7 or 8 Cols) */}
         <div className={`${displayMode === 'indoor_room' ? 'lg:col-span-8' : 'lg:col-span-7'} space-y-4`}>
           {displayMode === 'indoor_room' ? (
-            <IndoorRoomVisualizer />
+            <IndoorRoomVisualizer onOpenFacility={() => setShowFacilityModal(true)} />
           ) : (
             <PlantVisualizer plant={activePlant} facilityTier={currentFacility.tier} />
           )}

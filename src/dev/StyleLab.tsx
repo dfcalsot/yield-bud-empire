@@ -173,6 +173,7 @@ const ContrastMeter: React.FC<{ p: Palette }> = ({ p }) => {
 const MOODS: Mood2[] = ['idle', 'happy', 'sad', 'busy', 'think', 'wave'];
 const CAST: Array<{ kind: NpcKindV2; variant?: 'flora' | 'floro'; role: string; line: string }> = [
   { kind: 'chrono', role: 'La guía · mascota', line: '¡Hola, cultivador! Soy Chrono y voy a enseñarte a empezar. Primero: mira tu planta, tiene sed.' },
+  { kind: 'foreman', role: 'Capataz de la sala de cultivo · casco, chaleco reflectante y lista de tareas', line: 'Sala en orden, jefe. Riego a tiempo, plagas fuera y cosecha cuando el tricoma esté lechoso.' },
   { kind: 'merchant', variant: 'flora', role: 'Grow shop (versión femenina) · gorra, delantal y un frasco de flor', line: 'Bienvenido, jefe. Aquí hay de todo para tu cuarto: luces, nutrientes y aire. ¡Mira este frasco!' },
   { kind: 'merchant', variant: 'floro', role: 'Grow shop (versión masculina) · el jugador elige quién atiende', line: 'Bienvenido, jefe. Aquí hay de todo para tu cuarto: luces, nutrientes y aire. ¡Mira este frasco!' },
   { kind: 'farmer', role: 'Cultivador de exterior · sombrero, tijeras y lupa de tricomas', line: 'La tierra no miente, patrón. Riegue temprano y revise los tricomas con la lupa antes de cortar.' },

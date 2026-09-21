@@ -1,7 +1,7 @@
 import React from 'react';
 import { Brows, Cheeks, Eyes, Leaf, Mouth, OUTLINE } from './parts';
 import type { FigProps, FigureV2 } from './figures';
-import { Dna, Flask, Jar, Loupe, MiniPlant, Molecule, PreRoll, Shears } from './props';
+import { Clipboard, Dna, Flask, Jar, Loupe, MiniPlant, Molecule, PreRoll, Shears } from './props';
 
 /**
  * The cast of the cannabis industry: the grow-shop owner, the outdoor grower, the lab scientist, the geneticist and the
@@ -293,6 +293,54 @@ export const Marta: FigureV2 = (p) => (
         <path d="M48 88 Q42 46 80 44 Q118 46 112 88 Q104 64 86 64 Q64 66 48 88Z" fill="url(#v2HairDark)" stroke={OUTLINE} strokeWidth="2.2" strokeLinejoin="round" />
         <path d="M60 60 Q72 52 86 56" stroke="#ec4899" strokeWidth="4.2" fill="none" strokeLinecap="round" />
         <PreRoll x={108} y={82} rot={-32} />
+      </g>
+    </g>
+  </g>
+);
+
+/* ═════════════ NICO · capataz de la sala de cultivo ═════════════
+   Hard hat with a leaf sticker, hi-vis vest with reflective stripes, headset, and a checklist on a clipboard. */
+export const Nico: FigureV2 = (p) => (
+  <g className="v2-tilt">
+    <Shadow />
+    <g className="v2-breath">
+      <Torso fill="#3d4a5c" shade="#000" rim="#94a3b8" />
+      {/* hi-vis vest with reflective bands */}
+      <path d="M38 194 L44 138 Q56 130 68 140 L64 194Z" fill="#f97316" stroke={OUTLINE} strokeWidth="2.2" strokeLinejoin="round" />
+      <path d="M122 194 L116 138 Q104 130 92 140 L96 194Z" fill="#f97316" stroke={OUTLINE} strokeWidth="2.2" strokeLinejoin="round" />
+      <path d="M40.5 172 L64.6 172 M39.4 184 L64.4 184 M119.5 172 L95.4 172 M120.6 184 L95.6 184" stroke="#e5e7eb" strokeWidth="4" strokeLinecap="round" />
+      <path d="M44 172 L64 172 M43 184 L64 184 M116 172 L96 172 M117 184 L96 184" stroke="#fff" strokeOpacity=".7" strokeWidth="1.2" />
+      <path d="M62 118 Q80 148 98 118" stroke="#1f2937" strokeWidth="2.6" fill="none" />
+      {/* left arm: work glove */}
+      <g className="v2-arm-l v2-arm-wl" style={{ transformOrigin: '42px 130px' }}>
+        <Tube d="M42 130 Q34 154 46 168" outer={16.5} inner={12.4} fill="#3d4a5c" light="#94a3b8" />
+        <Hand x={46} y={171} fill="#f5c542" edge="#7a5a10" r={7} />
+      </g>
+      {/* right arm holds the checklist */}
+      <g className="v2-arm-r v2-arm-hold" style={{ transformOrigin: '120px 128px' }}>
+        <Tube d="M120 128 Q140 130 145 110" outer={16.5} inner={12.4} fill="#3d4a5c" light="#94a3b8" />
+        <Clipboard x={147} y={90} s={1.02} rot={10} />
+        <Hand x={144} y={108} fill="url(#v2SkinBrown)" edge="#5a3520" r={6.6} />
+      </g>
+      <g className="v2-head">
+        <HeadBase skin="url(#v2SkinBrown)" ear="#b9805a" edge="#5a3520" />
+        <Face {...p} iris="#2b1a0e" brow="#1a1009" nose="#8a5a3a" cheek="#e0705a" mouthS={0.9} browW={7.5} />
+        {/* short black hair, sideburns and a tidy goatee */}
+        <path d="M49 74 Q45 90 50 100 Q55 88 54 76Z" fill="url(#v2HairDark)" stroke={OUTLINE} strokeWidth="1.4" /><path d="M111 74 Q115 90 110 100 Q105 88 106 76Z" fill="url(#v2HairDark)" stroke={OUTLINE} strokeWidth="1.4" />
+        <path d="M70 112 Q80 122 90 112 Q88 118 80 120 Q72 118 70 112Z" fill="#1a1009" opacity=".85" />
+        <path d="M66 100 Q80 96 94 100 Q88 103 80 102 Q72 103 66 100Z" fill="#1a1009" opacity=".8" />
+        {/* headset */}
+        <path d="M49 84 Q46 52 80 50 Q114 52 111 84" stroke="#111827" strokeWidth="3.6" fill="none" strokeLinecap="round" />
+        <rect x="43" y="80" width="9" height="16" rx="4" fill="#1f2937" stroke={OUTLINE} strokeWidth="1.8" /><rect x="108" y="80" width="9" height="16" rx="4" fill="#1f2937" stroke={OUTLINE} strokeWidth="1.8" />
+        <path d="M46 96 Q52 112 70 110" stroke="#111827" strokeWidth="2.2" fill="none" strokeLinecap="round" /><circle cx="70.5" cy="110" r="2.6" fill="#374151" stroke={OUTLINE} strokeWidth="1.2" />
+        {/* hard hat */}
+        <ellipse cx="80" cy="66" rx="44" ry="8" fill="#000" opacity=".16" />
+        <path d="M49 66 Q48 30 80 28 Q112 30 111 66Z" fill="#facc15" stroke="#a16207" strokeWidth="2.4" strokeLinejoin="round" />
+        <path d="M66 36 Q74 30 82 30 L82 64 L74 64 Q68 52 66 36Z" fill="#fde047" opacity=".9" />
+        <path d="M76 30 Q80 28 84 30 L84 66 L76 66Z" fill="#eab308" stroke="#a16207" strokeWidth="1.4" />
+        <path d="M100 42 Q108 50 108 62" stroke="#fff" strokeOpacity=".5" strokeWidth="2.4" fill="none" strokeLinecap="round" />
+        <path d="M44 66 Q80 76 116 66 Q116 60 111 60 Q80 66 49 60 Q44 60 44 66Z" fill="#eab308" stroke="#a16207" strokeWidth="2.2" strokeLinejoin="round" />
+        <circle cx="94" cy="50" r="7" fill="#166534" stroke={OUTLINE} strokeWidth="1.6" /><Leaf x={94} y={54} s={0.42} light="#d9f99d" dark="#84cc16" />
       </g>
     </g>
   </g>
