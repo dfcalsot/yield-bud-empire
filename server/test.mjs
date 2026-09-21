@@ -12,7 +12,7 @@ Object.assign(process.env, {
   GOOGLE_CLIENT_ID: 'gid', GOOGLE_CLIENT_SECRET: 'gsec', GOOGLE_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, GOOGLE_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, GOOGLE_USER_URL: `http://127.0.0.1:${MOCK}/user/google`,
   X_CLIENT_ID: 'xid', X_CLIENT_SECRET: 'xsec', X_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, X_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, X_USER_URL: `http://127.0.0.1:${MOCK}/user/x`,
 });
-const { createServer, cfg, db, limiter } = await import('./index.mjs');
+const { createServer, cfg, db, limiter, originAllowed, isPrivateHost } = await import('./index.mjs');
 
 // mock identity provider (NOT Google or X: it only proves that our OAuth code paths behave)
 const profiles = { google: {}, x: {} };
@@ -112,6 +112,14 @@ const powBits = (await call('GET', '/api/auth/challenge', { ip: ipBad })).json.b
 ok('el captcha solo se encarece para una IP que FALLA la verificación (hasta +2 bits)', powBits > powBase && powBits <= powBase + 2, `(${powBits} bits vs ${powBase} base)`);
 const powOk = (await call('GET', '/api/auth/challenge', { ip: ipFlood })).json.bits;
 ok('acceder varias veces con éxito NO encarece la verificación', powOk === powBase, `(${powOk} vs ${powBase})`);
+
+
+// ── which origins may talk to the service (players come from the LAN and the tailnet)
+for (const o of ['http://localhost:3012', 'http://127.0.0.1:3012', 'http://192.168.100.40:3012', 'http://10.1.2.3:3012', 'http://172.20.0.5:3012', 'http://100.101.243.88:3012', 'http://100.64.0.1:3012', 'http://100.127.255.254:3012', 'http://server-ideapad-3-17ada05:3012', 'https://host.tail1234.ts.net', 'http://[fd7a:115c:a1e0::1]:3012'])
+  ok(`origen privado aceptado: ${o}`, originAllowed(o));
+for (const o of ['http://evil.example.com', 'https://yield.bud.empire', 'http://8.8.8.8:3012', 'http://100.128.0.1:3012', 'http://100.63.255.255:3012', 'http://172.32.0.1:3012', 'http://192.169.0.1:3012', 'http://256.1.1.1', 'javascript:alert(1)', 'null'])
+  ok(`origen público rechazado: ${o}`, !originAllowed(o));
+ok('isPrivateHost no confunde un dominio que empieza por 192.168', !isPrivateHost('192.168.example.com'));
 
 // ── e-mail verification
 const token = new URL(alphaLink).hash.replace('#verify=', '');

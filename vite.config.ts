@@ -43,6 +43,7 @@ export default defineConfig(() => {
       },
     },
     server: {
+      allowedHosts: true as const,
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
@@ -52,6 +53,8 @@ export default defineConfig(() => {
       headers: secure,   // no CSP in dev: Vite's HMR needs inline scripts
     },
     preview: {
+      // players open the game by Tailscale / LAN address or MagicDNS name, not only localhost (private networks only)
+      allowedHosts: true as const,
       proxy,
       headers: { ...secure, 'Content-Security-Policy': CSP },
     },

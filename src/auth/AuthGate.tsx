@@ -6,6 +6,9 @@ import { Npc, useNpcSay } from '../components/npc/Npc';
 import { getStoredUserProfiles, saveUserProfile, setActiveUserId } from '../utils/auth';
 import type { UserProfile } from '../types';
 
+/** The service builds links with its configured public address; on screen they should open on the address you are playing from. */
+const here = (u?: string): string => (u ? u.replace(/^https?:\/\/[^/]+/, window.location.origin) : '');
+
 export interface ServerAccount { id: number; username: string; email: string | null; verified: boolean; providers: string[]; source: string; createdAt: number }
 interface AuthConfig { google: boolean; x: boolean; emailDelivery: boolean; devLinks: boolean; captcha: { bits: number } }
 
@@ -90,7 +93,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
     const sol = await captcha('register');
     const r = await api('POST', '/api/auth/register', { email, username, password, hp, t: openedAt.current, captcha: sol });
     if (r.status !== 200) { setErr(errText(r.data)); npc.speak(errText(r.data), 'sad'); return; }
-    setDevLink(r.data.devLink ?? '');
+    setDevLink(here(r.data.devLink));
     npc.speak('¡Cuenta creada! Te enviamos un correo: confírmalo para empezar a jugar.', 'happy');
     const me = await api('GET', '/api/auth/me');
     if (me.status === 200) { setMode('pending'); }
@@ -110,7 +113,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
     const sol = await captcha('reset');
     const r = await api('POST', '/api/auth/reset/request', { email, captcha: sol });
     if (r.status !== 200) { setErr(errText(r.data)); return; }
-    setDevLink(r.data.devLink ?? ''); setMode('forgot_sent');
+    setDevLink(here(r.data.devLink)); setMode('forgot_sent');
   }); };
 
   const doReset = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
@@ -122,7 +125,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
   const resend = () => run(async () => {
     const sol = await captcha('resend');
     const r = await api('POST', '/api/auth/resend', { email, captcha: sol });
-    if (r.status !== 200) setErr(errText(r.data)); else { setDevLink(r.data.devLink ?? devLink); npc.speak('Te envié otro correo.', 'happy'); }
+    if (r.status !== 200) setErr(errText(r.data)); else { setDevLink(here(r.data.devLink) || devLink); npc.speak('Te envié otro correo.', 'happy'); }
   });
 
   const tabBtn = (m: Mode, label: string) => (
@@ -269,6 +272,12 @@ export const AuthGate: React.FC<{ children: (account: ServerAccount | null) => R
     }
   };
   useEffect(() => { boot(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // the on-screen confirmation / reset links only change the hash of the page that is already open: handle them too
+  useEffect(() => {
+    const onHash = () => { if (/^#(verify|reset)=/.test(location.hash)) boot(); };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (state === 'loading') return <div className="min-h-screen grid place-items-center bg-[#04090a] text-emerald-300 font-mono text-sm"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   if (state === 'down') return (

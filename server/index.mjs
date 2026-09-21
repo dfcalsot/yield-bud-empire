@@ -29,7 +29,28 @@ export const cfg = {
   mailFrom: env.MAIL_FROM ?? 'Yield Bud Empire <no-reply@yieldbudempire.local>',
 };
 const secure = cfg.publicUrl.startsWith('https://');
-const allowedOrigins = new Set((env.ALLOWED_ORIGINS ?? cfg.publicUrl).split(',').map((s) => s.trim().replace(/\/$/, '')));
+const allowedOrigins = new Set((env.ALLOWED_ORIGINS ?? cfg.publicUrl).split(',').map((s) => s.trim().replace(/\/$/, '')).filter(Boolean));
+
+/** Is this host on a private network? localhost, RFC 1918 LAN ranges, Tailscale (100.64/10 and *.ts.net), link-local and .local names. */
+export function isPrivateHost(host) {
+  const h = String(host).toLowerCase().replace(/^\[|\]$/g, '');
+  if (h === 'localhost' || h === '::1') return true;
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(h);
+  if (m) {
+    const [a, b] = [Number(m[1]), Number(m[2])];
+    if (m.slice(1).some((x) => Number(x) > 255)) return false;
+    return a === 127 || a === 10 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31) || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254);
+  }
+  if (h.includes(':')) return h.startsWith('fd') || h.startsWith('fe80') || h.startsWith('fc');   // ULA (Tailscale's fd7a:...) and link-local IPv6
+  return h.endsWith('.ts.net') || h.endsWith('.local') || h.endsWith('.lan') || !h.includes('.');   // MagicDNS / mDNS / single-label LAN names
+}
+/** Exact allow-list first; otherwise any private-network origin (set ALLOW_PRIVATE_ORIGINS=0 on a public HTTPS deployment). */
+export function originAllowed(origin) {
+  const o = String(origin).replace(/\/$/, '');
+  if (allowedOrigins.has(o)) return true;
+  if (env.ALLOW_PRIVATE_ORIGINS === '0') return false;
+  try { const u = new URL(o); return (u.protocol === 'http:' || u.protocol === 'https:') && isPrivateHost(u.hostname); } catch { return false; }
+}
 
 fs.mkdirSync(cfg.dataDir, { recursive: true, mode: 0o700 });
 // the signing secret and the password pepper live outside the database, in a file only this user can read
@@ -446,7 +467,7 @@ export function createServer() {
       if (!handler) throw new HttpError(404, 'not_found');
       if (req.method === 'POST') {
         const origin = req.headers.origin;
-        if (origin && !allowedOrigins.has(origin.replace(/\/$/, ''))) throw new HttpError(403, 'bad_origin');
+        if (origin && !originAllowed(origin)) throw new HttpError(403, 'bad_origin');
         if (req.headers['x-cf-csrf'] !== '1') throw new HttpError(403, 'csrf');
       }
       const out = await handler(ctx);
