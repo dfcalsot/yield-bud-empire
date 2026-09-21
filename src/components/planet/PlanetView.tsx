@@ -42,6 +42,8 @@ class GlobeBoundary extends Component<{ fallback: React.ReactNode; onFail: () =>
 }
 const webglOk = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
 const GLOBE_KEY = 'ybe_globe';
+const ANTIQUE_KEY = 'ybe_antique_map';
+const readAntique = () => { try { return localStorage.getItem(ANTIQUE_KEY) !== '0'; } catch { return true; } };
 const readGlobe = () => { try { return webglOk && localStorage.getItem(GLOBE_KEY) === '1'; } catch { return false; } };
 
 /** The Planet: world map, the seven regions, the plots you own and Tomás, the farmer who guides you. */
@@ -53,6 +55,8 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
   const [plotId, setPlotId] = useState<string | null>(null);
   /** the map zooms into the region of the plot you open (origin in % of the map) before the plot screen replaces it */
   const [globe, setGlobe] = useState<boolean>(readGlobe);
+  const [antique, setAntique] = useState<boolean>(readAntique);
+  const toggleAntique = () => setAntique((a) => { const next = !a; try { localStorage.setItem(ANTIQUE_KEY, next ? '1' : '0'); } catch { /* private mode */ } return next; });
   const toggleGlobe = () => setGlobe((g) => { const next = !g; try { localStorage.setItem(GLOBE_KEY, next ? '1' : '0'); } catch { /* private mode */ } return next; });
   const [zoom, setZoom] = useState<{ ox: number; oy: number } | null>(null);
   const [currency, setCurrency] = useState<'FLORA' | 'SOL'>('FLORA');
@@ -141,6 +145,7 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
               <span className="mk-panel px-2.5 py-1.5 text-neutral-200">🗺️ <b className="text-amber-300">{plots.length}</b> parcelas</span>
               <span className="mk-panel px-2.5 py-1.5 text-neutral-200">🌱 <b className="text-emerald-300">{totalPlants}</b> plantas</span>
               <span className={`mk-panel px-2.5 py-1.5 ${totalReady ? 'text-amber-300 border-amber-400/50' : 'text-neutral-200'}`}>🌾 <b>{totalReady}</b> listas</span>
+              <button onClick={toggleAntique} className="mk-panel px-2.5 py-1.5 text-amber-200 cursor-pointer hover:border-amber-400/60" title="Cambia entre la cartografía antigua de Urbano Monti (1587) y el mapa del juego" data-testid="antique-toggle">{antique ? '🗺️ Mapa del juego' : '📜 Mapa antiguo'}</button>
               {webglOk && <button onClick={toggleGlobe} className="mk-panel px-2.5 py-1.5 text-sky-200 cursor-pointer hover:border-sky-400/60" title="Cambia entre el mapa plano y un globo 3D (usa más GPU)">{globe ? '🗺️ Mapa plano' : '🌐 Globo 3D'}</button>}
               <button onClick={() => onOpenMarket('service')} className="mk-panel px-2.5 py-1.5 text-emerald-200 cursor-pointer hover:border-emerald-400/60" title="Grow Market → Servicios de vivero">🧑‍🌾 Contratar jardinero</button>
               <button onClick={onOpenSeedBank} className="mk-panel px-2.5 py-1.5 text-emerald-200 cursor-pointer hover:border-emerald-400/60" title="Banco de semillas">🌱 Semillas</button>
@@ -160,11 +165,11 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
             <div className="rounded-2xl overflow-hidden border border-sky-400/20 shadow-[0_0_40px_-20px_rgba(56,189,248,0.6)]">
               <div className={`pl-zoomwrap ${zoom ? 'pl-zooming' : ''}`} style={zoom ? { transformOrigin: `${zoom.ox}% ${zoom.oy}%` } : undefined}>
               {(() => {
-                const flat = <WorldMap owned={owned} ready={readyByRegion} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} onUfoCaught={(reg) => { if (ufoLeft() > 0) { ufoUsed(); const xp = 25 + Math.floor(Math.random() * 40); addXp(xp, 'Ovni avistado'); say2(`¡Un ovni sobre ${reg}! Me saludó y me dejó ${xp} XP. Dicen que abducen vacas… y plantas.`, 'happy'); } else say2('El ovni ya se fue de gira: hoy no te da más XP, pero sigue saludando.', 'idle'); }} />;
+                const flat = <WorldMap owned={owned} ready={readyByRegion} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} antique={antique} onUfoCaught={(reg) => { if (ufoLeft() > 0) { ufoUsed(); const xp = 25 + Math.floor(Math.random() * 40); addXp(xp, 'Ovni avistado'); say2(`¡Un ovni sobre ${reg}! Me saludó y me dejó ${xp} XP. Dicen que abducen vacas… y plantas.`, 'happy'); } else say2('El ovni ya se fue de gira: hoy no te da más XP, pero sigue saludando.', 'idle'); }} />;
                 if (!globe) return flat;
                 return (
                   <GlobeBoundary fallback={flat} onFail={() => setGlobe(false)}>
-                    <Suspense fallback={flat}><Globe3D owned={owned} ready={readyByRegion} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} /></Suspense>
+                    <Suspense fallback={flat}><Globe3D owned={owned} ready={readyByRegion} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} antique={antique} /></Suspense>
                   </GlobeBoundary>
                 );
               })()}

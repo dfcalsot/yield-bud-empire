@@ -4,6 +4,9 @@ import type { RegionId } from '../../types';
 import { MapDetail } from './mapDetail';
 import { MapTraffic, MapUfo } from './mapActors';
 
+/** The 1587 planisphere of Urbano Monti resampled to this map's equirectangular grid (see scripts/maps/README.md). Public domain. */
+export const MONTI_URL = '/maps/monti-1587.webp';
+
 /** Stylised world map (equirectangular 1000×500) with the seven regions, a live day/night terminator and drifting clouds. */
 
 export const proj = (lon: number, lat: number): [number, number] => [((lon + 180) / 360) * 1000, ((90 - lat) / 180) * 500];
@@ -43,7 +46,9 @@ export const WorldMap: React.FC<{
   nowMs: number;
   /** the player waved at a UFO (small prize is the caller's business) */
   onUfoCaught?: (region: string) => void;
-}> = ({ owned, ready = {}, selected, onSelect, onHover, nowMs, onUfoCaught }) => {
+  /** draw the antique chart of Urbano Monti (1587) instead of the game's stylised continents */
+  antique?: boolean;
+}> = ({ owned, ready = {}, selected, onSelect, onHover, nowMs, onUfoCaught, antique = false }) => {
   const land = useMemo(() => CONTINENTS.map(path), []);
   // sun is at local noon on the meridian where it is 12:00
   const utcH = (nowMs / 3600000) % 24;
@@ -56,20 +61,32 @@ export const WorldMap: React.FC<{
         <linearGradient id="plLand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1e6b45" /><stop offset="1" stopColor="#0f3d2a" /></linearGradient>
         <linearGradient id="plNight" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stopColor="#020617" stopOpacity="0" /><stop offset=".1" stopColor="#020617" stopOpacity=".58" /><stop offset=".9" stopColor="#020617" stopOpacity=".58" /><stop offset="1" stopColor="#020617" stopOpacity="0" /></linearGradient>
         <radialGradient id="plSun"><stop offset="0" stopColor="#fff7c2" /><stop offset=".5" stopColor="#fde047" stopOpacity=".8" /><stop offset="1" stopColor="#fde047" stopOpacity="0" /></radialGradient>
+        <radialGradient id="plVignette" cx=".5" cy=".5" r=".75"><stop offset=".6" stopColor="#020617" stopOpacity="0" /><stop offset="1" stopColor="#020617" stopOpacity=".55" /></radialGradient>
         <clipPath id="plClip"><rect width="1000" height="500" rx="16" /></clipPath>
       </defs>
       <g clipPath="url(#plClip)">
         <rect width="1000" height="500" fill="url(#plOcean)" />
-        {[-60, -30, 0, 30, 60].map((la) => <line key={la} x1="0" x2="1000" y1={proj(0, la)[1]} y2={proj(0, la)[1]} stroke="#7dd3fc" strokeOpacity=".07" />)}
-        {Array.from({ length: 11 }, (_, i) => -150 + i * 30).map((lo) => <line key={lo} y1="0" y2="500" x1={proj(lo, 0)[0]} x2={proj(lo, 0)[0]} stroke="#7dd3fc" strokeOpacity=".07" />)}
-        {/* a soft glow along the coasts, then the land */}
-        {land.map((d, i) => <path key={`g${i}`} d={d} fill="none" stroke="#67e8f9" strokeOpacity=".28" strokeWidth="5" strokeLinejoin="round" filter="url(#plCoast)" />)}
-        {land.map((d, i) => <path key={i} d={d} fill="url(#plLand)" stroke="#34d399" strokeOpacity=".45" strokeWidth="1.2" strokeLinejoin="round" />)}
-        <MapDetail nowMs={nowMs} layer="ground" />
+        {antique ? (
+          <>
+            <image href={MONTI_URL} x="0" y="0" width="1000" height="500" preserveAspectRatio="none" />
+            {/* a dark veil so the pins, labels and the night side stay readable over the parchment */}
+            <rect width="1000" height="500" fill="#050a18" opacity=".18" />
+            <rect width="1000" height="500" fill="url(#plVignette)" />
+          </>
+        ) : (
+          <>
+            {[-60, -30, 0, 30, 60].map((la) => <line key={la} x1="0" x2="1000" y1={proj(0, la)[1]} y2={proj(0, la)[1]} stroke="#7dd3fc" strokeOpacity=".07" />)}
+            {Array.from({ length: 11 }, (_, i) => -150 + i * 30).map((lo) => <line key={lo} y1="0" y2="500" x1={proj(lo, 0)[0]} x2={proj(lo, 0)[0]} stroke="#7dd3fc" strokeOpacity=".07" />)}
+            {/* a soft glow along the coasts, then the land */}
+            {land.map((d, i) => <path key={`g${i}`} d={d} fill="none" stroke="#67e8f9" strokeOpacity=".28" strokeWidth="5" strokeLinejoin="round" filter="url(#plCoast)" />)}
+            {land.map((d, i) => <path key={i} d={d} fill="url(#plLand)" stroke="#34d399" strokeOpacity=".45" strokeWidth="1.2" strokeLinejoin="round" />)}
+            <MapDetail nowMs={nowMs} layer="ground" />
+          </>
+        )}
         {/* night side (a band 180° wide that wraps around the map) */}
         <rect x={nx} y="0" width="500" height="500" fill="url(#plNight)" />
         <rect x={nx - 1000} y="0" width="500" height="500" fill="url(#plNight)" />
-        <MapDetail nowMs={nowMs} layer="lights" />
+        {!antique && <MapDetail nowMs={nowMs} layer="lights" />}
         {/* clouds */}
         {[[60, 90, 70], [40, 250, 90], [20, 380, 60], [30, 160, 80]].map(([x, y, w], i) => (
           <g key={i} className="pl-cloud" style={{ animationDelay: `${-i * 15}s`, animationDuration: `${55 + i * 10}s` }}>
@@ -137,6 +154,7 @@ export const WorldMap: React.FC<{
           );
         })}
         <MapUfo onUfoCaught={onUfoCaught} />
+        {antique && <text x="992" y="492" textAnchor="end" fontSize="9" fill="#e2e8f0" opacity=".7" fontFamily="ui-monospace, monospace" pointerEvents="none">Cartografía: Urbano Monti, planisferio de 1587 · dominio público</text>}
       </g>
     </svg>
   );
