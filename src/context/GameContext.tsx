@@ -75,6 +75,7 @@ import {
   ownsStation, EquipStats, pestStock, spendPest, gardenerLevelOf, garbageOf, starterPestKit,
 } from '../economy/catalog';
 import { BALANCE } from '../sim/balance';
+import { ECON, EMPTY_DEPTH, burnRateOfSale, claimStatus, saleRevenue, type Depth } from '../sim/economy';
 import { applySpeedUp, buildHoursOf, fitToCapacity, isDone, normalizeConstruction, speedUpQuote, startConstruction, type Construction } from '../sim/facilities';
 import { bump as bumpMissions, claimErrand, claimStory, emptyMissions, normalizeMissions, rewardSummary, type MissionEvent, type MissionReward, type MissionState } from '../sim/missions';
 import {
@@ -125,6 +126,11 @@ interface GameContextType {
   };
   transactions: SolanaTransaction[];
   requestAirdrop: () => void;
+  /** the small daily claim that replaced the unlimited faucet */
+  claimDaily: () => void;
+  faucetAt: number;
+  /** what selling a product would pay right now (market depth, the sale fee and the licence of your installation) */
+  quoteSale: (productId: string) => { gross: number; fee: number; net: number; ratio: number } | null;
 
   // User Accounts & Data Isolation
   currentUser: UserProfile | null;
@@ -394,7 +400,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return user?.walletAddress || '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
   });
   const [isWalletConnected, setIsWalletConnected] = useState<boolean>(true);
-  const [floraBalance, setFloraBalance] = useState<number>(350);
+  const [floraBalance, setFloraBalance] = useState<number>(ECON.starterFlora);
+  // market depth (grams sold recently, see sim/economy.ts) and the last daily claim
+  const [marketDepth, setMarketDepth] = useState<Depth>(EMPTY_DEPTH);
+  const [faucetAt, setFaucetAt] = useState<number>(0);
   const [solBalance, setSolBalance] = useState<number>(1.85);
   const [totalFloraBurned, setTotalFloraBurned] = useState<number>(142850);
   const [burnStats, setBurnStats] = useState({
@@ -517,18 +526,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [selectedPlantIndex]);
 
   // Inventory
-  const [rawFlowerGrams, setRawFlowerGrams] = useState<number>(145);
-  const [trimGrams, setTrimGrams] = useState<number>(60);
+  const [rawFlowerGrams, setRawFlowerGrams] = useState<number>(8);
+  const [trimGrams, setTrimGrams] = useState<number>(5);
   const [processedProducts, setProcessedProducts] = useState<ProcessedProduct[]>([
     {
       id: 'prod-init-1',
       name: 'Yield OG Live Rosin 90u',
       type: 'live_rosin',
       strainOrigin: 'Yield Foundation OG',
-      quantityGrams: 8.5,
+      quantityGrams: 3,
       potency: '78.5% THC | 6.2% Terps',
       qualityScore: 94,
-      marketValueFlora: 340,
+      marketValueFlora: 35,
       createdAt: Date.now() - 86400000,
       batchHash: '0x9fa4b8...c721'
     },
@@ -537,10 +546,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: 'Solana Silver Cured Buds (Glass Jar)',
       type: 'cured_flower',
       strainOrigin: 'Solana Super Silver',
-      quantityGrams: 28,
+      quantityGrams: 10,
       potency: '24.2% THC',
       qualityScore: 91,
-      marketValueFlora: 280,
+      marketValueFlora: 23,
       createdAt: Date.now() - 43200000,
       batchHash: '0x3cb17f...e411'
     }
@@ -642,7 +651,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (total >= needed) {
         const nextLvl = playerLevel + 1;
         setPlayerLevel(nextLvl);
-        setFloraBalance(b => b + 100);
+        setFloraBalance(b => b + ECON.levelBonus);
         playLevelUpSound();
         confetti({
           particleCount: 130,
@@ -650,7 +659,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           origin: { y: 0.4 },
           colors: ['#10b981', '#fbbf24', '#a855f7', '#38bdf8']
         });
-        showNotification(`¡SUBISTE DE NIVEL! Rango: ${getRankTitle(nextLvl)} (Nivel ${nextLvl}) • Bono +100 $FLORA`, 'success');
+        showNotification(`¡SUBISTE DE NIVEL! Rango: ${getRankTitle(nextLvl)} (Nivel ${nextLvl}) • Bono +${ECON.levelBonus} $FLORA`, 'success');
         return total - needed;
       }
       return total;
@@ -771,6 +780,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       staff,
       staffAssign,
       staffPity,
+      marketDepth,
+      faucetAt,
       savedAt: Date.now()
     });
   }, [
@@ -809,7 +820,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dormantPlants,
     staff,
     staffAssign,
-    staffPity
+    staffPity,
+    marketDepth,
+    faucetAt
   ]);
 
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
@@ -828,6 +841,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setStaff(roster);
       setStaffAssign(normalizeAssignments(saved?.staffAssign, roster));
       setStaffPity(saved?.staffPity ?? EMPTY_STAFF_PITY);
+      setMarketDepth(saved?.marketDepth && typeof saved.marketDepth.sold === 'number' ? saved.marketDepth : EMPTY_DEPTH);
+      setFaucetAt(typeof saved?.faucetAt === 'number' ? saved.faucetAt : 0);
     }
     if (saved) {
       if (typeof saved.floraBalance === 'number') setFloraBalance(saved.floraBalance);
@@ -964,39 +979,38 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [activeProviderInstance, currentUser, solanaNetwork, showNotification]);
 
+  // The wallet's devnet airdrop only fills the (simulated-network) wallet; it no longer creates $FLORA or game SOL out of thin air.
   const requestAirdrop = useCallback(async () => {
     const netConfig = SOLANA_NETWORKS[solanaNetwork];
     if (solanaNetwork === 'mainnet-beta') {
-      setFloraBalance(prev => prev + 500);
-      showNotification('Mainnet Oficial: No se permite airdrop de SOL real. Se añadieron +500 $FLORA de utilidad.', 'info');
+      showNotification('Mainnet: no hay airdrop. El $FLORA se gana cultivando y vendiendo; hay un reclamo diario en la barra superior.', 'info');
       return;
     }
-
     try {
       showNotification(`Solicitando 1.0 SOL de prueba en ${netConfig.name}...`, 'info');
-      const res = await requestSolanaAirdrop(walletAddress, solanaNetwork, 1.0);
-      setSolBalance(prev => Number((prev + 1.0).toFixed(2)));
-      setFloraBalance(prev => prev + 500);
-
-      const newTx: SolanaTransaction = {
-        id: `tx-airdrop-${Date.now()}`,
-        signature: res.signature,
-        type: 'AIRDROP',
-        amountFlora: 500,
-        amountSol: 1.0,
-        timestamp: Date.now(),
-        status: 'confirmed',
-        blockSlot: 248925100,
-        memo: `Solana ${netConfig.badgeLabel} Faucet: +500 $FLORA, +1.0 SOL`
-      };
-      setTransactions(prev => [newTx, ...prev]);
-      showNotification(`¡Airdrop exitoso en ${netConfig.badgeLabel}! +1.0 SOL y +500 $FLORA`, 'success');
+      await requestSolanaAirdrop(walletAddress, solanaNetwork, 1.0);
+      showNotification(`Llegó SOL de prueba a tu billetera en ${netConfig.badgeLabel}. El $FLORA del juego no cambia.`, 'success');
     } catch (err: any) {
-      setFloraBalance(prev => prev + 500);
-      setSolBalance(prev => Number((prev + 1.0).toFixed(2)));
-      showNotification(`Airdrop de prueba aplicado: +1.0 SOL y +500 $FLORA`, 'success');
+      showNotification(`No se pudo pedir el airdrop de ${netConfig.badgeLabel}: ${err?.message || 'la red no respondió'}. Inténtalo más tarde.`, 'info');
     }
   }, [solanaNetwork, walletAddress, showNotification]);
+
+  // One small claim every 24 h (replaces the unlimited +500 faucet: see sim/economy.ts)
+  const claimDaily = () => {
+    const st = claimStatus(faucetAt, Date.now());
+    if (!st.ok) {
+      const h = Math.floor(st.leftMs / 3600_000), m = Math.ceil((st.leftMs % 3600_000) / 60_000);
+      showNotification(`El reclamo diario vuelve en ${h > 0 ? `${h} h ${m} min` : `${m} min`}.`, 'info');
+      return;
+    }
+    setFaucetAt(Date.now());
+    setFloraBalance(prev => prev + ECON.dailyClaim);
+    setTransactions(prev => [{
+      id: `tx-claim-${Date.now()}`, signature: generateSolanaSignature(), type: 'AIRDROP', amountFlora: ECON.dailyClaim, amountSol: 0,
+      timestamp: Date.now(), status: 'confirmed', blockSlot: 248925100, memo: `Yield Bud Empire: reclamo diario +${ECON.dailyClaim} $FLORA`,
+    }, ...prev.slice(0, 24)]);
+    showNotification(`Reclamo diario: +${ECON.dailyClaim} $FLORA. Vuelve mañana; lo demás se gana cultivando.`, 'success');
+  };
 
   const connectWallet = useCallback(() => {
     connectSpecificWallet('injected');
@@ -2615,22 +2629,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       productYieldGrams = Number((gramsInput * labMul * 0.22).toFixed(2));
       name = `${currentStrainName} Live Rosin Sin Solventes (90u)`;
       potency = '82.4% THC | 7.8% Terpenos';
-      value = Math.round(productYieldGrams * 45);
+      value = Math.round(productYieldGrams * ECON.priceScale * 45);
     } else if (type === 'cured_flower') {
       productYieldGrams = Number((gramsInput * labMul).toFixed(2));
       name = `${currentStrainName} Flor Curada Prémium en Frío`;
       potency = '23.8% THC | 3.2% Terpenos';
-      value = Math.round(productYieldGrams * 9);
+      value = Math.round(productYieldGrams * ECON.priceScale * 9);
     } else if (type === 'full_spec_oil') {
       productYieldGrams = Number((gramsInput * labMul * 0.4).toFixed(2));
       name = `${currentStrainName} Aceite Concentrado Full Spectrum`;
       potency = '65.0% Cannabinoides Totales';
-      value = Math.round(productYieldGrams * 25);
+      value = Math.round(productYieldGrams * ECON.priceScale * 25);
     } else {
       productYieldGrams = Number((gramsInput * labMul * 0.08).toFixed(2));
       name = `Terpenos Puros Aislados de ${currentStrainName}`;
       potency = '99.2% Terpenos Volátiles Preservados';
-      value = Math.round(productYieldGrams * 85);
+      value = Math.round(productYieldGrams * ECON.priceScale * 85);
     }
 
     const newProd: ProcessedProduct = {
@@ -2942,25 +2956,38 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Sell product in Virtual Dispensary
+  /** what selling this batch would pay now: the market pays less per gram the more was sold recently */
+  const quoteSale = (productId: string) => {
+    const prod = processedProducts.find(p => p.id === productId);
+    if (!prod) return null;
+    const per = prod.marketValueFlora / Math.max(0.01, prod.quantityGrams);
+    const sale = saleRevenue(per, prod.quantityGrams, marketDepth, Date.now());
+    const gross = Math.round(sale.revenue * (1 + staffMods.sellBonus));
+    const fee = Math.max(1, Math.round(gross * burnRateOfSale(currentFacility.tier)));
+    return { gross, fee, net: gross - fee, ratio: prod.marketValueFlora > 0 ? gross / prod.marketValueFlora : 1 };
+  };
+
   const sellProduct = (productId: string) => {
     const prod = processedProducts.find(p => p.id === productId);
-    if (!prod) return;
+    const q = quoteSale(productId);
+    if (!prod || !q) return;
 
     playHarvestChime();
-    // the dispensary's budtender raises the price you get; the market fee is charged on the boosted price and burned
-    const gross = Math.round(prod.marketValueFlora * (1 + staffMods.sellBonus));
-    const fee = Math.max(1, Math.round(gross * USE.marketFee));
-    setFloraBalance(prev => prev + gross);
-    recordBurnTransaction('BURN_PROCESS', fee, `Yield Bud Empire Dispensario: comisión de mercado ${(USE.marketFee * 100).toFixed(1)} % (${prod.name})`);
+    // the depth is updated with the sale itself (splitting a sale never pays more), then the fee and the licence are burned
+    setMarketDepth(saleRevenue(prod.marketValueFlora / Math.max(0.01, prod.quantityGrams), prod.quantityGrams, marketDepth, Date.now()).depth);
+    setFloraBalance(prev => prev + q.gross);
+    const rate = burnRateOfSale(currentFacility.tier);
+    recordBurnTransaction('BURN_PROCESS', q.fee, `Yield Bud Empire Dispensario: comisión de mercado y licencia ${(rate * 100).toFixed(1)} % (${prod.name})`);
     setProcessedProducts(prev => prev.filter(p => p.id !== productId));
     setBrand(prev => ({
       ...prev,
-      totalSalesFlora: prev.totalSalesFlora + gross,
+      totalSalesFlora: prev.totalSalesFlora + q.gross,
       reputation: Math.min(100, prev.reputation + 1)
     }));
 
     reportEvent('sell', 1);
-    showNotification(`¡Venta realizada en el Dispensario! Recibiste +${gross - fee} $FLORA${staffMods.sellBonus > 0 ? ` (incluye +${Math.round(staffMods.sellBonus * 100)} % de tu dispensaria)` : ''} (comisión de mercado ${fee} quemados)`, 'success');
+    const saturated = q.ratio < 0.8 ? ` · el mercado está saturado: pagó al ${Math.round(q.ratio * 100)} % del precio` : '';
+    showNotification(`¡Venta realizada en el Dispensario! Recibiste +${q.net} $FLORA${staffMods.sellBonus > 0 ? ` (incluye +${Math.round(staffMods.sellBonus * 100)} % de tu dispensaria)` : ''} (comisión y licencia ${q.fee} quemados${saturated})`, 'success');
   };
 
   // Redeem V2P (Virtual to Physical)
@@ -3061,6 +3088,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         burnStats,
         transactions,
         requestAirdrop,
+        claimDaily,
+        faucetAt,
+        quoteSale,
 
         // User Accounts & Data Isolation
         currentUser,

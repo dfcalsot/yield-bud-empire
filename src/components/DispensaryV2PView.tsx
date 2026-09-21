@@ -28,7 +28,8 @@ export const DispensaryV2PView: React.FC = () => {
     v2pItems,
     redeemV2p,
     redeemedV2pList,
-    floraBalance
+    floraBalance,
+    quoteSale
   } = useGame();
 
   const npc = useNpc('¡Bienvenido al dispensario virtual! Soy Marta. Aquí vendes tus lotes y canjeas premios de verdad.');
@@ -187,9 +188,12 @@ export const DispensaryV2PView: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <span className="text-emerald-400 font-mono font-bold text-sm">
-                        +{prod.marketValueFlora} $FLORA
-                      </span>
+                      {(() => { const q = quoteSale(prod.id); return (
+                        <span className="text-right">
+                          <span className="block text-emerald-400 font-mono font-bold text-sm">+{q ? q.net : prod.marketValueFlora} $FLORA</span>
+                          {q && <span className={`block text-[9.5px] font-mono ${q.ratio < 0.8 ? 'text-amber-300' : 'text-neutral-500'}`} title="El mercado paga menos por gramo cuanto más se vendió hace poco; además se quema la comisión y la licencia de tu instalación">mercado al {Math.round(q.ratio * 100)} % · quema {q.fee}</span>}
+                        </span>
+                      ); })()}
                       <button
                         onClick={() => { sellProduct(prod.id); npc.speak(`¡Vendido! ${prod.name}. Se descuenta la comisión del mercado, pero el resto es tuyo.`, 'happy'); }}
                         className="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs rounded-lg transition cursor-pointer shadow-sm"

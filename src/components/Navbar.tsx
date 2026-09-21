@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import {
   Flame,
@@ -16,6 +16,7 @@ import { Avatar } from './profile/AvatarArt';
 import { SOLANA_NETWORKS } from '../utils/solana';
 import { useBagCount } from './bag/BriefcaseDrawer';
 import { YieldHeader, YieldMark } from './brand/YieldLogo';
+import { ECON, claimStatus } from '../sim/economy';
 
 interface NavbarProps {
   setCurrentTab: (tab: string) => void;
@@ -40,7 +41,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     totalFloraBurned, 
     soundEnabled, 
     toggleSound, 
-    requestAirdrop,
+    claimDaily,
+    faucetAt,
     walletAddress,
     isWalletConnected,
     solanaNetwork,
@@ -51,6 +53,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   } = useGame();
 
   const netConfig = SOLANA_NETWORKS[solanaNetwork];
+  const [tick, setTick] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setTick(Date.now()), 30000); return () => clearInterval(t); }, []);
+  const claim = claimStatus(faucetAt, tick);
 
   return (
     <header className="sticky top-0 z-50 bg-neutral-950/85 backdrop-blur-xl border-b border-emerald-400/15">
@@ -87,12 +92,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           <button
-            onClick={requestAirdrop}
-            title="Reclamar fondos de prueba del faucet para acelerar cultivos y reparar máquinas"
-            className="flex items-center gap-1 text-[11px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded transition cursor-pointer font-medium"
+            onClick={claimDaily}
+            title={claim.ok ? `Reclamo diario de $FLORA (+${ECON.dailyClaim}): una vez cada 24 h` : 'Ya reclamaste hoy'}
+            className={`flex items-center gap-1 text-[11px] border px-2 py-0.5 rounded transition cursor-pointer font-medium ${claim.ok ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-neutral-800/60 text-neutral-400 border-neutral-700'}`}
           >
             <Sparkles className="w-3 h-3" />
-            <span>+500 Faucet</span>
+            <span>{claim.ok ? `Reclamo diario +${ECON.dailyClaim}` : `Reclamo en ${Math.floor(claim.leftMs / 3600_000)} h ${Math.ceil((claim.leftMs % 3600_000) / 60_000)} min`}</span>
           </button>
         </div>
       </div>

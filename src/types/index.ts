@@ -431,6 +431,9 @@ export interface UserAccountData {
   staff?: import('../sim/staff').StaffNft[];
   staffAssign?: Partial<Record<import('../sim/staff').StaffRole, string>>;
   staffPity?: import('../sim/staff').StaffPity;
+  /** market depth (grams sold recently) and the time of the last daily claim (sim/economy.ts) */
+  marketDepth?: import('../sim/economy').Depth;
+  faucetAt?: number;
   /** set on a local save whose contents were brought into a server account (kept as a hidden backup) */
   migratedTo?: string;
 }
