@@ -68,3 +68,25 @@ export function fullSpeedUpCostFlora(hours: number): number {
   }
   return left > 0 ? Infinity : cost;
 }
+
+/** the most plants any room can hold (3 rows of 10 in the Sala) */
+export const MAX_ROOM_PLANTS = 30;
+
+/**
+ * Fit the room to the facility's capacity. Plants past the capacity are not lost: they are kept dormant (frozen) and come back
+ * when the room grows again, so a bigger installation never hands out free, pre-grown plants — only the ones the player already had.
+ */
+export function fitToCapacity<T extends { slotIndex?: number }>(active: T[], dormant: T[], capacity: number, make: (slot: number) => T): { active: T[]; dormant: T[] } {
+  const cap = Math.max(1, Math.min(MAX_ROOM_PLANTS, Math.floor(capacity)));
+  if (active.length === cap) return { active, dormant };
+  if (active.length > cap) {
+    return { active: active.slice(0, cap), dormant: [...active.slice(cap), ...dormant].sort((a, b) => (a.slotIndex ?? 0) - (b.slotIndex ?? 0)) };
+  }
+  const pool = [...dormant];
+  const next = [...active];
+  for (let slot = active.length; slot < cap; slot++) {
+    const at = pool.findIndex((p) => (p.slotIndex ?? -1) === slot);
+    next.push(at >= 0 ? pool.splice(at, 1)[0] : make(slot));
+  }
+  return { active: next, dormant: pool };
+}

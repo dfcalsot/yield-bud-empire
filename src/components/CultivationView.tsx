@@ -29,6 +29,7 @@ import {
 import { Strain, GrowRoomId } from '../types';
 import { GROW_ROOMS_CONFIG } from '../data/initialData';
 import { CultivationScene } from './CultivationScene';
+import { FacilityPanel } from './hud/FacilityPanel';
 import { X as CloseIcon } from 'lucide-react';
 
 export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; onOpenPlanet?: () => void }> = ({ onOpenMarket, onOpenPlanet }) => {
@@ -780,82 +781,8 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
         </div>
       )}
 
-      {/* Facility Upgrade Modal */}
-      {showFacilityModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="hud-panel max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-              <div>
-                <h3 className="text-lg font-bold text-white">Instalaciones de Cultivo</h3>
-                <p className="text-xs text-neutral-400">Evoluciona desde tu carpa casera F2P a invernaderos y laboratorios comerciales.</p>
-              </div>
-              <button
-                onClick={() => setShowFacilityModal(false)}
-                className="text-neutral-400 hover:text-white text-sm p-1"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {facilities.map((fac) => {
-                const isCurrent = currentFacility.id === fac.id;
-                return (
-                  <div
-                    key={fac.id}
-                    className={`rounded-xl border p-4 flex flex-col justify-between space-y-3 ${
-                      isCurrent
-                        ? 'bg-emerald-950/30 border-emerald-500'
-                        : (fac.unlocked ? 'bg-neutral-950 border-neutral-800' : 'bg-neutral-950/60 border-neutral-800 opacity-80')
-                    }`}
-                  >
-                    <div className="space-y-2">
-                      <div className="h-28 w-full rounded-lg overflow-hidden border border-neutral-800">
-                        <FacilityArt kind={fac.id} slice className="w-full h-full" label={fac.name} />
-                      </div>
-                      <h4 className="text-xs font-bold text-white leading-snug">{fac.name}</h4>
-                      <p className="text-[11px] text-neutral-400 line-clamp-2">{fac.description}</p>
-                      <div className="text-[11px] font-mono text-emerald-400">
-                        Bono: +{Math.round((fac.environmentBonus - 1) * 100)}% velocidad
-                      </div>
-                    </div>
-
-                    <div>
-                      {isCurrent ? (
-                        <div className="text-center py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs font-mono flex items-center justify-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Instalación Actual
-                        </div>
-                      ) : fac.unlocked ? (
-                        <button
-                          onClick={() => {
-                            upgradeFacility(fac.id);
-                            setShowFacilityModal(false);
-                          }}
-                          className="w-full py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-medium transition cursor-pointer"
-                        >
-                          Equipar
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            upgradeFacility(fac.id);
-                            setShowFacilityModal(false);
-                          }}
-                          disabled={floraBalance < fac.costFlora}
-                          className="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 shadow-[0_0_16px_-4px_rgba(251,191,36,0.6)]"
-                        >
-                          <Flame className="w-3.5 h-3.5 text-neutral-950" />
-                          <span>Desbloquear ({fac.costFlora} $FLORA)</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Facility ladder: build (real time + $FLORA), speed up (capped) */}
+      {showFacilityModal && <FacilityPanel onClose={() => setShowFacilityModal(false)} />}
 
       {/* Nutrient Feeding Schedule Modal */}
       {showNutrientModal && (

@@ -75,6 +75,7 @@ import {
   ownsStation, EquipStats, pestStock, spendPest, gardenerLevelOf, garbageOf, starterPestKit,
 } from '../economy/catalog';
 import { BALANCE } from '../sim/balance';
+import { applySpeedUp, buildHoursOf, fitToCapacity, isDone, normalizeConstruction, speedUpQuote, startConstruction, type Construction } from '../sim/facilities';
 import { bump as bumpMissions, claimErrand, claimStory, emptyMissions, normalizeMissions, rewardSummary, type MissionEvent, type MissionReward, type MissionState } from '../sim/missions';
 import type { NpcKind } from '../components/npc/Npc';
 import { claimStep as claimTutStep, emptyTutorial, normalizeTutorial, skipStep as skipTutStep, startTutorial as startTutState, type TutorialState } from '../sim/tutorial';
@@ -137,6 +138,9 @@ interface GameContextType {
   facilities: GrowFacility[];
   currentFacility: GrowFacility;
   upgradeFacility: (facilityId: string) => void;
+  /** the installation being built (null when none) and the paid speed-up (burns $FLORA, limited per day) */
+  construction: Construction | null;
+  speedUpConstruction: () => boolean;
   strains: Strain[];
   activePlant: PlantInGrow | null;
   indoorPlants: PlantInGrow[];
@@ -447,16 +451,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [mothersFathers, setMothersFathers] = useState<MotherFatherPlant[]>(INITIAL_MOTHERS_FATHERS);
 
   // Indoor Grow Room: 3 Rows of 10 Plants in pairs of 2 (30 plants total)
+  // (the room is only as big as the installation: the starter closet holds one plant; the rest stay dormant until the room grows)
   const [indoorPlants, setIndoorPlants] = useState<PlantInGrow[]>(() => {
-    return createInitialIndoorRoom(INITIAL_STRAINS[0]);
+    return createInitialIndoorRoom(INITIAL_STRAINS[0]).slice(0, INITIAL_FACILITIES[0].capacityPlants);
   });
+  const [dormantPlants, setDormantPlants] = useState<PlantInGrow[]>([]);
+  const [construction, setConstruction] = useState<Construction | null>(null);
   const [selectedPlantIndex, setSelectedPlantIndex] = useState<number>(0);
 
   // Active plant refers to currently selected plant in the indoor room
   const activePlant = indoorPlants[selectedPlantIndex] || indoorPlants[0] || null;
 
   const selectPlant = useCallback((index: number) => {
-    if (index >= 0 && index < 30) {
+    if (index >= 0 && index < indoorRef.current.length) {
       setSelectedPlantIndex(index);
     }
   }, []);
@@ -730,6 +737,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       tutorial,
       facilityId: currentFacility.id,
       unlockedFacilities: facilities.filter(f => f.unlocked).map(f => f.id),
+      construction,
+      dormantPlants,
       savedAt: Date.now()
     });
   }, [
@@ -763,7 +772,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     missions,
     tutorial,
     currentFacility,
-    facilities
+    facilities,
+    construction,
+    dormantPlants
   ]);
 
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
@@ -776,6 +787,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const list = INITIAL_FACILITIES.map(f => ({ ...f, unlocked: f.unlocked || unlocked.has(f.id) }));
       setFacilities(list);
       setCurrentFacility(list.find(f => f.id === saved?.facilityId && f.unlocked) ?? list[0]);
+      setConstruction(normalizeConstruction(saved?.construction));
+      setDormantPlants(Array.isArray(saved?.dormantPlants) ? saved!.dormantPlants! : []);
     }
     if (saved) {
       if (typeof saved.floraBalance === 'number') setFloraBalance(saved.floraBalance);
@@ -1617,9 +1630,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const plantIndoorBatch = (strain: Strain) => {
     playClickSound();
-    setIndoorPlants(createInitialIndoorRoom(strain));
+    const cap = currentFacility.capacityPlants;
+    setIndoorPlants(createInitialIndoorRoom(strain).slice(0, cap));
+    setDormantPlants([]);
+    setSelectedPlantIndex(0);
     addXp(50, 'Siembra Sala Completa');
-    showNotification(`Sala Indoor resembrada con 30 plantas de ${strain.name} (3 filas en pares de 2)`, 'info');
+    showNotification(`Sala resembrada con ${cap} ${cap === 1 ? 'planta' : 'plantas'} de ${strain.name}${cap < 30 ? ` (tu instalación da para ${cap})` : ' (3 filas en pares de 2)'}`, 'info');
   };
 
   // --- SEED BANK & INVENTORY ---
@@ -2361,23 +2377,80 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return hybridStrain;
   };
 
-  // Upgrade facility
+  // Facilities are built, not bought: each rung costs $FLORA (burned) and real time, you cannot skip a rung, and speeding up is capped
   const upgradeFacility = (facilityId: string) => {
     const target = facilities.find(f => f.id === facilityId);
     if (!target) return;
-    if (floraBalance < target.costFlora) {
-      showNotification(`Saldo insuficiente: Requiere ${target.costFlora} $FLORA para desbloquear`, 'info');
+    if (target.unlocked) {
+      if (target.tier < currentFacility.tier) showNotification(`${target.name} ya la superaste: tu instalación actual es mejor.`, 'info');
+      else setCurrentFacility(target);
       return;
     }
-
-    if (target.costFlora > 0) {
-      recordBurnTransaction('BURN_SPEEDUP', target.costFlora, `Yield Bud Empire: Desbloqueo de Instalación ${target.name}`);
+    if (construction) {
+      const b = facilities.find(f => f.id === construction.facilityId);
+      showNotification(`Ya hay una obra en marcha (${b?.name ?? 'instalación'}). Termínala antes de empezar otra.`, 'info');
+      return;
     }
-
-    setFacilities(prev => prev.map(f => f.id === facilityId ? { ...f, unlocked: true } : f));
-    setCurrentFacility(target);
-    showNotification(`¡Instalación actualizada a: ${target.name}!`, 'success');
+    if (target.tier !== currentFacility.tier + 1) {
+      showNotification('No se salta ningún escalón: construye primero la instalación anterior.', 'info');
+      return;
+    }
+    if (floraBalance < target.costFlora) {
+      showNotification(`Saldo insuficiente: la obra cuesta ${target.costFlora} $FLORA`, 'info');
+      return;
+    }
+    const c = startConstruction(facilityId, Date.now());
+    if (!c) return;
+    recordBurnTransaction('BURN_SPEEDUP', target.costFlora, `Yield Bud Empire: Obra de ${target.name}`);
+    setConstruction(c);
+    const h = buildHoursOf(facilityId);
+    showNotification(`¡Obra iniciada: ${target.name}! Tardará ${h >= 24 ? `${Math.round(h / 24 * 10) / 10} días` : `${h} h`}. Puedes seguir cultivando mientras tanto.`, 'success');
   };
+
+  const finishConstruction = useCallback((c: Construction) => {
+    const target = INITIAL_FACILITIES.find(f => f.id === c.facilityId);
+    setConstruction(null);
+    if (!target) return;
+    setFacilities(prev => prev.map(f => f.id === c.facilityId ? { ...f, unlocked: true } : f));
+    setCurrentFacility({ ...target, unlocked: true });
+    confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } });
+    showNotification(`¡Obra terminada! ${target.name}: ahora caben ${target.capacityPlants} ${target.capacityPlants === 1 ? 'planta' : 'plantas'}.`, 'success');
+  }, [showNotification]);
+
+  const speedUpConstruction = (): boolean => {
+    if (!construction) return false;
+    const q = speedUpQuote(construction, Date.now());
+    if (!q) { showNotification('Ya usaste todas las aceleraciones de hoy. Mañana podrás recortar más; el resto lo pone el tiempo.', 'info'); return false; }
+    if (floraBalance < q.costFlora) { showNotification(`Saldo insuficiente: acelerar cuesta ${q.costFlora} $FLORA`, 'info'); return false; }
+    const r = applySpeedUp(construction, Date.now());
+    if (!r) return false;
+    const cutH = Math.round(q.cutMs / 360000) / 10;
+    recordBurnTransaction('BURN_SPEEDUP', q.costFlora, `Yield Bud Empire: Aceleración de obra (−${cutH} h)`);
+    setConstruction(r.state);
+    showNotification(`Obra acelerada: −${cutH} h por ${q.costFlora} $FLORA quemados. Te quedan ${q.leftToday - 1} aceleraciones hoy.`, 'burn');
+    return true;
+  };
+
+  // the build finishes by itself (also when you were away)
+  useEffect(() => {
+    if (!construction) return;
+    if (isDone(construction, Date.now())) { finishConstruction(construction); return; }
+    const t = setInterval(() => { if (isDone(construction, Date.now())) finishConstruction(construction); }, 5000);
+    return () => clearInterval(t);
+  }, [construction, finishConstruction]);
+
+  // the room is exactly as big as the installation; plants past its capacity wait (frozen) and come back when it grows
+  useEffect(() => {
+    const cap = currentFacility.capacityPlants;
+    if (indoorPlants.length === cap) return;
+    const fresh = createInitialIndoorRoom(strains[0] ?? INITIAL_STRAINS[0]);
+    const r = fitToCapacity<PlantInGrow>(indoorPlants, dormantPlants, cap, (slot) => ({
+      ...fresh[slot], stage: 'seed' as GrowStage, progressPercent: 0, health: 100, soilMoisture: 85, plantedAt: Date.now(), trichomeMaturity: { clear: 100, milky: 0, amber: 0 },
+    }));
+    setIndoorPlants(r.active);
+    setDormantPlants(r.dormant);
+    setSelectedPlantIndex(i => Math.min(i, r.active.length - 1));
+  }, [currentFacility.capacityPlants, indoorPlants, dormantPlants, strains]);
 
   // Process raw flower in Extraction Lab
   const processRawFlower = (type: 'cured_flower' | 'live_rosin' | 'full_spec_oil' | 'pure_terpenes', gramsInput: number): boolean => {
@@ -2886,6 +2959,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         facilities,
         currentFacility,
         upgradeFacility,
+        construction,
+        speedUpConstruction,
         strains,
         activePlant,
         indoorPlants,

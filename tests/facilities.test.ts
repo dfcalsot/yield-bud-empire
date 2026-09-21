@@ -1,4 +1,4 @@
-import { BUILD_HOURS, SPEEDUP, applySpeedUp, dayOf, fullSpeedUpCostFlora, isDone, normalizeConstruction, progressOf, remainingMs, speedUpQuote, startConstruction } from '../src/sim/facilities';
+import { MAX_ROOM_PLANTS, fitToCapacity, BUILD_HOURS, SPEEDUP, applySpeedUp, dayOf, fullSpeedUpCostFlora, isDone, normalizeConstruction, progressOf, remainingMs, speedUpQuote, startConstruction } from '../src/sim/facilities';
 
 let failed = 0;
 const ok = (name: string, cond: boolean, extra = '') => { console.log(`${cond ? 'PASS' : 'FAIL'}  ${name} ${extra}`); if (!cond) failed++; };
@@ -32,6 +32,21 @@ const lab = daysAtMaxSpend('lab_pharma_hydro'), gh = daysAtMaxSpend('greenhouse_
 ok('pagando el máximo, el hidropónico aún lleva ≥ 3 días (de 5 sin pagar)', lab.days >= 3, `(${lab.days} días)`);
 ok('pagando el máximo, el invernadero aún lleva ≥ 1 día (de 2 sin pagar)', gh.days >= 1, `(${gh.days} días)`);
 ok('pagar siempre ayuda: menos días que esperar la obra grande', lab.days < 5);
+
+
+// capacity: the room is exactly as big as the facility, and nothing is lost or handed out for free
+type P = { slotIndex: number; tag: string };
+const mk = (slot: number): P => ({ slotIndex: slot, tag: 'new' });
+const room30: P[] = Array.from({ length: 30 }, (_, i) => ({ slotIndex: i, tag: 'old' }));
+const one = fitToCapacity(room30, [], 1, mk);
+ok('capacidad 1: solo 1 planta activa, 29 dormidas', one.active.length === 1 && one.dormant.length === 29);
+const back = fitToCapacity(one.active, one.dormant, 4, mk);
+ok('al ampliar vuelven las dormidas (no se regalan plantas nuevas)', back.active.length === 4 && back.active.every((p) => p.tag === 'old') && back.dormant.length === 26);
+const fresh = fitToCapacity([{ slotIndex: 0, tag: 'old' }], [], 4, mk);
+ok('sin dormidas, los huecos nuevos empiezan vacíos', fresh.active.length === 4 && fresh.active.slice(1).every((p) => p.tag === 'new') && fresh.dormant.length === 0);
+ok('la capacidad no pasa del máximo de la sala', fitToCapacity([], [], 99, mk).active.length === MAX_ROOM_PLANTS);
+ok('el mismo tamaño no toca nada', fitToCapacity(fresh.active, [], 4, mk).active === fresh.active);
+ok('ida y vuelta conserva todas las plantas', (() => { const a = fitToCapacity(room30, [], 8, mk), b = fitToCapacity(a.active, a.dormant, 30, mk); return b.active.length === 30 && b.dormant.length === 0 && b.active.every((p, i) => p.slotIndex === i && p.tag === 'old'); })());
 
 // old / broken saves
 ok('normalize de basura', normalizeConstruction(null) === null && normalizeConstruction({ facilityId: 3 }) === null);

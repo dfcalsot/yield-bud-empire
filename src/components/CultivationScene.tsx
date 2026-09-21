@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Droplet, Scissors, Flame, Zap, Crown, Layers, Grid3X3, SlidersHorizontal, ChevronDown, Sprout, Bug, Briefcase, Hand } from 'lucide-react';
+import { Droplet, Scissors, Flame, Zap, Crown, Layers, Grid3X3, SlidersHorizontal, ChevronDown, Sprout, Bug, Briefcase, Hand, Hammer } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { GROW_ROOMS_CONFIG } from '../data/initialData';
 import { PlantView } from './PlantView';
@@ -10,6 +10,7 @@ import { StatBar } from './game/GameUI';
 import type { GrowStage } from '../types';
 import { formatDuration, hoursUntilMoisture, isHungry, isThirsty, PEST_INFO } from '../sim/engine';
 import { nextActionFor } from '../sim/nextAction';
+import { remainingMs } from '../sim/facilities';
 import { openBag } from '../ui/events';
 import { Hotbar, HudToolbar, Nameplate, Orb, type SlotSpec, type ToolSpec } from './hud/HudParts';
 import { FacilityBackdrop } from './hud/FacilityBackdrop';
@@ -154,10 +155,12 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const {
     activePlant, indoorPlants, selectedPlantIndex, selectPlant,
     waterPlant, feedNutrients, trainPlant, speedUpGrowth, harvestPlant, saveCurrentPlantAsMotherOrFather,
-    currentRoom, switchGrowRoom, currentFacility, rawFlowerGrams, trimGrams, co2Ppm, getPlantEta, care, reportEvent, resources, equipStats,
+    currentRoom, switchGrowRoom, currentFacility, construction, facilities, rawFlowerGrams, trimGrams, co2Ppm, getPlantEta, care, reportEvent, resources, equipStats,
   } = useGame();
 
   const [roomMenu, setRoomMenu] = useState(false);
+  const [buildNow, setBuildNow] = useState(() => Date.now());
+  useEffect(() => { if (!construction) return; const t = setInterval(() => setBuildNow(Date.now()), 15000); setBuildNow(Date.now()); return () => clearInterval(t); }, [construction]);
   const [careOpen, setCareOpen] = useState(false);
   const [floaters, setFloaters] = useState<Array<{ id: number; text: string; color: string; dx: number }>>([]);
   const nextId = useRef(1);
@@ -312,6 +315,13 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
             <span className="max-w-[14rem] truncate">{currentFacility.name}</span>
             <span className="text-[10px] font-mono text-emerald-300">Nv.{currentFacility.tier}</span>
           </button>
+          {construction && (
+            <button onClick={onOpenFacility} className="flex items-center gap-2 px-3 py-1 rounded-xl bg-amber-950/70 border border-amber-400/50 text-[11px] text-amber-100 cursor-pointer hover:border-amber-300 transition" title="Obra en marcha · toca para verla o acelerarla" data-testid="build-badge">
+              <Hammer className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+              <span className="max-w-[10rem] truncate">{(facilities.find((f) => f.id === construction.facilityId)?.name ?? 'Obra').split(' (')[0]}</span>
+              <span className="font-mono text-amber-300">{formatDuration(remainingMs(construction, buildNow) / 1000)}</span>
+            </button>
+          )}
           <div className="gh-orbs mt-1" data-tour="orbs">
             <Orb kind="water" label="Agua" value={`${Math.round(resources.water)} L`} fill={resources.water / 300} icon={<DropletsIcon className="w-5 h-5" />} low={resources.water < 20} onClick={() => onOpenMarket?.('water')} title="Agua en el tanque · toca para comprar" />
             <Orb kind="nutrient" label="Abono" value={`${Math.round(resources.nutrient)} ml`} fill={resources.nutrient / 1000} icon={<FlaskIcon className="w-5 h-5" />} low={resources.nutrient < 60} onClick={() => onOpenMarket?.('nutrient')} title="Abono · toca para comprar" />

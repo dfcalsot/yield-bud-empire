@@ -424,6 +424,9 @@ export interface UserAccountData {
   /** the installation you are using and the ones you have unlocked */
   facilityId?: string;
   unlockedFacilities?: string[];
+  /** the installation under construction (sim/facilities.ts) and the plants waiting beyond the current capacity */
+  construction?: import('../sim/facilities').Construction | null;
+  dormantPlants?: PlantInGrow[];
   /** set on a local save whose contents were brought into a server account (kept as a hidden backup) */
   migratedTo?: string;
 }
