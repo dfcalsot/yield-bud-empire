@@ -27,6 +27,11 @@ const Bar: React.FC<{ label: string; value: number; color: string }> = ({ label,
 
 const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
+/** a UFO may be waved at up to 3 times a day for a little XP (never $FLORA) */
+const UFO_KEY = 'ybe_ufo_day';
+const ufoLeft = (): number => { try { const [d, n] = (localStorage.getItem(UFO_KEY) ?? '').split(':').map(Number); return d === Math.floor(Date.now() / 86400000) ? Math.max(0, 3 - (n || 0)) : 3; } catch { return 3; } };
+const ufoUsed = () => { try { const day = Math.floor(Date.now() / 86400000); const [d, n] = (localStorage.getItem(UFO_KEY) ?? '').split(':').map(Number); localStorage.setItem(UFO_KEY, `${day}:${d === day ? (n || 0) + 1 : 1}`); } catch { /* private mode */ } };
+
 const Globe3D = lazy(() => import('./Globe3D').then((m) => ({ default: m.Globe3D })));
 class GlobeBoundary extends Component<{ fallback: React.ReactNode; onFail: () => void; children: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -40,7 +45,7 @@ const readGlobe = () => { try { return webglOk && localStorage.getItem(GLOBE_KEY
 
 /** The Planet: world map, the seven regions, the plots you own and Tomás, the farmer who guides you. */
 export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (cat?: string) => void }> = ({ onOpenSeedBank, onOpenMarket }) => {
-  const { plots, plotsForSale, buyPlot, floraBalance, solBalance, seedBank } = useGame();
+  const { plots, plotsForSale, buyPlot, floraBalance, solBalance, seedBank, addXp } = useGame();
   const now = useNow(30000);
   const [region, setRegion] = useState<RegionId | null>(null);
   const [hover, setHover] = useState<RegionId | null>(null);
@@ -154,7 +159,7 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
             <div className="rounded-2xl overflow-hidden border border-sky-400/20 shadow-[0_0_40px_-20px_rgba(56,189,248,0.6)]">
               <div className={`pl-zoomwrap ${zoom ? 'pl-zooming' : ''}`} style={zoom ? { transformOrigin: `${zoom.ox}% ${zoom.oy}%` } : undefined}>
               {(() => {
-                const flat = <WorldMap owned={owned} ready={readyByRegion} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} />;
+                const flat = <WorldMap owned={owned} ready={readyByRegion} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} onUfoCaught={(reg) => { if (ufoLeft() > 0) { ufoUsed(); const xp = 25 + Math.floor(Math.random() * 40); addXp(xp, 'Ovni avistado'); say2(`¡Un ovni sobre ${reg}! Me saludó y me dejó ${xp} XP. Dicen que abducen vacas… y plantas.`, 'happy'); } else say2('El ovni ya se fue de gira: hoy no te da más XP, pero sigue saludando.', 'idle'); }} />;
                 if (!globe) return flat;
                 return (
                   <GlobeBoundary fallback={flat} onFail={() => setGlobe(false)}>

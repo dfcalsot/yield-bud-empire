@@ -1078,3 +1078,20 @@ body::before {
 .mk-chip { --rc: #38bdf8; display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 999px; font: 700 11px ui-sans-serif, system-ui; color: #cbd5e1; cursor: pointer; background: rgba(22, 17, 44, 0.6); border: 1px solid rgba(169, 163, 207, 0.25); transition: transform 0.12s, border-color 0.12s, background 0.12s; }
 .mk-chip:hover { transform: translateY(-1px); color: #fff; }
 .mk-chip.is-on { color: #fff; border-color: var(--rc); background: color-mix(in srgb, var(--rc) 22%, transparent); box-shadow: 0 0 14px -4px var(--rc); }
+
+/* world map life: ships, planes, whale, UFO */
+.pl-blink { animation: plBlink 1.2s steps(2, end) infinite; }
+@keyframes plBlink { 50% { opacity: 0.15; } }
+.pl-wake { animation: plWake 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: right center; }
+@keyframes plWake { 0%, 100% { opacity: 0.55; } 50% { opacity: 0.25; } }
+.pl-whale { animation: plWhale 26s ease-in-out infinite; }
+@keyframes plWhale { 0%, 100% { transform: translate(0, 0) rotate(-4deg); } 50% { transform: translate(60px, 8px) rotate(4deg); } }
+.pl-spout { animation: plSpout 5s ease-out infinite; transform-box: fill-box; transform-origin: bottom center; }
+@keyframes plSpout { 0%, 70% { opacity: 0; transform: scaleY(0.2); } 78% { opacity: 1; transform: scaleY(1); } 100% { opacity: 0; transform: scaleY(1.3); } }
+.pl-ufo { animation: plUfo 1.8s ease-in-out infinite; }
+@keyframes plUfo { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-2px) rotate(3deg); } }
+.pl-city { animation: plCity 4s ease-in-out infinite; }
+@keyframes plCity { 50% { opacity: 0.55; } }
+.pl-wave { animation: plWave 6s ease-in-out infinite; }
+@keyframes plWave { 50% { opacity: 0.5; transform: translateX(4px); } }
+@media (prefers-reduced-motion: reduce) { .pl-blink, .pl-wake, .pl-whale, .pl-spout, .pl-ufo, .pl-city, .pl-wave { animation: none; } }

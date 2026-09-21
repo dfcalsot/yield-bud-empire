@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { REGIONS, dayIndexOf, weatherOn } from '../../sim/terroir';
 import type { RegionId } from '../../types';
+import { MapDetail } from './mapDetail';
+import { MapTraffic, MapUfo } from './mapActors';
 
 /** Stylised world map (equirectangular 1000×500) with the seven regions, a live day/night terminator and drifting clouds. */
 
@@ -39,7 +41,9 @@ export const WorldMap: React.FC<{
   onSelect: (id: RegionId) => void;
   onHover: (id: RegionId | null) => void;
   nowMs: number;
-}> = ({ owned, ready = {}, selected, onSelect, onHover, nowMs }) => {
+  /** the player waved at a UFO (small prize is the caller's business) */
+  onUfoCaught?: (region: string) => void;
+}> = ({ owned, ready = {}, selected, onSelect, onHover, nowMs, onUfoCaught }) => {
   const land = useMemo(() => CONTINENTS.map(path), []);
   // sun is at local noon on the meridian where it is 12:00
   const utcH = (nowMs / 3600000) % 24;
@@ -58,10 +62,14 @@ export const WorldMap: React.FC<{
         <rect width="1000" height="500" fill="url(#plOcean)" />
         {[-60, -30, 0, 30, 60].map((la) => <line key={la} x1="0" x2="1000" y1={proj(0, la)[1]} y2={proj(0, la)[1]} stroke="#7dd3fc" strokeOpacity=".07" />)}
         {Array.from({ length: 11 }, (_, i) => -150 + i * 30).map((lo) => <line key={lo} y1="0" y2="500" x1={proj(lo, 0)[0]} x2={proj(lo, 0)[0]} stroke="#7dd3fc" strokeOpacity=".07" />)}
+        {/* a soft glow along the coasts, then the land */}
+        {land.map((d, i) => <path key={`g${i}`} d={d} fill="none" stroke="#67e8f9" strokeOpacity=".28" strokeWidth="5" strokeLinejoin="round" filter="url(#plCoast)" />)}
         {land.map((d, i) => <path key={i} d={d} fill="url(#plLand)" stroke="#34d399" strokeOpacity=".45" strokeWidth="1.2" strokeLinejoin="round" />)}
+        <MapDetail nowMs={nowMs} layer="ground" />
         {/* night side (a band 180° wide that wraps around the map) */}
         <rect x={nx} y="0" width="500" height="500" fill="url(#plNight)" />
         <rect x={nx - 1000} y="0" width="500" height="500" fill="url(#plNight)" />
+        <MapDetail nowMs={nowMs} layer="lights" />
         {/* clouds */}
         {[[60, 90, 70], [40, 250, 90], [20, 380, 60], [30, 160, 80]].map(([x, y, w], i) => (
           <g key={i} className="pl-cloud" style={{ animationDelay: `${-i * 15}s`, animationDuration: `${55 + i * 10}s` }}>
@@ -95,6 +103,7 @@ export const WorldMap: React.FC<{
             );
           });
         })()}
+        <MapTraffic />
         {REGIONS.map((r) => {
           const [x, y] = proj(r.lon, r.lat);
           const sel = selected === r.id;
@@ -127,6 +136,7 @@ export const WorldMap: React.FC<{
             </g>
           );
         })}
+        <MapUfo onUfoCaught={onUfoCaught} />
       </g>
     </svg>
   );
