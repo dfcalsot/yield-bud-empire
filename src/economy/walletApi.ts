@@ -1,7 +1,7 @@
 /** the game wallet and the external wallets linked to the account (server/wallet.mjs) */
 export type Chain = 'solana' | 'ronin';
 export interface WalletLink { chain: Chain; address: string; linkedAt: number }
-export interface WalletInfo { gameAddress: string; chains: Record<Chain, { name: string; network: string }>; links: WalletLink[] }
+export interface WalletInfo { account: { id: number; username: string; email: string | null }; gameAddress: string; chains: Record<Chain, { name: string; network: string }>; links: WalletLink[] }
 
 const call = async <T>(path: string, body?: unknown): Promise<{ ok: true; data: T } | { ok: false; error: string }> => {
   try {

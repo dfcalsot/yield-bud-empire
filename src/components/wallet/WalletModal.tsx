@@ -87,14 +87,14 @@ export const WalletModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
             <span className="grid place-items-center w-9 h-9 rounded-xl bg-emerald-400/10 border border-emerald-300/30 text-emerald-300"><Wallet className="w-5 h-5" /></span>
             <div>
               <h3 className="font-serif text-lg font-black text-white leading-tight">Wallet del juego</h3>
-              <p className="text-[11px] text-neutral-400">{currentUser?.displayName ?? 'Jugador'} · modo simulado</p>
+              <p className="text-[11px] text-neutral-400" data-testid="wallet-account">{info ? `Cuenta #${info.account.id} · ${info.account.username}${info.account.email ? ` · ${info.account.email}` : ''}` : (currentUser?.displayName ?? 'Jugador')} · modo simulado</p>
             </div>
           </div>
           <button type="button" onClick={onClose} className="fp-x" aria-label="Cerrar"><X className="w-4 h-4" /></button>
         </header>
 
         {!ledgerOn ? (
-          <p className="text-sm text-neutral-400 py-6 text-center">La wallet del juego necesita conexión con el servidor de cuentas y una sesión iniciada.</p>
+          <p className="text-sm text-neutral-400 py-6 text-center" data-testid="wallet-offline">Este navegador está jugando en modo local: no hay sesión con el servidor de cuentas, así que no se ve la cartera del servidor. Cierra sesión y vuelve a entrar con tu correo y contraseña.</p>
         ) : (
           <>
             <section className="rounded-xl border border-white/10 bg-black/30 p-3 space-y-2">

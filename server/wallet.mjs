@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS wallet_nonces (nonce TEXT PRIMARY KEY, account_id INT
   const q = {
     links: db.prepare('SELECT chain, address, linked_at FROM wallet_links WHERE account_id = ? ORDER BY chain'),
     ofChain: db.prepare('SELECT * FROM wallet_links WHERE account_id = ? AND chain = ?'),
+    who: db.prepare('SELECT id, username, email FROM accounts WHERE id = ?'),
     byAddr: db.prepare('SELECT account_id FROM wallet_links WHERE chain = ? AND address = ?'),
     add: db.prepare('INSERT INTO wallet_links (account_id, chain, address, linked_at) VALUES (?,?,?,?)'),
     del: db.prepare('DELETE FROM wallet_links WHERE account_id = ? AND chain = ?'),
@@ -73,7 +74,7 @@ CREATE TABLE IF NOT EXISTS wallet_nonces (nonce TEXT PRIMARY KEY, account_id INT
 
   /** the in-game address: a public id derived from the account, easy to read out loud. Not a key. */
   const gameAddress = (id) => { const h = crypto.createHash('sha256').update(`yield-bud-empire/game-wallet/${id}`).digest('hex').toUpperCase(); return `YBE-${h.slice(0, 4)}-${h.slice(4, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}`; };
-  const view = (id) => ({ gameAddress: gameAddress(id), chains: CHAINS, links: q.links.all(id).map((r) => ({ chain: r.chain, address: r.address, linkedAt: r.linked_at })) });
+  const view = (id) => ({ account: q.who.get(id), gameAddress: gameAddress(id), chains: CHAINS, links: q.links.all(id).map((r) => ({ chain: r.chain, address: r.address, linkedAt: r.linked_at })) });
   const who = (ctx, key, max) => { const a = sessionAccount(ctx); if (!a) throw new HttpError(401, 'unauthenticated'); limit(ctx, `${key}:${a.id}`, max, 60_000); return a; };
   const normalize = (chain, address) => (chain === 'solana' ? normSolana(address) : chain === 'ronin' ? normRonin(address) : null);
 
