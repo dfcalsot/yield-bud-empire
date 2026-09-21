@@ -1,0 +1,28 @@
+/* Yield Bud Empire logo animation. Everything is transform/opacity/dashoffset only, and it is switched off by
+   prefers-reduced-motion. The static logo (no .ybe-anim) has no motion at all, so it exports and prints as-is. */
+.ybe-anim .ybe-rays { transform-origin: 200px 200px; animation: ybeSpin 90s linear infinite; }
+@keyframes ybeSpin { to { transform: rotate(360deg); } }
+
+.ybe-anim .ybe-leaf { transform-origin: 200px 270px; animation: ybeBreathe 4.2s ease-in-out infinite; }
+@keyframes ybeBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.022); } }
+.ybe-anim .ybe-lf { transform-origin: 0 0; animation: ybeSway 3.6s ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes ybeSway { 0%, 100% { transform: rotate(-1.8deg); } 50% { transform: rotate(1.8deg); } }
+
+.ybe-anim .ybe-crown { animation: ybeBob 3.4s ease-in-out infinite; }
+@keyframes ybeBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.ybe-anim .ybe-shine { animation: ybeShine 5.5s ease-in-out infinite; }
+@keyframes ybeShine { 0%, 62% { transform: skewX(-20deg) translateX(0); } 100% { transform: skewX(-20deg) translateX(420px); } }
+
+.ybe-anim .ybe-spark { transform-box: fill-box; transform-origin: center; animation: ybeTwinkle 2.6s ease-in-out infinite; }
+@keyframes ybeTwinkle { 0%, 100% { transform: scale(0.2) rotate(0); opacity: 0; } 45% { transform: scale(1) rotate(45deg); opacity: 1; } 70% { transform: scale(0.6) rotate(90deg); opacity: 0.7; } }
+
+.ybe-anim .ybe-glow { transform-box: fill-box; transform-origin: center; animation: ybeGlow 3.6s ease-in-out infinite; }
+@keyframes ybeGlow { 0%, 100% { opacity: 0.55; transform: scale(0.97); } 50% { opacity: 1; transform: scale(1.03); } }
+
+.ybe-anim .ybe-chase { transform-origin: 200px 200px; animation: ybeChase 5s linear infinite; opacity: 0.9; }
+@keyframes ybeChase { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ybe-anim * { animation: none !important; }
+  .ybe-anim .ybe-spark { opacity: 0.9; transform: scale(0.8); }
+}
