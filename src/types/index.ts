@@ -417,6 +417,8 @@ export interface UserAccountData {
   /** collectible NFT avatars and the chest pity counters */
   avatars?: import('../sim/avatars').OwnedAvatar[];
   chestPity?: import('../sim/avatars').PityMap;
+  /** NPC missions: event counters and claims (sim/missions.ts) */
+  missions?: import('../sim/missions').MissionState;
   /** set on a local save whose contents were brought into a server account (kept as a hidden backup) */
   migratedTo?: string;
 }

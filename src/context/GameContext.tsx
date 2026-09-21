@@ -75,6 +75,8 @@ import {
   ownsStation, EquipStats, pestStock, spendPest, gardenerLevelOf, garbageOf, starterPestKit,
 } from '../economy/catalog';
 import { BALANCE } from '../sim/balance';
+import { bump as bumpMissions, claimErrand, claimStory, emptyMissions, normalizeMissions, rewardSummary, type MissionEvent, type MissionReward, type MissionState } from '../sim/missions';
+import type { NpcKind } from '../components/npc/Npc';
 export { calculateVpd };
 
 // Generate realistic Solana signature
@@ -192,6 +194,11 @@ interface GameContextType {
   ownsStation: (stationId: string) => boolean;
 
   // Plagues, gardener rating and nursery mode (HashKings-inspired)
+  /** NPC missions: event counters + story/daily claims (sim/missions.ts). `claim*` return the character's reply, or null if not claimable */
+  missions: MissionState;
+  reportEvent: (event: MissionEvent, n?: number) => void;
+  claimStoryMission: (id: string) => string | null;
+  claimErrandMission: (npc: NpcKind) => string | null;
   care: { rating: number; cleanReadyInHours: number; pests: number; plotPests: number; males: number; plotMales: number; pollinated: number; garbage: number; gardenerLevel: 0 | 1 | 2; gardenerDays: number };
   treatPests: (scope: 'selected' | 'all', plotId?: string) => void;
   cleanRoom: () => boolean;
@@ -417,6 +424,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [plots, setPlots] = useState<OwnedPlot[]>([]);
   const [avatars, setAvatars] = useState<OwnedAvatar[]>([]);
   const [chestPity, setChestPity] = useState<PityMap>(EMPTY_PITY);
+  const [missions, setMissions] = useState<MissionState>(emptyMissions);
+  const missionsRef = useRef<MissionState>(missions);
+  const applyMissions = useCallback((next: MissionState) => { missionsRef.current = next; setMissions(next); }, []);
+  const reportEvent = useCallback((event: MissionEvent, n = 1) => { applyMissions(bumpMissions(missionsRef.current, event, n)); }, [applyMissions]);
   const plotsRef = useRef<OwnedPlot[]>(plots);
   plotsRef.current = plots;
   const [autoWaterActive, setAutoWaterActive] = useState<boolean>(false);
@@ -705,6 +716,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       plots,
       avatars,
       chestPity,
+      missions,
       savedAt: Date.now()
     });
   }, [
@@ -734,11 +746,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     care,
     plots,
     avatars,
-    chestPity
+    chestPity,
+    missions
   ]);
 
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
     const saved = loadUserData(userId);
+    applyMissions(normalizeMissions(saved?.missions));
     if (saved) {
       if (typeof saved.floraBalance === 'number') setFloraBalance(saved.floraBalance);
       if (typeof saved.solBalance === 'number') setSolBalance(saved.solBalance);
@@ -797,7 +811,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSeedInventory({ seed_chrono_og: 1 });
       }
     }
-  }, []);
+  }, [applyMissions]);
 
   // --- SOLANA NETWORKS & WALLETS ---
   const refreshLiveBalance = useCallback(async (): Promise<number> => {
@@ -1267,6 +1281,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }));
     updateQuestProgress('quest_water_micro', 1);
+    reportEvent('water', 1);
     addXp(20, 'Riego y Calibración');
     showNotification(`Riego completado en Planta #${selectedPlantIndex + 1} (+20 XP)`, 'info');
   };
@@ -1281,6 +1296,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       lastWatered: Date.now()
     })));
     updateQuestProgress('quest_water_micro', 5);
+    reportEvent('water', indoorPlants.length);
     addXp(60, 'Riego Masivo Sala Indoor');
     showNotification('¡Riego por goteo activado en las 3 filas (30 plantas de la sala)! (+60 XP)', 'info');
   };
@@ -1300,6 +1316,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lastFed: Date.now()
       };
     }));
+    reportEvent('feed', 1);
     addXp(25, 'Nutrición N-P-K');
     showNotification(`Nutrición N-P-K optimizada en Planta #${selectedPlantIndex + 1} (+25 XP)`, 'info');
   };
@@ -1316,6 +1333,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       health: Math.min(100, p.health + 10),
       lastFed: Date.now()
     })));
+    reportEvent('feed', indoorPlants.length);
     addXp(75, 'Fertirriego Masivo');
     showNotification('Fertirriego N-P-K aplicado a las 30 plantas de la sala (+75 XP)', 'info');
   };
@@ -1453,6 +1471,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTrimGrams(prev => prev + trimHarvested);
 
     updateQuestProgress('quest_harvest_run', 1);
+    if (!maleTarget) reportEvent('harvest', 1);
     addXp(180, 'Cosecha F2P');
 
     showNotification(maleTarget ? `Planta #${selectedPlantIndex + 1} era macho: no da flor. La sala queda libre para una hembra.` : `¡Cosecha exitosa! Planta #${selectedPlantIndex + 1}: +${flowerHarvested}g Flor Seca y +${trimHarvested}g Biomasa${seedsGot ? ` y 🌰 ${seedsGot} semillas (fue polinizada)` : ''} (+180 XP)`, 'success');
@@ -1521,6 +1540,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRawFlowerGrams(prev => prev + totalFlower);
     setTrimGrams(prev => prev + totalTrim);
     updateQuestProgress('quest_harvest_run', readyIndices.length);
+    reportEvent('harvest', readyIndices.length - maleCut);
     addXp(readyIndices.length * 150, 'Cosecha Sala Indoor');
     showNotification(`¡Cosecha de Sala Completa! ${readyIndices.length} plantas cosechadas: +${totalFlower}g Flor Seca y +${totalTrim}g Biomasa${totalSeeds ? ` · 🌰 +${totalSeeds} semillas` : ''}${maleCut ? ` · ${maleCut} macho${maleCut > 1 ? 's' : ''} (sin flor)` : ''}`, 'success');
   };
@@ -1567,6 +1587,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         pest: undefined
       };
     }));
+    reportEvent('plant', 1);
     showNotification(`Semilla plantada en Planta #${selectedPlantIndex + 1}: ${strain.name}. ¡Inicia el monitoreo de microclima!`, 'info');
   };
 
@@ -1615,6 +1636,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
 
     playHarvestChime();
+    reportEvent('seedbuy', 1);
     addXp(35, 'Adquisición de Genética');
     showNotification(`¡Pack de ${seed.seedsPerPack}x semillas de ${seed.name} añadido a tu inventario! (+35 XP)`, 'success');
     return true;
@@ -1742,6 +1764,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (equip && item.category === 'irrigation') setAutoWaterActive(true);
     if (equip && item.category === 'ac') setAutoClimateActive(true);
     confetti({ particleCount: 40, spread: 60 });
+    reportEvent('buy', 1);
     addXp(item.tier * 15 * n, 'Compra de Equipamiento');
     showNotification(`NFT minteado: ${label}${equip ? ' — instalado' : ''}${item.kind === 'consumable' ? ` (+${(item.amount ?? 0) * n} ${item.unit})` : ''}`, 'success');
     return true;
@@ -1887,6 +1910,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setPlots(prev => [...prev, { id: offer.id, region, index: offer.index, name: offer.name, ratings: offer.ratings, landRating: offer.landRating, mintedAt: Date.now(), plants: [] }]);
     confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+    reportEvent('plot', 1);
     addXp(80, 'Compra de parcela');
     showNotification(`🌎 Parcela minteada: ${offer.name} en ${r.name} · nota ${offer.landRating}/10 · 36 plantas`, 'success');
     return true;
@@ -1917,6 +1941,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSeedInventory(prev => ({ ...prev, [seedId]: Math.max(0, (prev[seedId] || 0) - n) }));
     setPlots(prev => prev.map(pl => pl.id === plotId ? { ...pl, plants: [...pl.plants, ...fresh] } : pl));
     playClickSound();
+    reportEvent('plant', n);
     addXp(n * 5, 'Siembra en parcela');
     showNotification(`🌱 ${n} semilla${n > 1 ? 's' : ''} de ${strain.name} en ${plot.name}: ${ter.label}. ~${yieldEach} g por planta.`, ter.tone === 'down' ? 'info' : 'success');
     return true;
@@ -1934,6 +1959,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const slots = new Set(targets.map(p => p.slotIndex));
     playWaterSound();
     setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.map(p => slots.has(p.slotIndex) ? { ...p, soilMoisture: Math.min(100, p.soilMoisture + 55), health: Math.min(100, p.health + 3), lastWatered: Date.now() } : p) }));
+    reportEvent('water', targets.length);
     addXp(targets.length * 3, 'Riego de parcela');
     showNotification(`💧 ${targets.length} planta${targets.length > 1 ? 's regadas' : ' regada'} en ${plot.name} (${(USE.waterPerPlantManual * targets.length).toFixed(1)} L)`, 'info');
   };
@@ -1951,6 +1977,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const feedBonus = bestFeedBonus(assets);
     playClickSound();
     setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.map(p => slots.has(p.slotIndex) ? { ...p, ecLevel: 2.1, phLevel: 6.2, feedBonus, health: Math.min(100, p.health + 5), lastFed: Date.now() } : p) }));
+    reportEvent('feed', targets.length);
     addXp(targets.length * 4, 'Abonado de parcela');
     showNotification(`🧪 ${targets.length} planta${targets.length > 1 ? 's abonadas' : ' abonada'} en ${plot.name}`, 'info');
   };
@@ -2002,6 +2029,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRawFlowerGrams(prev => prev + flower);
     setTrimGrams(prev => prev + trim);
     updateQuestProgress('quest_harvest_run', ready.length);
+    reportEvent('harvest', ready.length - maleCut);
     addXp(ready.length * 180, 'Cosecha en parcela');
     playHarvestChime();
     confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 }, colors: ['#10b981', '#34d399', '#f59e0b', '#a855f7', '#6366f1'] });
@@ -2122,6 +2150,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ? { ...p, feedBonus, ecLevel: f.ec, phLevel: f.ph, health: Math.max(30, Math.min(100, p.health + f.healthDelta)), lastFed: now, nutrientBrand: f.brandName ?? p.nutrientBrand }
       : p));
     const xp = Math.round(10 + f.score / 5);
+    reportEvent('fertigate', 1);
     addXp(xp, 'Fertirriego con receta propia');
     showNotification(`${f.label}: EC ${f.ec} mS/cm · pH ${f.ph} · calidad ${f.score}/100 (+${xp} XP)`, f.score >= 55 ? 'success' : 'info');
     return true;
@@ -2405,6 +2434,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setProcessedProducts(prev => [newProd, ...prev]);
+    reportEvent('lab', 1);
     addXp(80, 'Extracción Industrial');
     showNotification(`¡Extracción completada! Se crearon ${productYieldGrams}g de ${name} (Valor: ${value} $FLORA, +80 XP)`, 'success');
     return true;
@@ -2462,6 +2492,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       batchHash: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`
     };
     setProcessedProducts(prev => [prod, ...prev]);
+    reportEvent('lab', 1);
     addXp(spec.xp ?? 90, 'Laboratorio Industrial');
     showNotification(`Lote acuñado: ${outGrams}g de ${spec.label} (valor ${value} $FLORA, calidad ${quality}%). Se quemaron ${spec.feeFlora} $FLORA.`, 'success');
     return prod;
@@ -2514,6 +2545,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       marketValueFlora: Math.round(prod.marketValueFlora * 1.18),
     };
     setProcessedProducts(prev => prev.map(p => (p.id === productId ? updated : p)));
+    reportEvent('certify', 1);
     addXp(70, 'Análisis de Laboratorio');
     showNotification(`Certificado ${updated.coaHash} emitido: THC ${coa.thc}%, CBD ${coa.cbd}% (+18% valor, quema ${feeFlora} $FLORA)`, 'success');
     return updated;
@@ -2637,6 +2669,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setStrains(prev => [...prev, newStrain]);
     updateQuestProgress('quest_genomic_breed', 1);
+    reportEvent('breed', 1);
     addXp(220, 'Hibridación Genética');
     showNotification(`¡Nueva genética creada con éxito: ${newStrain.name}! (+220 XP)`, 'success');
     return newStrain;
@@ -2678,6 +2711,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     updateQuestProgress('quest_genomic_breed', 1);
+    reportEvent('patent', 1);
     addXp(300, 'Patente Genómica On-Chain');
 
     showNotification(`¡Patente ${newPatent.patentNumber} registrada en Solana! Se quemaron 250 $FLORA (+300 XP)`, 'burn');
@@ -2710,6 +2744,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       reputation: Math.min(100, prev.reputation + 1)
     }));
 
+    reportEvent('sell', 1);
     showNotification(`¡Venta realizada en el Dispensario! Recibiste +${prod.marketValueFlora - fee} $FLORA (comisión de mercado ${fee} quemados)`, 'success');
   };
 
@@ -2742,6 +2777,41 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     showNotification(`¡Orden V2P confirmada! Se quemaron ${item.requiredFlora} $FLORA. Certificado emitido en Solana`, 'success');
     return true;
+  };
+
+  // --- NPC MISSIONS: resources for playing, never free $FLORA ---
+  const grantReward = (r: MissionReward, title: string) => {
+    const lots = (r.lots ?? []).flatMap(l => Array.from({ length: l.qty ?? 1 }, () => newAsset(l.id)));
+    if (lots.length) setAssets(prev => [...prev, ...lots]);
+    if (r.seeds) {
+      const seeds = r.seeds;
+      setSeedInventory(prev => {
+        const next = { ...prev };
+        for (const [id, n] of Object.entries(seeds)) next[id] = (next[id] || 0) + n;
+        return next;
+      });
+    }
+    addXp(r.xp, `Misión: ${title}`);
+    playHarvestChime();
+    confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#fbbf24', '#38bdf8'] });
+    const list = rewardSummary(r, id => CATALOG_BY_ID[id]?.name ?? id, id => seedBank.find(x => x.id === id)?.name ?? id).join(' · ');
+    showNotification(`🎁 Misión cumplida: ${title} — ${list}`, 'success');
+  };
+
+  const claimStoryMission = (id: string): string | null => {
+    const c = claimStory(missionsRef.current, id);
+    if (!c) return null;
+    applyMissions(c.state);
+    grantReward(c.reward, c.title);
+    return c.say;
+  };
+
+  const claimErrandMission = (npc: NpcKind): string | null => {
+    const c = claimErrand(missionsRef.current, npc);
+    if (!c) return null;
+    applyMissions(c.state);
+    grantReward(c.reward, c.title);
+    return c.say;
   };
 
   return (
@@ -2801,6 +2871,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         repairAsset,
         ownsStation: (stationId: string) => ownsStation(assets, stationId),
         care: careInfo,
+        missions,
+        reportEvent,
+        claimStoryMission,
+        claimErrandMission,
         plots,
         plotsForSale,
         buyPlot,

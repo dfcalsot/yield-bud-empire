@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Coins, Flame, MapPin, Sprout } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { Npc, useNpcSay } from '../npc/Npc';
+import { NpcMissions } from '../missions/NpcMissions';
 import { WorldMap } from './WorldMap';
 import { PlotScreen } from './PlotScreen';
 import { Bump } from '../ResourceBar';
@@ -117,6 +118,8 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
             </div>
           </div>
         </div>
+
+        <NpcMissions npc="farmer" onSay={say2} />
 
         {plot ? (
           <PlotScreen plot={plot} nowMs={now} onBack={() => setPlotId(null)} onOpenSeedBank={onOpenSeedBank} onSpeak={say2} />

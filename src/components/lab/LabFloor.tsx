@@ -9,6 +9,7 @@ import { HudPanel, NeonButton, RARITY_STYLE } from '../game/GameUI';
 import type { ProcessedProduct } from '../../types';
 import { CATALOG_BY_ID, USE } from '../../economy/catalog';
 import { Npc, useNpc } from '../npc/Npc';
+import { NpcMissions } from '../missions/NpcMissions';
 
 const wearFactorOf = (wear: number) => (wear > 60 ? 1 : wear > 40 ? 0.93 : 0.85);
 
@@ -185,6 +186,7 @@ export const LabFloor: React.FC = () => {
       </div>
 
       <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="scientist" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>
+      <NpcMissions npc="scientist" onSay={npc.speak} />
 
       {/* station rail */}
       <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">

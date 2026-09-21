@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { V2pRedemptionItem } from '../types';
 import { Npc, useNpc } from './npc/Npc';
+import { NpcMissions } from './missions/NpcMissions';
 
 export const DispensaryV2PView: React.FC = () => {
   const {
@@ -63,6 +64,7 @@ export const DispensaryV2PView: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="budtender" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>
+      <NpcMissions npc="budtender" onSay={npc.speak} />
 
       {/* Header with Virtual Brand Status */}
       <div className="hud-panel p-5 flex flex-wrap items-center justify-between gap-4">

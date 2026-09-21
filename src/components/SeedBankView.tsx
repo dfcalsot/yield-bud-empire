@@ -20,6 +20,7 @@ import { GeneticCard } from './GeneticCard';
 import { MintCeremony } from './MintCeremony';
 import { GeneticCardData, cardFromSeed } from '../utils/nft';
 import { Npc, useNpc } from './npc/Npc';
+import { NpcMissions } from './missions/NpcMissions';
 // three.js is heavy: only fetch it when the Seed Bank tab is opened
 const SeedVault = lazy(() => import('./SeedVault').then((m) => ({ default: m.SeedVault })));
 
@@ -78,6 +79,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="geneticist" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>
+      <NpcMissions npc="geneticist" onSay={npc.speak} />
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-emerald-950/60 via-neutral-900 to-neutral-950 border border-emerald-500/20 rounded-2xl p-5 sm:p-7 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>

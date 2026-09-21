@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AlertTriangle, BookOpen, FlaskConical, Table2 } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { Npc, useNpc } from './npc/Npc';
+import { NpcMissions } from './missions/NpcMissions';
 import { phGrowthFactor, STAGE_BY_ID, stageOfProgress, type StageId } from '../sim/nutrition';
 import { BALANCE } from '../sim/balance';
 import { useNutriPrefs } from './nutrition/prefs';
@@ -58,6 +59,8 @@ export const NutrientTablesView: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <NpcMissions npc="scientist" onSay={npc.speak} />
 
       <div className="nu-tabs" role="tablist">
         {tabs.map((t) => <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'is-on' : ''} onClick={() => setTab(t.id)}>{t.icon}<span>{t.label}</span></button>)}

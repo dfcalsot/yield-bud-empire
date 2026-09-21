@@ -8,6 +8,7 @@ import { HudPanel, NeonButton, StatBar, RARITY_STYLE } from './game/GameUI';
 import { Bump, fmtRunway } from './ResourceBar';
 import { ItemArt, rarityColor } from './market/ItemArt';
 import { Merchant, type Mood } from './market/Merchant';
+import { NpcMissions } from './missions/NpcMissions';
 import { flyCoins, flyToken, floatText } from './market/fx';
 import { PEST_INFO } from '../sim/engine';
 import {
@@ -289,6 +290,8 @@ export const GrowMarketView: React.FC<{ initialCat?: string }> = ({ initialCat }
             </div>
           </div>
         </div>
+
+        <NpcMissions npc="merchant" onSay={(text, mood) => setSay((s) => ({ text, mood, key: s.key + 1 }))} />
 
         {/* your room: equipped hotbar + resource bars */}
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] mk-panel p-3 sm:p-4">
