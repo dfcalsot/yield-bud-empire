@@ -15,7 +15,7 @@ import { CannabisLeaf, LeafCoin } from './icons/CannabisIcons';
 import { Avatar } from './profile/AvatarArt';
 import { SOLANA_NETWORKS } from '../utils/solana';
 import { useBagCount } from './bag/BriefcaseDrawer';
-import { YieldMark } from './brand/YieldLogo';
+import { YieldHeader, YieldMark } from './brand/YieldLogo';
 
 interface NavbarProps {
   setCurrentTab: (tab: string) => void;
@@ -104,19 +104,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={() => setCurrentTab('cultivo')}
           className="flex items-center gap-2.5 cursor-pointer select-none group shrink-0"
         >
-          <YieldMark size={46} animated className="shrink-0 group-hover:scale-105 transition-transform" />
-          <div className="hidden sm:block">
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg font-bold tracking-tight text-white font-serif">
-                YIELD BUD <span className="text-emerald-400">EMPIRE</span>
-              </span>
-              <span className="hidden md:inline text-[10px] uppercase font-mono px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 text-neutral-300 rounded">
+          <YieldMark size={42} animated className="sm:hidden shrink-0" />
+          <div className="hidden sm:flex items-center gap-2.5">
+            <YieldHeader height={44} animated className="shrink-0 group-hover:scale-[1.03] transition-transform" />
+            <div className="hidden 2xl:block">
+              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 text-neutral-300 rounded">
                 Solana
               </span>
+              <p className="text-[11px] text-neutral-400 mt-0.5">
+                Multiverso Botánico Descentralizado
+              </p>
             </div>
-            <p className="text-[11px] text-neutral-400 hidden xl:block">
-              Multiverso Botánico Descentralizado
-            </p>
           </div>
         </div>
 

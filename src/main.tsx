@@ -14,7 +14,7 @@ const ModelLab = import.meta.env.DEV ? lazy(() => import('./dev/ModelLab.tsx').t
 // Style lab (palette + NPC rig proposals): http://localhost:3010/#stylelab (dev only; the style is chosen, so it is stripped from production builds)
 const StyleLab = import.meta.env.DEV ? lazy(() => import('./dev/StyleLab.tsx').then((m) => ({default: m.StyleLab}))) : null;
 const LogoLab = lazy(() => import('./dev/LogoLab.tsx').then((m) => ({default: m.LogoLab})));
-const LogoStage = import.meta.env.DEV ? lazy(() => import('./dev/LogoLab.tsx').then((m) => ({default: m.LogoStage}))) : null;
+const LogoStage = lazy(() => import('./dev/LogoLab.tsx').then((m) => ({default: m.LogoStage})));
 const hashIs = (h: string) => window.location.hash === h;
 const showLab = import.meta.env.DEV && hashIs('#plantlab');
 const showModelLab = import.meta.env.DEV && hashIs('#modellab');
@@ -23,9 +23,9 @@ const showModelLab = import.meta.env.DEV && hashIs('#modellab');
 function Root() {
   const [styleLab, setStyleLab] = useState(import.meta.env.DEV && hashIs('#stylelab'));
   const [logoLab, setLogoLab] = useState(hashIs('#logo'));
-  const [logoStage, setLogoStage] = useState(import.meta.env.DEV && hashIs('#logo-stage'));
+  const [logoStage, setLogoStage] = useState(hashIs('#logo-stage'));
   useEffect(() => {
-    const on = () => { setStyleLab(import.meta.env.DEV && hashIs('#stylelab')); setLogoLab(hashIs('#logo')); setLogoStage(import.meta.env.DEV && hashIs('#logo-stage')); };
+    const on = () => { setStyleLab(import.meta.env.DEV && hashIs('#stylelab')); setLogoLab(hashIs('#logo')); setLogoStage(hashIs('#logo-stage')); };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);

@@ -1,4 +1,4 @@
-/* Yield Bud Empire logo animation. Everything is transform/opacity/dashoffset only, and it is switched off by
+/* Yield Bud Empire logo animation. Everything is transform/opacity only, and it is switched off by
    prefers-reduced-motion. The static logo (no .ybe-anim) has no motion at all, so it exports and prints as-is. */
 .ybe-anim .ybe-rays { transform-origin: 200px 200px; animation: ybeSpin 90s linear infinite; }
 @keyframes ybeSpin { to { transform: rotate(360deg); } }
@@ -22,7 +22,14 @@
 .ybe-anim .ybe-chase { transform-origin: 200px 200px; animation: ybeChase 5s linear infinite; opacity: 0.9; }
 @keyframes ybeChase { to { transform: rotate(360deg); } }
 
+/* the title: letters pop in one after another (once), then a gloss sweeps across the whole word */
+.ybe-anim .ybe-ltr { animation: ybeLetterIn 0.62s cubic-bezier(0.3, 1.7, 0.5, 1) both; animation-delay: calc(var(--i, 0) * 55ms + 120ms); }
+@keyframes ybeLetterIn { 0% { transform: translateY(-46px) scale(0.5); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.ybe-anim .ybe-wshine { animation: ybeWordShine 6s ease-in-out 1.6s infinite; }
+@keyframes ybeWordShine { 0%, 55% { transform: skewX(-18deg) translateX(0); } 100% { transform: skewX(-18deg) translateX(760px); } }
+
 @media (prefers-reduced-motion: reduce) {
   .ybe-anim * { animation: none !important; }
   .ybe-anim .ybe-spark { opacity: 0.9; transform: scale(0.8); }
+  .ybe-anim .ybe-wshine { display: none; }
 }

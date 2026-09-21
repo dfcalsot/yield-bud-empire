@@ -138,7 +138,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
       <div className="relative z-10 w-full max-w-md space-y-4">
         <div className="text-center">
           <h1 className="sr-only">Yield Bud Empire</h1>
-          <YieldLogo animated size={168} className="mx-auto" />
+          <YieldLogo animated size={250} className="mx-auto mt-3" />
           <p className="text-[10.5px] font-mono uppercase tracking-[0.2em] text-emerald-300/60 mt-1">Acceso seguro · una cuenta por persona</p>
         </div>
         <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="chrono" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>

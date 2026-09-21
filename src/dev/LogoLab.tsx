@@ -1,5 +1,5 @@
 import React from 'react';
-import { YieldLockup, YieldLogo, YieldMark } from '../components/brand/YieldLogo';
+import { YieldHeader, YieldLockup, YieldLogo, YieldMark } from '../components/brand/YieldLogo';
 
 /**
  * Logo lab (open with #logo): the animated seal, its one-colour versions for printing, and T-shirt / cap mock-ups.
@@ -37,12 +37,12 @@ export const LogoLab: React.FC = () => (
   <div className="min-h-screen text-neutral-100 p-4 sm:p-8 space-y-10" style={{ background: 'radial-gradient(900px 500px at 15% -10%, rgba(167,139,250,.25), transparent 60%), radial-gradient(800px 500px at 100% 10%, rgba(184,243,90,.10), transparent 60%), #0a0716' }}>
     <header className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] items-center">
       <div className="space-y-4">
-        <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-lime-300">Identidad · v1</p>
+        <p className="text-[11px] font-mono uppercase tracking-[0.3em] text-lime-300">Identidad · v2 · estilo videojuego</p>
         <h1 className="font-serif text-4xl sm:text-5xl font-black leading-[1.05]">Yield Bud <span className="text-lime-300">Empire</span></h1>
-        <p className="text-neutral-300 max-w-xl leading-relaxed">Una hoja de cannabis coronada que crece de una pila de monedas, sobre rayos de imperio, dentro de un sello. <b>Hoja</b> = el cultivo, <b>monedas</b> = el rendimiento (yield), <b>corona y rayos</b> = el imperio. Es un sello, así que funciona igual de bien en el juego, en una camiseta, en un parche o en una gorra.</p>
+        <p className="text-neutral-300 max-w-xl leading-relaxed">Una hoja de cannabis coronada que crece de una pila de monedas, sobre rayos de imperio, con el rótulo como título de videojuego. <b>Hoja</b> = el cultivo, <b>monedas</b> = el rendimiento (yield), <b>corona y rayos</b> = el imperio. Dibujado con el mismo trazo grueso y oscuro de los personajes y el HUD, así que se ve del mismo mundo que el juego.</p>
         <ul className="text-sm text-neutral-400 space-y-1 list-disc pl-5">
-          <li>Animado en el juego: los rayos giran, la hoja respira, la corona brilla, salen chispas de tricomas y una luz recorre el aro.</li>
-          <li>Todo es vector con las letras convertidas a trazados: no depende de ninguna fuente y se estampa nítido.</li>
+          <li>Animado en el juego: las letras entran con rebote, un brillo recorre el rótulo, los rayos giran, la hoja respira, la corona brilla y salen chispas de tricomas.</li>
+          <li>Todo es vector con las letras (Lilita One, licencia libre) convertidas a trazados: no depende de ninguna fuente y se estampa nítido.</li>
           <li>Versión de <b>una sola tinta</b> para serigrafía y bordado (con huecos reales, sin degradados).</li>
         </ul>
       </div>
@@ -60,6 +60,8 @@ export const LogoLab: React.FC = () => (
         <Tile bg="#0a0716" label="Emblema solo (iconos, avatar)" file="yield-bud-empire-mark-color"><YieldMark size={170} /></Tile>
         <Tile bg="#0a0716" label="Rótulo apilado" file="yield-bud-empire-lockup-color"><YieldLockup width={210} /></Tile>
         <Tile bg="#111111" label="Rótulo · una tinta blanca" file="yield-bud-empire-lockup-white"><YieldLockup width={210} mono ink="#ffffff" /></Tile>
+        <Tile bg="#130f26" label="Cabecera (barra superior)" file="yield-bud-empire-header"><YieldHeader height={34} /></Tile>
+        <Tile bg="#f1effb" label="Cabecera · sobre claro"><YieldHeader height={34} /></Tile>
       </div>
     </section>
 
@@ -81,9 +83,14 @@ export const LogoLab: React.FC = () => (
     </section>
 
     <section className="max-w-6xl mx-auto space-y-3 pb-10">
-      <h2 className="text-xl font-black">Dentro del juego</h2>
+      <h2 className="text-xl font-black">Antes y después</h2>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4 grid place-items-center gap-2"><img src="/brand/v1/yield-bud-empire-seal-color.png" alt="Sello anterior" width={220} height={220} /><span className="text-xs text-neutral-400">Antes · sello heráldico</span></div>
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4 grid place-items-center gap-2"><YieldLogo animated size={260} /><span className="text-xs text-neutral-400">Ahora · título de videojuego</span></div>
+      </div>
+      <h2 className="text-xl font-black pt-4">Dentro del juego</h2>
       <div className="flex flex-wrap items-center gap-6 rounded-2xl border border-white/10 bg-black/30 p-5">
-        <div className="flex items-center gap-3"><YieldMark size={52} animated /><div><div className="font-serif text-xl font-black tracking-wide">YIELD BUD <span className="text-lime-300">EMPIRE</span></div><div className="text-[11px] text-neutral-400">Multiverso Botánico Descentralizado</div></div></div>
+        <div className="flex items-center gap-3"><YieldHeader height={48} animated /><span className="text-[11px] text-neutral-400">Multiverso Botánico Descentralizado</span></div>
         <div className="flex items-center gap-3">{[64, 40, 28, 20].map((s) => <YieldMark key={s} size={s} />)}<span className="text-xs text-neutral-500">tamaños pequeños (icono, pestaña, avatar)</span></div>
       </div>
     </section>
