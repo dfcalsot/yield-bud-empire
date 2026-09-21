@@ -1,3 +1,4 @@
+import { TechniqueMenu } from './cultivo/TechniqueMenu';
 import { FacilityArt } from './art/GameArt';
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
@@ -56,7 +57,6 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
     setHumidity,
     setPpfd,
     setLightSchedule,
-    trainPlant,
     speedUpGrowth,
     harvestPlant,
     floraBalance,
@@ -84,6 +84,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
 
   const [displayMode, setDisplayMode] = useState<'scene' | 'indoor_room' | 'single_detail'>('scene');
   const [showPanel, setShowPanel] = useState(false);
+  const [techOpen, setTechOpen] = useState(false);
   const [careOpen, setCareOpen] = useState(false);
   const [selectedSeedToPlant, setSelectedSeedToPlant] = useState<Strain>(strains[0]);
   const [showSeedModal, setShowSeedModal] = useState(false);
@@ -469,12 +470,12 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
 
                 {/* Poda / LST */}
                 <button
-                  onClick={() => trainPlant('Topping & LST')}
+                  onClick={() => setTechOpen(true)}
                   className="flex flex-col items-center justify-center p-3 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-purple-500/40 hover:bg-purple-950/10 transition group cursor-pointer"
                 >
                   <Scissors className="w-5 h-5 text-purple-400 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-neutral-200">Entrenamiento LST</span>
-                  <span className="text-[10px] text-purple-400 font-mono">+12% Rendimiento</span>
+                  <span className="text-xs font-medium text-neutral-200">Técnicas de entrenamiento</span>
+                  <span className="text-[10px] text-purple-400 font-mono">según la fase</span>
                 </button>
 
                 {/* Acelerar Quemando $FLORA */}
@@ -511,16 +512,14 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
               </div>
 
               {/* Harvest button full-width if ready or eligible */}
-              {activePlant.progressPercent >= 80 && (
+              {activePlant.stage === 'ready_harvest' && (
                 <button
                   onClick={harvestPlant}
                   className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-neutral-950 font-bold text-sm shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>
-                    {activePlant.stage === 'ready_harvest' 
-                      ? `Cosechar Flores y Tricomas (~${activePlant.estimatedDryYieldGrams}g)` 
-                      : `Cosecha Temprana (~${Math.round(activePlant.estimatedDryYieldGrams * 0.75)}g)`}
+                    {`Cosechar Flores y Tricomas (~${activePlant.estimatedDryYieldGrams}g)`}
                   </span>
                 </button>
               )}
@@ -636,6 +635,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
 
       {/* Facility ladder: build (real time + $FLORA), speed up (capped) */}
       {showFacilityModal && <FacilityPanel onClose={() => setShowFacilityModal(false)} />}
+      {techOpen && activePlant && <TechniqueMenu plant={activePlant} onClose={() => setTechOpen(false)} />}
 
       {/* Nutrient Feeding Schedule Modal */}
       {showNutrientModal && (

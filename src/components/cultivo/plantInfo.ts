@@ -1,8 +1,8 @@
 import type { GrowStage, PlantInGrow } from '../../types';
 import { formatDuration, hoursUntilMoisture, isThirsty, PEST_INFO } from '../../sim/engine';
 
-export const STAGE_LABEL: Record<GrowStage, string> = { seed: 'Germinación', seedling: 'Plántula', vegetative: 'Vegetativo', flowering: 'Floración', ready_harvest: 'Lista para cosecha' };
-export const STAGE_DOT: Record<GrowStage, string> = { seed: '#a3e635', seedling: '#a3e635', vegetative: '#34d399', flowering: '#c084fc', ready_harvest: '#fbbf24' };
+export const STAGE_LABEL: Record<GrowStage, string> = { seed: 'Germinación', seedling: 'Plántula', vegetative: 'Vegetativo', flowering: 'Floración', maturation: 'Maduración', ready_harvest: 'Lista para cosecha' };
+export const STAGE_DOT: Record<GrowStage, string> = { seed: '#a3e635', seedling: '#a3e635', vegetative: '#34d399', flowering: '#c084fc', maturation: '#f0abfc', ready_harvest: '#fbbf24' };
 
 /** the plant's clocks and warnings, as short lines for its card */
 export function plantClocks(p: PlantInGrow, eta: number): Array<{ icon: string; text: string; warn?: boolean }> {

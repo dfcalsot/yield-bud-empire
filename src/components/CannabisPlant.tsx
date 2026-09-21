@@ -291,7 +291,7 @@ const CannabisPlantImpl: React.FC<CannabisPlantProps> = ({
     const ripeness = clamp(flowerT * 0.55 + (amberPct / 40) * 0.6);
     const colas: ColaProps[] = [];
     const branches: string[] = [];
-    if (stage === 'flowering' || stage === 'ready_harvest') {
+    if (stage === 'flowering' || stage === 'maturation' || stage === 'ready_harvest') {
       // green strains stay green; purple / pink / gold strains show their colour as the flowers ripen
       const hue = hueOf(strainColor);
       const isGreenish = hue > 85 && hue < 185;

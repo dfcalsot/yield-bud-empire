@@ -9,6 +9,9 @@ import { formatDuration, isHungry, isThirsty, PEST_INFO } from '../sim/engine';
 import { nextActionFor } from '../sim/nextAction';
 import { Hotbar, type SlotSpec } from './hud/HudParts';
 import { FacilityBackdrop } from './hud/FacilityBackdrop';
+import { TechniqueMenu } from './cultivo/TechniqueMenu';
+import { PHASES, phaseFraction, phaseIndex, stageOf } from '../sim/phases';
+import { canTrain, TECHNIQUES } from '../sim/techniques';
 
 /**
  * The stage of the Cultivo panel: the installation, the plant and its pot BIG in the middle, the skill hotbar (keys 1–6), the
@@ -26,26 +29,28 @@ interface CultivationSceneProps {
 
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 
-// milestone = the moment a stage begins (progress 0 / 15 / 50 / 95 / 100)
-const MILESTONES = ['Semilla', 'Vegetativo', 'Floración', 'Maduración', 'Cosecha'];
+// one milestone per phase, in order, and the cut at the end: germination · seedling · vegetative · flowering · maturation · harvest
+const MILESTONES = [...PHASES.map((p) => p.label), 'Cosecha'];
+const STEP = 100 / PHASES.length;
+const NAMES: Record<string, string> = Object.fromEntries(PHASES.map((p) => [p.id, p.label]));
 
-/** Maps 0..100 plant progress to the 5 evenly spaced milestones (stage thresholds 15 / 50 / 95). */
+/** Maps the plant's progress to the evenly spaced phases (each phase is one step of the bar). */
 const timelinePct = (p: number): number => {
-  if (p < 15) return (p / 15) * 25;
-  if (p < 50) return 25 + ((p - 15) / 35) * 25;
-  if (p < 95) return 50 + ((p - 50) / 45) * 25;
-  return 75 + ((p - 95) / 5) * 25;
+  const stage = stageOf(p);
+  if (stage === 'ready_harvest') return 100;
+  return (phaseIndex(stage) + phaseFraction(p)) * STEP;
 };
 
 export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedModal, onOpenNutrients, onShowRoom, onOpenCare }) => {
   const {
     activePlant, indoorPlants, selectedPlantIndex,
-    waterPlant, feedNutrients, trainPlant, speedUpGrowth, harvestPlant, saveCurrentPlantAsMotherOrFather,
+    waterPlant, feedNutrients, speedUpGrowth, harvestPlant, saveCurrentPlantAsMotherOrFather,
     currentRoom, currentFacility, getPlantEta, care, equipStats,
   } = useGame();
 
   const [floaters, setFloaters] = useState<Array<{ id: number; text: string; color: string; dx: number }>>([]);
   const nextId = useRef(1);
+  const [techOpen, setTechOpen] = useState(false);
 
   const pop = (text: string, color: string) => {
     const id = nextId.current++;
@@ -67,12 +72,14 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const eta = activePlant ? getPlantEta(activePlant) : Infinity;
   const thirsty = !!activePlant && isThirsty(activePlant);
   const hungry = !!activePlant && isHungry(activePlant);
-  const canHarvest = !!activePlant && activePlant.progressPercent >= 80;
+  // a plant can be cut only when it has been through every phase, maturation included
+  const canHarvest = !!activePlant && activePlant.stage === 'ready_harvest';
   const maleWarn = !!activePlant && activePlant.sex === 'male' && activePlant.progressPercent >= 30;
 
   const doWater = () => { waterPlant(); pop('+ Riego', '#22d3ee'); };
   const doFeed = () => { feedNutrients(); pop('+ N-P-K', '#34d399'); };
-  const doTrain = () => { trainPlant('Topping & LST'); pop('LST +12%', '#e879f9'); };
+  const doTrain = () => setTechOpen(true);
+  const techNow = activePlant ? TECHNIQUES.filter((t) => canTrain(activePlant, t.id, NAMES).ok).length : 0;
 
   const nextKind = nextActionFor({
     hasPlant: !!activePlant, harvestReady: false, pest: activePlant?.pest ? PEST_INFO[activePlant.pest.kind].label : null, thirsty, hungry,
@@ -81,7 +88,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const slots: SlotSpec[] = activePlant ? [
     { key: 'water', label: 'Regar', sub: `Hum ${activePlant.soilMoisture}%`, tone: 'cyan', icon: <Droplet className="w-6 h-6" />, hot: nextKind === 'water', tour: 'water', onClick: doWater },
     { key: 'feed', label: 'Abonar', sub: `EC ${activePlant.ecLevel}`, tone: 'lime', icon: <NutrientBottle className="w-6 h-6" />, hot: nextKind === 'feed', tour: 'feed', onClick: doFeed },
-    { key: 'lst', label: 'LST', sub: '+12%', tone: 'pink', icon: <Scissors className="w-6 h-6" />, onClick: doTrain },
+    { key: 'train', label: 'Técnicas', sub: `${techNow} ahora`, tone: 'pink', icon: <Scissors className="w-6 h-6" />, onClick: doTrain },
     { key: 'speed', label: 'Acelerar', sub: 'ciclo', tone: 'amber', cost: '25', icon: <span className="flex items-center"><Flame className="w-6 h-6" /><Zap className="w-3.5 h-3.5 -ml-1" /></span>, onClick: () => { if (speedUpGrowth()) pop('- 25 $FLORA', '#fbbf24'); } },
     { key: 'nutri', label: 'Nutrición', sub: 'tablas', tone: 'violet', icon: <FlaskLeaf className="w-6 h-6" />, onClick: onOpenNutrients },
     { key: 'mother', label: 'Madre', sub: 'clones', tone: 'neutral', icon: <Crown className="w-6 h-6" />, onClick: () => { saveCurrentPlantAsMotherOrFather('Madre (Esquejes / Clones)'); pop('Madre guardada', '#c084fc'); } },
@@ -126,11 +133,11 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
       <div className="absolute z-30 inset-x-0 top-3 flex justify-center px-4 pointer-events-none" data-tour="next-action">
         {canHarvest && activePlant ? (
           <button
-            onClick={() => { const g = activePlant.stage === 'ready_harvest' ? activePlant.estimatedDryYieldGrams : Math.round(activePlant.estimatedDryYieldGrams * 0.75); harvestPlant(); pop(`+ ${g}g flor`, '#fbbf24'); }}
+            onClick={() => { const g = activePlant.estimatedDryYieldGrams; harvestPlant(); pop(`+ ${g}g flor`, '#fbbf24'); }}
             className="pointer-events-auto cf-ring px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-emerald-400 to-amber-500 text-neutral-950 font-black text-sm tracking-wide uppercase shadow-[0_0_30px_rgba(251,191,36,0.55)] cursor-pointer active:scale-95 transition flex items-center gap-2"
           >
             <CannabisLeaf className="w-5 h-5" />
-            {activePlant.stage === 'ready_harvest' ? `Cosechar · ~${activePlant.estimatedDryYieldGrams}g` : `Cosecha temprana · ~${Math.round(activePlant.estimatedDryYieldGrams * 0.75)}g`}
+            {`Cosechar · ~${activePlant.estimatedDryYieldGrams}g`}
           </button>
         ) : (
           <button onClick={runNext} disabled={!next.actionable} title={next.hint}
@@ -160,7 +167,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
             />
             {/* touch the plant: crown → train, leaves → feed, pot → water */}
             <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[62%] grid grid-rows-[34fr_38fr_28fr] gap-1 pointer-events-none [&>button]:pointer-events-auto" data-testid="plant-hotspots">
-              <button type="button" onClick={doTrain} className="cs-hot cs-hot--pink" aria-label="Entrenar la planta (LST)"><span className="cs-hot-lbl"><Scissors className="w-3.5 h-3.5" />Podar · LST <kbd>3</kbd></span></button>
+              <button type="button" onClick={doTrain} className="cs-hot cs-hot--pink" aria-label="Técnicas de entrenamiento"><span className="cs-hot-lbl"><Scissors className="w-3.5 h-3.5" />Técnicas <kbd>3</kbd></span></button>
               <button type="button" onClick={doFeed} className="cs-hot cs-hot--lime" aria-label="Abonar la planta"><span className="cs-hot-lbl"><NutrientBottle className="w-3.5 h-3.5" />Abonar <kbd>2</kbd></span></button>
               <button type="button" onClick={doWater} className="cs-hot cs-hot--cyan" aria-label="Regar la maceta"><span className="cs-hot-lbl"><Droplet className="w-3.5 h-3.5" />Regar <kbd>1</kbd></span></button>
             </div>
@@ -183,6 +190,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
       </div>
 
       {care.gardenerLevel > 0 && <GardenerCameo />}
+      {techOpen && activePlant && <TechniqueMenu plant={activePlant} onClose={() => setTechOpen(false)} />}
 
       {/* ── skill hotbar (keys 1–6) ── */}
       {activePlant && (
@@ -196,14 +204,14 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
             <>
               <div className="relative h-2 rounded-full bg-neutral-800 overflow-visible">
                 <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-lime-400 via-emerald-400 to-fuchsia-400" style={{ width: `${timelinePct(activePlant.progressPercent)}%`, transition: 'width 1s linear', boxShadow: '0 0 10px rgba(52,211,153,0.7)' }} />
-                {[0, 25, 50, 75, 100].map((p) => (
+                {Array.from({ length: PHASES.length + 1 }, (_, i) => i * STEP).map((p) => (
                   <span key={p} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border-2" style={{ left: `${p}%`, background: timelinePct(activePlant.progressPercent) >= p ? '#34d399' : '#0b1512', borderColor: timelinePct(activePlant.progressPercent) >= p ? '#a7f3d0' : '#2f4d40' }} />
                 ))}
               </div>
               <div className="mt-1.5 flex justify-between text-[9px] sm:text-[10px] font-mono uppercase tracking-wide">
                 {MILESTONES.map((m, i) => {
-                  const reached = timelinePct(activePlant.progressPercent) >= i * 25;
-                  const current = reached && (i === MILESTONES.length - 1 || timelinePct(activePlant.progressPercent) < (i + 1) * 25);
+                  const reached = timelinePct(activePlant.progressPercent) >= i * STEP;
+                  const current = reached && (i === MILESTONES.length - 1 || timelinePct(activePlant.progressPercent) < (i + 1) * STEP);
                   return <span key={m} className={`${reached ? 'text-emerald-300' : 'text-neutral-600'} ${current ? '' : 'max-sm:hidden'}`}>{m}</span>;
                 })}
               </div>

@@ -122,7 +122,7 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
                 plant.stage === 'seed' ? 'Germinación de Semilla' :
                 plant.stage === 'seedling' ? 'Plántula Cannabis' :
                 plant.stage === 'vegetative' ? 'Vegetativo / Hojas Fan' :
-                plant.stage === 'flowering' ? 'Floración / Cogollos Resinosos' : 'Maduración & Cosecha'
+                plant.stage === 'flowering' ? 'Floración / Cogollos Resinosos' : plant.stage === 'maturation' ? 'Maduración / Tricomas afinándose' : 'Lista para cosecha'
               }
             </span>
             <span className="text-xs font-mono px-2 py-0.5 rounded-lg bg-neutral-900/90 border border-neutral-800 text-neutral-300">
@@ -299,7 +299,7 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
           )}
 
           {/* STAGE 3, 4, 5: MATURE CANNABIS (Vegetative, Flowering, and Harvest Ready) */}
-          {(plant.stage === 'vegetative' || plant.stage === 'flowering' || plant.stage === 'ready_harvest') && (
+          {(plant.stage === 'vegetative' || plant.stage === 'flowering' || plant.stage === 'maturation' || plant.stage === 'ready_harvest') && (
             <g>
               {/* Main Woody Cannabis Trunk / Stalk with Striations */}
               <path d="M 210 315 Q 206 230 210 115" stroke="#365314" strokeWidth="9" fill="none" strokeLinecap="round" />
@@ -399,7 +399,7 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
               )}
 
               {/* FLOWERING & READY HARVEST: DENSE CANNABIS COLAS & RESIN GLANDS */}
-              {(plant.stage === 'flowering' || plant.stage === 'ready_harvest') && (
+              {(plant.stage === 'flowering' || plant.stage === 'maturation' || plant.stage === 'ready_harvest') && (
                 <g className="animate-cannabis-breeze">
                   
                   {/* SIDE COLAS (SECONDARY NUGGETS / COGOLLOS SATÉLITE) */}

@@ -14,13 +14,13 @@ import './hud/hud.css';
  * show what the next upgrade gives), every plant is a card with status pips (thirst, hunger, pests, ready), the big action bar
  * does the room-wide chores with keys 1–6, and Nico the foreman talks about what actually needs doing.
  */
-const STAGE: Record<string, string> = { seed: 'Semilla', seedling: 'Plántula', vegetative: 'Vegetativo', flowering: 'Floración', ready_harvest: 'Lista' };
-const isReady = (p: PlantInGrow) => p.stage === 'ready_harvest' || p.progressPercent >= 90;
+const STAGE: Record<string, string> = { seed: 'Semilla', seedling: 'Plántula', vegetative: 'Vegetativo', flowering: 'Floración', maturation: 'Maduración', ready_harvest: 'Lista' };
+const isReady = (p: PlantInGrow) => p.stage === 'ready_harvest';
 
 /** the plant in its pot, drawn per growth stage */
 const PlantSprite: React.FC<{ p: PlantInGrow }> = ({ p }) => {
-  const veg = p.stage === 'vegetative' || p.stage === 'flowering' || p.stage === 'ready_harvest';
-  const bloom = p.stage === 'flowering' || p.stage === 'ready_harvest';
+  const veg = p.stage === 'vegetative' || p.stage === 'flowering' || p.stage === 'maturation' || p.stage === 'ready_harvest';
+  const bloom = p.stage === 'flowering' || p.stage === 'maturation' || p.stage === 'ready_harvest';
   return (
     <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.7)]" aria-hidden>
       <path d="M30 94 L38 92 L38 104" stroke="#0ea5e9" strokeWidth="1.2" fill="none" /><circle cx="38" cy="98" r="1.2" fill="#38bdf8" className="animate-water-drip" />

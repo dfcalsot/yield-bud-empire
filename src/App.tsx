@@ -111,7 +111,6 @@ function YieldBudEmpireApp() {
         onOpenWalletModal={() => setIsWalletModalOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
-        onOpenBag={() => { setBagTab(undefined); setBagOpen(true); }}
       />
 
       {/* Main Content Area */}
@@ -182,7 +181,7 @@ function YieldBudEmpireApp() {
       </footer>
 
       {/* Bottom dock */}
-      <Dock currentTab={currentTab} onSelectGroup={goToGroup} />
+      <Dock currentTab={currentTab} onSelectGroup={goToGroup} bagOpen={bagOpen} onToggleBag={() => { setBagTab(undefined); setBagOpen((v) => !v); }} />
     </div>
   );
 }

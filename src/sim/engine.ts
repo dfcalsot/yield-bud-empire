@@ -1,3 +1,4 @@
+import { maxProgressFrom, stageOf } from './phases';
 import type { GrowStage, PestKind, PlantInGrow, RegionId, Strain } from '../types';
 import { BALANCE as B, LIGHT_FRACTION } from './balance';
 import { hash01 } from './hash';
@@ -102,7 +103,7 @@ export function cycleSecondsOf(strain: Pick<Strain, 'cycleDurationSeconds'>): nu
   return (B.cycleDaysMin + (B.cycleDaysMax - B.cycleDaysMin) * t) * 86400;
 }
 
-export const stageOf = (p: number): GrowStage => (p < 15 ? 'seedling' : p < 50 ? 'vegetative' : p < 95 ? 'flowering' : 'ready_harvest');
+export { stageOf };
 
 const r1 = (v: number) => Number(v.toFixed(1));
 
@@ -202,7 +203,7 @@ export function pestHazards(p: PlantInGrow, cleanliness: number, temp: number, r
   const dirt = 1 + (100 - clamp(cleanliness, 0, 100)) / 40;   // rating 0 → ×3.5
   const base = B.pestBaseHazardPerHour * dirt;
   const mites = base * (temp > 27 ? 1 + (temp - 27) * 0.5 : 1) * (rh < 45 ? 1 + (45 - rh) / 15 : 1);
-  const mold = base * (rh > 65 ? 1 + (rh - 65) / 6 : 1) * (stage === 'flowering' ? 1.6 : 1) * (moisture > 90 ? 1.3 : 1);
+  const mold = base * (rh > 65 ? 1 + (rh - 65) / 6 : 1) * (stage === 'flowering' || stage === 'maturation' ? 1.6 : 1) * (moisture > 90 ? 1.3 : 1);
   const rot = base * (moisture > 88 ? 1 + (moisture - 88) / 3 : 0.4);
   return { mites, mold, rot };
 }
@@ -263,7 +264,8 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
 
   // --- growth (uses the state *after* this chunk's drying, like a real crop) ---
   const probe: PlantInGrow = { ...p, feedBonus, soilMoisture: moisture, ecLevel: ec, vpdKpa: vpd, sim: { progress: s.progress, moisture, ec, health: s.health } };
-  const progress = Math.min(100, s.progress + growthPerSecond(probe, env) * dt);
+  // a plant may enter the next phase in one step but never jump over one: every phase is lived through, whatever the time step
+  const progress = Math.min(100, Math.max(s.progress, maxProgressFrom(p.stage)), s.progress + growthPerSecond(probe, env) * dt);
   const stage = stageOf(progress);
 
   // --- health: dry plants suffer down to a floor; cared-for plants recover ---
@@ -303,12 +305,14 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   }
 
   // --- trichomes ripen in flower ---
+  // clear → milky through flowering, milky → amber through maturation
   let clear = 90, milky = 10, amber = 0;
   if (stage === 'flowering') {
-    const fp = (progress - 50) / 45;
-    clear = Math.max(5, Math.round(90 - fp * 75));
-    milky = Math.round(fp * 70);
-    amber = Math.max(0, Math.round(fp * 25));
+    const fp = (progress - 50) / 35;
+    clear = Math.round(90 - fp * 50); milky = Math.round(10 + fp * 45); amber = Math.round(fp * 5);
+  } else if (stage === 'maturation') {
+    const fp = (progress - 85) / 15;
+    clear = Math.round(40 - fp * 35); milky = Math.round(55 + fp * 10); amber = Math.round(5 + fp * 25);
   } else if (stage === 'ready_harvest') {
     clear = 5; milky = 65; amber = 30;
   }

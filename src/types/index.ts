@@ -1,4 +1,8 @@
-export type GrowStage = 'seed' | 'seedling' | 'vegetative' | 'flowering' | 'ready_harvest';
+/** training techniques a plant can take, each in its own phase (see sim/techniques.ts) */
+export type TechniqueId = 'lst' | 'topping' | 'supercrop' | 'scrog' | 'defoliation' | 'lollipop';
+
+/** germination → seedling → vegetative → flowering → maturation → ready to harvest (see sim/phases.ts) */
+export type GrowStage = 'seed' | 'seedling' | 'vegetative' | 'flowering' | 'maturation' | 'ready_harvest';
 
 export interface TerpeneProfile {
   myrcene: number;       // earthy/musky (relaxing)
@@ -61,6 +65,8 @@ export interface PlantInGrow {
   strain: Strain;
   plantedAt: number;
   stage: GrowStage;
+  /** techniques already applied to this plant (each one, once) */
+  techniques?: TechniqueId[];
   progressPercent: number; // 0 to 100%
   health: number; // 0 to 100%
   soilMoisture: number; // 0 to 100%

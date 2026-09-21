@@ -9,12 +9,10 @@ import {
   Cpu,
   Award,
   User,
-  Briefcase
 } from 'lucide-react';
 import { CannabisLeaf, LeafCoin } from './icons/CannabisIcons';
 import { Avatar } from './profile/AvatarArt';
 import { SOLANA_NETWORKS } from '../utils/solana';
-import { useBagCount } from './bag/BriefcaseDrawer';
 import { YieldHeader, YieldMark } from './brand/YieldLogo';
 import { ECON, claimStatus } from '../sim/economy';
 
@@ -23,7 +21,6 @@ interface NavbarProps {
   onOpenWalletModal: () => void;
   onOpenAuthModal: () => void;
   onOpenProfileModal: () => void;
-  onOpenBag?: () => void;
 }
 
 /** Top HUD: identity, balances and wallet. Section navigation lives in the bottom Dock. */
@@ -31,10 +28,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentTab,
   onOpenWalletModal,
   onOpenAuthModal,
-  onOpenProfileModal,
-  onOpenBag
+  onOpenProfileModal
 }) => {
-  const bagCount = useBagCount();
   const { 
     floraBalance, 
     solBalance, 
@@ -153,20 +148,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="font-mono text-xs font-bold text-amber-300 leading-tight">Nv. {playerLevel}</span>
             </div>
           </div>
-
-          {/* Player briefcase */}
-          {onOpenBag && (
-            <button
-              onClick={onOpenBag}
-              data-tour="bag"
-              aria-label="Abrir maletín (tecla I)"
-              title="Maletín (I)"
-              className="relative p-2 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition cursor-pointer"
-            >
-              <Briefcase className="w-4 h-4 text-emerald-400" />
-              <span className="absolute -top-1.5 -right-1.5 min-w-[1.1rem] px-1 rounded-full bg-emerald-400 text-neutral-950 text-[9px] font-black leading-[1.1rem] text-center font-mono">{bagCount > 99 ? '99+' : bagCount}</span>
-            </button>
-          )}
 
           {/* Sound Toggle */}
           <button

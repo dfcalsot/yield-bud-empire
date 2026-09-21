@@ -15,6 +15,7 @@ import {
   VirtualBrand,
   SolanaTransaction,
   GrowStage,
+  TechniqueId,
   V2pRedemptionItem,
   GameQuest,
   SeedBankItem,
@@ -67,6 +68,8 @@ import {
   setSoundEnabled
 } from '../utils/audio';
 
+import { applyTechnique, canTrain, TECHNIQUE_BY_ID } from '../sim/techniques';
+import { boostWithinPhase, isHarvestable, phaseOf, PHASES, stageOf as stageFromProgress } from '../sim/phases';
 import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
 import { landOffers } from '../sim/lands';
 import { fetchState, importLocal, intent, REASON, type ListingView, type Snapshot } from '../economy/ledger';
@@ -201,7 +204,8 @@ interface GameContextType {
   setHumidity: (rh: number) => void;
   setPpfd: (ppfd: number) => void;
   setLightSchedule: (schedule: '18/6' | '12/12' | '24/0') => void;
-  trainPlant: (technique: string) => void;
+  /** apply a training technique to the selected plant; refused outside its phase or a second time (returns whether it was applied) */
+  trainPlant: (technique: TechniqueId) => boolean;
   speedUpGrowth: () => boolean;
   harvestPlant: () => void;
 
@@ -340,9 +344,9 @@ export const createInitialIndoorRoom = (baseStrain: Strain): PlantInGrow[] => {
     for (let p = 1; p <= 5; p++) {
       for (const pos of ['A', 'B'] as const) {
         const slotIdx = (r - 1) * 10 + (p - 1) * 2 + (pos === 'A' ? 0 : 1);
-        // Realistic vegetative / flowering stages across the canopy
-        const progressBase = 30 + ((slotIdx % 8) * 8);
-        const stage: GrowStage = progressBase >= 95 ? 'ready_harvest' : progressBase >= 50 ? 'flowering' : progressBase >= 15 ? 'vegetative' : 'seedling';
+        // every plant of a new room starts where all plants start: germination, and lives every phase after it
+        const progressBase = 0;
+        const stage: GrowStage = stageFromProgress(progressBase);
         const temp = Number((24.0 + (r * 0.2) + ((slotIdx % 3) * 0.1)).toFixed(1));
         const rh = Number((58 - (r * 1) + ((slotIdx % 4) * 0.5)).toFixed(1));
         const vpd = calculateVpd(temp, rh);
@@ -354,7 +358,7 @@ export const createInitialIndoorRoom = (baseStrain: Strain): PlantInGrow[] => {
           pairIndex: p,
           positionInPair: pos,
           strain: baseStrain,
-          plantedAt: Date.now() - (slotIdx * 60000 + 120000),
+          plantedAt: Date.now(),
           stage,
           progressPercent: Math.min(100, progressBase),
           health: Math.min(100, 94 + (slotIdx % 4)),
@@ -372,11 +376,7 @@ export const createInitialIndoorRoom = (baseStrain: Strain): PlantInGrow[] => {
           nutrientBrand: 'advanced_nutrients',
           autoWateringEnabled: false,
           autoClimateEnabled: false,
-          trichomeMaturity: {
-            clear: Math.max(5, 90 - progressBase),
-            milky: Math.min(70, Math.max(10, progressBase - 25)),
-            amber: Math.max(0, progressBase - 70)
-          },
+          trichomeMaturity: { clear: 100, milky: 0, amber: 0 },
           lastWatered: Date.now() - (slotIdx * 30000),
           lastFed: Date.now() - (slotIdx * 60000),
           estimatedDryYieldGrams: Math.round(75 * baseStrain.resinYieldMultiplier + (slotIdx % 10))
@@ -937,7 +937,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (typeof saved.solBalance === 'number') setSolBalance(saved.solBalance);
       if (typeof saved.totalFloraBurned === 'number') setTotalFloraBurned(saved.totalFloraBurned);
       if (Array.isArray(saved.indoorPlants) && saved.indoorPlants.length > 0) {
-        setIndoorPlants(saved.indoorPlants);
+        setIndoorPlants(saved.indoorPlants.map((pl: PlantInGrow) => ({ ...pl, stage: stageFromProgress(pl.progressPercent) })));
       } else if (saved.activePlant) {
         setActivePlant(saved.activePlant);
       }
@@ -964,7 +964,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // saves from before plagues existed get a one-off treatment kit
       setAssets(Array.isArray(saved.assets) && !saved.care ? [...loadedAssets, ...starterPestKit()] : loadedAssets);
       if (saved.care) setCare(saved.care);
-      setPlots(Array.isArray(saved.plots) ? saved.plots : []);
+      setPlots(Array.isArray(saved.plots) ? saved.plots.map((pl: OwnedPlot) => ({ ...pl, plants: (pl.plants ?? []).map((x: PlantInGrow) => ({ ...x, stage: stageFromProgress(x.progressPercent) })) })) : []);
       setAvatars(Array.isArray(saved.avatars) ? saved.avatars : []);
       setChestPity(saved.chestPity ?? EMPTY_PITY);
       lastSimRef.current = saved.lastSimAt ?? saved.savedAt ?? Date.now();
@@ -1200,8 +1200,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       activePlant: {
         strain: INITIAL_STRAINS[0],
         plantedAt: Date.now(),
-        stage: 'vegetative',
-        progressPercent: 15,
+        stage: 'seed',
+        progressPercent: 0,
         health: 100,
         soilMoisture: 80,
         temperatureC: 24.0,
@@ -1563,34 +1563,40 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showNotification(`Ciclo fotoperiódico de la sala indoor ajustado a ${schedule}`, 'info');
   };
 
-  const trainPlant = (technique: string) => {
+  const PHASE_NAMES: Record<string, string> = Object.fromEntries(PHASES.map(x => [x.id, x.label]));
+  const trainPlant = (technique: TechniqueId): boolean => {
+    const target = indoorPlants[selectedPlantIndex];
+    if (!target) return false;
+    const check = canTrain(target, technique, PHASE_NAMES);
+    if (!check.ok) { showNotification(check.message, 'info'); return false; }
+    const t = TECHNIQUE_BY_ID[technique];
     playClickSound();
-    setIndoorPlants(prev => prev.map((p, idx) => {
-      if (idx !== selectedPlantIndex) return p;
-      const bonusYield = Math.round(p.estimatedDryYieldGrams * 0.12);
-      return {
-        ...p,
-        estimatedDryYieldGrams: p.estimatedDryYieldGrams + bonusYield,
-        health: Math.max(80, p.health - 4)
-      };
-    }));
-    addXp(35, 'Entrenamiento LST');
-    showNotification(`Técnica (${technique}) en Planta #${selectedPlantIndex + 1}: +12% rendimiento (+35 XP)`, 'info');
+    setIndoorPlants(prev => prev.map((p, idx) => (idx === selectedPlantIndex ? applyTechnique(p, technique) : p)));
+    addXp(t.xp, t.label);
+    showNotification(`${t.label} en la planta #${selectedPlantIndex + 1}: +${Math.round(t.yieldBonus * 100)}% de rendimiento (+${t.xp} XP)`, 'info');
+    return true;
   };
 
   const trainIndoorCanopy = () => {
+    const eligible = indoorPlants.filter(p => canTrain(p, 'scrog', PHASE_NAMES).ok);
+    if (eligible.length === 0) {
+      showNotification('El SCROG solo se instala en el vegetativo y una vez por planta: ahora ninguna planta de la sala cumple.', 'info');
+      return;
+    }
     playClickSound();
-    setIndoorPlants(prev => prev.map(p => ({
-      ...p,
-      estimatedDryYieldGrams: p.estimatedDryYieldGrams + Math.round(p.estimatedDryYieldGrams * 0.12),
-      health: Math.max(80, p.health - 3)
-    })));
-    addXp(60, 'Entrenamiento Canopia SCROG');
-    showNotification('Entrenamiento SCROG aplicado a la canopia completa de la sala (+12% rendimiento floral)', 'info');
+    setIndoorPlants(prev => prev.map(p => (canTrain(p, 'scrog', PHASE_NAMES).ok ? applyTechnique(p, 'scrog') : p)));
+    addXp(TECHNIQUE_BY_ID.scrog.xp + eligible.length * 5, 'Entrenamiento Canopia SCROG');
+    showNotification(`SCROG instalado en ${eligible.length} planta${eligible.length > 1 ? 's' : ''} en vegetativo (+${Math.round(TECHNIQUE_BY_ID.scrog.yieldBonus * 100)}% de rendimiento cada una)`, 'info');
   };
 
   // Speed up growth by burning 25 $FLORA
   const speedUpGrowth = (): boolean => {
+    const target = indoorPlants[selectedPlantIndex];
+    if (!target || isHarvestable(target)) { showNotification('Esta planta ya terminó de crecer: solo falta cosecharla.', 'info'); return false; }
+    if (boostWithinPhase(target.progressPercent, 35) - target.progressPercent < 1) {
+      showNotification(`Está al final de la fase de ${phaseOf(target.stage)?.label ?? 'crecimiento'}: entra en la siguiente y vuelve a acelerar. Nada se cobró.`, 'info');
+      return false;
+    }
     if (floraBalance < 25) {
       showNotification('Saldo insuficiente: Necesitas al menos 25 $FLORA para acelerar el cultivo', 'info');
       return false;
@@ -1600,23 +1606,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setIndoorPlants(prev => prev.map((p, idx) => {
       if (idx !== selectedPlantIndex) return p;
-      const nextProgress = Math.min(100, p.progressPercent + 35);
-      let nextStage = p.stage;
-      if (nextProgress >= 95) nextStage = 'ready_harvest';
-      else if (nextProgress >= 50) nextStage = 'flowering';
-      else if (nextProgress >= 15) nextStage = 'vegetative';
-      return {
-        ...p,
-        progressPercent: nextProgress,
-        stage: nextStage
-      };
+      const nextProgress = boostWithinPhase(p.progressPercent, 35);
+      return { ...p, progressPercent: nextProgress, stage: stageFromProgress(nextProgress) };
     }));
 
-    showNotification(`¡25 $FLORA quemados! Planta #${selectedPlantIndex + 1} acelerada un +35%`, 'burn');
+    showNotification(`¡25 $FLORA quemados! Planta #${selectedPlantIndex + 1} avanza dentro de su fase actual (nunca se salta una).`, 'burn');
     return true;
   };
 
   const speedUpIndoorRoom = (): boolean => {
+    if (!indoorPlants.some(p => !isHarvestable(p) && boostWithinPhase(p.progressPercent, 30) - p.progressPercent >= 1)) {
+      showNotification('Ninguna planta puede avanzar ahora: las que están al final de su fase deben entrar en la siguiente. Nada se cobró.', 'info');
+      return false;
+    }
     if (floraBalance < 50) {
       showNotification('Saldo insuficiente: Necesitas al menos 50 $FLORA para acelerar la sala completa', 'info');
       return false;
@@ -1625,16 +1627,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     recordBurnTransaction('BURN_SPEEDUP', 50, 'Yield Bud Empire: Aceleración Fotónica Sala Indoor Completa (30 Plantas)');
 
     setIndoorPlants(prev => prev.map(p => {
-      const nextProgress = Math.min(100, p.progressPercent + 30);
-      let nextStage = p.stage;
-      if (nextProgress >= 95) nextStage = 'ready_harvest';
-      else if (nextProgress >= 50) nextStage = 'flowering';
-      else if (nextProgress >= 15) nextStage = 'vegetative';
-      return {
-        ...p,
-        progressPercent: nextProgress,
-        stage: nextStage
-      };
+      const nextProgress = boostWithinPhase(p.progressPercent, 30);
+      return { ...p, progressPercent: nextProgress, stage: stageFromProgress(nextProgress) };
     }));
 
     showNotification('¡50 $FLORA quemados! Aceleración cuántica aplicada a las 3 filas (30 plantas de la sala)', 'burn');
@@ -1645,6 +1639,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const harvestPlant = () => {
     const target = indoorPlants[selectedPlantIndex];
     if (!target) return;
+    if (!isHarvestable(target)) {
+      const ph = phaseOf(target.stage);
+      const order = PHASES.map(x => x.label).join(' → ');
+      showNotification(`Aún no se puede cortar: la planta está en ${ph?.label ?? 'crecimiento'}. Debe pasar por ${order} y terminar la maduración.`, 'info');
+      return;
+    }
     playHarvestChime();
     confetti({
       particleCount: 80,
@@ -1672,12 +1672,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (idx !== selectedPlantIndex) return p;
       return {
         ...p,
-        stage: 'seedling' as GrowStage,
-        progressPercent: 5,
+        stage: 'seed' as GrowStage,
+        progressPercent: 0,
         health: 98,
         soilMoisture: 80,
         plantedAt: Date.now(),
-        trichomeMaturity: { clear: 95, milky: 5, amber: 0 },
+        trichomeMaturity: { clear: 100, milky: 0, amber: 0 },
         sex: 'female' as const,
         pollinated: false
       };
@@ -1688,7 +1688,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const harvestAllReadyPlants = () => {
     const readyIndices = indoorPlants
       .map((p, idx) => ({ p, idx }))
-      .filter(({ p }) => p.stage === 'ready_harvest' || p.progressPercent >= 90);
+      .filter(({ p }) => isHarvestable(p));
 
     if (readyIndices.length === 0) {
       showNotification('Aún no hay plantas listas para corte en la sala indoor.', 'info');
@@ -1718,12 +1718,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setIndoorPlants(prev => prev.map((p, idx) => readySet.has(idx) ? {
       ...p,
-      stage: 'seedling' as GrowStage,
-      progressPercent: 5,
+      stage: 'seed' as GrowStage,
+      progressPercent: 0,
       health: 98,
       soilMoisture: 80,
       plantedAt: Date.now(),
-      trichomeMaturity: { clear: 95, milky: 5, amber: 0 },
+      trichomeMaturity: { clear: 100, milky: 0, amber: 0 },
       sex: 'female' as const,
       pollinated: false
     } : p));
@@ -2296,7 +2296,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const idx = indoorPlants.map((p, i) => ({ p, i })).filter(({ p }) => isMale(p) && sexRevealed(p)).map(x => x.i);
     if (idx.length === 0) { showNotification('No hay machos por quitar en la sala.', 'info'); return; }
     const set = new Set(idx);
-    setIndoorPlants(prev => prev.map((p, i) => set.has(i) ? { ...p, stage: 'seedling' as GrowStage, progressPercent: 5, health: 98, soilMoisture: 80, plantedAt: Date.now(), trichomeMaturity: { clear: 95, milky: 5, amber: 0 }, sex: 'female' as const, pollinated: false, pest: undefined } : p));
+    setIndoorPlants(prev => prev.map((p, i) => set.has(i) ? { ...p, stage: 'seed' as GrowStage, progressPercent: 0, health: 98, soilMoisture: 80, plantedAt: Date.now(), trichomeMaturity: { clear: 100, milky: 0, amber: 0 }, sex: 'female' as const, pollinated: false, pest: undefined } : p));
     playClickSound();
     addXp(idx.length * 10, 'Machos retirados');
     showNotification(`♂ ${idx.length} macho${idx.length > 1 ? 's' : ''} retirado${idx.length > 1 ? 's' : ''} de la sala; su hueco vuelve a empezar como hembra.`, 'success');

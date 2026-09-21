@@ -10,7 +10,6 @@ import { Nameplate, Orb } from '../hud/HudParts';
 import { ResourceBar } from '../ResourceBar';
 import { formatDuration, isThirsty } from '../../sim/engine';
 import { progressOf, remainingMs } from '../../sim/facilities';
-import { openBag } from '../../ui/events';
 import { plantClocks, STAGE_DOT, STAGE_LABEL } from './plantInfo';
 import { Droplets as DropletsIcon, FlaskConical as FlaskIcon, Zap as ZapIcon } from 'lucide-react';
 import '../hud/hud.css';
@@ -119,7 +118,6 @@ export const RightRail: React.FC<RightProps> = ({ onShowRoom, onOpenPanel, onOpe
   const { activePlant, indoorPlants, rawFlowerGrams, trimGrams, care, co2Ppm, reportEvent } = useGame();
   const thirstyCount = indoorPlants.filter(isThirsty).length;
   const tools = [
-    { key: 'bag', label: 'Maletín', icon: <Briefcase className="w-5 h-5" />, color: '#b8f35a', onClick: openBag, tour: 'bag-scene', title: 'Maletín (I)' },
     { key: 'room', label: 'Sala', icon: <Grid3X3 className="w-5 h-5" />, color: '#5eead4', onClick: onShowRoom, badge: thirstyCount || undefined, badgeColor: '#22d3ee', title: 'Ver todas las plantas de la sala' },
     { key: 'panel', label: 'Panel', icon: <SlidersHorizontal className="w-5 h-5" />, color: '#22d3ee', onClick: onOpenPanel, title: 'Panel completo de instrumentos' },
     ...(onOpenPlanet ? [{ key: 'planet', label: 'Parcelas', icon: <Layers className="w-5 h-5" />, color: '#38bdf8', onClick: onOpenPlanet, title: 'Tus parcelas en el Planeta', badge: undefined as number | string | undefined, badgeColor: undefined as string | undefined, tour: undefined as string | undefined }] : []),

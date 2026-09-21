@@ -11,6 +11,10 @@ import { DESIGN_BY_ID } from '../../sim/avatars';
 import { REGION_BY_ID } from '../../sim/terroir';
 import { landRarity } from '../../sim/lands';
 import { RosterPanel } from '../staff/RosterPanel';
+import { StaffPortrait } from '../staff/StaffCard';
+import { ListNftButton } from '../market/ListNft';
+import { ROLE_INFO } from '../../sim/staff';
+import { Tag } from 'lucide-react';
 
 /**
  * The player's briefcase: everything they own in one place, grouped into six tabs, searchable, with the quick actions
@@ -61,7 +65,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
     semillas: seedRows.length,
     cosecha: g.processedProducts.length + (g.rawFlowerGrams > 0 ? 1 : 0) + (g.trimGrams > 0 ? 1 : 0),
     genetica: g.mothersFathers.length + g.patents.length,
-    coleccion: g.avatars.length + g.plots.length,
+    coleccion: g.avatars.reduce((n: number, a: { count: number }) => n + a.count, 0) + g.plots.length + g.staff.length,
     plantilla: g.staff.length,
   };
   const newIn = (list: OwnedAsset[]) => list.filter((a) => a.mintedAt > seenAt && !a.starter).length;
@@ -72,7 +76,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
     { id: 'semillas', label: 'Semillas', icon: <Sprout className="w-4 h-4" /> },
     { id: 'cosecha', label: 'Cosecha', icon: <Package className="w-4 h-4" /> },
     { id: 'genetica', label: 'Genética', icon: <FlaskConical className="w-4 h-4" /> },
-    { id: 'coleccion', label: 'Colección', icon: <Crown className="w-4 h-4" /> },
+    { id: 'coleccion', label: 'NFT', icon: <Crown className="w-4 h-4" /> },
     { id: 'plantilla', label: 'Plantilla', icon: <Users className="w-4 h-4" /> },
   ];
 
@@ -116,7 +120,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
           {tab === 'cosecha' && <HarvestTab match={match} onNavigate={(t) => { onClose(); onNavigate(t); }} />}
           {tab === 'genetica' && <GeneticsTab match={match} />}
           {tab === 'plantilla' && <RosterPanel onHire={() => { onClose(); onNavigate('market:staff'); }} />}
-          {tab === 'coleccion' && <CollectionTab match={match} onOpenPlanet={() => { onClose(); onNavigate('planeta'); }} />}
+          {tab === 'coleccion' && <CollectionTab match={match} onOpenPlanet={() => { onClose(); onNavigate('planeta'); }} onOpenRoster={() => setTab('plantilla')} onOpenMarket={() => { onClose(); onNavigate('market:p2p'); }} />}
         </div>
       </aside>
     </div>
@@ -277,34 +281,83 @@ const GeneticsTab: React.FC<{ match: Match }> = ({ match }) => {
   );
 };
 
-const CollectionTab: React.FC<{ match: Match; onOpenPlanet: () => void }> = ({ match, onOpenPlanet }) => {
-  const { avatars, plots } = useGame();
+/** every NFT the account owns in one place: lands, staff, avatars, and what is on sale in the player market */
+const CollectionTab: React.FC<{ match: Match; onOpenPlanet: () => void; onOpenRoster: () => void; onOpenMarket: () => void }> = ({ match, onOpenPlanet, onOpenRoster, onOpenMarket }) => {
+  const { avatars, plots, staff, myListings, cancelListing, ledgerOn } = useGame();
   const av = avatars.filter((a) => { const d = DESIGN_BY_ID[a.designId]; return d && match(d.name, d.rarity); });
   const pl = plots.filter((p) => match(p.name, REGION_BY_ID[p.region]?.name));
-  if (av.length + pl.length === 0) return <Empty searching={match.searching} icon={<Globe2 className="w-5 h-5" />} title="Aún no coleccionas nada" hint="Los avatares NFT de los cofres y las parcelas del Planeta se guardan aquí." action={{ label: 'Ver el Planeta', onClick: onOpenPlanet }} />;
+  const st = staff.filter((s) => match(s.name, s.rarity));
+  const copies = avatars.reduce((n, a) => n + a.count, 0);
+  const total = plots.length + staff.length + copies;
+  const Head: React.FC<{ title: string; n: number; action?: React.ReactNode }> = ({ title, n, action }) => (
+    <div className="flex items-center justify-between pt-1"><h4 className="text-[10.5px] font-mono uppercase tracking-[0.18em] text-neutral-400">{title} <span className="text-neutral-500">· {n}</span></h4>{action}</div>
+  );
+  if (total + myListings.length === 0) return <Empty searching={match.searching} icon={<Globe2 className="w-5 h-5" />} title="Aún no tienes NFT" hint="Las tierras del Planeta, el personal del Mercado y los avatares de los cofres aparecen aquí, todos juntos." action={{ label: 'Ver el Planeta', onClick: onOpenPlanet }} />;
   return (
-    <>
-      {pl.length > 0 && <div className="space-y-2">{pl.map((p) => {
-        const r = REGION_BY_ID[p.region];
-        const rar = landRarity(p.landRating);
-        const rc = RARITY_STYLE[rar];
-        return (
-          <button key={p.id} onClick={onOpenPlanet} className="w-full text-left flex items-center gap-3 rounded-xl border bg-black/20 p-3 hover:brightness-125 cursor-pointer" style={{ borderColor: `color-mix(in srgb, ${rc.color} 45%, transparent)` }}>
-            <span className="text-2xl">{r?.emoji ?? '🌎'}</span>
-            <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white truncate">{p.name} <span className="text-[10px] font-mono" style={{ color: rc.color }}>◆ {rc.label} · Tierra NFT</span></span><span className="block text-[10.5px] font-mono text-neutral-400">{r?.name} · nota {p.landRating}/10 · {p.plants.length} plantas</span></span>
-            <Sparkles className="w-4 h-4" style={{ color: rc.color }} />
-          </button>
-        );
-      })}</div>}
-      {av.length > 0 && <div className="grid grid-cols-3 gap-3">{av.map((a) => {
-        const d = DESIGN_BY_ID[a.designId];
-        return (
-          <div key={a.designId} className="rounded-xl border p-2 text-center bg-black/20" style={{ borderColor: `color-mix(in srgb, ${RARITY_STYLE[d.rarity].color} 45%, transparent)` }}>
-            <AvatarArt design={d} className="w-full aspect-square" />
-            <div className="mt-1 text-[11px] font-semibold text-white truncate">{d.name}{a.count > 1 ? ` ×${a.count}` : ''}</div>
-          </div>
-        );
-      })}</div>}
-    </>
+    <div className="space-y-4" data-testid="nft-hub">
+      <div className="grid grid-cols-4 gap-1.5 text-center" data-testid="nft-summary">
+        {[['Total', total, '#fbbf24'], ['Tierras', plots.length, '#38bdf8'], ['Personal', staff.length, '#a3e635'], ['Avatares', copies, '#c084fc']].map(([l, n, c]) => (
+          <div key={l as string} className="rounded-xl border border-white/10 bg-black/25 py-1.5"><div className="text-lg font-black font-mono" style={{ color: c as string }}>{n as number}</div><div className="text-[9.5px] font-mono uppercase text-neutral-400">{l as string}</div></div>
+        ))}
+      </div>
+
+      {myListings.length > 0 && (
+        <section className="space-y-1.5" data-testid="nft-listed">
+          <Head title="En venta" n={myListings.length} action={<button type="button" className="text-[10.5px] font-mono text-sky-200 underline underline-offset-2 cursor-pointer" onClick={onOpenMarket}>Ver el mercado →</button>} />
+          {myListings.map((l) => (
+            <div key={l.id} className="flex items-center gap-2 rounded-xl border border-amber-300/30 bg-amber-400/5 px-3 py-2 text-[12px]">
+              <Tag className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+              <span className="flex-1 min-w-0 truncate text-neutral-100">{String((l.data as { name?: string }).name ?? l.kind)} <span className="text-neutral-500 font-mono text-[10.5px]">{l.kind}</span></span>
+              <span className="font-mono font-bold text-amber-300">{l.price}</span>
+              {ledgerOn && <button type="button" className="sr-btn !py-0.5 !text-[10px]" onClick={() => void cancelListing(l.id)}>Retirar</button>}
+            </div>
+          ))}
+        </section>
+      )}
+
+      {pl.length > 0 && (
+        <section className="space-y-1.5"><Head title="Tierras" n={plots.length} />
+          {pl.map((p) => {
+            const r = REGION_BY_ID[p.region]; const rar = landRarity(p.landRating); const rc = RARITY_STYLE[rar];
+            return (
+              <div key={p.id} className="flex items-center gap-2 rounded-xl border bg-black/20 p-2.5" style={{ borderColor: `color-mix(in srgb, ${rc.color} 45%, transparent)` }}>
+                <button onClick={onOpenPlanet} className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer hover:brightness-125">
+                  <span className="text-2xl">{r?.emoji ?? '🌎'}</span>
+                  <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white truncate">{p.name} <span className="text-[10px] font-mono" style={{ color: rc.color }}>{rc.label}</span></span><span className="block text-[10.5px] font-mono text-neutral-400 truncate">{r?.name} · calificación {p.landRating}</span></span>
+                </button>
+                <ListNftButton what={{ nftId: p.id }} name={p.name} rarity={rar} className="sr-btn !py-0.5 !text-[10px]" />
+              </div>
+            );
+          })}
+        </section>
+      )}
+
+      {st.length > 0 && (
+        <section className="space-y-1.5"><Head title="Personal" n={staff.length} action={<button type="button" className="text-[10.5px] font-mono text-sky-200 underline underline-offset-2 cursor-pointer" onClick={onOpenRoster}>Asignar puestos →</button>} />
+          {st.map((s) => (
+            <div key={s.id} className="flex items-center gap-2.5 rounded-xl border bg-black/20 p-2" style={{ borderColor: `color-mix(in srgb, ${RARITY_STYLE[s.rarity].color} 45%, transparent)` }}>
+              <span className="w-11 h-11 rounded-lg overflow-hidden shrink-0"><StaffPortrait staff={s} className="w-full h-full" animated={false} /></span>
+              <span className="min-w-0 flex-1"><span className="block text-[13px] font-semibold text-white truncate">{s.name}</span><span className="block text-[10.5px] font-mono text-neutral-400 truncate">{ROLE_INFO[s.role].label} · <span style={{ color: RARITY_STYLE[s.rarity].color }}>{RARITY_STYLE[s.rarity].label}</span> · rango {s.rank}</span></span>
+              <ListNftButton what={{ nftId: s.id }} name={s.name} rarity={s.rarity} className="sr-btn !py-0.5 !text-[10px]" />
+            </div>
+          ))}
+        </section>
+      )}
+
+      {av.length > 0 && (
+        <section className="space-y-1.5"><Head title="Avatares" n={copies} />
+          <div className="grid grid-cols-3 gap-3">{av.map((a) => {
+            const d = DESIGN_BY_ID[a.designId];
+            return (
+              <div key={a.designId} className="rounded-xl border p-2 text-center bg-black/20 space-y-1" style={{ borderColor: `color-mix(in srgb, ${RARITY_STYLE[d.rarity].color} 45%, transparent)` }}>
+                <AvatarArt design={d} className="w-full aspect-square" />
+                <div className="text-[11px] font-semibold text-white truncate">{d.name}{a.count > 1 ? ` ×${a.count}` : ''}</div>
+                <ListNftButton what={{ designId: d.id }} name={d.name} rarity={d.rarity} className="sr-btn !py-0.5 !text-[10px] w-full justify-center" />
+              </div>
+            );
+          })}</div>
+        </section>
+      )}
+    </div>
   );
 };

@@ -1,3 +1,4 @@
+import { STAGE_LABEL } from '../cultivo/plantInfo';
 import React, { useEffect, useMemo, useState } from 'react';
 import { FarmScene } from './FarmScene';
 import { ArrowLeft, Droplets, FlaskConical, Bug, Scissors, Sprout, Sun, Moon, Thermometer, Wind, Sparkles } from 'lucide-react';
@@ -10,7 +11,7 @@ import type { Mood } from '../npc/Npc';
 
 /* ───────────────────────── one plant of the field ───────────────────────── */
 
-const STAGE_COLOR: Record<string, string> = { seed: '#a16207', seedling: '#84cc16', vegetative: '#22c55e', flowering: '#c084fc', ready_harvest: '#fbbf24' };
+const STAGE_COLOR: Record<string, string> = { seed: '#a16207', seedling: '#84cc16', vegetative: '#22c55e', flowering: '#c084fc', maturation: '#f0abfc', ready_harvest: '#fbbf24' };
 
 export const PlantTile: React.FC<{ plant?: PlantInGrow; selected: boolean; index: number; onClick: () => void }> = ({ plant, selected, index, onClick }) => {
   if (!plant) {
@@ -40,9 +41,9 @@ export const PlantTile: React.FC<{ plant?: PlantInGrow; selected: boolean; index
                   <path key={i} d={`M20 ${y} q${d * 9 * k} -6 ${d * 12 * k} 1 q${-d * 5 * k} 5 ${-d * 12 * k} -1Z`} fill={leaf} stroke="#14532d" strokeWidth=".6" />
                 ))}
                 {plant.stage === 'seedling' && <path d="M20 19 q-4 -6 0 -9 q4 3 0 9Z" fill={leaf} />}
-                {(plant.stage === 'flowering' || plant.stage === 'ready_harvest') && (
+                {(plant.stage === 'flowering' || plant.stage === 'maturation' || plant.stage === 'ready_harvest') && (
                   <>
-                    <ellipse cx="20" cy="13" rx="4.2" ry="7" fill={plant.stage === 'ready_harvest' ? '#fbbf24' : c} stroke="#0008" strokeWidth=".5" />
+                    <ellipse cx="20" cy="13" rx="4.2" ry="7" fill={plant.stage === 'ready_harvest' || plant.stage === 'maturation' ? '#fbbf24' : c} stroke="#0008" strokeWidth=".5" />
                     <ellipse cx="14" cy="21" rx="2.6" ry="4" fill={plant.stage === 'ready_harvest' ? '#f59e0b' : c} opacity=".9" />
                     <ellipse cx="26" cy="21" rx="2.6" ry="4" fill={plant.stage === 'ready_harvest' ? '#f59e0b' : c} opacity=".9" />
                     <circle cx="19" cy="9" r="1.1" fill="#fff" opacity=".8" />
@@ -206,7 +207,7 @@ export const PlotScreen: React.FC<{
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="text-sm font-bold text-white truncate">{plant.strain.name}</div>
-                    <div className="text-[10px] font-mono text-neutral-400">hueco #{(plant.slotIndex ?? 0) + 1} · {plant.stage === 'ready_harvest' ? '¡lista!' : plant.stage}</div>
+                    <div className="text-[10px] font-mono text-neutral-400">hueco #{(plant.slotIndex ?? 0) + 1} · {plant.stage === 'ready_harvest' ? '¡lista!' : STAGE_LABEL[plant.stage]}</div>
                   </div>
                   {(() => { const t = terroirOf(plant.strain.origin, plot.region, plot.ratings); return <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${t.tone === 'up' ? 'text-emerald-300 border-emerald-400/50' : t.tone === 'down' ? 'text-red-300 border-red-400/40' : 'text-neutral-300 border-neutral-600'}`}>{t.label}</span>; })()}
                 </div>

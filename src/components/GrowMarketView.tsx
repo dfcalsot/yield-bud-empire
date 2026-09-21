@@ -162,7 +162,7 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
     assets, resources, equipStats, buyAsset, setAssetEquipped, repairAsset, floraBalance, solBalance, calibrateMeter, care, recycleGarbage, shopPrice, staffMods,
   } = useGame();
 
-  const [tab, setTab] = useState<'buy' | 'bag' | 'land' | 'staff' | 'p2p'>(initialCat === 'land' ? 'land' : initialCat === 'staff' ? 'staff' : 'buy');
+  const [tab, setTab] = useState<'buy' | 'bag' | 'land' | 'staff' | 'p2p'>(initialCat === 'land' ? 'land' : initialCat === 'staff' ? 'staff' : initialCat === 'p2p' ? 'p2p' : 'buy');
   const startCat = (CATEGORY_ORDER as string[]).includes(initialCat ?? '') ? (initialCat as AssetCategory) : 'all';
   const [cat, setCat] = useState<AssetCategory | 'all'>(startCat);
   const [currency, setCurrency] = useState<'FLORA' | 'SOL'>('FLORA');
