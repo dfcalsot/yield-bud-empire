@@ -13,7 +13,10 @@ encaje con las coordenadas del mapa del juego (`proj(lon, lat)` en `WorldMap.tsx
 
 ## Estilo del juego (por defecto)
 
- es la misma geografía repintada con la paleta del juego: océano azul profundo, tierra verde iluminada por el dibujo original
-y costa en neón. El original tiene el mar amarillento de forma desigual, así que no se usa un color fijo: se calcula una medida suave de «cuánto se parece a mar»
-(clara, poco saturada, sin verde ni rojo pintados), se corta, se limpian motas y agujeros y se pinta. Script:  (necesita ,
-la reproyección sin desvanecer que genera ). Tres estilos en el Planeta: Monti (juego), pergamino 1587 y mapa clásico.
+`public/maps/monti-game.webp` es la misma geografía repintada con la paleta del juego: océano azul profundo, tierra verde iluminada por el dibujo
+original y costa en neón. El original tiene el mar amarillento de forma desigual, así que no se usa un color fijo: se calcula una medida suave de
+«cuánto se parece a mar» (clara, poco saturada, sin verde ni rojo pintados), se corta, se limpian motas y agujeros y se pinta.
+
+- Script: `monti-game-style.py` (necesita `raw-2400.png`, la reproyección sin desvanecer que genera `monti_reproject.py`).
+- Tres estilos en el Planeta: Monti (juego), pergamino 1587 y mapa clásico (`WorldMap.tsx`, tipo `MapSkin`).
+- Comprobación: con rotación 285° todos los pines de región caen sobre tierra (Jamaica, una isla, queda en el mar).
