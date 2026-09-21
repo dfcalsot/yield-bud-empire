@@ -728,6 +728,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       chestPity,
       missions,
       tutorial,
+      facilityId: currentFacility.id,
+      unlockedFacilities: facilities.filter(f => f.unlocked).map(f => f.id),
       savedAt: Date.now()
     });
   }, [
@@ -759,13 +761,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     avatars,
     chestPity,
     missions,
-    tutorial
+    tutorial,
+    currentFacility,
+    facilities
   ]);
 
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
     const saved = loadUserData(userId);
     applyMissions(normalizeMissions(saved?.missions));
     applyTutorial(normalizeTutorial(saved?.tutorial));
+    {
+      // the installation you built survives a reload (it used to reset to the starter kit)
+      const unlocked = new Set<string>(['tent_starter', ...(Array.isArray(saved?.unlockedFacilities) ? saved!.unlockedFacilities! : [])]);
+      const list = INITIAL_FACILITIES.map(f => ({ ...f, unlocked: f.unlocked || unlocked.has(f.id) }));
+      setFacilities(list);
+      setCurrentFacility(list.find(f => f.id === saved?.facilityId && f.unlocked) ?? list[0]);
+    }
     if (saved) {
       if (typeof saved.floraBalance === 'number') setFloraBalance(saved.floraBalance);
       if (typeof saved.solBalance === 'number') setSolBalance(saved.solBalance);

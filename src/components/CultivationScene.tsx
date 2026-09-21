@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Droplet, Scissors, Flame, Zap, Crown, Layers, Grid3X3, SlidersHorizontal, ChevronDown, Sprout, Bug, Briefcase, Hand } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { GROW_ROOMS_CONFIG } from '../data/initialData';
@@ -11,6 +11,9 @@ import type { GrowStage } from '../types';
 import { formatDuration, hoursUntilMoisture, isHungry, isThirsty, PEST_INFO } from '../sim/engine';
 import { nextActionFor } from '../sim/nextAction';
 import { openBag } from '../ui/events';
+import { Hotbar, HudToolbar, Nameplate, Orb, type SlotSpec, type ToolSpec } from './hud/HudParts';
+import { FacilityBackdrop } from './hud/FacilityBackdrop';
+import { Droplets as DropletsIcon, FlaskConical as FlaskIcon, Zap as ZapIcon } from 'lucide-react';
 
 interface CultivationSceneProps {
   onOpenSeedModal: () => void;
@@ -94,7 +97,7 @@ const GaugeGroup: React.FC<{ title: string; items: GaugeSpec[]; onOpen?: () => v
   const show = open || bad.length > 0;
   const dot = bad.length ? '#fbbf24' : '#a3e635';
   return (
-    <div className="shrink-0 rounded-xl bg-neutral-950/80 border" style={{ borderColor: bad.length ? 'rgba(251,191,36,0.5)' : 'rgba(163,230,53,0.22)' }}>
+    <div className="gh-frame shrink-0 !rounded-xl" style={bad.length ? { borderColor: 'rgba(251,191,36,0.6)' } : undefined}>
       <button onClick={() => { if (!open) onOpen?.(); setOpen((v) => !v); }} aria-expanded={show} className="flex items-center gap-1.5 w-full px-2 py-1.5 text-left cursor-pointer">
         <span className="text-[9.5px] font-mono uppercase tracking-[0.16em] text-neutral-200">{title}</span>
         <span className="ml-auto w-2 h-2 rounded-full" style={{ background: dot, boxShadow: `0 0 8px ${dot}` }} aria-label={bad.length ? 'Atención' : 'Óptimo'} />
@@ -151,7 +154,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const {
     activePlant, indoorPlants, selectedPlantIndex, selectPlant,
     waterPlant, feedNutrients, trainPlant, speedUpGrowth, harvestPlant, saveCurrentPlantAsMotherOrFather,
-    currentRoom, switchGrowRoom, currentFacility, rawFlowerGrams, trimGrams, co2Ppm, getPlantEta, care, reportEvent,
+    currentRoom, switchGrowRoom, currentFacility, rawFlowerGrams, trimGrams, co2Ppm, getPlantEta, care, reportEvent, resources, equipStats,
   } = useGame();
 
   const [roomMenu, setRoomMenu] = useState(false);
@@ -195,60 +198,43 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   ] : [];
   const canHarvest = !!activePlant && activePlant.progressPercent >= 80;
 
+  const nextKind = nextActionFor({
+    hasPlant: !!activePlant, harvestReady: false, pest: activePlant?.pest ? PEST_INFO[activePlant.pest.kind].label : null, thirsty, hungry,
+    maleWarn: !!activePlant && activePlant.sex === 'male' && activePlant.progressPercent >= 30, thirstyOthers: Math.max(0, thirstyCount - (thirsty ? 1 : 0)), etaText: '',
+  }).kind;
+  const slots: SlotSpec[] = activePlant ? [
+    { key: 'water', label: 'Regar', sub: `Hum ${activePlant.soilMoisture}%`, tone: 'cyan', icon: <Droplet className="w-6 h-6" />, hot: nextKind === 'water', tour: 'water', onClick: () => { waterPlant(); pop('+ Riego', '#22d3ee'); } },
+    { key: 'feed', label: 'Abonar', sub: `EC ${activePlant.ecLevel}`, tone: 'lime', icon: <NutrientBottle className="w-6 h-6" />, hot: nextKind === 'feed', tour: 'feed', onClick: () => { feedNutrients(); pop('+ N-P-K', '#34d399'); } },
+    { key: 'lst', label: 'LST', sub: '+12%', tone: 'pink', icon: <Scissors className="w-6 h-6" />, onClick: () => { trainPlant('Topping & LST'); pop('LST +12%', '#e879f9'); } },
+    { key: 'speed', label: 'Acelerar', sub: 'ciclo', tone: 'amber', cost: '25', icon: <span className="flex items-center"><Flame className="w-6 h-6" /><Zap className="w-3.5 h-3.5 -ml-1" /></span>, onClick: () => { if (speedUpGrowth()) pop('- 25 $FLORA', '#fbbf24'); } },
+    { key: 'nutri', label: 'Nutrición', sub: 'tablas', tone: 'violet', icon: <FlaskLeaf className="w-6 h-6" />, onClick: onOpenNutrients },
+    { key: 'mother', label: 'Madre', sub: 'clones', tone: 'neutral', icon: <Crown className="w-6 h-6" />, onClick: () => { saveCurrentPlantAsMotherOrFather('Madre (Esquejes / Clones)'); pop('Madre guardada', '#c084fc'); } },
+  ] : [];
+  const tools: ToolSpec[] = [
+    { key: 'bag', label: 'Maletín', icon: <Briefcase className="w-5 h-5" />, color: '#b8f35a', onClick: openBag, tour: 'bag-scene', title: 'Maletín (I)' },
+    { key: 'room', label: 'Sala', icon: <Grid3X3 className="w-5 h-5" />, color: '#5eead4', onClick: onShowRoom, badge: thirstyCount || undefined, badgeColor: '#22d3ee', title: 'Ver todas las plantas de la sala' },
+    { key: 'panel', label: 'Panel', icon: <SlidersHorizontal className="w-5 h-5" />, color: '#22d3ee', onClick: onOpenPanel, title: 'Panel completo de instrumentos' },
+    ...(onOpenPlanet ? [{ key: 'planet', label: 'Parcelas', icon: <Layers className="w-5 h-5" />, color: '#38bdf8', onClick: onOpenPlanet, title: 'Tus parcelas en el Planeta' } as ToolSpec] : []),
+    { key: 'care', label: 'Cuidado', icon: <Bug className="w-5 h-5" />, color: '#f472b6', onClick: () => setCareOpen((v) => !v), badge: care.males > 0 ? '♂' : undefined, badgeColor: '#38bdf8', title: 'Plagas, machos, limpieza y jardinero' },
+  ];
+  // keys 1–6 press the hotbar (ignored while typing)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const i = Number(e.key) - 1;
+      if (Number.isInteger(i) && i >= 0 && i < slots.length) slots[i].onClick();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   return (
     <div className="relative isolate overflow-hidden rounded-3xl border border-emerald-400/20 bg-[#02080a] h-[calc(100dvh-21rem)] min-h-[720px] sm:min-h-[560px] max-h-[900px] shadow-[0_0_60px_-20px_rgba(52,211,153,0.4)]">
-      {/* ── backdrop: tent, lamp, light cone, floor ── */}
+      {/* ── backdrop: the facility itself (each tier is a different place) ── */}
+      <FacilityBackdrop facilityId={currentFacility.id} lampColor={lampColor} lightPct={lightPct} equip={equipStats} hour={new Date().getHours() + new Date().getMinutes() / 60} />
       <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(ellipse 75% 60% at 50% 0%, rgba(${lampColor},${0.22 * lightPct}) 0%, rgba(16,185,129,${0.1 * lightPct}) 40%, transparent 75%), linear-gradient(180deg, #03100d 0%, #02090a 60%, #010506 100%)`,
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-[0.16]"
-          style={{
-            backgroundImage: 'linear-gradient(45deg, #1f3b34 25%, transparent 25%), linear-gradient(-45deg, #1f3b34 25%, transparent 25%)',
-            backgroundSize: '36px 36px',
-          }}
-        />
-        <div className="absolute top-0 bottom-0 left-3 w-1.5 rounded-full bg-neutral-700/50" />
-        <div className="absolute top-0 bottom-0 right-3 w-1.5 rounded-full bg-neutral-700/50" />
-
-        {/* LED bar + light cone */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[62%] max-w-2xl">
-          <div className="flex justify-between px-10">
-            <div className="w-0.5 h-5 bg-neutral-500/70" />
-            <div className="w-0.5 h-5 bg-neutral-500/70" />
-          </div>
-          <div className="h-6 rounded-b-xl bg-gradient-to-r from-neutral-800 via-neutral-600 to-neutral-800 border border-neutral-500/50 flex items-center justify-around px-3" style={{ boxShadow: `0 8px 40px rgba(${lampColor},${0.5 * lightPct})` }}>
-            {Array.from({ length: 14 }, (_, i) => (
-              <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: `rgb(${i % 4 === 2 ? '239,68,68' : i % 4 === 3 ? '129,140,248' : lampColor})`, boxShadow: `0 0 6px rgba(${lampColor},0.9)` }} />
-            ))}
-          </div>
-        </div>
-        <div
-          className="absolute top-[3.2rem] left-1/2 -translate-x-1/2 w-[92%] h-[90%] animate-led-shimmer"
-          style={{
-            clipPath: 'polygon(30% 0, 70% 0, 100% 100%, 0 100%)',
-            background: `linear-gradient(180deg, rgba(${lampColor},${0.2 * lightPct}) 0%, rgba(${lampColor},${0.03 * lightPct}) 85%, transparent 100%)`,
-          }}
-        />
-
-        {/* CO2 mist */}
-        {co2Ppm >= 800 && (
-          <div className="absolute top-14 left-[30%] right-[30%] h-40 flex justify-around overflow-hidden opacity-50">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <div key={i} className="w-1.5 h-14 rounded-full bg-gradient-to-b from-cyan-300/40 to-transparent animate-co2-mist" style={{ animationDelay: `${i * 0.7}s` }} />
-            ))}
-          </div>
-        )}
-
-        {/* floor glow */}
-        <div className="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-emerald-500/10 to-transparent" />
-        <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 w-[46%] h-16 rounded-[50%] blur-2xl" style={{ background: `rgba(${lampColor},${0.13 * lightPct})` }} />
-
-        {/* floating spores */}
         {spores.map((s, i) => (
           <span
             key={i}
@@ -259,7 +245,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
       </div>
 
       {/* ── the plant ── */}
-      <div className={`absolute inset-x-0 top-[12%] bottom-[34%] ${canHarvest ? 'sm:bottom-[19%]' : 'sm:bottom-[12%]'} flex items-end justify-center pointer-events-none transition-all duration-500`}>
+      <div className={`absolute inset-x-0 top-[12%] bottom-[34%] ${canHarvest ? 'sm:bottom-[30%]' : 'sm:bottom-[25%]'} flex items-end justify-center pointer-events-none transition-all duration-500`}>
         {activePlant ? (
           <PlantView
             className="h-full w-full max-w-[560px] drop-shadow-[0_18px_28px_rgba(0,0,0,0.85)]"
@@ -326,20 +312,26 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
             <span className="max-w-[14rem] truncate">{currentFacility.name}</span>
             <span className="text-[10px] font-mono text-emerald-300">Nv.{currentFacility.tier}</span>
           </button>
+          <div className="gh-orbs mt-1" data-tour="orbs">
+            <Orb kind="water" label="Agua" value={`${Math.round(resources.water)} L`} fill={resources.water / 300} icon={<DropletsIcon className="w-5 h-5" />} low={resources.water < 20} onClick={() => onOpenMarket?.('water')} title="Agua en el tanque · toca para comprar" />
+            <Orb kind="nutrient" label="Abono" value={`${Math.round(resources.nutrient)} ml`} fill={resources.nutrient / 1000} icon={<FlaskIcon className="w-5 h-5" />} low={resources.nutrient < 60} onClick={() => onOpenMarket?.('nutrient')} title="Abono · toca para comprar" />
+            <Orb kind="energy" label="Energía" value={`${resources.energy.toFixed(0)} kWh`} fill={resources.energy / 100} icon={<ZapIcon className="w-5 h-5" />} low={Number.isFinite(resources.energyDays) && resources.energyDays < 0.5} onClick={() => onOpenMarket?.('energy')} title="Electricidad · toca para comprar" />
+          </div>
         </div>
 
         {activePlant && (
-          <div className="hidden md:block px-4 py-2 rounded-xl bg-neutral-950/75 border border-emerald-400/20 min-w-[15rem] text-center">
-            <div className="font-serif text-base font-bold text-white leading-tight">{activePlant.strain.name}</div>
-            <div className="text-[10px] font-mono uppercase tracking-wider mb-1.5" style={{ color: STAGE_DOT[activePlant.stage] }}>
-              {STAGE_LABEL[activePlant.stage]} · #{selectedPlantIndex + 1} · THC {activePlant.strain.thcPercentage}%
-            </div>
-            <StatBar value={activePlant.health} valueLabel={`${activePlant.health}%`} label="Salud" color={activePlant.health > 70 ? '#34d399' : activePlant.health > 45 ? '#fbbf24' : '#f87171'} />
-            <div className="mt-1.5 flex justify-between gap-3 text-[10px] font-mono">
-              {clockRows.map((r) => (
-                <span key={r.icon} className={r.warn ? 'text-amber-300' : 'text-neutral-300'}>{r.icon} {r.text}</span>
-              ))}
-            </div>
+          <div className="hidden md:block">
+            <Nameplate
+              name={activePlant.strain.name}
+              stage={STAGE_LABEL[activePlant.stage]}
+              stageColor={STAGE_DOT[activePlant.stage]}
+              index={selectedPlantIndex + 1}
+              thc={activePlant.strain.thcPercentage}
+              health={activePlant.health}
+              progress={activePlant.progressPercent}
+              emblem={<CannabisLeaf className="w-6 h-6" />}
+              clocks={clockRows}
+            />
           </div>
         )}
         {activePlant && (
@@ -350,26 +342,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
           </div>
         )}
 
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-neutral-950/75 border border-neutral-600/40 text-[10px] font-mono">
-            <div><span className="text-neutral-500 block leading-none">FLOR</span><span className="text-emerald-300 font-bold text-xs">{rawFlowerGrams}g</span></div>
-            <span className="w-px h-6 bg-neutral-700" />
-            <div><span className="text-neutral-500 block leading-none">TRIM</span><span className="text-amber-300 font-bold text-xs">{trimGrams}g</span></div>
-          </div>
-          <div className="flex gap-1.5">
-            <button onClick={openBag} data-tour="bag-scene" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-emerald-300/40 text-[11px] font-semibold text-emerald-200 hover:bg-emerald-400/10 cursor-pointer" title="Maletín (I)"><Briefcase className="w-3.5 h-3.5" /> Maletín</button>
-            <button onClick={onShowRoom} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-neutral-600/40 text-[11px] font-semibold text-neutral-200 hover:border-emerald-300/50 cursor-pointer transition" title="Ver las 30 plantas de la sala">
-              <Grid3X3 className="w-3.5 h-3.5 text-emerald-300" /> Sala{thirstyCount > 0 && <span className="px-1 rounded bg-cyan-400 text-neutral-950 text-[9px] font-black" title="Plantas con sed">💧{thirstyCount}</span>}{readyCount > 0 && <span className="px-1 rounded bg-amber-400 text-neutral-950 text-[9px] font-black">{readyCount}</span>}
-            </button>
-            <button onClick={onOpenPanel} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-neutral-600/40 text-[11px] font-semibold text-neutral-200 hover:border-cyan-300/50 cursor-pointer transition" title="Clima, luz, CO₂ e instrumental completo">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-300" /> Panel
-            </button>
-            {onOpenPlanet && <button onClick={onOpenPlanet} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-sky-400/40 text-[11px] font-semibold text-sky-200 hover:border-sky-300/70 cursor-pointer transition" title="Tus parcelas al aire libre: el Planeta"><span>🌎</span> Parcelas</button>}
-            <button onClick={() => setCareOpen((v) => !v)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border text-[11px] font-semibold text-neutral-200 cursor-pointer transition ${care.pests > 0 ? 'border-pink-400/70 cf-ring' : 'border-neutral-600/40 hover:border-emerald-300/50'}`} title="Plagas, calificación de jardinero, limpieza y jardinero del vivero">
-              <Bug className="w-3.5 h-3.5 text-pink-300" /> Cuidado{care.males > 0 && <span className="px-1 rounded bg-sky-400 text-neutral-950 text-[9px] font-black">♂{care.males}</span>}{care.pests > 0 && <span className="px-1 rounded bg-pink-400 text-neutral-950 text-[9px] font-black">{care.pests}</span>}<span className="text-[9px] font-mono" style={{ color: care.rating >= 75 ? '#6ee7b7' : care.rating >= 45 ? '#fcd34d' : '#fca5a5' }}>{care.rating}%</span>
-            </button>
-          </div>
-        </div>
+        <HudToolbar tools={tools} flower={rawFlowerGrams} trim={trimGrams} />
       </div>
 
       {careOpen && (
@@ -380,30 +353,10 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
 
       {care.gardenerLevel > 0 && <GardenerCameo />}
 
-      {/* ── action rail ── */}
+      {/* ── skill hotbar (keys 1–6) ── */}
       {activePlant && (
-        <div className="absolute z-30 flex gap-2 left-2 right-2 overflow-x-auto scrollbar-none bottom-[10.6rem] sm:right-auto sm:overflow-visible sm:left-3 sm:bottom-[5.3rem] sm:top-[10.9rem] sm:flex-col sm:justify-center sm:gap-1.5 pointer-events-none [&>*]:pointer-events-auto">
-          <span className="hidden sm:block text-center text-[8px] font-mono uppercase tracking-[0.2em] text-neutral-500">Cuidar</span>
-          <SkillButton tour="water" label="Regar" sub={`Hum ${activePlant.soilMoisture}%`} tone="cyan" pulse={thirsty || activePlant.soilMoisture < 55} onClick={() => { waterPlant(); pop('+ Riego', '#22d3ee'); }}>
-            <Droplet className="w-5 h-5" />
-          </SkillButton>
-          <SkillButton tour="feed" label="Abonar N-P-K" sub={`EC ${activePlant.ecLevel}`} tone="emerald" pulse={hungry} onClick={() => { feedNutrients(); pop('+ N-P-K', '#34d399'); }}>
-            <NutrientBottle className="w-5 h-5" />
-          </SkillButton>
-          <SkillButton label="Entrenamiento LST" sub="LST +12%" tone="purple" onClick={() => { trainPlant('Topping & LST'); pop('LST +12%', '#e879f9'); }}>
-            <Scissors className="w-5 h-5" />
-          </SkillButton>
-          <span className="hidden sm:block text-center text-[8px] font-mono uppercase tracking-[0.2em] text-neutral-500">Acelerar</span>
-          <SkillButton label="Acelerar ciclo (quema 25 $FLORA)" sub="Acelerar" badge="25" tone="amber" pulse onClick={() => { if (speedUpGrowth()) pop('- 25 $FLORA', '#fbbf24'); }}>
-            <span className="flex items-center"><Flame className="w-5 h-5" /><Zap className="w-3 h-3 -ml-1" /></span>
-          </SkillButton>
-          <span className="hidden sm:block text-center text-[8px] font-mono uppercase tracking-[0.2em] text-neutral-500">Más</span>
-          <SkillButton label="Tablas de nutrición" sub="Nutrición" tone="neutral" onClick={onOpenNutrients}>
-            <FlaskLeaf className="w-5 h-5" />
-          </SkillButton>
-          <SkillButton label="Guardar como madre donante" sub="Madre" tone="neutral" onClick={() => { saveCurrentPlantAsMotherOrFather('Madre (Esquejes / Clones)'); pop('Madre guardada', '#c084fc'); }}>
-            <Crown className="w-5 h-5" />
-          </SkillButton>
+        <div className="absolute z-30 inset-x-0 bottom-[4.9rem] sm:bottom-[4.7rem] flex justify-center px-2 pointer-events-none [&>*]:pointer-events-auto">
+          <Hotbar slots={slots} />
         </div>
       )}
 
@@ -446,7 +399,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
           else if (next.kind === 'room-thirst') onShowRoom();
         };
         return (
-          <div className="absolute z-30 inset-x-0 bottom-[15.4rem] sm:bottom-[5.9rem] flex justify-center px-4 sm:px-16 pointer-events-none" data-tour="next-action">
+          <div className="absolute z-30 inset-x-0 bottom-[15.4rem] sm:bottom-[10.4rem] flex justify-center px-4 sm:px-16 pointer-events-none" data-tour="next-action">
             <button
               onClick={run}
               disabled={!next.actionable}
@@ -463,7 +416,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
 
       {/* ── harvest call-to-action ── */}
       {canHarvest && activePlant && (
-        <div className="absolute z-30 inset-x-0 bottom-[15.4rem] sm:bottom-[5.9rem] flex justify-center px-4 sm:px-16 pointer-events-none">
+        <div className="absolute z-30 inset-x-0 bottom-[15.4rem] sm:bottom-[10.4rem] flex justify-center px-4 sm:px-16 pointer-events-none">
           <button
             onClick={() => { const g = activePlant.stage === 'ready_harvest' ? activePlant.estimatedDryYieldGrams : Math.round(activePlant.estimatedDryYieldGrams * 0.75); harvestPlant(); pop(`+ ${g}g flor`, '#fbbf24'); }}
             className="pointer-events-auto cf-ring px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-emerald-400 to-amber-500 text-neutral-950 font-black text-sm tracking-wide uppercase shadow-[0_0_30px_rgba(251,191,36,0.55)] cursor-pointer active:scale-95 transition flex items-center gap-2"

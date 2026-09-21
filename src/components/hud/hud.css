@@ -1,0 +1,95 @@
+/* Game HUD kit: bevelled frames, liquid orbs, segmented bars, a skill hotbar. Motion is transform/opacity only. */
+.gh-frame { position: relative; border-radius: 14px; background: linear-gradient(180deg, rgba(34, 25, 72, 0.94), rgba(12, 8, 28, 0.95));
+  border: 1px solid color-mix(in srgb, var(--zone, #b8f35a) 42%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 0 0 1px rgba(0, 0, 0, 0.55), 0 10px 26px -12px rgba(0, 0, 0, 0.85), 0 0 24px -12px var(--zone, #b8f35a); }
+
+/* ── resource orbs ── */
+.gh-orbs { display: flex; gap: 10px; align-items: flex-start; }
+.gh-orb { --hue: #38bdf8; --hue-hi: #bae6fd; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; background: none; border: 0; padding: 0; }
+.gh-orb--water { --hue: #0ea5e9; --hue-hi: #7dd3fc; } .gh-orb--nutrient { --hue: #8b5cf6; --hue-hi: #c4b5fd; } .gh-orb--energy { --hue: #f59e0b; --hue-hi: #fde68a; }
+.gh-orb-glass { position: relative; width: 58px; height: 58px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255, 255, 255, 0.4);
+  background: radial-gradient(circle at 36% 28%, rgba(255, 255, 255, 0.22), rgba(6, 4, 20, 0.85) 62%);
+  box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.65), inset 0 3px 6px rgba(255, 255, 255, 0.2), 0 6px 14px -6px rgba(0, 0, 0, 0.9), 0 0 18px -4px var(--hue); transition: transform 0.15s, box-shadow 0.2s; }
+.gh-orb:hover .gh-orb-glass { transform: translateY(-2px) scale(1.05); box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.65), inset 0 3px 6px rgba(255, 255, 255, 0.25), 0 8px 18px -6px rgba(0, 0, 0, 0.9), 0 0 26px 0 var(--hue); }
+.gh-orb-liquid { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--fill) * 100%); min-height: 6%; background: linear-gradient(var(--hue-hi), var(--hue) 55%, color-mix(in srgb, var(--hue) 55%, #000)); transition: height 0.9s ease; }
+.gh-wave { position: absolute; top: -7px; left: -60%; width: 220%; height: 14px; border-radius: 42%; background: var(--hue-hi); opacity: 0.6; animation: ghWave 4s linear infinite; }
+.gh-wave--b { top: -5px; opacity: 0.4; animation-duration: 6s; animation-direction: reverse; }
+@keyframes ghWave { to { transform: translateX(27%); } }
+.gh-orb-icon { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)); }
+.gh-orb-shine { position: absolute; left: 9px; top: 6px; width: 20px; height: 11px; border-radius: 50%; background: linear-gradient(rgba(255, 255, 255, 0.7), transparent); transform: rotate(-24deg); }
+.gh-orb-val { font: 800 11px/1 ui-monospace, monospace; color: #fff; padding: 2px 6px; border-radius: 6px; background: rgba(10, 7, 22, 0.78); text-shadow: 0 1px 2px #000; }
+.gh-orb-lbl { font: 700 8.5px/1 ui-monospace, monospace; letter-spacing: 0.16em; text-transform: uppercase; color: var(--hue-hi); padding: 2px 6px; border-radius: 6px; background: rgba(10, 7, 22, 0.78); }
+.gh-orb.is-low .gh-orb-glass { animation: ghLow 1.1s ease-in-out infinite; }
+@keyframes ghLow { 50% { box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.65), 0 0 26px 2px #f87171; border-color: #fca5a5; } }
+
+/* ── plant nameplate ── */
+.gh-plate { display: flex; align-items: center; gap: 12px; padding: 8px 16px 8px 8px; min-width: 19rem; }
+.gh-emblem { position: relative; width: 60px; height: 60px; flex: none; }
+.gh-emblem svg { position: absolute; inset: 0; }
+.gh-emblem-core { position: absolute; inset: 9px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, #3c2f7a, #120c30); border: 2px solid rgba(255, 255, 255, 0.25); box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.55); color: var(--zone, #b8f35a); }
+.gh-emblem-lvl { position: absolute; right: -4px; bottom: -3px; padding: 1px 5px; border-radius: 999px; background: var(--zone, #b8f35a); color: #10170a; font: 900 9px/14px ui-monospace, monospace; border: 2px solid #0a0716; }
+.gh-title { font: 900 17px/1.1 'Cinzel', serif; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6); }
+.gh-sub { font: 700 9.5px/1 ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; color: var(--stage, var(--zone)); margin: 3px 0 6px; }
+
+/* ── segmented bar ── */
+.gh-seg { position: relative; display: flex; gap: 2px; padding: 2px; border-radius: 6px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden; }
+.gh-seg i { flex: 1; height: 9px; border-radius: 2px; background: rgba(255, 255, 255, 0.07); }
+.gh-seg i.on { background: linear-gradient(180deg, var(--c-hi), var(--c)); box-shadow: 0 0 6px var(--c); }
+.gh-seg::after { content: ''; position: absolute; top: 0; bottom: 0; width: 24%; left: -30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent); animation: ghShine 3.4s ease-in-out infinite; }
+@keyframes ghShine { 0%, 55% { transform: translateX(0); } 100% { transform: translateX(560%); } }
+.gh-bar-row { display: flex; align-items: center; gap: 8px; }
+.gh-bar-row span { font: 700 9px/1 ui-monospace, monospace; letter-spacing: 0.14em; color: #cfcae8; }
+.gh-bar-row b { font: 800 11px/1 ui-monospace, monospace; color: var(--c-hi); min-width: 2.4rem; text-align: right; }
+
+/* ── toolbar ── */
+.gh-toolbar { display: flex; gap: 6px; padding: 6px; }
+.gh-tool { position: relative; width: 56px; padding: 6px 2px 5px; display: flex; flex-direction: column; align-items: center; gap: 3px; border-radius: 11px; cursor: pointer; color: #e3e0f4;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.25)); border: 1px solid rgba(255, 255, 255, 0.14); transition: transform 0.12s, border-color 0.2s, box-shadow 0.2s; }
+.gh-tool:hover { transform: translateY(-2px); border-color: var(--tc, var(--zone)); box-shadow: 0 0 16px -4px var(--tc, var(--zone)); }
+.gh-tool:active { transform: translateY(1px) scale(0.97); }
+.gh-tool svg { color: var(--tc, var(--zone)); }
+.gh-tool span { font: 700 8.5px/1 ui-monospace, monospace; letter-spacing: 0.1em; text-transform: uppercase; }
+.gh-tool-badge { position: absolute; top: -5px; right: -4px; min-width: 16px; padding: 0 4px; border-radius: 999px; font: 900 9px/16px ui-monospace, monospace; text-align: center; background: var(--bc, #22d3ee); color: #06131a; border: 2px solid #0a0716; }
+.gh-loot { display: flex; gap: 12px; justify-content: center; padding: 5px 10px; margin-top: 6px; font: 700 10px/1 ui-monospace, monospace; }
+.gh-loot small { display: block; color: #a9a3cf; font-size: 8.5px; letter-spacing: 0.14em; margin-bottom: 2px; }
+
+/* ── skill hotbar ── */
+.gh-hotbar { display: flex; gap: 8px; padding: 9px 12px 8px; border-radius: 20px; }
+.gh-slot { --tone: #94a3b8; position: relative; width: 62px; height: 74px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; border-radius: 15px; color: #fff;
+  background: radial-gradient(circle at 50% 24%, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.5) 78%), linear-gradient(180deg, #2c2166, #120c30);
+  border: 2px solid var(--tone); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), inset 0 -8px 12px rgba(0, 0, 0, 0.55), 0 5px 0 rgba(0, 0, 0, 0.65), 0 0 14px -5px var(--tone);
+  transition: transform 0.12s, box-shadow 0.2s, filter 0.2s; }
+.gh-slot--cyan { --tone: #22d3ee; } .gh-slot--lime { --tone: #b8f35a; } .gh-slot--pink { --tone: #f472b6; } .gh-slot--amber { --tone: #fbbf24; } .gh-slot--violet { --tone: #c4b5fd; }
+.gh-slot:hover { transform: translateY(-4px); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.24), inset 0 -8px 12px rgba(0, 0, 0, 0.5), 0 9px 0 rgba(0, 0, 0, 0.55), 0 0 22px 0 var(--tone); filter: brightness(1.12); }
+.gh-slot:active { transform: translateY(2px) scale(0.95); box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(0, 0, 0, 0.65); }
+.gh-slot svg { color: var(--tone); filter: drop-shadow(0 0 6px var(--tone)); }
+.gh-slot-lbl { font: 800 9px/1 ui-monospace, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+.gh-slot-sub { font: 600 8.5px/1 ui-monospace, monospace; color: #a9a3cf; }
+.gh-key { position: absolute; top: -7px; left: -5px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 6px; font: 900 10px/16px ui-monospace, monospace; text-align: center; color: #e3e0f4; background: #0a0716; border: 1px solid var(--tone); }
+.gh-cost { position: absolute; top: -7px; right: -6px; padding: 0 5px; border-radius: 999px; font: 900 9.5px/16px ui-monospace, monospace; background: #fbbf24; color: #1c1305; border: 2px solid #0a0716; }
+.gh-slot.is-hot { animation: ghHot 1.3s ease-in-out infinite; }
+.gh-slot.is-hot::after { content: 'SIGUIENTE'; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%); font: 900 8px/1 ui-monospace, monospace; letter-spacing: 0.16em; color: var(--tone); text-shadow: 0 0 8px var(--tone); white-space: nowrap; }
+@keyframes ghHot { 0%, 100% { box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), inset 0 -8px 12px rgba(0, 0, 0, 0.55), 0 5px 0 rgba(0, 0, 0, 0.65), 0 0 12px -2px var(--tone); } 50% { box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), inset 0 -8px 12px rgba(0, 0, 0, 0.55), 0 5px 0 rgba(0, 0, 0, 0.65), 0 0 30px 4px var(--tone); } }
+@media (max-width: 640px) { .gh-slot { width: 48px; height: 60px; } .gh-hotbar { gap: 5px; padding: 8px 8px 6px; } .gh-slot-sub { display: none; } }
+@media (prefers-reduced-motion: reduce) { .gh-wave, .gh-seg::after, .gh-slot.is-hot, .gh-orb.is-low .gh-orb-glass { animation: none; } }
+
+/* ── facility backdrops: each tier has its own environment and machinery ── */
+.fb-root { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.fb-root svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fb-fan { transform-box: fill-box; transform-origin: center; animation: fbSpin 0.5s linear infinite; }
+@keyframes fbSpin { to { transform: rotate(360deg); } }
+.fb-cold { animation: fbCold 3.6s ease-in infinite; opacity: 0; }
+@keyframes fbCold { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 0.7; } 100% { transform: translateY(70px); opacity: 0; } }
+.fb-drip { animation: fbDrip 1.9s ease-in infinite; opacity: 0; }
+@keyframes fbDrip { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(22px); opacity: 0; } }
+.fb-flow { stroke-dasharray: 6 10; animation: fbFlow 1.4s linear infinite; }
+@keyframes fbFlow { to { stroke-dashoffset: -32; } }
+.fb-pulse { animation: fbPulse 2.4s ease-in-out infinite; }
+@keyframes fbPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+.fb-bob { animation: fbBob 5s ease-in-out infinite alternate; }
+@keyframes fbBob { from { transform: translateY(-2px); } to { transform: translateY(3px); } }
+.fb-cloud { animation: fbCloud 90s linear infinite; }
+@keyframes fbCloud { from { transform: translateX(-220px); } to { transform: translateX(1200px); } }
+.fb-blink { animation: fbBlink 1.6s steps(2, end) infinite; }
+@keyframes fbBlink { 50% { opacity: 0.2; } }
+@media (prefers-reduced-motion: reduce) { .fb-root * { animation: none !important; } .fb-cold, .fb-drip { opacity: 0.4; } }

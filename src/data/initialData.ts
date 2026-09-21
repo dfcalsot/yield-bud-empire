@@ -99,34 +99,45 @@ export const INITIAL_STRAINS: Strain[] = [
 export const INITIAL_FACILITIES: GrowFacility[] = [
   {
     id: 'tent_starter',
-    name: 'Carpa F2P Cultivador Casero (80x80cm)',
+    name: 'Armario de cultivo (60x60cm)',
     tier: 1,
     costFlora: 0,
     capacityPlants: 1,
     environmentBonus: 1.0,
-    description: 'Kit de inicio digital gratuito. Carpa de tela mylar reflectante, extractor básico y panel LED 150W.',
+    description: 'Tu punto de partida gratuito: un armario de madera con una lámpara pequeña y un ventilador de clip. Una sola planta, mucho mimo y paciencia.',
     unlocked: true,
+    art: 'tent_starter'
+  },
+  {
+    id: 'tent_pro',
+    name: 'Carpa de cultivo Mylar (120x120cm)',
+    tier: 2,
+    costFlora: 250,
+    capacityPlants: 4,
+    environmentBonus: 1.15,
+    description: 'Paredes reflectantes, extractor con filtro de carbón y barra LED amplia. Cuatro plantas y por fin control de olor y temperatura.',
+    unlocked: false,
     art: 'tent_starter'
   },
   {
     id: 'greenhouse_commercial',
     name: 'Invernadero Solar Automatizado',
-    tier: 2,
-    costFlora: 500,
-    capacityPlants: 4,
-    environmentBonus: 1.4,
-    description: 'Control de clima computarizado, inyección de CO2 regulada (1200 ppm) y deshumidificación de alta capacidad.',
+    tier: 3,
+    costFlora: 900,
+    capacityPlants: 8,
+    environmentBonus: 1.35,
+    description: 'Techo de cristal con ventilación natural, paneles solares y nebulización. Ocho plantas bajo el cielo real, con clima casi automático.',
     unlocked: false,
     art: 'greenhouse_commercial'
   },
   {
     id: 'lab_pharma_hydro',
     name: 'Instalación Hidropónica Pharma Grade',
-    tier: 3,
-    costFlora: 2000,
+    tier: 4,
+    costFlora: 3000,
     capacityPlants: 12,
-    environmentBonus: 2.2,
-    description: 'Sistemas aeropónicos verticales, espectro LED dinámico Samsung LM301H EVO y esterilización UV continua.',
+    environmentBonus: 1.9,
+    description: 'Cuarto limpio con racks NFT, tanques de nutrientes, esterilización UV, enfriadora y pantalla de control. Doce plantas de calidad farmacéutica.',
     unlocked: false,
     art: 'lab_pharma_hydro'
   }

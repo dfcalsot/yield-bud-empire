@@ -421,6 +421,9 @@ export interface UserAccountData {
   missions?: import('../sim/missions').MissionState;
   /** Chrono's tutorial progress (sim/tutorial.ts) */
   tutorial?: import('../sim/tutorial').TutorialState;
+  /** the installation you are using and the ones you have unlocked */
+  facilityId?: string;
+  unlockedFacilities?: string[];
   /** set on a local save whose contents were brought into a server account (kept as a hidden backup) */
   migratedTo?: string;
 }
