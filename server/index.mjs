@@ -11,6 +11,7 @@ import {
   makeChallenge, parseCookies, passwordProblem, pkcePair, rand, readJson, reservedUsername, safeEqual, usernameKey, validEmail, validUsername, verifyPasswordAsync,
 } from './lib.mjs';
 import { installEconomy } from './economy.mjs';
+import { installWallet } from './wallet.mjs';
 
 const env = process.env;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -440,6 +441,7 @@ function finishOAuth(ctx, name, data, fail) {
 /* ───────────────────────────── economy (wallet, ledger, NFTs owned by the server) ───────────────────────────── */
 
 export const economy = installEconomy({ db, route, HttpError, sessionAccount, audit, limit, readJson });
+export const wallet = installWallet({ db, route, HttpError, sessionAccount, audit, limit, readJson });
 
 /* ───────────────────────────── server ───────────────────────────── */
 

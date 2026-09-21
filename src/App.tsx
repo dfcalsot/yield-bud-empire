@@ -15,7 +15,7 @@ import { GeneticsLabView } from './components/GeneticsLabView';
 import { DispensaryV2PView } from './components/DispensaryV2PView';
 import { TokenomicsView } from './components/TokenomicsView';
 import { WhitepaperView } from './components/WhitepaperView';
-import { SolanaWalletModal } from './components/SolanaWalletModal';
+import { WalletModal } from './components/wallet/WalletModal';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { NotificationToast } from './components/NotificationToast';
@@ -150,15 +150,8 @@ function YieldBudEmpireApp() {
       <NotificationToast />
       <TxToast />
 
-      {/* Solana Wallet Modal with Mainnet/Devnet/Testnet & All Providers */}
-      <SolanaWalletModal 
-        isOpen={isWalletModalOpen} 
-        onClose={() => setIsWalletModalOpen(false)}
-        onOpenAuthModal={() => {
-          setIsWalletModalOpen(false);
-          setIsAuthModalOpen(true);
-        }}
-      />
+      {/* Game wallet: in-game address, balances, and linked Solana / Ronin wallets */}
+      <WalletModal isOpen={isWalletModalOpen} onClose={() => setIsWalletModalOpen(false)} />
 
       {/* User Login & Registration Modal (Data Isolation per User) */}
       <AuthModal

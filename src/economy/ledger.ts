@@ -47,6 +47,14 @@ export async function intent<T = unknown>(type: string, params: Record<string, u
   return j as IntentResult<T>;
 }
 
+/** the last movements of the wallet (the server's ledger), newest first */
+export async function fetchHistory(): Promise<Array<{ ts: number; kind: string; delta: number; balance: number; ref: string | null }>> {
+  try {
+    const r = await fetch('/api/econ/state', { credentials: 'same-origin' });
+    return r.ok ? (((await r.json()) as { history?: Array<{ ts: number; kind: string; delta: number; balance: number; ref: string | null }> }).history ?? []) : [];
+  } catch { return []; }
+}
+
 /** browse the player market (public offers, filtered and paged on the server) */
 export async function fetchMarket(q: { kind?: string; rarity?: string; sort?: string; page?: number } = {}): Promise<MarketPage | null> {
   try {

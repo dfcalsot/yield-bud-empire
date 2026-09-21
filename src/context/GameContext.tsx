@@ -409,9 +409,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const users = getStoredUserProfiles();
     const activeId = getActiveUserId();
     const user = users.find(u => u.id === activeId) || users[0];
-    return user?.walletAddress || '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
+    return user?.walletAddress || '';       // no made-up address: the game wallet lives on the server and external wallets are linked by signature
   });
-  const [isWalletConnected, setIsWalletConnected] = useState<boolean>(true);
+  const [isWalletConnected, setIsWalletConnected] = useState<boolean>(() => !!getStoredUserProfiles().find(u => u.id === getActiveUserId())?.walletAddress);
   const [floraBalance, setFloraBalance] = useState<number>(ECON.starterFlora);
   // market depth (grams sold recently, see sim/economy.ts) and the last daily claim
   const [marketDepth, setMarketDepth] = useState<Depth>(EMPTY_DEPTH);

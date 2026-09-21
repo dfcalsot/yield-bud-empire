@@ -65,7 +65,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onOpenWalletModal}
             className="flex items-center gap-1.5 font-medium hover:text-white transition cursor-pointer text-left"
-            title="Haz clic para cambiar entre Solana Mainnet Oficial, Devnet y Testnet"
+            title="Wallet del juego: tus $FLORA, NFT y billeteras vinculadas"
           >
             <span className={`w-2 h-2 rounded-full ${netConfig.badgeColor} animate-pulse`}></span>
             <span className="text-white font-semibold">{netConfig.name}</span>
@@ -208,7 +208,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onOpenWalletModal}
             className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 text-xs px-2 sm:px-2.5 py-1.5 rounded-lg text-neutral-300 hover:text-white transition cursor-pointer font-mono"
-            title={`Billetera Solana en ${netConfig.name}`}
+            title="Wallet del juego: vincula Solana o Ronin"
           >
             <Wallet className="w-3.5 h-3.5 text-purple-400" />
             <span className="hidden lg:inline text-[9px] px-1 py-0.2 rounded bg-neutral-800 text-neutral-400 font-mono">

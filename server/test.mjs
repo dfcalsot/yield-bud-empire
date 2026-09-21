@@ -388,6 +388,61 @@ ok('P2P: dos compradores, un solo ganador', [r1.status, r2.status].filter((x) =>
 const totalSupply = db.prepare('SELECT SUM(flora) f, SUM(minted) m, SUM(burned) b FROM wallets').get();
 ok('el libro mayor de todos cuadra con los saldos (nada se crea ni se pierde fuera del libro)', typeof totalSupply.f === 'number' && totalSupply.m >= 0 && totalSupply.b >= 0);
 
+
+// ── game wallet + linking Solana / Ronin wallets by signed challenge
+const { secp256k1: secp } = await import('@noble/curves/secp256k1');
+const { keccak_256: keccak } = await import('@noble/hashes/sha3');
+const B58A = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+const b58enc = (buf) => { let n = BigInt('0x' + buf.toString('hex')); let out = ''; while (n > 0n) { out = B58A[Number(n % 58n)] + out; n /= 58n; } for (const b of buf) { if (b === 0) out = '1' + out; else break; } return out; };
+const solKey = () => { const kp = crypto.generateKeyPairSync('ed25519'); const pub = kp.publicKey.export({ format: 'der', type: 'spki' }).slice(-32); return { address: b58enc(pub), sign: (m) => crypto.sign(null, Buffer.from(m), kp.privateKey).toString('base64') }; };
+const ronKey = (priv) => {
+  const pub = secp.getPublicKey(priv, false);
+  const address = '0x' + Buffer.from(keccak(pub.slice(1)).slice(-20)).toString('hex');
+  const sign = (m) => { const body = Buffer.from(m); const h = keccak(Buffer.concat([Buffer.from(`\x19Ethereum Signed Message:\n${body.length}`), body])); const sg = secp.sign(h, priv); return '0x' + sg.toCompactHex() + (27 + sg.recovery).toString(16); };
+  return { address, sign };
+};
+const wget = (P) => call('GET', '/api/wallet', { jar: P.jar, ip: P.ip });
+const wpost = (P, path, body) => call('POST', path, { jar: P.jar, ip: P.ip, body });
+const W1 = await mkPlayer(20), W2 = await mkPlayer(21);
+ok('wallet: sin sesión no hay wallet (401)', (await call('GET', '/api/wallet', { ip: newIp() })).status === 401);
+const w1 = (await wget(W1)).json;
+ok('wallet: cada cuenta tiene su dirección de juego, estable y distinta', /^YBE-[0-9A-F]{4}(-[0-9A-F]{4}){3}$/.test(w1.gameAddress) && (await wget(W1)).json.gameAddress === w1.gameAddress && (await wget(W2)).json.gameAddress !== w1.gameAddress && w1.links.length === 0);
+// known vector: private key 1 ↔ 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf
+const one = new Uint8Array(32); one[31] = 1;
+ok('ronin: la dirección de la clave privada 1 es la del vector conocido', ronKey(one).address === '0x7e5f4552091a69125d5dfcb7b8c2659029395bdf');
+const linkFlow = async (P, chain, key, opts = {}) => {
+  const ch = await wpost(P, '/api/wallet/challenge', { chain, address: opts.address ?? key.address });
+  if (ch.status !== 200) return { ch };
+  const sig = (opts.signer ?? key).sign(ch.json.message);
+  return { ch, ln: await wpost(P, '/api/wallet/link', { chain, address: opts.address ?? key.address, nonce: opts.nonce ?? ch.json.nonce, signature: opts.badSig ? sig.slice(0, -4) + 'aaaa' : sig }) };
+};
+const SK = solKey(), SK2 = solKey();
+let f = await linkFlow(W1, 'solana', SK);
+ok('solana: una firma ed25519 válida vincula la billetera', f.ln.status === 200 && f.ln.json.links.some((l) => l.chain === 'solana' && l.address === SK.address));
+ok('solana: la firma de otra clave se rechaza', (await linkFlow(W2, 'solana', SK2, { signer: solKey() })).ln.json.error === 'bad_signature');
+ok('solana: una firma alterada se rechaza', (await linkFlow(W2, 'solana', SK2, { badSig: true })).ln.json.error === 'bad_signature');
+ok('solana: la misma billetera no puede ser de dos cuentas', (await wpost(W2, '/api/wallet/challenge', { chain: 'solana', address: SK.address })).json.error === 'wallet_taken');
+ok('solana: una cuenta vincula una sola por cadena', (await wpost(W1, '/api/wallet/challenge', { chain: 'solana', address: SK2.address })).json.error === 'already_linked');
+ok('solana: una dirección inventada se rechaza', (await wpost(W2, '/api/wallet/challenge', { chain: 'solana', address: 'hola' })).json.error === 'bad_address' && (await wpost(W2, '/api/wallet/challenge', { chain: 'bitcoin', address: SK2.address })).json.error === 'bad_chain');
+const RK = ronKey(crypto.randomBytes(32));
+f = await linkFlow(W1, 'ronin', RK);
+ok('ronin: una firma personal_sign válida vincula la billetera (0x)', f.ln.status === 200 && f.ln.json.links.some((l) => l.chain === 'ronin' && l.address === RK.address));
+const RK2 = ronKey(crypto.randomBytes(32));
+ok('ronin: la firma de otra clave se rechaza', (await linkFlow(W2, 'ronin', RK2, { signer: ronKey(crypto.randomBytes(32)) })).ln.json.error === 'bad_signature');
+const rch = await wpost(W2, '/api/wallet/challenge', { chain: 'ronin', address: 'ronin:' + RK2.address.slice(2).toUpperCase() });
+ok('ronin: acepta la forma ronin:… y la guarda como 0x en minúsculas', rch.status === 200 && rch.json.address === RK2.address);
+const rl = await wpost(W2, '/api/wallet/link', { chain: 'ronin', address: RK2.address, nonce: rch.json.nonce, signature: RK2.sign(rch.json.message) });
+ok('ronin: vincula tras la forma ronin:…', rl.status === 200);
+ok('nonce: no se reutiliza', (await wpost(W2, '/api/wallet/link', { chain: 'ronin', address: RK2.address, nonce: rch.json.nonce, signature: RK2.sign(rch.json.message) })).json.error === 'bad_nonce');
+const W3 = await mkPlayer(22);
+const c3 = await wpost(W3, '/api/wallet/challenge', { chain: 'solana', address: SK2.address });
+ok('nonce: el de otra cuenta no sirve', (await wpost(W2, '/api/wallet/link', { chain: 'solana', address: SK2.address, nonce: c3.json.nonce, signature: SK2.sign(c3.json.message) })).json.error === 'bad_nonce');
+db.prepare('UPDATE wallet_nonces SET exp = ? WHERE nonce = ?').run(Date.now() - 1000, c3.json.nonce);
+ok('nonce: caducado se rechaza', (await wpost(W3, '/api/wallet/link', { chain: 'solana', address: SK2.address, nonce: c3.json.nonce, signature: SK2.sign(c3.json.message) })).json.error === 'nonce_expired');
+const cWrong = await wpost(W3, '/api/wallet/challenge', { chain: 'solana', address: SK2.address });
+ok('nonce: la firma de un mensaje distinto (otra cuenta) no vincula', (await wpost(W3, '/api/wallet/link', { chain: 'solana', address: SK2.address, nonce: cWrong.json.nonce, signature: SK2.sign(cWrong.json.message.replace(`#${W3.id}`, `#${W1.id}`)) })).json.error === 'bad_signature');
+const un = await wpost(W1, '/api/wallet/unlink', { chain: 'solana' });
+ok('desvincular libera la billetera para vincularla de nuevo (o a otra cuenta)', un.status === 200 && un.json.links.every((l) => l.chain !== 'solana') && (await linkFlow(W3, 'solana', SK)).ln.status === 200);
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 server.close(); mock.close();
 fs.rmSync(dir, { recursive: true, force: true });
