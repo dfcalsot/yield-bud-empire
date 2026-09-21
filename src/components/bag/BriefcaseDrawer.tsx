@@ -9,6 +9,7 @@ import { RARITY_STYLE } from '../game/GameUI';
 import { cardFromDonor, cardFromPatent, cardFromSeed } from '../../utils/nft';
 import { DESIGN_BY_ID } from '../../sim/avatars';
 import { REGION_BY_ID } from '../../sim/terroir';
+import { landRarity } from '../../sim/lands';
 
 /**
  * The player's briefcase: everything they own in one place, grouped into six tabs, searchable, with the quick actions
@@ -280,11 +281,13 @@ const CollectionTab: React.FC<{ match: Match; onOpenPlanet: () => void }> = ({ m
     <>
       {pl.length > 0 && <div className="space-y-2">{pl.map((p) => {
         const r = REGION_BY_ID[p.region];
+        const rar = landRarity(p.landRating);
+        const rc = RARITY_STYLE[rar];
         return (
-          <button key={p.id} onClick={onOpenPlanet} className="w-full text-left flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 p-3 hover:border-emerald-300/40 cursor-pointer">
+          <button key={p.id} onClick={onOpenPlanet} className="w-full text-left flex items-center gap-3 rounded-xl border bg-black/20 p-3 hover:brightness-125 cursor-pointer" style={{ borderColor: `color-mix(in srgb, ${rc.color} 45%, transparent)` }}>
             <span className="text-2xl">{r?.emoji ?? '🌎'}</span>
-            <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white truncate">{p.name}</span><span className="block text-[10.5px] font-mono text-neutral-400">{r?.name} · nota {p.landRating}/10 · {p.plants.length} plantas</span></span>
-            <Sparkles className="w-4 h-4 text-emerald-300" />
+            <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white truncate">{p.name} <span className="text-[10px] font-mono" style={{ color: rc.color }}>◆ {rc.label} · Tierra NFT</span></span><span className="block text-[10.5px] font-mono text-neutral-400">{r?.name} · nota {p.landRating}/10 · {p.plants.length} plantas</span></span>
+            <Sparkles className="w-4 h-4" style={{ color: rc.color }} />
           </button>
         );
       })}</div>}

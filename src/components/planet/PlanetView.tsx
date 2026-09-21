@@ -9,6 +9,8 @@ import { Bump } from '../ResourceBar';
 import { dayIndexOf, REGION_BY_ID, REGIONS, terroirOf, weatherOn } from '../../sim/terroir';
 import { isThirsty } from '../../sim/engine';
 import type { OwnedPlot, RegionId } from '../../types';
+import { LandCard } from '../LandCard';
+import { byRarityThenRating, landCardOf } from '../../utils/land';
 
 const useNow = (ms: number) => {
   const [now, setNow] = useState(() => Date.now());
@@ -228,22 +230,18 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
 
             {plots.length > 0 && (
               <div className="space-y-2">
-                <h3 className="font-serif text-sm font-bold tracking-[0.14em] uppercase text-amber-200">Mis parcelas</h3>
-                <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                  {plots.map((p) => {
-                    const rr = REGION_BY_ID[p.region];
+                <div className="flex items-baseline justify-between gap-2">
+                  <h3 className="font-serif text-sm font-bold tracking-[0.14em] uppercase text-amber-200">Mis tierras NFT <span className="font-mono text-[11px] text-neutral-400">{plots.length}</span></h3>
+                  <button type="button" onClick={() => onOpenMarket?.('land')} className="text-[11px] font-mono text-sky-200 underline underline-offset-2 cursor-pointer hover:text-white">Comprar más en el Mercado →</button>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="my-lands">
+                  {[...plots].map((p) => ({ p, c: landCardOf({ ...p }) })).sort((x, y) => byRarityThenRating(x.c, y.c)).map(({ p, c }) => {
                     const ready = p.plants.filter((x) => x.stage === 'ready_harvest').length;
                     const sick = p.plants.filter((x) => x.pest).length;
                     return (
-                      <button key={p.id} onClick={() => openPlot(p)} className="pl-mine" style={{ ['--rc' as string]: rr.color } as React.CSSProperties}>
-                        <span className="text-2xl">{rr.emoji}</span>
-                        <span className="min-w-0 flex-1 text-left">
-                          <span className="block font-mono font-bold text-white truncate">{p.name}</span>
-                          <span className="block text-[10px] font-mono text-neutral-400">{rr.name} · nota {p.landRating} · {p.plants.length}/36</span>
-                        </span>
-                        {ready > 0 && <span className="px-1.5 rounded bg-amber-400 text-neutral-950 text-[10px] font-black">🌾{ready}</span>}
-                        {sick > 0 && <span className="px-1.5 rounded bg-pink-400 text-neutral-950 text-[10px] font-black">🐛{sick}</span>}
-                      </button>
+                      <LandCard key={p.id} card={c} onClick={() => openPlot(p)}
+                        badges={<>{ready > 0 && <span className="px-1.5 rounded bg-amber-400 text-neutral-950 text-[10px] font-black">🌾{ready}</span>}{sick > 0 && <span className="px-1.5 rounded bg-pink-400 text-neutral-950 text-[10px] font-black">🐛{sick}</span>}</>}
+                        footer={<div className="flex items-center justify-between text-[10.5px] font-mono text-neutral-300"><span>{p.plants.length}/36 plantas</span><span className="text-emerald-300">Entrar →</span></div>} />
                     );
                   })}
                 </div>

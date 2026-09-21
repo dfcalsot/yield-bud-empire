@@ -130,7 +130,7 @@ function YieldBudEmpireApp() {
         {currentTab === 'perfil' && <ProfileView onOpenAccountModal={() => setIsProfileModalOpen(true)} />}
         {currentTab === 'planeta' && <PlanetView onOpenSeedBank={() => goToTab('semillas')} onOpenMarket={openMarket} />}
         {currentTab === 'semillas' && <SeedBankView onNavigateToCultivation={() => goToTab('cultivo')} />}
-        {currentTab === 'market' && <GrowMarketView initialCat={marketCat} />}
+        {currentTab === 'market' && <GrowMarketView initialCat={marketCat} onOpenPlanet={() => goToTab('planeta')} />}
         {currentTab === 'nutrientes' && <NutrientTablesView />}
         {currentTab === 'extraccion' && <ExtractionLabView />}
         {currentTab === 'genetica' && <GeneticsLabView />}

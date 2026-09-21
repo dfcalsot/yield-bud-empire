@@ -1073,3 +1073,8 @@ body::before {
 .pl-plot-in { animation: plPlotIn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1); }
 @keyframes plPlotIn { from { opacity: 0; transform: scale(1.1); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .pl-zoomwrap, .pl-plot-in { animation: none; transition: none; } }
+
+/* filter chips of the land shelf */
+.mk-chip { --rc: #38bdf8; display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 999px; font: 700 11px ui-sans-serif, system-ui; color: #cbd5e1; cursor: pointer; background: rgba(22, 17, 44, 0.6); border: 1px solid rgba(169, 163, 207, 0.25); transition: transform 0.12s, border-color 0.12s, background 0.12s; }
+.mk-chip:hover { transform: translateY(-1px); color: #fff; }
+.mk-chip.is-on { color: #fff; border-color: var(--rc); background: color-mix(in srgb, var(--rc) 22%, transparent); box-shadow: 0 0 14px -4px var(--rc); }

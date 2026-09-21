@@ -7,8 +7,12 @@ import { NeonButton, RARITY_STYLE } from './game/GameUI';
 import { DnaLeaf } from './icons/CannabisIcons';
 import { GeneticCardData, mintAddressFor, shortAddress } from '../utils/nft';
 
+/** what the ceremony needs from any NFT: an id, a rarity and a colour; `render` draws the card itself (genetics by default) */
+type CeremonyCard = Pick<GeneticCardData, 'id' | 'rarity' | 'color'>;
+
 interface MintCeremonyProps {
-  card: GeneticCardData;
+  card: CeremonyCard;
+  render?: (faceDown: boolean) => React.ReactNode;
   /** onchain = real game transaction (seed purchase / patent). birth = off-chain F1 hybrid. */
   variant: 'onchain' | 'birth';
   feeText?: string;
@@ -48,7 +52,7 @@ const CopyRow: React.FC<{ label: string; value: string; shown: string }> = ({ la
   );
 };
 
-export const MintCeremony: React.FC<MintCeremonyProps> = ({ card, variant, feeText, signature, slot, onClose, closeLabel = 'Continuar' }) => {
+export const MintCeremony: React.FC<MintCeremonyProps> = ({ card, render, variant, feeText, signature, slot, onClose, closeLabel = 'Continuar' }) => {
   const { walletAddress } = useGame();
   const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const [phase, setPhase] = useState<0 | 1 | 2 | 3>(reduced ? 3 : 0);
@@ -172,7 +176,7 @@ export const MintCeremony: React.FC<MintCeremonyProps> = ({ card, variant, feeTe
                 <div className="relative w-[210px]" style={{ perspective: 900 }}>
                   <div className="mint-ring absolute -inset-6 rounded-full border-2" style={{ borderColor: rc }} />
                   <div className="mint-spin" style={{ transformStyle: 'preserve-3d' }}>
-                    <GeneticCard card={card} faceDown />
+                    {render ? render(true) : <GeneticCard card={card as GeneticCardData} faceDown />}
                   </div>
                 </div>
               )}
@@ -186,7 +190,7 @@ export const MintCeremony: React.FC<MintCeremonyProps> = ({ card, variant, feeTe
             <div className="relative w-[270px] sm:w-[290px]" style={{ perspective: 1100 }}>
               {!reduced && <div className="mint-burst absolute inset-0 rounded-full pointer-events-none" style={{ background: `radial-gradient(circle, ${rc}88, transparent 65%)` }} />}
               <div className={reduced ? '' : 'mint-reveal'} style={{ transformStyle: 'preserve-3d' }}>
-                <GeneticCard card={card} />
+                {render ? render(false) : <GeneticCard card={card as GeneticCardData} />}
               </div>
             </div>
             <div className="w-full max-w-sm space-y-1.5">
