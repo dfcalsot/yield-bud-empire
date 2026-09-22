@@ -14,7 +14,8 @@ import { RosterPanel } from '../staff/RosterPanel';
 import { StaffPortrait } from '../staff/StaffCard';
 import { ListNftButton } from '../market/ListNft';
 import { ROLE_INFO } from '../../sim/staff';
-import { Tag } from 'lucide-react';
+import { Tag, Hammer } from 'lucide-react';
+import { MATERIALS, type MaterialId } from '../../sim/forge';
 
 /**
  * The player's briefcase: everything they own in one place, grouped into six tabs, searchable, with the quick actions
@@ -22,7 +23,7 @@ import { Tag } from 'lucide-react';
  * It only reads existing game state; the actions are the same ones the other screens call.
  */
 type Match = ((...xs: Array<string | undefined>) => boolean) & { searching: boolean };
-type TabId = 'recursos' | 'equipo' | 'semillas' | 'cosecha' | 'genetica' | 'coleccion' | 'plantilla';
+type TabId = 'recursos' | 'equipo' | 'semillas' | 'cosecha' | 'materiales' | 'genetica' | 'coleccion' | 'plantilla';
 
 const SEEN_KEY = 'ybe_bag_seen_at';
 const readSeen = () => { try { return Number(localStorage.getItem(SEEN_KEY)) || 0; } catch { return 0; } };
@@ -41,7 +42,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
   const [q, setQ] = useState('');
   const [seenAt, setSeenAt] = useState(0);
 
-  useEffect(() => { if (open && initialTab && ['recursos', 'equipo', 'semillas', 'cosecha', 'genetica', 'coleccion', 'plantilla'].includes(initialTab)) setTab(initialTab as TabId); }, [open, initialTab]);
+  useEffect(() => { if (open && initialTab && ['recursos', 'equipo', 'semillas', 'cosecha', 'materiales', 'genetica', 'coleccion', 'plantilla'].includes(initialTab)) setTab(initialTab as TabId); }, [open, initialTab]);
   useEffect(() => {
     if (open) { setSeenAt(readSeen()); return; }
     writeSeen(Date.now());
@@ -64,6 +65,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
     equipo: equipment.length,
     semillas: seedRows.length,
     cosecha: g.processedProducts.length + (g.rawFlowerGrams > 0 ? 1 : 0) + (g.trimGrams > 0 ? 1 : 0),
+    materiales: Object.values(g.materials).reduce((n: number, v) => n + (v ?? 0), 0),
     genetica: g.mothersFathers.length + g.patents.length,
     coleccion: g.avatars.reduce((n: number, a: { count: number }) => n + a.count, 0) + g.plots.length + g.staff.length,
     plantilla: g.staff.length,
@@ -75,6 +77,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
     { id: 'equipo', label: 'Equipo', icon: <Wrench className="w-4 h-4" />, fresh: newIn(equipment) },
     { id: 'semillas', label: 'Semillas', icon: <Sprout className="w-4 h-4" /> },
     { id: 'cosecha', label: 'Cosecha', icon: <Package className="w-4 h-4" /> },
+    { id: 'materiales', label: 'Materiales', icon: <Hammer className="w-4 h-4" /> },
     { id: 'genetica', label: 'Genética', icon: <FlaskConical className="w-4 h-4" /> },
     { id: 'coleccion', label: 'NFT', icon: <Crown className="w-4 h-4" /> },
     { id: 'plantilla', label: 'Plantilla', icon: <Users className="w-4 h-4" /> },
@@ -118,6 +121,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
           {tab === 'equipo' && <EquipmentTab match={match} equipment={equipment} seenAt={seenAt} />}
           {tab === 'semillas' && <SeedsTab match={match} rows={seedRows} onDone={onClose} onNavigate={onNavigate} />}
           {tab === 'cosecha' && <HarvestTab match={match} onNavigate={(t) => { onClose(); onNavigate(t); }} />}
+          {tab === 'materiales' && <MaterialsTab match={match} onOpenForge={() => { onClose(); onNavigate('forja'); }} />}
           {tab === 'genetica' && <GeneticsTab match={match} />}
           {tab === 'plantilla' && <RosterPanel onHire={() => { onClose(); onNavigate('market:staff'); }} />}
           {tab === 'coleccion' && <CollectionTab match={match} onOpenPlanet={() => { onClose(); onNavigate('planeta'); }} onOpenRoster={() => setTab('plantilla')} onOpenMarket={() => { onClose(); onNavigate('market:p2p'); }} />}
@@ -277,6 +281,30 @@ const GeneticsTab: React.FC<{ match: Match }> = ({ match }) => {
     <div className="grid grid-cols-2 gap-3">
       {donors.map((d) => <GeneticCard key={d.id} card={cardFromDonor(d)} compact />)}
       {pats.map((p) => <GeneticCard key={p.id} card={cardFromPatent(p, strains.find((s) => s.name === p.strainName))} compact />)}
+    </div>
+  );
+};
+
+/** the forge's materials: what you have, where it comes from and what it is for */
+const MaterialsTab: React.FC<{ match: Match; onOpenForge: () => void }> = ({ match, onOpenForge }) => {
+  const { materials, forgeJobs } = useGame();
+  const rows = MATERIALS.filter((m) => (materials[m.id as MaterialId] ?? 0) > 0 && match(m.name, m.use, m.family));
+  const total = MATERIALS.reduce((n, m) => n + (materials[m.id as MaterialId] ?? 0), 0);
+  return (
+    <div className="space-y-3" data-testid="materials-tab">
+      <div className="flex items-center justify-between rounded-xl border border-amber-300/25 bg-amber-400/5 px-3 py-2">
+        <span className="text-[12px] text-neutral-200">{forgeJobs.length > 0 ? `${forgeJobs.length} trabajo${forgeJobs.length > 1 ? 's' : ''} en la forja` : 'Fabrica más materiales en la Forja'}</span>
+        <button type="button" className="sr-btn sr-btn--lime !py-1" onClick={onOpenForge}><Hammer className="w-3.5 h-3.5" />Ir a la Forja</button>
+      </div>
+      {rows.length === 0 ? (
+        <Empty searching={match.searching} icon={<Hammer className="w-5 h-5" />} title={total === 0 ? 'Aún no tienes materiales' : 'Nada coincide con tu búsqueda'} hint="Al cosechar te queda fibra del tallo; con ella y el trim se fabrican cera, tela, papel y más en la Forja." action={{ label: 'Abrir la Forja', onClick: onOpenForge }} />
+      ) : rows.map((m) => (
+        <div key={m.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 p-3" data-material={m.id}>
+          <span className="text-2xl w-9 text-center" aria-hidden>{m.icon}</span>
+          <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white truncate">{m.name}</span><span className="block text-[11px] text-neutral-400 leading-snug">{m.use}</span></span>
+          <span className="font-mono font-black text-lg text-amber-300" data-material-count>{materials[m.id as MaterialId]}</span>
+        </div>
+      ))}
     </div>
   );
 };

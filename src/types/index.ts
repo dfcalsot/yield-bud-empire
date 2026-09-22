@@ -410,6 +410,9 @@ export interface UserAccountData {
   playerXp: number;
   rawFlowerGrams: number;
   trimGrams: number;
+  /** forge materials by id and the forge jobs in progress (sim/forge.ts) */
+  materials?: Record<string, number>;
+  forgeJobs?: Array<{ id: string; recipeId: string; qty: number; startedAt: number; endsAt: number }>;
   brand: VirtualBrand;
   savedAt: number;
   /** real-time engine bookkeeping (offline catch-up) and lab/automation state */

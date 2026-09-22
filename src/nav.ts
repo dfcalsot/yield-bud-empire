@@ -7,6 +7,7 @@ import {
   NutrientBottle,
   RosinPress,
   DnaLeaf,
+  ForgeAnvil,
   GrowLight,
   Dispensary,
   BookLeaf,
@@ -22,6 +23,7 @@ export type TabId =
   | 'market'
   | 'nutrientes'
   | 'extraccion'
+  | 'forja'
   | 'genetica'
   | 'dispensario'
   | 'tokenomica'
@@ -48,6 +50,7 @@ export const NAV_TABS: Record<TabId, NavTab> = {
   semillas: { id: 'semillas', label: 'Semillas', icon: Seed },
   extraccion: { id: 'extraccion', label: 'Extracción', icon: RosinPress },
   genetica: { id: 'genetica', label: 'Genética', icon: DnaLeaf },
+  forja: { id: 'forja', label: 'Forja', icon: ForgeAnvil },
   market: { id: 'market', label: 'Grow Market', icon: GrowLight },
   dispensario: { id: 'dispensario', label: 'Dispensario', icon: Dispensary },
   tokenomica: { id: 'tokenomica', label: 'Tokenómica', icon: LeafCoin },
@@ -59,7 +62,7 @@ export const NAV_TABS: Record<TabId, NavTab> = {
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'cultivo', label: 'Cultivo', icon: CannabisLeaf, tabs: ['cultivo', 'planeta', 'nutrientes'] },
   { id: 'semillas', label: 'Semillas', icon: Seed, tabs: ['semillas'] },
-  { id: 'laboratorio', label: 'Laboratorio', icon: FlaskLeaf, tabs: ['extraccion', 'genetica'] },
+  { id: 'laboratorio', label: 'Laboratorio', icon: FlaskLeaf, tabs: ['extraccion', 'forja', 'genetica'] },
   { id: 'mercado', label: 'Mercado', icon: CuringJar, tabs: ['market', 'dispensario'] },
   { id: 'cripto', label: 'Cripto', icon: LeafCoin, tabs: ['tokenomica', 'whitepaper'] },
   { id: 'perfil', label: 'Perfil', icon: ProfileBadge, tabs: ['perfil'] },
@@ -72,6 +75,7 @@ export const TAB_ZONE: Record<TabId, string> = {
   nutrientes: '#c4b5fd',   // violet (chemistry)
   semillas: '#f9a8d4',     // pink (genetics)
   extraccion: '#c4b5fd',   // violet (lab)
+  forja: '#fbbf24',        // amber (forge)
   genetica: '#f9a8d4',     // pink
   market: '#fcd34d',       // gold
   dispensario: '#fdba74',  // peach

@@ -149,6 +149,7 @@ export const CATALOG: CatalogItem[] = [
   { id: 'lic_bubble', category: 'license', kind: 'license', name: 'Licencia Lavadora Bubble Hash', brand: 'Yield Labs', tier: 2, priceFlora: 150, priceSol: 0.15, stationId: 'bubble', description: 'Desbloquea la extracción con agua y hielo.', specs: [{ label: 'Estación', value: 'Lavadora Bubble Hash' }] },
   { id: 'lic_terpsoup', category: 'license', kind: 'license', name: 'Licencia Sopa de Terpenos', brand: 'Yield Labs', tier: 3, priceFlora: 300, priceSol: 0.3, stationId: 'terpsoup', description: 'Desbloquea el reactor de sauce y diamantes de THCa.', specs: [{ label: 'Estación', value: 'Reactor de Terpenos' }] },
   { id: 'lic_rotavap', category: 'license', kind: 'license', name: 'Licencia Rotavapor (RSO · Aceites · Gomitas)', brand: 'Yield Labs', tier: 3, priceFlora: 400, priceSol: 0.4, stationId: 'rotavap', description: 'Desbloquea la destilación al vacío y las gomitas.', specs: [{ label: 'Estación', value: 'Rotavapor' }] },
+  { id: 'lic_forge', category: 'license', kind: 'license', name: 'Forja de materiales', brand: 'Yield Labs', tier: 2, priceFlora: 250, priceSol: 0.25, stationId: 'forge', description: 'Yunque, telar y horno: fabrica materiales y derivados con lo que la planta deja atrás.', specs: [{ label: 'Estación', value: 'Forja' }, { label: 'Consumo', value: '0,8 kWh por trabajo' }] },
   { id: 'lic_hplc', category: 'license', kind: 'license', name: 'Licencia Cromatógrafo HPLC', brand: 'Yield Labs', tier: 4, priceFlora: 500, priceSol: 0.5, stationId: 'hplc', description: 'Desbloquea el análisis de cannabinoides y los COA.', specs: [{ label: 'Estación', value: 'Cromatógrafo HPLC' }] },
 ];
 
@@ -353,5 +354,5 @@ export const USE = {
   marketFee: 0.025,           // share of every dispensary sale that is burned (HashKings: 2.5 %)
   waterPerPlantManual: 0.5,   // L per watering
   nutrientPerPlant: 3,        // ml per feeding
-  labKwhPerCycle: { rosin: 0.6, bubble: 0.5, terpsoup: 1.4, kief: 0.4, roller: 0.5, rotavap: 2.0, hplc: 0.8 } as Record<string, number>,
+  labKwhPerCycle: { rosin: 0.6, bubble: 0.5, terpsoup: 1.4, kief: 0.4, roller: 0.5, rotavap: 2.0, hplc: 0.8, forge: 0.8 } as Record<string, number>,
 };

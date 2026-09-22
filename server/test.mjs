@@ -459,8 +459,8 @@ ok('regalo: un id inventado se rechaza', (await intent(G1, 'open_gift', { giftId
 
 // ── every lab product can be sold, priced by its recipe (before, only 4 product types were known to the server)
 const SP = await mkPlayer(40), SP2 = await mkPlayer(41); await state(SP); await state(SP2);
-const sellOk = await Promise.all(['bubble_hash', 'kief', 'preroll', 'cigar', 'rso', 'gummies', 'terpene_sauce'].map(async (t, i) => (await intent(await mkPlayer(50 + i), 'sell', { type: t, grams: 3 })).status === 200));
-ok('venta: los productos del laboratorio (hash, kief, puros, RSO, gomitas, sopa) se pueden vender en el servidor', sellOk.every(Boolean));
+const sellOk = await Promise.all(['bubble_hash', 'kief', 'preroll', 'cigar', 'rso', 'gummies', 'terpene_sauce', 'balm', 'candle', 'tincture'].map(async (t, i) => (await intent(await mkPlayer(50 + i), 'sell', { type: t, grams: 3 })).status === 200));
+ok('venta: los productos del laboratorio y de la forja (hash, kief, puros, RSO, gomitas, sopa, bálsamo, vela, tintura) se pueden vender en el servidor', sellOk.every(Boolean));
 ok('venta: el merch V2P y un producto inventado se rechazan', (await intent(SP, 'sell', { type: 'v2p_merch', grams: 1 })).json.error === 'bad_params' && (await intent(SP, 'sell', { type: 'inventado', grams: 1 })).json.error === 'bad_params');
 const gDiamonds = (await intent(SP, 'sell', { type: 'terpene_sauce', recipe: 'diamonds', grams: 4 })).json.result.gross;
 const gSauce = (await intent(SP2, 'sell', { type: 'terpene_sauce', grams: 4 })).json.result.gross;

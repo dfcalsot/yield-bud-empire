@@ -11,6 +11,7 @@ import { SeedBankView } from './components/SeedBankView';
 import { GrowMarketView } from './components/GrowMarketView';
 import { NutrientTablesView } from './components/NutrientTablesView';
 import { ExtractionLabView } from './components/ExtractionLabView';
+import { ForgeView } from './components/forge/ForgeView';
 import { GeneticsLabView } from './components/GeneticsLabView';
 import { DispensaryV2PView } from './components/DispensaryV2PView';
 import { TokenomicsView } from './components/TokenomicsView';
@@ -134,6 +135,7 @@ function YieldBudEmpireApp() {
         {currentTab === 'market' && <GrowMarketView initialCat={marketCat} onOpenPlanet={() => goToTab('planeta')} onOpenBag={() => { setBagTab('plantilla'); setBagOpen(true); }} />}
         {currentTab === 'nutrientes' && <NutrientTablesView />}
         {currentTab === 'extraccion' && <ExtractionLabView />}
+        {currentTab === 'forja' && <ForgeView />}
         {currentTab === 'genetica' && <GeneticsLabView />}
         {currentTab === 'dispensario' && <DispensaryV2PView />}
         {currentTab === 'tokenomica' && <TokenomicsView />}

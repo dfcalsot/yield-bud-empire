@@ -69,6 +69,8 @@ import {
 } from '../utils/audio';
 
 import { applyTechnique, canTrain, TECHNIQUE_BY_ID } from '../sim/techniques';
+import { addMaterials, canCraft, craftTotals, FIBRE_PER_FLOWER_GRAM, FORGE_RECIPE_BY_ID, MATERIAL_BY_ID, type Materials } from '../sim/forge';
+import { PRODUCT_PRICE } from '../sim/products';
 import { boostWithinPhase, isHarvestable, phaseOf, PHASES, stageOf as stageFromProgress } from '../sim/phases';
 import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
 import { landOffers } from '../sim/lands';
@@ -107,6 +109,8 @@ export interface FertigationInput {
   scope: 'one' | 'all';
   brandName?: string;
 }
+
+export interface ForgeJob { id: string; recipeId: string; qty: number; startedAt: number; endsAt: number }
 
 interface GameContextType {
   // Wallet / Solana & Networks
@@ -212,6 +216,11 @@ interface GameContextType {
   // Inventory & Processing
   rawFlowerGrams: number;
   trimGrams: number;
+  /** what the forge makes and the harvest leaves (fibre, wax, cloth, kits…) */
+  materials: Materials;
+  forgeJobs: ForgeJob[];
+  /** start `qty` crafts of a forge recipe: validates, takes the inputs, burns the fee and runs a real-time job */
+  forgeCraft: (recipeId: string, qty: number) => boolean;
   processedProducts: ProcessedProduct[];
   machines: MachineEquipment[];
   processRawFlower: (type: 'cured_flower' | 'live_rosin' | 'full_spec_oil' | 'pure_terpenes', gramsInput: number) => boolean;
@@ -542,6 +551,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Inventory
   const [rawFlowerGrams, setRawFlowerGrams] = useState<number>(8);
+  const [materials, setMaterials] = useState<Materials>({});
+  const [forgeJobs, setForgeJobs] = useState<ForgeJob[]>([]);
   const [trimGrams, setTrimGrams] = useState<number>(5);
   const [processedProducts, setProcessedProducts] = useState<ProcessedProduct[]>([
     {
@@ -847,6 +858,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       playerXp,
       rawFlowerGrams,
       trimGrams,
+      materials,
+      forgeJobs,
       brand,
       lastSimAt: lastSimRef.current,
       machines,
@@ -889,6 +902,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playerXp,
     rawFlowerGrams,
     trimGrams,
+    materials,
+    forgeJobs,
     brand,
     machines,
     processedProducts,
@@ -954,6 +969,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (typeof saved.playerXp === 'number') setPlayerXp(saved.playerXp);
       if (typeof saved.rawFlowerGrams === 'number') setRawFlowerGrams(saved.rawFlowerGrams);
       if (typeof saved.trimGrams === 'number') setTrimGrams(saved.trimGrams);
+      // materials and forge jobs: only what the catalogue knows, never negative
+      if (saved.materials && typeof saved.materials === 'object') {
+        const m: Materials = {};
+        for (const [k, v] of Object.entries(saved.materials as Record<string, unknown>)) if (k in MATERIAL_BY_ID && typeof v === 'number' && v > 0) m[k as keyof Materials] = Math.floor(v);
+        setMaterials(m);
+      } else setMaterials({});
+      setForgeJobs(Array.isArray(saved.forgeJobs) ? (saved.forgeJobs as ForgeJob[]).filter(j => j && FORGE_RECIPE_BY_ID[j.recipeId] && Number.isFinite(j.endsAt)).slice(0, 3) : []);
       if (saved.brand) setBrand(saved.brand);
       if (Array.isArray(saved.machines)) setMachines(INITIAL_MACHINES.map(m => saved.machines!.find(x => x.id === m.id) ?? m));
       if (Array.isArray(saved.processedProducts)) setProcessedProducts(saved.processedProducts);
@@ -1660,6 +1682,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setRawFlowerGrams(prev => prev + flowerHarvested);
     setTrimGrams(prev => prev + trimHarvested);
+    if (flowerHarvested > 0) setMaterials(prev => addMaterials(prev, { fibra_cruda: Math.round(flowerHarvested * FIBRE_PER_FLOWER_GRAM) }));
 
     updateQuestProgress('quest_harvest_run', 1);
     if (!maleTarget) reportEvent('harvest', 1);
@@ -1730,6 +1753,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setRawFlowerGrams(prev => prev + totalFlower);
     setTrimGrams(prev => prev + totalTrim);
+    if (totalFlower > 0) setMaterials(prev => addMaterials(prev, { fibra_cruda: Math.round(totalFlower * FIBRE_PER_FLOWER_GRAM) }));
     updateQuestProgress('quest_harvest_run', readyIndices.length);
     reportEvent('harvest', readyIndices.length - maleCut);
     addXp(readyIndices.length * 150, 'Cosecha Sala Indoor');
@@ -2228,6 +2252,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.filter(p => p.stage !== 'ready_harvest') }));
     setRawFlowerGrams(prev => prev + flower);
     setTrimGrams(prev => prev + trim);
+    if (flower > 0) setMaterials(prev => addMaterials(prev, { fibra_cruda: Math.round(flower * FIBRE_PER_FLOWER_GRAM) }));
     updateQuestProgress('quest_harvest_run', ready.length);
     reportEvent('harvest', ready.length - maleCut);
     addXp(ready.length * 180, 'Cosecha en parcela');
@@ -2879,6 +2904,59 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Industrial lab cycle: consumes flower/trim, burns a $FLORA fee (deflationary sink), wears the machine
   // and mints a product batch. Used by the animated Planta Industrial stations.
+  /* ───────── forge: real-time crafting of materials and derived products ───────── */
+  const forgeJobsRef = useRef<ForgeJob[]>([]); forgeJobsRef.current = forgeJobs;
+  const forgeDone = useRef<Set<string>>(new Set());
+  const forgeCraft = (recipeId: string, qty: number): boolean => {
+    const r = FORGE_RECIPE_BY_ID[recipeId];
+    if (!r) return false;
+    const check = canCraft({ flower: rawFlowerGrams, trim: trimGrams, materials, flora: floraBalance, tier: currentFacility.tier, hasForge: ownsStation(assets, 'forge'), jobs: forgeJobs.length }, r, qty);
+    if (!check.ok) { showNotification(check.message, 'info'); return false; }
+    if (!takeStation('forge')) return false;      // licence checked again + electricity
+    const t = craftTotals(r, qty);
+    playClickSound();
+    if (t.flower > 0) setRawFlowerGrams(prev => Math.max(0, Number((prev - t.flower).toFixed(2))));
+    if (t.trim > 0) setTrimGrams(prev => Math.max(0, Number((prev - t.trim).toFixed(2))));
+    if (Object.keys(t.materials).length) setMaterials(prev => addMaterials(prev, t.materials, -1));
+    recordBurnTransaction('BURN_PROCESS', t.fee, `Yield Bud Empire Forja: ${r.name} ×${qty}`);
+    const now = Date.now();
+    setForgeJobs(prev => [...prev, { id: `fj-${now}-${Math.random().toString(36).slice(2, 6)}`, recipeId, qty, startedAt: now, endsAt: now + t.minutes * 60_000 }]);
+    showNotification(`Forja: ${r.name} ×${qty} en marcha (${t.minutes} min). Se quemaron ${t.fee} $FLORA.`, 'success');
+    return true;
+  };
+  // finished jobs deliver their materials or products (also the ones that finished while the player was away)
+  useEffect(() => {
+    const tick = () => {
+      const now = Date.now();
+      const done = forgeJobsRef.current.filter(j => j.endsAt <= now && !forgeDone.current.has(j.id));
+      if (done.length === 0) return;
+      for (const j of done) {
+        forgeDone.current.add(j.id);
+        const r = FORGE_RECIPE_BY_ID[j.recipeId];
+        if (!r) continue;
+        const t = craftTotals(r, j.qty);
+        if (Object.keys(t.outMaterials).length) setMaterials(prev => addMaterials(prev, t.outMaterials));
+        if (r.out.product) {
+          const pr = r.out.product;
+          const grams = t.outProductGrams;
+          setProcessedProducts(prev => [{
+            id: `prod-forge-${j.id}`, name: `${pr.name.replace(/ \(.*\)$/, '')} ×${j.qty}`, type: pr.type, recipeId: r.id, strainOrigin: 'Forja',
+            quantityGrams: grams, potency: pr.potency, qualityScore: 90, marketValueFlora: Math.round(grams * PRODUCT_PRICE[pr.type] * ECON.priceScale),
+            createdAt: now, batchHash: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`,
+          }, ...prev]);
+        }
+        addXp(40 * j.qty, 'Forja');
+        reportEvent('lab', 1);
+        showNotification(`Forja terminada: ${r.name} ×${j.qty}. Míralo en el Maletín.`, 'success');
+      }
+      const ids = new Set(done.map(j => j.id));
+      setForgeJobs(prev => prev.filter(j => !ids.has(j.id)));
+    };
+    tick();
+    const t = setInterval(tick, 2000);
+    return () => clearInterval(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const runLabProcess = (spec: LabRunSpec): ProcessedProduct | null => {
     const stock = spec.inputKind === 'flower' ? rawFlowerGrams : trimGrams;
     if (spec.grams <= 0 || stock < spec.grams) {
@@ -3405,6 +3483,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         rawFlowerGrams,
         trimGrams,
+        materials,
+        forgeJobs,
+        forgeCraft,
         processedProducts,
         machines,
         processRawFlower,

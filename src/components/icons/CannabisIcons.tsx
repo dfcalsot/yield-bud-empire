@@ -135,6 +135,16 @@ export const DnaLeaf: IconComponent = (props) => (
   </Svg>
 );
 
+/** Anvil with a spark and a leaf — the forge. */
+export const ForgeAnvil: IconComponent = (props) => (
+  <Svg {...props}>
+    <path d="M4 8h13.5c0 2.6-1.9 4.2-4.6 4.4V14h2.2v3.6H8V14h2.2v-1.6C7 12.2 5.4 10.6 4 8Z" />
+    <path d="M17.5 8H21c-.4 1.6-1.7 2.6-3.6 2.8" />
+    <path d="M6.5 20.5h11" />
+    <path d="M9 4.5 8 2.6M12.5 4.5V2M16 4.5l1-1.9" />
+  </Svg>
+);
+
 /** LED grow light with rays — grow hardware. */
 export const GrowLight: IconComponent = (props) => (
   <Svg {...props}>
