@@ -413,6 +413,9 @@ export interface UserAccountData {
   /** forge materials by id and the forge jobs in progress (sim/forge.ts) */
   materials?: Record<string, number>;
   forgeJobs?: Array<{ id: string; recipeId: string; qty: number; startedAt: number; endsAt: number }>;
+  /** chamber crosses in progress and the Cría diary (sim/breeding.ts) */
+  breedingJobs?: Array<{ id: string; motherId: string; fatherId: string; name: string; generation: number; useReagent: boolean; seed: number; startedAt: number; endsAt: number }>;
+  breedingLog?: Array<{ id: string; label: string; strainName: string; generation: number; mutated: boolean; seeds: number; createdAt: number }>;
   brand: VirtualBrand;
   savedAt: number;
   /** real-time engine bookkeeping (offline catch-up) and lab/automation state */

@@ -70,6 +70,10 @@ import {
 
 import { applyTechnique, canTrain, TECHNIQUE_BY_ID } from '../sim/techniques';
 import { addMaterials, canCraft, craftTotals, FIBRE_PER_FLOWER_GRAM, FORGE_RECIPE_BY_ID, MATERIAL_BY_ID, type Materials } from '../sim/forge';
+import {
+  BREEDING_LIMITS, breedingCost, canBreed, capGeneration, CHAMBER_FEE, CROSS_MINUTES, GEN_LABEL, inheritTraits, lineageLabel, mulberry32, seedBatchSize,
+  type Generation,
+} from '../sim/breeding';
 import { PRODUCT_PRICE } from '../sim/products';
 import { boostWithinPhase, isHarvestable, phaseOf, PHASES, stageOf as stageFromProgress } from '../sim/phases';
 import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
@@ -111,6 +115,11 @@ export interface FertigationInput {
 }
 
 export interface ForgeJob { id: string; recipeId: string; qty: number; startedAt: number; endsAt: number }
+
+/** a chamber cross in progress; `seed` freezes the RNG so the outcome is fixed the moment the cross starts, not when it resolves. */
+export interface BreedingJob { id: string; motherId: string; fatherId: string; name: string; generation: Generation; useReagent: boolean; seed: number; startedAt: number; endsAt: number }
+/** one row of the Cría diary: what a chamber cross produced. */
+export interface BreedingLogEntry { id: string; label: string; strainName: string; generation: Generation; mutated: boolean; seeds: number; createdAt: number }
 
 interface GameContextType {
   // Wallet / Solana & Networks
@@ -221,6 +230,10 @@ interface GameContextType {
   forgeJobs: ForgeJob[];
   /** start `qty` crafts of a forge recipe: validates, takes the inputs, burns the fee and runs a real-time job */
   forgeCraft: (recipeId: string, qty: number) => boolean;
+  breedingJobs: BreedingJob[];
+  breedingLog: BreedingLogEntry[];
+  /** start a chamber cross: validates the cámara, the materials and the phase-driven cooldown, then runs a real-time job (hours, not instant) */
+  crossBreed: (motherId: string, fatherId: string, name: string, useReagent: boolean) => boolean;
   processedProducts: ProcessedProduct[];
   machines: MachineEquipment[];
   processRawFlower: (type: 'cured_flower' | 'live_rosin' | 'full_spec_oil' | 'pure_terpenes', gramsInput: number) => boolean;
@@ -553,6 +566,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [rawFlowerGrams, setRawFlowerGrams] = useState<number>(8);
   const [materials, setMaterials] = useState<Materials>({});
   const [forgeJobs, setForgeJobs] = useState<ForgeJob[]>([]);
+  const [breedingJobs, setBreedingJobs] = useState<BreedingJob[]>([]);
+  const [breedingLog, setBreedingLog] = useState<BreedingLogEntry[]>([]);
   const [trimGrams, setTrimGrams] = useState<number>(5);
   const [processedProducts, setProcessedProducts] = useState<ProcessedProduct[]>([
     {
@@ -860,6 +875,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       trimGrams,
       materials,
       forgeJobs,
+      breedingJobs,
+      breedingLog,
       brand,
       lastSimAt: lastSimRef.current,
       machines,
@@ -904,6 +921,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     trimGrams,
     materials,
     forgeJobs,
+    breedingJobs,
+    breedingLog,
     brand,
     machines,
     processedProducts,
@@ -976,6 +995,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setMaterials(m);
       } else setMaterials({});
       setForgeJobs(Array.isArray(saved.forgeJobs) ? (saved.forgeJobs as ForgeJob[]).filter(j => j && FORGE_RECIPE_BY_ID[j.recipeId] && Number.isFinite(j.endsAt)).slice(0, 3) : []);
+      setBreedingJobs(Array.isArray(saved.breedingJobs) ? (saved.breedingJobs as BreedingJob[]).filter(j => j && Number.isFinite(j.endsAt)).slice(0, BREEDING_LIMITS.jobs) : []);
+      setBreedingLog(Array.isArray(saved.breedingLog) ? (saved.breedingLog as BreedingLogEntry[]).slice(0, 100) : []);
       if (saved.brand) setBrand(saved.brand);
       if (Array.isArray(saved.machines)) setMachines(INITIAL_MACHINES.map(m => saved.machines!.find(x => x.id === m.id) ?? m));
       if (Array.isArray(saved.processedProducts)) setProcessedProducts(saved.processedProducts);
@@ -2957,6 +2978,85 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* ───────── cría: real-time chamber cross, gated by the Cámara de cría, materials and generation stability ─────────
+   * Simplification vs. the plan's letter: a Madre/Padre in the sanctuary (`mothersFathers`) is already a preserved, ready
+   * specimen (not a live plant going through phases), so "she only pollinates in flowering, seeds mature in maturation" is
+   * modelled as the cross's own real-time duration (CROSS_MINUTES) rather than a separate stage on the sanctuary record. */
+  const breedingJobsRef = useRef<BreedingJob[]>([]); breedingJobsRef.current = breedingJobs;
+  const breedingDone = useRef<Set<string>>(new Set());
+  const crossBreed = (motherId: string, fatherId: string, name: string, useReagent: boolean): boolean => {
+    const mother = mothersFathers.find(m => m.id === motherId);
+    const father = mothersFathers.find(f => f.id === fatherId);
+    if (!mother || !father) { showNotification('Selecciona una Madre y un Padre válidos.', 'info'); return false; }
+    const stock = { tier: currentFacility.tier, hasChamber: ownsStation(assets, 'breeding'), jobs: breedingJobs.length, materials };
+    const check = canBreed(stock, motherId, fatherId, useReagent);
+    if (!check.ok) { showNotification(check.message, 'info'); return false; }
+    if (!takeStation('breeding')) return false; // licence checked again + electricity
+    const generation = capGeneration(Math.max(mother.generation ?? 1, father.generation ?? 1));
+    setMaterials(prev => addMaterials(prev, breedingCost(useReagent), -1));
+    recordBurnTransaction('BURN_PROCESS', CHAMBER_FEE, `Yield Bud Empire Cría: cruce en cámara ${lineageLabel(mother.strain, father.strain, generation)}`);
+    const now = Date.now();
+    const seed = (now ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+    setBreedingJobs(prev => [...prev, {
+      id: `bj-${now}-${Math.random().toString(36).slice(2, 6)}`, motherId, fatherId, generation, useReagent, seed,
+      name: name.trim() || `${mother.strain.name} x ${father.strain.name}`, startedAt: now, endsAt: now + CROSS_MINUTES * 60_000,
+    }]);
+    showNotification(`Cría: cruce en cámara de ${mother.name} x ${father.name} en marcha (${Math.round(CROSS_MINUTES / 60)} h). Se quemaron ${CHAMBER_FEE} $FLORA.`, 'success');
+    return true;
+  };
+  // finished chamber crosses deliver a new stabilised strain and a seed batch (also the ones that finished while away)
+  useEffect(() => {
+    const tick = () => {
+      const now = Date.now();
+      const done = breedingJobsRef.current.filter(j => j.endsAt <= now && !breedingDone.current.has(j.id));
+      if (done.length === 0) return;
+      for (const j of done) {
+        breedingDone.current.add(j.id);
+        const mother = mothersFathers.find(m => m.id === j.motherId);
+        const father = mothersFathers.find(f => f.id === j.fatherId);
+        if (!mother || !father) continue; // the sanctuary record was removed/listed away meanwhile
+        const rng = mulberry32(j.seed);
+        const { traits, mutated } = inheritTraits(mother.strain, father.strain, j.generation, j.useReagent, rng);
+        const newStrain: Strain = {
+          id: `strain-cria-${j.id}`,
+          name: j.name,
+          lineage: lineageLabel(mother.strain, father.strain, j.generation),
+          type: 'Híbrido',
+          thcPercentage: traits.thcPercentage,
+          cbdPercentage: traits.cbdPercentage,
+          terpenes: traits.terpenes,
+          difficulty: 'Maestro',
+          cycleDurationSeconds: traits.cycleDurationSeconds,
+          resinYieldMultiplier: traits.resinYieldMultiplier,
+          colorTheme: mutated ? '#fb7185' : '#c084fc',
+          description: `Cruce de cámara ${lineageLabel(mother.strain, father.strain, j.generation)}${mutated ? ' · mutación detectada' : ''}.`,
+        };
+        const seeds = seedBatchSize(mother.vigorRating ?? 60, true, staffMods.seedBonus, rng);
+        const seedId = `cria_seed_${j.id}`;
+        const newSeedItem: SeedBankItem = {
+          id: seedId, name: `${newStrain.name} (${GEN_LABEL[j.generation]})`, breeder: `${brand.name} Cámara de Cría`,
+          seedType: 'Regular', lineage: newStrain.lineage, thcPercentage: newStrain.thcPercentage, cbdPercentage: newStrain.cbdPercentage,
+          floweringWeeks: 9, yieldGramsPerPlant: 165, difficulty: 'Avanzado', dominantTerpenes: ['Mirceno', 'Limoneno', 'Cariofileno'],
+          priceFlora: 0, priceSol: 0, description: newStrain.description, seedsPerPack: seeds, imageTheme: 'emerald', inStock: true, strainTemplate: newStrain,
+        };
+        setStrains(prev => [...prev, newStrain]);
+        setSeedBank(prev => [newSeedItem, ...prev]);
+        setSeedInventory(prev => ({ ...prev, [seedId]: (prev[seedId] || 0) + seeds }));
+        setBreedingLog(prev => [{
+          id: j.id, label: `${mother.name} x ${father.name}`, strainName: newStrain.name, generation: j.generation, mutated, seeds, createdAt: now,
+        }, ...prev].slice(0, 100));
+        addXp(260, 'Cría en cámara');
+        reportEvent('breed', 1);
+        showNotification(`Cría terminada: "${newStrain.name}" (${GEN_LABEL[j.generation]}${mutated ? ', mutación' : ''}) — ${seeds} semillas en tu inventario.`, 'success');
+      }
+      const ids = new Set(done.map(j => j.id));
+      setBreedingJobs(prev => prev.filter(j => !ids.has(j.id)));
+    };
+    tick();
+    const t = setInterval(tick, 2000);
+    return () => clearInterval(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const runLabProcess = (spec: LabRunSpec): ProcessedProduct | null => {
     const stock = spec.inputKind === 'flower' ? rawFlowerGrams : trimGrams;
     if (spec.grams <= 0 || stock < spec.grams) {
@@ -3486,6 +3586,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         materials,
         forgeJobs,
         forgeCraft,
+        breedingJobs,
+        breedingLog,
+        crossBreed,
         processedProducts,
         machines,
         processRawFlower,

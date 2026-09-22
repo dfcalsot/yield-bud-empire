@@ -145,6 +145,21 @@ export const ForgeAnvil: IconComponent = (props) => (
   </Svg>
 );
 
+/** Sealed incubation chamber with two seeds inside — Cría (breeding). */
+export const BreedingChamber: IconComponent = (props) => (
+  <Svg {...props}>
+    <rect x="4.5" y="4" width="15" height="16.5" rx="2.4" />
+    <path d="M4.5 9.5h15" strokeWidth={1.2} />
+    <g transform="translate(9.4 14.5) rotate(-18)">
+      <path d="M0 -3.6C1.8 -2.4 2.4 0 1.9 2.1C1.6 3.5 0.9 4.6 0 4.6C-0.9 4.6 -1.6 3.5 -1.9 2.1C-2.4 0 -1.8 -2.4 0 -3.6Z" />
+    </g>
+    <g transform="translate(14.6 14.5) rotate(18)">
+      <path d="M0 -3.6C1.8 -2.4 2.4 0 1.9 2.1C1.6 3.5 0.9 4.6 0 4.6C-0.9 4.6 -1.6 3.5 -1.9 2.1C-2.4 0 -1.8 -2.4 0 -3.6Z" />
+    </g>
+    <path d="M9 6.7h2M13 6.7h2" strokeWidth={1.2} />
+  </Svg>
+);
+
 /** LED grow light with rays — grow hardware. */
 export const GrowLight: IconComponent = (props) => (
   <Svg {...props}>
