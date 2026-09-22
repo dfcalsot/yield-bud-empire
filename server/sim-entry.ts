@@ -7,3 +7,4 @@ export * as avatars from '../src/sim/avatars';
 export * as terroir from '../src/sim/terroir';
 export * as lands from '../src/sim/lands';
 export { INITIAL_FACILITIES, INITIAL_QUESTS } from '../src/data/initialData';
+export * as products from '../src/sim/products';

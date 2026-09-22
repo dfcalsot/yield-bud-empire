@@ -456,6 +456,15 @@ ok('regalo: abrirlo acredita el monto y el cofre desaparece', og.status === 200 
 ok('regalo: no se abre dos veces', (await intent(G1, 'open_gift', { giftId: gid })).json.error === 'not_yours' && wallet(G1).flora === gs.snapshot.flora + 2_000_000);
 ok('regalo: queda en el libro mayor', db.prepare("SELECT COUNT(*) n FROM ledger WHERE account_id = ? AND kind = 'gift' AND delta = 2000000").get(G1.id).n === 1);
 ok('regalo: un id inventado se rechaza', (await intent(G1, 'open_gift', { giftId: 999999 })).json.error === 'not_yours');
+
+// ── every lab product can be sold, priced by its recipe (before, only 4 product types were known to the server)
+const SP = await mkPlayer(40), SP2 = await mkPlayer(41); await state(SP); await state(SP2);
+const sellOk = await Promise.all(['bubble_hash', 'kief', 'preroll', 'cigar', 'rso', 'gummies', 'terpene_sauce'].map(async (t, i) => (await intent(await mkPlayer(50 + i), 'sell', { type: t, grams: 3 })).status === 200));
+ok('venta: los productos del laboratorio (hash, kief, puros, RSO, gomitas, sopa) se pueden vender en el servidor', sellOk.every(Boolean));
+ok('venta: el merch V2P y un producto inventado se rechazan', (await intent(SP, 'sell', { type: 'v2p_merch', grams: 1 })).json.error === 'bad_params' && (await intent(SP, 'sell', { type: 'inventado', grams: 1 })).json.error === 'bad_params');
+const gDiamonds = (await intent(SP, 'sell', { type: 'terpene_sauce', recipe: 'diamonds', grams: 4 })).json.result.gross;
+const gSauce = (await intent(SP2, 'sell', { type: 'terpene_sauce', grams: 4 })).json.result.gross;
+ok('venta: la receta fija el precio (diamantes 95 > sopa 52)', gDiamonds > gSauce, `(${gDiamonds} vs ${gSauce})`);
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 server.close(); mock.close();
 fs.rmSync(dir, { recursive: true, force: true });

@@ -8,10 +8,10 @@
 //   refund       duplicate avatar, a fraction of the chest price
 // Everything else burns: builds, speed-ups, wages, hires, chests, ranks, lands, the sale fee and licence, and generic spends.
 import crypto from 'node:crypto';
-import { economy as E, facilities as F, staff as S, avatars as A, terroir as T, lands as L, INITIAL_FACILITIES, INITIAL_QUESTS } from './gen/sim.mjs';
+import { economy as E, products as PR, facilities as F, staff as S, avatars as A, terroir as T, lands as L, INITIAL_FACILITIES, INITIAL_QUESTS } from './gen/sim.mjs';
 
 const DAY = 86400_000;
-const PRODUCT_PRICE = { live_rosin: 45, cured_flower: 9, full_spec_oil: 25, pure_terpenes: 85 };   // per product gram, before ECON.priceScale
+// per product gram, before ECON.priceScale: the same table the client and the lab stations use (sim/products.ts), by recipe id then by type
 const QUEST_FLORA = Object.fromEntries(INITIAL_QUESTS.map((q) => [q.id, q.rewardFlora]));
 const FACILITY_BY_ID = Object.fromEntries(INITIAL_FACILITIES.map((f) => [f.id, f]));
 const MAX_SPEND = 30000;
@@ -184,10 +184,11 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
     },
 
     sell({ id, now, p }) {
-      const type = str(p.type, 30); need(type in PRODUCT_PRICE, 'bad_params');
+      const type = str(p.type, 30);
+      const base = PR.priceOf(type, typeof p.recipe === 'string' ? p.recipe.slice(0, 40) : undefined); need(base, 'bad_params');
       const grams = num(p.grams, 0.05, 2000);
       const w = q.wallet.get(id), st = stateOf(id);
-      const price = PRODUCT_PRICE[type] * E.ECON.priceScale;
+      const price = base * E.ECON.priceScale;
       const sale = E.saleRevenue(price, grams, { sold: w.depth_sold, at: w.depth_at }, now);
       const mods = activeMods(id, st, now);
       const gross = Math.round(sale.revenue * (1 + mods.sellBonus));

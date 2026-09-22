@@ -125,7 +125,7 @@ export const LabFloor: React.FC = () => {
     }
     if (!recipe) return;
     const prod = runLabProcess({
-      machineId: station.machineId, stationId, inputKind: recipe.inputKind, grams: g, type: recipe.type, label: recipe.name,
+      machineId: station.machineId, stationId, inputKind: recipe.inputKind, grams: g, type: recipe.type, label: recipe.name, recipeId: recipe.id,
       yieldRatio: recipe.yieldRatio, potency: recipe.potency, pricePerGram: recipe.pricePerGram, feeFlora: recipe.feeFlora,
     });
     if (!prod) return;

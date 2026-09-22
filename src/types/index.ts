@@ -241,7 +241,10 @@ export interface ProcessedProduct {
   name: string;
   type:
     | 'cured_flower' | 'live_rosin' | 'full_spec_oil' | 'pure_terpenes' | 'v2p_merch'
-    | 'bubble_hash' | 'terpene_sauce' | 'kief' | 'preroll' | 'cigar' | 'rso' | 'gummies';
+    | 'bubble_hash' | 'terpene_sauce' | 'kief' | 'preroll' | 'cigar' | 'rso' | 'gummies'
+    | 'balm' | 'candle' | 'tincture';
+  /** the recipe that made it: it decides the price the market pays (sim/products.ts) */
+  recipeId?: string;
   strainOrigin: string;
   quantityGrams: number;
   potency: string;
@@ -262,6 +265,7 @@ export interface LabRunSpec {
   grams: number;
   type: ProcessedProduct['type'];
   label: string;          // product name without the strain
+  recipeId?: string;      // the recipe id: the price of the product comes from sim/products.ts
   yieldRatio: number;     // output grams per input gram (before machine wear)
   potency: string;
   pricePerGram: number;   // $FLORA market value per output gram

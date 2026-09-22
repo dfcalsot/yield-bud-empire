@@ -2913,12 +2913,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const strainName = activePlant?.strain.name || strains[0].name;
     const outGrams = Number((spec.grams * spec.yieldRatio * wearFactor).toFixed(2));
     const quality = Math.min(100, Math.round((90 + Math.random() * 9) * (wear > 40 ? 1 : 0.94)));
-    const value = Math.round(outGrams * spec.pricePerGram * (0.9 + quality / 500));
+    // the market pays the list price scaled like everything else (the server uses the same table); quality is shown but does not change the price
+    const value = Math.round(outGrams * spec.pricePerGram * ECON.priceScale);
 
     const prod: ProcessedProduct = {
       id: `prod-lab-${Date.now()}`,
       name: `${strainName} · ${spec.label}`,
       type: spec.type,
+      recipeId: spec.recipeId,
       strainOrigin: strainName,
       quantityGrams: outGrams,
       potency: spec.potency,
@@ -3184,7 +3186,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // the server prices the sale (its market depth is the one that counts); the batch leaves the warehouse right away and comes back if refused
       playHarvestChime();
       setProcessedProducts(prev => prev.filter(p => p.id !== productId));
-      const r = await intent<{ gross: number; fee: number; net: number; ratio: number }>('sell', { type: prod.type, grams: prod.quantityGrams });
+      const r = await intent<{ gross: number; fee: number; net: number; ratio: number }>('sell', { type: prod.type, recipe: prod.recipeId, grams: prod.quantityGrams });
       if (!r.ok) { setProcessedProducts(prev => [prod, ...prev]); showNotification(REASON[r.error] ?? `No se pudo vender (${r.error})`, 'info'); return; }
       applySnapshot(r.snapshot);
       setBrand(prev => ({ ...prev, totalSalesFlora: prev.totalSalesFlora + r.result.gross, reputation: Math.min(100, prev.reputation + 1) }));
