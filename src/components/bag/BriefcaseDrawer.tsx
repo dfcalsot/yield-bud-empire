@@ -15,7 +15,8 @@ import { StaffPortrait } from '../staff/StaffCard';
 import { ListNftButton } from '../market/ListNft';
 import { ROLE_INFO } from '../../sim/staff';
 import { Tag, Hammer } from 'lucide-react';
-import { MATERIALS, type MaterialId } from '../../sim/forge';
+import { MATERIALS, type MaterialId, type MaterialFamily } from '../../sim/forge';
+import { MaterialGlyph } from '../forge/ForgeIcons';
 
 /**
  * The player's briefcase: everything they own in one place, grouped into six tabs, searchable, with the quick actions
@@ -285,6 +286,8 @@ const GeneticsTab: React.FC<{ match: Match }> = ({ match }) => {
   );
 };
 
+const MATERIAL_FAMILY_COLOR: Record<MaterialFamily, string> = { subproducto: '#34d399', base: '#84af28', componente: '#c084fc' };
+
 /** the forge's materials: what you have, where it comes from and what it is for */
 const MaterialsTab: React.FC<{ match: Match; onOpenForge: () => void }> = ({ match, onOpenForge }) => {
   const { materials, forgeJobs } = useGame();
@@ -300,7 +303,9 @@ const MaterialsTab: React.FC<{ match: Match; onOpenForge: () => void }> = ({ mat
         <Empty searching={match.searching} icon={<Hammer className="w-5 h-5" />} title={total === 0 ? 'Aún no tienes materiales' : 'Nada coincide con tu búsqueda'} hint="Al cosechar te queda fibra del tallo; con ella y el trim se fabrican cera, tela, papel y más en la Forja." action={{ label: 'Abrir la Forja', onClick: onOpenForge }} />
       ) : rows.map((m) => (
         <div key={m.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 p-3" data-material={m.id}>
-          <span className="text-2xl w-9 text-center" aria-hidden>{m.icon}</span>
+          <span className="grid place-items-center w-9 h-9 rounded-lg border shrink-0" style={{ color: MATERIAL_FAMILY_COLOR[m.family], borderColor: `${MATERIAL_FAMILY_COLOR[m.family]}40`, background: `${MATERIAL_FAMILY_COLOR[m.family]}14` }} aria-hidden>
+            <MaterialGlyph id={m.id as MaterialId} className="w-5 h-5" />
+          </span>
           <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-white truncate">{m.name}</span><span className="block text-[11px] text-neutral-400 leading-snug">{m.use}</span></span>
           <span className="font-mono font-black text-lg text-amber-300" data-material-count>{materials[m.id as MaterialId]}</span>
         </div>

@@ -5,6 +5,8 @@ import { canCraft, craftTotals, FORGE_LIMITS, FORGE_RECIPES, FORGE_RECIPE_BY_ID,
 import { PRODUCT_PRICE } from '../../sim/products';
 import { ECON } from '../../sim/economy';
 import { formatDuration } from '../../sim/engine';
+import { MaterialGlyph, ProductGlyph } from './ForgeIcons';
+import { ForgeScene } from './ForgeScene';
 import '../hud/hud.css';
 
 const FAMILY: Record<ForgeFamily, { title: string; blurb: string; color: string }> = {
@@ -19,9 +21,9 @@ const useNow = (ms: number) => {
   return now;
 };
 
-const Chip: React.FC<{ icon: string; label: string; need: number; have: number }> = ({ icon, label, need, have }) => (
+const Chip: React.FC<{ icon: React.ReactNode; label: string; need: number; have: number }> = ({ icon, label, need, have }) => (
   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10.5px] font-mono ${have >= need ? 'border-emerald-300/30 bg-emerald-400/10 text-emerald-100' : 'border-rose-300/40 bg-rose-500/10 text-rose-200'}`} title={`${label}: tienes ${Math.floor(have * 10) / 10}`}>
-    <span aria-hidden>{icon}</span>{label} {Number.isInteger(need) ? need : need.toFixed(1)}<span className="opacity-60">/{Math.floor(have * 10) / 10}</span>
+    <span aria-hidden className="[&_svg]:w-3 [&_svg]:h-3">{icon}</span>{label} {Number.isInteger(need) ? need : need.toFixed(1)}<span className="opacity-60">/{Math.floor(have * 10) / 10}</span>
   </span>
 );
 
@@ -38,6 +40,7 @@ export const ForgeView: React.FC = () => {
 
   return (
     <div className="space-y-5 animate-fade-in" data-testid="forge-view">
+      <ForgeScene />
       <div className="hud-panel p-4 sm:p-5 space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="grid place-items-center w-11 h-11 rounded-xl bg-amber-400/15 border border-amber-300/40 text-amber-300"><Hammer className="w-6 h-6" /></span>
@@ -98,12 +101,12 @@ export const ForgeView: React.FC = () => {
                     <div className="flex flex-wrap gap-1">
                       {t.flower > 0 && <Chip icon="🌿" label="Flor g" need={t.flower} have={rawFlowerGrams} />}
                       {t.trim > 0 && <Chip icon="🍃" label="Trim g" need={t.trim} have={trimGrams} />}
-                      {Object.entries(t.materials).map(([id, need]) => <Chip key={id} icon={MATERIAL_BY_ID[id as MaterialId].icon} label={MATERIAL_BY_ID[id as MaterialId].name} need={need as number} have={materials[id as MaterialId] ?? 0} />)}
+                      {Object.entries(t.materials).map(([id, need]) => <Chip key={id} icon={<MaterialGlyph id={id as MaterialId} />} label={MATERIAL_BY_ID[id as MaterialId].name} need={need as number} have={materials[id as MaterialId] ?? 0} />)}
                     </div>
                     <div className="text-[9.5px] font-mono uppercase tracking-wider text-neutral-500 pt-0.5">Da</div>
                     <div className="flex flex-wrap gap-1">
-                      {Object.entries(t.outMaterials).map(([id, k]) => <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-amber-300/30 bg-amber-400/10 text-[10.5px] font-mono text-amber-100"><span aria-hidden>{MATERIAL_BY_ID[id as MaterialId].icon}</span>{MATERIAL_BY_ID[id as MaterialId].name} ×{k as number}</span>)}
-                      {r.out.product && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-amber-300/40 bg-amber-400/10 text-[10.5px] font-mono text-amber-100">{r.out.product.name.replace(/ \(.*\)$/, '')} {t.outProductGrams} g · ≈ {outValue} $FLORA</span>}
+                      {Object.entries(t.outMaterials).map(([id, k]) => <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-amber-300/30 bg-amber-400/10 text-[10.5px] font-mono text-amber-100"><span aria-hidden className="[&_svg]:w-3 [&_svg]:h-3"><MaterialGlyph id={id as MaterialId} /></span>{MATERIAL_BY_ID[id as MaterialId].name} ×{k as number}</span>)}
+                      {r.out.product && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-amber-300/40 bg-amber-400/10 text-[10.5px] font-mono text-amber-100"><span aria-hidden className="[&_svg]:w-3 [&_svg]:h-3"><ProductGlyph type={r.out.product.type} /></span>{r.out.product.name.replace(/ \(.*\)$/, '')} {t.outProductGrams} g · ≈ {outValue} $FLORA</span>}
                     </div>
                   </div>
                   <div className="mt-auto flex items-center gap-2 pt-1">

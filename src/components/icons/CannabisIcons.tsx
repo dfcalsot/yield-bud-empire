@@ -11,7 +11,7 @@ export interface IconProps {
 
 export type IconComponent = React.FC<IconProps>;
 
-const Svg: React.FC<IconProps & { children: React.ReactNode }> = ({
+export const Svg: React.FC<IconProps & { children: React.ReactNode }> = ({
   className,
   strokeWidth = 1.6,
   children,
@@ -49,7 +49,7 @@ const leafletPath = (length: number, w: number) =>
   `C${w * 0.85} ${-length * 0.75} ${w} ${-length * 0.3} 0 0Z`;
 
 /** Solid 7-leaflet cannabis leaf whose stem base sits at (x, y). */
-const LeafShape: React.FC<{ x: number; y: number; scale: number }> = ({ x, y, scale }) => (
+export const LeafShape: React.FC<{ x: number; y: number; scale: number }> = ({ x, y, scale }) => (
   <g transform={`translate(${x} ${y}) scale(${scale})`} fill="currentColor" stroke="none">
     {LEAFLETS.map(([angle, length, w]) => (
       <path key={angle} d={leafletPath(length, w)} transform={`rotate(${angle})`} />

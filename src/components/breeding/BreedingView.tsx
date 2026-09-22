@@ -3,6 +3,7 @@ import { Beaker, Clock, Dna, Flame, Lock, Sparkles } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { BREEDING_LIMITS, breedingCost, canBreed, capGeneration, CROSS_MINUTES, GEN_LABEL } from '../../sim/breeding';
 import { MATERIAL_BY_ID, type MaterialId } from '../../sim/forge';
+import { MaterialGlyph } from '../forge/ForgeIcons';
 import { formatDuration } from '../../sim/engine';
 import '../hud/hud.css';
 
@@ -12,9 +13,9 @@ const useNow = (ms: number) => {
   return now;
 };
 
-const Chip: React.FC<{ icon: string; label: string; need: number; have: number }> = ({ icon, label, need, have }) => (
+const Chip: React.FC<{ icon: React.ReactNode; label: string; need: number; have: number }> = ({ icon, label, need, have }) => (
   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10.5px] font-mono ${have >= need ? 'border-emerald-300/30 bg-emerald-400/10 text-emerald-100' : 'border-rose-300/40 bg-rose-500/10 text-rose-200'}`}>
-    <span aria-hidden>{icon}</span>{label} {need}<span className="opacity-60">/{have}</span>
+    <span aria-hidden className="[&_svg]:w-3 [&_svg]:h-3">{icon}</span>{label} {need}<span className="opacity-60">/{have}</span>
   </span>
 );
 
@@ -77,7 +78,7 @@ export const BreedingView: React.FC = () => {
         </div>
         <div className="flex flex-wrap gap-2 text-[11px] font-mono" data-testid="breeding-stock">
           {(['kit_polinizacion', 'bolsa_aislamiento', 'reactivo'] as MaterialId[]).map(id => (
-            <Chip key={id} icon={MATERIAL_BY_ID[id].icon} label={MATERIAL_BY_ID[id].name} need={cost[id] ?? 0} have={materials[id] ?? 0} />
+            <Chip key={id} icon={<MaterialGlyph id={id} />} label={MATERIAL_BY_ID[id].name} need={cost[id] ?? 0} have={materials[id] ?? 0} />
           ))}
           <span className="px-2 py-1 rounded-lg bg-black/30 border border-white/10 text-amber-300"><Flame className="inline w-3 h-3" /> {Math.floor(floraBalance)} $FLORA</span>
           {staffMods.seedBonus > 0 && <span className="px-2 py-1 rounded-lg bg-black/30 border border-emerald-300/20 text-emerald-200">🧑‍🌾 +{staffMods.seedBonus} semillas de personal</span>}
