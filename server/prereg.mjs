@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS invites (code TEXT PRIMARY KEY, note TEXT NOT NULL DEFAULT '', max_uses INTEGER NOT NULL DEFAULT 1, uses INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, expires_at INTEGER, revoked INTEGER NOT NULL DEFAULT 0);
 `);
   try { db.exec('ALTER TABLE invites ADD COLUMN email_key TEXT'); } catch { /* ya existe */ }
+  // qué versión de los Términos y la Política de Privacidad aceptó cada persona, y cuándo
+  for (const col of ['terms_version TEXT', 'terms_accepted_at INTEGER']) { try { db.exec(`ALTER TABLE prereg ADD COLUMN ${col}`); } catch { /* ya existe */ } }
   db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('alpha_seats', ?)").run(String(defaultSeats));
 
   const q = {
@@ -40,7 +42,7 @@ CREATE TABLE IF NOT EXISTS invites (code TEXT PRIMARY KEY, note TEXT NOT NULL DE
     setSeats: db.prepare("UPDATE settings SET value = ? WHERE key = 'alpha_seats'"),
     invitedCount: db.prepare("SELECT COUNT(*) n FROM prereg WHERE status = 'invited'"),
     byKey: db.prepare('SELECT * FROM prereg WHERE email_key = ?'),
-    insert: db.prepare("INSERT INTO prereg (email, email_key, alias, lang, ip_hash, created_at, status) VALUES (?,?,?,?,?,?, 'waiting')"),
+    insert: db.prepare("INSERT INTO prereg (email, email_key, alias, lang, ip_hash, created_at, status, terms_version, terms_accepted_at) VALUES (?,?,?,?,?,?, 'waiting', ?, ?)"),
     nextWaiting: db.prepare("SELECT * FROM prereg WHERE status = 'waiting' ORDER BY id LIMIT ?"),
     position: db.prepare("SELECT COUNT(*) n FROM prereg WHERE status = 'waiting' AND id <= ?"),
     waitingCount: db.prepare("SELECT COUNT(*) n FROM prereg WHERE status = 'waiting'"),
@@ -105,7 +107,7 @@ CREATE TABLE IF NOT EXISTS invites (code TEXT PRIMARY KEY, note TEXT NOT NULL DE
    * Someone signed up on the website. Returns { status: 'invited' } or { status: 'waiting', position }.
    * The same answer for somebody already on the list or already playing, so the form never tells who is registered.
    */
-  async function signUp({ email, eKey, alias, lang, ipHash }) {
+  async function signUp({ email, eKey, alias, lang, ipHash, termsVersion }) {
     const existing = q.byKey.get(eKey);
     if (existing) {
       if (existing.status === 'invited') {
@@ -119,7 +121,7 @@ CREATE TABLE IF NOT EXISTS invites (code TEXT PRIMARY KEY, note TEXT NOT NULL DE
       if (existing.status === 'has_account') return { status: 'invited' };
       return { status: 'waiting', position: q.position.get(existing.id).n };
     }
-    const id = q.insert.run(email, eKey, alias || null, lang === 'en' ? 'en' : 'es', ipHash ?? null, Date.now()).lastInsertRowid;
+    const id = q.insert.run(email, eKey, alias || null, lang === 'en' ? 'en' : 'es', ipHash ?? null, Date.now(), termsVersion || null, Date.now()).lastInsertRowid;
     if (freeSeats() > 0) {
       const r = await issue(q.byKey.get(eKey));
       if (r !== 'failed') return { status: 'invited' };

@@ -88,6 +88,8 @@ CREATE INDEX IF NOT EXISTS idx_accounts_ip ON accounts(ip_hash, created_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_acc ON sessions(account_id);
 `);
 for (const f of ['accounts.db', 'accounts.db-wal', 'accounts.db-shm']) { try { fs.chmodSync(path.join(cfg.dataDir, f), 0o600); } catch { /* not created yet */ } }
+// qué versión de los Términos y la Política de Privacidad aceptó cada cuenta al crearse, y cuándo
+for (const col of ['terms_version TEXT', 'terms_accepted_at INTEGER']) { try { db.exec(`ALTER TABLE accounts ADD COLUMN ${col}`); } catch { /* ya existe */ } }
 // los códigos de la alfa pueden quedar atados al correo del pre-registro (bases creadas antes no tienen la columna)
 try { db.exec('ALTER TABLE invites ADD COLUMN email_key TEXT'); } catch { /* ya existe */ }
 
@@ -125,7 +127,10 @@ const q = {
   inviteRow: db.prepare('SELECT email_key FROM invites WHERE code = ?'),
   refundInvite: db.prepare('UPDATE invites SET uses = uses - 1 WHERE code = ? AND uses > 0'),
   logInviteUse: db.prepare('INSERT INTO invite_uses (code, account_id, used_at) VALUES (?,?,?)'),
+  setTerms: db.prepare('UPDATE accounts SET terms_version = ?, terms_accepted_at = ? WHERE id = ?'),
 };
+
+const termsOf = (raw) => String(raw ?? '').replace(/[^0-9a-zA-Z._-]/g, '').slice(0, 20);
 
 /** YBE-ABCD-2345: mayúsculas, sin espacios; acepta que el jugador lo pegue en minúsculas o sin guiones */
 const normInvite = (raw) => {
@@ -276,7 +281,7 @@ route('POST', '/api/public/prereg', async (ctx) => {
   if (isDisposable(eKey)) { audit('prereg_disposable', null, ctx.ipHash, eKey.split('@')[1]); throw new HttpError(400, 'email_disposable'); }
   if (!(await domainReceivesMail(eKey, cfg.skipMx))) throw new HttpError(400, 'email_domain');
   const alias = String(b.alias ?? '').normalize('NFKC').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 30);
-  const r = await prereg.signUp({ email, eKey, alias, lang: b.lang, ipHash: ctx.ipHash });
+  const r = await prereg.signUp({ email, eKey, alias, lang: b.lang, ipHash: ctx.ipHash, termsVersion: termsOf(b.termsVersion) || 'sin-version' });
   audit('prereg', null, ctx.ipHash, r.status);
   return { ok: true, ...r };
 });
@@ -326,6 +331,7 @@ route('POST', '/api/auth/register', async (ctx) => {
     audit('signup_existing_email', existing.id, ctx.ipHash);
     return { ok: true, pending: true };
   }
+  if (b.acceptTerms !== true) throw new HttpError(400, 'terms_required');
   const invite = normInvite(b.invite);
   if (cfg.inviteOnly && !invite) throw new HttpError(403, 'invite_required');
   const hash = await hashPasswordAsync(password, PEPPER);
@@ -335,6 +341,7 @@ route('POST', '/api/auth/register', async (ctx) => {
   try { id = q.insertAccount.run(email, eKey, username, usernameKey(username), hash, 0, Date.now(), ctx.ipHash, ctx.uaHash, 'email').lastInsertRowid; }
   catch { if (cfg.inviteOnly) q.refundInvite.run(invite); throw new HttpError(409, 'username_taken'); }   // lost a race on the unique keys
   if (cfg.inviteOnly) q.logInviteUse.run(invite, id, Date.now());
+  q.setTerms.run(termsOf(b.termsVersion) || 'sin-version', Date.now(), id);
   suspicious(ctx, id);
   const token = rand(32);
   q.addToken.run(hashToken(token), id, 'verify', Date.now() + 24 * 3600_000);
@@ -443,7 +450,8 @@ for (const name of Object.keys(providers)) {
     limit(ctx, `oauth:${ctx.ip}`, 20, 900_000);
     const state = rand(24), { verifier, challenge } = pkcePair();
     const invite = normInvite(ctx.url.searchParams.get('invite'));
-    const blob = Buffer.from(JSON.stringify({ state, verifier, name, ts: Date.now(), invite })).toString('base64url');
+    const terms = ctx.url.searchParams.get('terms') ? termsOf(ctx.url.searchParams.get('terms')) : '';
+    const blob = Buffer.from(JSON.stringify({ state, verifier, name, ts: Date.now(), invite, terms })).toString('base64url');
     ctx.setCookies.push(cookie('cf_oauth', `${blob}.${hmac(SECRET, blob)}`, { maxAge: 600, secure }));
     const u = new URL(p.authUrl);
     const params = { response_type: 'code', client_id: p.id, redirect_uri: redirectUri(name), scope: p.scope, state, code_challenge: challenge, code_challenge_method: 'S256', ...p.extra };
@@ -474,12 +482,12 @@ for (const name of Object.keys(providers)) {
       const ur = await fetch(p.userUrl, { headers: { Authorization: `Bearer ${tok.access_token}`, Accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
       const raw2 = await ur.json();
       if (!ur.ok) return fail('profile');
-      return finishOAuth(ctx, name, raw2, fail, st.invite);
+      return finishOAuth(ctx, name, raw2, fail, st.invite, st.terms);
     } catch (e) { console.error('oauth error:', e.message); return fail('provider_error'); }
   });
 }
 
-function finishOAuth(ctx, name, data, fail, rawInvite) {
+function finishOAuth(ctx, name, data, fail, rawInvite, terms) {
   let subject, email = null, display = '', verifiedEmail = false;
   if (name === 'google') {
     subject = String(data.sub ?? ''); email = data.email ? String(data.email) : null; verifiedEmail = data.email_verified === true; display = data.name ?? data.given_name ?? '';
@@ -508,6 +516,7 @@ function finishOAuth(ctx, name, data, fail, rawInvite) {
   if (!accountId) {
     if (accountCapReached(ctx)) return fail('ip_account_limit');
     limit(ctx, `reg:${ctx.ip}`, 5, 3600_000);
+    if (!terms) return fail('terms_required');   // cuenta nueva: hay que aceptar Términos y Privacidad (y ser mayor de 18)
     const invite = normInvite(rawInvite);
     const inviteErr = reserveInvite(invite, eKey);
     if (inviteErr) { audit('invite_rejected', null, ctx.ipHash, `${name}:${invite.slice(0, 20)}`); return fail(inviteErr); }
@@ -515,6 +524,7 @@ function finishOAuth(ctx, name, data, fail, rawInvite) {
     try { accountId = q.insertAccount.run(email, eKey, uname, usernameKey(uname), null, name === 'google' ? 1 : 0, Date.now(), ctx.ipHash, ctx.uaHash, name).lastInsertRowid; }
     catch { if (cfg.inviteOnly) q.refundInvite.run(invite); return fail('signup_race'); }
     if (cfg.inviteOnly) q.logInviteUse.run(invite, accountId, Date.now());
+    q.setTerms.run(terms, Date.now(), accountId);
     q.addIdentity.run(name, subject, accountId, Date.now());
     suspicious(ctx, accountId);
     audit(`signup_${name}`, accountId, ctx.ipHash);

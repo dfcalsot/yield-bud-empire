@@ -10,6 +10,13 @@ import type { UserProfile } from '../types';
 const here = (u?: string): string => (u ? u.replace(/^https?:\/\/[^/]+/, window.location.origin) : '');
 
 export interface ServerAccount { id: number; username: string; email: string | null; verified: boolean; providers: string[]; source: string; createdAt: number }
+/** Versión de los Términos y la Política de Privacidad (la misma fecha que en yieldbudempire.com, src/legal/content.ts). */
+const TERMS_VERSION = '2026-09-23';
+const LEGAL = {
+  terms: 'https://yieldbudempire.com/terminos/', privacy: 'https://yieldbudempire.com/privacidad/',
+  cookies: 'https://yieldbudempire.com/cookies/', legal: 'https://yieldbudempire.com/aviso-legal/',
+};
+
 interface AuthConfig { google: boolean; x: boolean; emailDelivery: boolean; devLinks: boolean; inviteOnly?: boolean; captcha: { bits: number } }
 
 /** Make the account service's user the active local profile (game data stays per user in this browser). */
@@ -64,6 +71,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
   const inviteFromUrl = useMemo(() => { try { return new URLSearchParams(window.location.search).get('invite') ?? ''; } catch { return ''; } }, []);
   const [mode, setMode] = useState<Mode>(resetToken ? 'reset' : inviteFromUrl ? 'register' : 'login');
   const [invite, setInvite] = useState(inviteFromUrl);
+  const [accepted, setAccepted] = useState(false);
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -94,7 +102,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
 
   const doRegister = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
     const sol = await captcha('register');
-    const r = await api('POST', '/api/auth/register', { email, username, password, hp, t: openedAt.current, captcha: sol, invite });
+    const r = await api('POST', '/api/auth/register', { email, username, password, hp, t: openedAt.current, captcha: sol, invite, acceptTerms: accepted, termsVersion: TERMS_VERSION });
     if (r.status !== 200) { setErr(errText(r.data)); npc.speak(errText(r.data), 'sad'); return; }
     setDevLink(here(r.data.devLink));
     npc.speak('¡Cuenta creada! Te enviamos un correo: confírmalo para empezar a jugar.', 'happy');
@@ -133,7 +141,15 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
 
   // alfa cerrada: para crear una cuenta nueva (también con Google/X) hace falta el código
   const needInvite = !!config.inviteOnly && mode === 'register' && !invite.trim();
-  const socialHref = (p: string) => `/api/auth/${p}/start${config.inviteOnly && mode === 'register' && invite.trim() ? `?invite=${encodeURIComponent(invite.trim())}` : ''}`;
+  const needTerms = mode === 'register' && !accepted;
+  const socialHref = (p: string) => {
+    const q = new URLSearchParams();
+    if (mode === 'register' && accepted) q.set('terms', TERMS_VERSION);
+    if (config.inviteOnly && mode === 'register' && invite.trim()) q.set('invite', invite.trim());
+    const qs = q.toString();
+    return `/api/auth/${p}/start${qs ? `?${qs}` : ''}`;
+  };
+  const blocked = needInvite ? 'Primero escribí tu código de invitación abajo; después tocá el botón.' : needTerms ? 'Primero marcá abajo que tenés 18 años o más y aceptás los Términos y la Privacidad; después tocá el botón.' : '';
   const tabBtn = (m: Mode, label: string) => (
     <button type="button" role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setErr(''); }} className={`flex-1 py-2 text-[11px] font-semibold tracking-wide rounded-md transition cursor-pointer ${mode === m ? 'bg-neutral-800 text-white shadow-inner' : 'text-neutral-500 hover:text-neutral-200'}`}>{label}</button>
   );
@@ -154,8 +170,8 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
             <>
               <div className="flex gap-1 p-1 rounded-lg bg-neutral-950 border border-neutral-800" role="tablist">{tabBtn('login', 'Ya tengo cuenta')}{tabBtn('register', 'Soy nuevo')}</div>
               <div className="grid grid-cols-2 gap-2.5">
-                <Social href={socialHref('google')} enabled={config.google} label="Google" icon={<GoogleG />} onBlocked={needInvite ? () => setErr('Primero escribí tu código de invitación abajo; después tocá Google.') : undefined} />
-                <Social href={socialHref('x')} enabled={config.x} label="X" icon={<XMark />} onBlocked={needInvite ? () => setErr('Primero escribí tu código de invitación abajo; después tocá X.') : undefined} />
+                <Social href={socialHref('google')} enabled={config.google} label="Google" icon={<GoogleG />} onBlocked={blocked ? () => setErr(blocked) : undefined} />
+                <Social href={socialHref('x')} enabled={config.x} label="X" icon={<XMark />} onBlocked={blocked ? () => setErr(blocked) : undefined} />
               </div>
               <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-wider text-neutral-600"><span className="flex-1 h-px bg-neutral-800" />o con tu correo<span className="flex-1 h-px bg-neutral-800" /></div>
             </>
@@ -192,6 +208,10 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
               <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
                 <label>No rellenar<input tabIndex={-1} autoComplete="off" name="website" value={hp} onChange={(e) => setHp(e.target.value)} /></label>
               </div>
+              <label className="flex items-start gap-2.5 text-[11.5px] leading-snug text-neutral-300 cursor-pointer">
+                <input type="checkbox" required checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-0.5 w-4 h-4 accent-emerald-400 shrink-0" />
+                <span>Tengo <b className="text-white">18 años o más</b> y acepto los <a href={LEGAL.terms} target="_blank" rel="noopener" className="text-emerald-300 underline">Términos y Condiciones</a> y la <a href={LEGAL.privacy} target="_blank" rel="noopener" className="text-emerald-300 underline">Política de Privacidad</a>.</span>
+              </label>
               <button type="submit" disabled={busy} className="mk-buy !text-[12px]"><span className="mk-buy-shine" />{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}<span>Registrarme</span></button>
               <p className="text-[10px] font-mono text-neutral-600 text-center">Una cuenta por persona. Las cuentas duplicadas o de bots se bloquean.</p>
             </form>
@@ -244,6 +264,13 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
           )}
           {err && <p className="text-[12px] font-mono text-red-300 bg-red-500/10 border border-red-400/30 rounded-lg px-3 py-2" role="alert">{err}</p>}
         </div>
+        <nav aria-label="Documentos legales" className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10.5px] font-mono text-neutral-500">
+          <a href={LEGAL.terms} target="_blank" rel="noopener" className="hover:text-emerald-300">Términos</a>
+          <a href={LEGAL.privacy} target="_blank" rel="noopener" className="hover:text-emerald-300">Privacidad</a>
+          <a href={LEGAL.cookies} target="_blank" rel="noopener" className="hover:text-emerald-300">Cookies</a>
+          <a href={LEGAL.legal} target="_blank" rel="noopener" className="hover:text-emerald-300">Aviso legal</a>
+          <span>· Solo mayores de 18</span>
+        </nav>
         <p className="text-center text-[10px] font-mono text-neutral-600">Tus contraseñas se guardan con scrypt; nunca las vemos. La verificación anti-bots corre en tu navegador, sin rastreadores.</p>
       </div>
     </div>

@@ -46,7 +46,7 @@ const solve = (ch) => { for (let n = 0; ; n++) { const d = crypto.createHash('sh
 const captcha = async (ip, purpose = 'register') => solve((await call('GET', `/api/auth/challenge?purpose=${purpose}`, { ip })).json);
 const reg = async (o = {}) => {
   const ip = o.ip ?? newIp();
-  return { ip, ...(await call('POST', '/api/auth/register', { ip, jar: o.jar, body: { email: 'a@example.com', username: 'Alpha Grower', password: 'Correct-Horse-Battery-9', t: Date.now() - 4000, hp: '', captcha: o.noCaptcha ? undefined : (o.captcha ?? await captcha(ip)), ...o.body } })) };
+  return { ip, ...(await call('POST', '/api/auth/register', { ip, jar: o.jar, body: { email: 'a@example.com', username: 'Alpha Grower', password: 'Correct-Horse-Battery-9', t: Date.now() - 4000, hp: '', acceptTerms: true, termsVersion: '2026-09-23', captcha: o.noCaptcha ? undefined : (o.captcha ?? await captcha(ip)), ...o.body } })) };
 };
 const count = () => db.prepare('SELECT COUNT(*) n FROM accounts').get().n;
 
@@ -187,7 +187,7 @@ ok('restablecer: misma respuesta si el correo no existe', r.status === 200 && r.
 // ── OAuth (Google) against the mock provider
 async function oauth(name, profile, ip = newIp(), jarO = {}) {
   profiles[name] = profile;
-  const s = await call('GET', `/api/auth/${name}/start`, { ip, jar: jarO });
+  const s = await call('GET', `/api/auth/${name}/start?terms=2026-09-23`, { ip, jar: jarO });
   const loc = new URL(s.loc ?? 'http://x/');
   const cb = await call('GET', `/api/auth/${name}/callback?code=abc&state=${loc.searchParams.get('state')}`, { ip, jar: jarO });
   return { s, loc, cb, jar: jarO };
@@ -496,7 +496,7 @@ ok('invitación: si el usuario ya existe, el código no se gasta', ir.status ===
 // Google en alfa cerrada
 async function oauthInvite(profile, invite) {
   profiles.google = profile; const ip = newIp(), j = {};
-  const st = await call('GET', `/api/auth/google/start${invite ? `?invite=${encodeURIComponent(invite)}` : ''}`, { ip, jar: j });
+  const st = await call('GET', `/api/auth/google/start?terms=2026-09-23${invite ? `&invite=${encodeURIComponent(invite)}` : ''}`, { ip, jar: j });
   const loc = new URL(st.loc ?? 'http://x/');
   return call('GET', `/api/auth/google/callback?code=abc&state=${loc.searchParams.get('state')}`, { ip, jar: j });
 }
@@ -532,10 +532,11 @@ pr = await pre({ email: 'bot@example.com', hp: 'http://spam' });
 ok('pre-registro: el campo trampa responde bien pero no guarda nada', pr.status === 200 && !db.prepare("SELECT 1 FROM prereg WHERE email_key = 'bot@example.com'").get());
 pr = await pre({ email: 'pre0@example.com', consent: false });
 ok('pre-registro: sin aceptar el aviso de privacidad se rechaza', pr.status === 400 && pr.json.error === 'consent_required');
-const p1 = await pre({ email: 'pre1@example.com', alias: 'Primera' });
+const p1 = await pre({ email: 'pre1@example.com', alias: 'Primera', termsVersion: '2026-09-23' });
 const p2 = await pre({ email: 'pre2@example.com', lang: 'en' });
 const p3 = await pre({ email: 'pre3@example.com' });
 ok('pre-registro: los primeros N reciben código al instante', p1.json.status === 'invited' && p2.json.status === 'invited');
+ok('pre-registro: guarda la versión de los términos aceptados', db.prepare("SELECT terms_version FROM prereg WHERE email_key = 'pre1@example.com'").get().terms_version === '2026-09-23');
 ok('pre-registro: después del cupo quedan en espera con su puesto', p3.json.status === 'waiting' && p3.json.position === 1);
 const c1 = db.prepare("SELECT invite_code FROM prereg WHERE email_key = 'pre1@example.com'").get().invite_code;
 ok('pre-registro: el código queda atado a su correo y llega por correo', /^YBE-/.test(c1) && db.prepare('SELECT email_key FROM invites WHERE code = ?').get(c1).email_key === 'pre1@example.com' && outbox().includes(c1) && outbox().includes('Hola Primera'));
@@ -564,6 +565,25 @@ pr = await pre({ email: 'pre9@example.com' }, { origin: 'https://sitio-malo.exam
 ok('CORS: un formulario de otro dominio no puede anotar gente', pr.status === 403 && pr.json.error === 'bad_origin');
 rr = await fetch(base + '/api/auth/config', { headers: { origin: SITE } });
 ok('CORS: el resto de la API no se abre al sitio', !rr.headers.get('access-control-allow-origin'));
+// ── aceptación de Términos y Privacidad (18+) al crear cuenta
+cfg.inviteOnly = false;
+ir = await reg({ body: { email: 'noterms@example.com', username: 'Sin Terminos', acceptTerms: false } });
+ok('términos: sin aceptarlos no se crea la cuenta', ir.status === 400 && ir.json.error === 'terms_required' && !db.prepare("SELECT 1 FROM accounts WHERE email_key = 'noterms@example.com'").get());
+ir = await reg({ body: { email: 'conterms@example.com', username: 'Con Terminos' } });
+const tacc = db.prepare("SELECT terms_version, terms_accepted_at FROM accounts WHERE email_key = 'conterms@example.com'").get();
+ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 && tacc.terms_version === '2026-09-23' && tacc.terms_accepted_at > 0);
+{
+  profiles.google = { sub: 'g-noterms', email: 'noterms.g@gmail.com', email_verified: true, name: 'Sin Terminos G' };
+  const ip = newIp(), j = {};
+  const st = await call('GET', '/api/auth/google/start', { ip, jar: j });
+  const cb = await call('GET', `/api/auth/google/callback?code=abc&state=${new URL(st.loc).searchParams.get('state')}`, { ip, jar: j });
+  ok('términos: Google sin aceptarlos no crea cuenta nueva', /#auth_error=terms_required$/.test(cb.loc ?? '') && !db.prepare("SELECT 1 FROM identities WHERE subject = 'g-noterms'").get());
+  profiles.google = { sub: 'g-1', email: 'gina@gmail.com', email_verified: true, name: 'Gina Verde' };
+  const st2 = await call('GET', '/api/auth/google/start', { ip, jar: j });
+  const cb2 = await call('GET', `/api/auth/google/callback?code=abc&state=${new URL(st2.loc).searchParams.get('state')}`, { ip, jar: j });
+  ok('términos: una cuenta que ya existe entra con Google sin volver a aceptar', /#auth=ok$/.test(cb2.loc ?? ''));
+}
+cfg.inviteOnly = true;
 cfg.inviteOnly = false;
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 server.close(); mock.close();
