@@ -81,6 +81,9 @@ CREATE INDEX IF NOT EXISTS idx_accounts_ip ON accounts(ip_hash, created_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_acc ON sessions(account_id);
 `);
 for (const f of ['accounts.db', 'accounts.db-wal', 'accounts.db-shm']) { try { fs.chmodSync(path.join(cfg.dataDir, f), 0o600); } catch { /* not created yet */ } }
+// los códigos de la alfa pueden quedar atados al correo del pre-registro (bases creadas antes no tienen la columna)
+try { db.exec('ALTER TABLE invites ADD COLUMN email_key TEXT'); } catch { /* ya existe */ }
+
 const q = {
   byEmailKey: db.prepare('SELECT * FROM accounts WHERE email_key = ?'),
   byUserKey: db.prepare('SELECT * FROM accounts WHERE username_key = ?'),
@@ -111,7 +114,8 @@ const q = {
   flag: db.prepare("UPDATE accounts SET flags = CASE WHEN instr(flags, ?) THEN flags ELSE flags || ? || ',' END WHERE id = ?"),
   hijackGuard: db.prepare('UPDATE accounts SET pass_hash = NULL, email_verified = 1 WHERE id = ?'),
   // códigos de invitación: reservar es atómico (dos personas no pueden gastar el mismo uso a la vez)
-  reserveInvite: db.prepare('UPDATE invites SET uses = uses + 1 WHERE code = ? AND revoked = 0 AND uses < max_uses AND (expires_at IS NULL OR expires_at > ?)'),
+  reserveInvite: db.prepare('UPDATE invites SET uses = uses + 1 WHERE code = ? AND revoked = 0 AND uses < max_uses AND (expires_at IS NULL OR expires_at > ?) AND (email_key IS NULL OR email_key = ?)'),
+  inviteRow: db.prepare('SELECT email_key FROM invites WHERE code = ?'),
   refundInvite: db.prepare('UPDATE invites SET uses = uses - 1 WHERE code = ? AND uses > 0'),
   logInviteUse: db.prepare('INSERT INTO invite_uses (code, account_id, used_at) VALUES (?,?,?)'),
 };
@@ -123,11 +127,13 @@ const normInvite = (raw) => {
   const body = c.startsWith('YBE') ? c.slice(3) : c;
   return body.length === 8 ? `YBE-${body.slice(0, 4)}-${body.slice(4)}` : c.slice(0, 20);
 };
-/** reserva un uso del código o devuelve el motivo del rechazo */
-const reserveInvite = (code) => {
+/** reserva un uso del código para ese correo, o devuelve el motivo del rechazo */
+const reserveInvite = (code, eKey) => {
   if (!cfg.inviteOnly) return null;
   if (!code) return 'invite_required';
-  return q.reserveInvite.run(code, Date.now()).changes === 1 ? null : 'invite_invalid';
+  if (q.reserveInvite.run(code, Date.now(), eKey ?? '').changes === 1) return null;
+  const row = q.inviteRow.get(code);
+  return row?.email_key && row.email_key !== eKey ? 'invite_email_mismatch' : 'invite_invalid';
 };
 setInterval(() => { const now = Date.now(); try { q.sweepPow.run(now); q.sweepSessions.run(now); q.sweepTokens.run(now); } catch { /* */ } }, 10 * 60_000).unref();
 
@@ -276,7 +282,7 @@ route('POST', '/api/auth/register', async (ctx) => {
   const invite = normInvite(b.invite);
   if (cfg.inviteOnly && !invite) throw new HttpError(403, 'invite_required');
   const hash = await hashPasswordAsync(password, PEPPER);
-  const inviteErr = reserveInvite(invite);
+  const inviteErr = reserveInvite(invite, eKey);
   if (inviteErr) { audit('invite_rejected', null, ctx.ipHash, invite.slice(0, 20)); throw new HttpError(403, inviteErr); }
   let id;
   try { id = q.insertAccount.run(email, eKey, username, usernameKey(username), hash, 0, Date.now(), ctx.ipHash, ctx.uaHash, 'email').lastInsertRowid; }
@@ -456,7 +462,7 @@ function finishOAuth(ctx, name, data, fail, rawInvite) {
     if (accountCapReached(ctx)) return fail('ip_account_limit');
     limit(ctx, `reg:${ctx.ip}`, 5, 3600_000);
     const invite = normInvite(rawInvite);
-    const inviteErr = reserveInvite(invite);
+    const inviteErr = reserveInvite(invite, eKey);
     if (inviteErr) { audit('invite_rejected', null, ctx.ipHash, `${name}:${invite.slice(0, 20)}`); return fail(inviteErr); }
     const uname = uniqueUsername(display || (email ? email.split('@')[0] : 'Grower'));
     try { accountId = q.insertAccount.run(email, eKey, uname, usernameKey(uname), null, name === 'google' ? 1 : 0, Date.now(), ctx.ipHash, ctx.uaHash, name).lastInsertRowid; }

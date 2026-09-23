@@ -506,6 +506,17 @@ gi = await oauthInvite({ sub: 'g-inv-1', email: 'nuevo.google@gmail.com', email_
 ok('invitación: Google con código crea la cuenta y gasta el código', /#auth=ok$/.test(gi.loc ?? '') && !!db.prepare("SELECT 1 FROM identities WHERE provider = 'google' AND subject = 'g-inv-1'").get() && db.prepare("SELECT uses FROM invites WHERE code = 'YBE-TAKN-2345'").get().uses === 1);
 gi = await oauthInvite({ sub: 'g-1', email: 'gina@gmail.com', email_verified: true, name: 'Gina Verde' });
 ok('invitación: una cuenta que ya existe entra con Google sin código', /#auth=ok$/.test(gi.loc ?? ''));
+// códigos personales del pre-registro: atados a un correo
+const { emailKey: ek } = await import('./lib.mjs');
+db.prepare("INSERT INTO invites (code, note, max_uses, created_at, email_key) VALUES ('YBE-PERS-2345', 'pre-registro', 1, ?, ?), ('YBE-GMAI-2345', 'pre-registro', 1, ?, ?)").run(Date.now(), ek('bound@example.com'), Date.now(), ek('Bound.Person@gmail.com'));
+ir = await reg({ body: { email: 'otro@example.com', username: 'Colado Uno', invite: 'YBE-PERS-2345' } });
+ok('invitación personal: con otro correo no sirve', ir.status === 403 && ir.json.error === 'invite_email_mismatch' && db.prepare("SELECT uses FROM invites WHERE code = 'YBE-PERS-2345'").get().uses === 0);
+ir = await reg({ body: { email: 'bound@example.com', username: 'Dueño Codigo', invite: 'YBE-PERS-2345' } });
+ok('invitación personal: con su correo crea la cuenta', ir.status === 200 && db.prepare("SELECT uses FROM invites WHERE code = 'YBE-PERS-2345'").get().uses === 1);
+gi = await oauthInvite({ sub: 'g-bound-x', email: 'alguien.mas@gmail.com', email_verified: true, name: 'Colado Google' }, 'YBE-GMAI-2345');
+ok('invitación personal: Google con otro correo no sirve', /#auth_error=invite_email_mismatch$/.test(gi.loc ?? ''));
+gi = await oauthInvite({ sub: 'g-bound-1', email: 'boundperson@gmail.com', email_verified: true, name: 'Bound Person' }, 'YBE-GMAI-2345');
+ok('invitación personal: Google con el mismo Gmail (aunque cambien los puntos) sirve', /#auth=ok$/.test(gi.loc ?? '') && db.prepare("SELECT uses FROM invites WHERE code = 'YBE-GMAI-2345'").get().uses === 1);
 cfg.inviteOnly = false;
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 server.close(); mock.close();

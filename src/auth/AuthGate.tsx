@@ -175,7 +175,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
             <form onSubmit={doRegister} className="space-y-3.5" autoComplete="on">
               {config.inviteOnly && (
                 <Field label="Código de invitación" value={invite} onChange={(e) => setInvite(e.target.value.toUpperCase())} required maxLength={20} autoComplete="off" spellCheck={false} placeholder="YBE-XXXX-XXXX"
-                  hint="La alfa es con invitación. ¿No tenés código? Anotate en yieldbudempire.com y te avisamos." />
+                  hint="La alfa es con invitación: tu código personal te llega por correo cuando te toca. ¿Todavía no te anotaste? Hacé el pre-registro en yieldbudempire.com." />
               )}
               <Field label="Correo" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required maxLength={254} hint="Debe ser un correo real: te enviaremos un enlace para confirmarlo." />
               <Field label="Nombre de usuario" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required minLength={3} maxLength={20} hint="3–20 caracteres. Se puede cambiar de apodo después en tu perfil." />
