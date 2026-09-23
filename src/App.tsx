@@ -34,6 +34,7 @@ import { ResourceBar } from './components/ResourceBar';
 import { SubTabs } from './components/SubTabs';
 import { ParticleField } from './components/game/GameUI';
 import { NAV_GROUPS, TAB_ZONE, groupOfTab, type TabId } from './nav';
+import { t, useLang } from './i18n';
 
 function YieldBudEmpireApp() {
   const { indoorPlants, reportEvent } = useGame();
@@ -77,7 +78,7 @@ function YieldBudEmpireApp() {
   // tab title flags plants that need water (this is a real-time game: the player has to come back)
   useEffect(() => {
     const thirsty = indoorPlants.filter(isThirsty).length;
-    document.title = `${thirsty ? `(💧${thirsty}) ` : ''}Yield Bud Empire: El Multiverso Botánico Descentralizado`;
+    document.title = t('{v0}Yield Bud Empire: El Multiverso Botánico Descentralizado', { v0: thirsty ? `(💧${thirsty}) ` : '' });
   }, [indoorPlants]);
 
   const goToTab = (tab: string) => {
@@ -180,8 +181,8 @@ function YieldBudEmpireApp() {
 
       {/* Footer */}
       <footer className="mb-24 px-4 text-center text-[11px] text-neutral-600">
-        <span className="font-serif text-neutral-400">Yield Bud Empire</span> · Solana SPL &amp; Anchor · Simulación agronómica educativa ·{' '}
-        <button onClick={() => goToTab('whitepaper')} className="hover:text-emerald-300 transition cursor-pointer">Libro Blanco</button> · <span title="Versión de este juego (si no coincide con la última, recarga con Ctrl+Shift+R)">{buildLabel()}</span>
+        <span className="font-serif text-neutral-400">{t('Yield Bud Empire')}</span>{' '}{t('· Solana SPL & Anchor · Simulación agronómica educativa ·')}
+        <button onClick={() => goToTab('whitepaper')} className="hover:text-emerald-300 transition cursor-pointer">{t('Libro Blanco')}</button> · <span title={t('Versión de este juego (si no coincide con la última, recarga con Ctrl+Shift+R)')}>{buildLabel()}</span>
       </footer>
 
       {/* Bottom dock */}
@@ -191,12 +192,14 @@ function YieldBudEmpireApp() {
 }
 
 export default function App() {
+  // al cambiar de idioma se vuelve a dibujar la interfaz entera (key); la partida vive en GameProvider y no se toca
+  const lang = useLang();
   // the game only opens for a signed-in session (see server/ and SECURITY.md)
   return (
     <AuthGate>
       {() => (
         <GameProvider>
-          <YieldBudEmpireApp />
+          <YieldBudEmpireApp key={lang} />
         </GameProvider>
       )}
     </AuthGate>

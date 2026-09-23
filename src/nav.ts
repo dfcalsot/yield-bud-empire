@@ -16,6 +16,7 @@ import {
   ProfileBadge,
   BreedingChamber,
 } from './components/icons/CannabisIcons';
+import { k } from './i18n';
 
 export type TabId =
   | 'cultivo'
@@ -46,29 +47,29 @@ export interface NavGroup {
 }
 
 export const NAV_TABS: Record<TabId, NavTab> = {
-  cultivo: { id: 'cultivo', label: 'Cultivo', icon: CannabisLeaf },
-  planeta: { id: 'planeta', label: 'Planeta', icon: PlanetGlobe },
-  nutrientes: { id: 'nutrientes', label: 'Nutrición', icon: NutrientBottle },
-  semillas: { id: 'semillas', label: 'Semillas', icon: Seed },
-  extraccion: { id: 'extraccion', label: 'Extracción', icon: RosinPress },
-  genetica: { id: 'genetica', label: 'Genética', icon: DnaLeaf },
-  forja: { id: 'forja', label: 'Forja', icon: ForgeAnvil },
-  cria: { id: 'cria', label: 'Cría', icon: BreedingChamber },
-  market: { id: 'market', label: 'Grow Market', icon: GrowLight },
-  dispensario: { id: 'dispensario', label: 'Dispensario', icon: Dispensary },
-  tokenomica: { id: 'tokenomica', label: 'Tokenómica', icon: LeafCoin },
-  whitepaper: { id: 'whitepaper', label: 'Libro Blanco', icon: BookLeaf },
-  perfil: { id: 'perfil', label: 'Perfil', icon: ProfileBadge },
+  cultivo: { id: 'cultivo', label: k('Cultivo'), icon: CannabisLeaf },
+  planeta: { id: 'planeta', label: k('Planeta'), icon: PlanetGlobe },
+  nutrientes: { id: 'nutrientes', label: k('Nutrición'), icon: NutrientBottle },
+  semillas: { id: 'semillas', label: k('Semillas'), icon: Seed },
+  extraccion: { id: 'extraccion', label: k('Extracción'), icon: RosinPress },
+  genetica: { id: 'genetica', label: k('Genética'), icon: DnaLeaf },
+  forja: { id: 'forja', label: k('Forja'), icon: ForgeAnvil },
+  cria: { id: 'cria', label: k('Cría'), icon: BreedingChamber },
+  market: { id: 'market', label: k('Grow Market'), icon: GrowLight },
+  dispensario: { id: 'dispensario', label: k('Dispensario'), icon: Dispensary },
+  tokenomica: { id: 'tokenomica', label: k('Tokenómica'), icon: LeafCoin },
+  whitepaper: { id: 'whitepaper', label: k('Libro Blanco'), icon: BookLeaf },
+  perfil: { id: 'perfil', label: k('Perfil'), icon: ProfileBadge },
 };
 
 /** The five dock entries. Groups with several tabs show a sub-tab bar in the shell. */
 export const NAV_GROUPS: NavGroup[] = [
-  { id: 'cultivo', label: 'Cultivo', icon: CannabisLeaf, tabs: ['cultivo', 'planeta', 'nutrientes'] },
-  { id: 'semillas', label: 'Semillas', icon: Seed, tabs: ['semillas'] },
-  { id: 'laboratorio', label: 'Laboratorio', icon: FlaskLeaf, tabs: ['extraccion', 'forja', 'cria', 'genetica'] },
-  { id: 'mercado', label: 'Mercado', icon: CuringJar, tabs: ['market', 'dispensario'] },
-  { id: 'cripto', label: 'Cripto', icon: LeafCoin, tabs: ['tokenomica', 'whitepaper'] },
-  { id: 'perfil', label: 'Perfil', icon: ProfileBadge, tabs: ['perfil'] },
+  { id: 'cultivo', label: k('Cultivo'), icon: CannabisLeaf, tabs: ['cultivo', 'planeta', 'nutrientes'] },
+  { id: 'semillas', label: k('Semillas'), icon: Seed, tabs: ['semillas'] },
+  { id: 'laboratorio', label: k('Laboratorio'), icon: FlaskLeaf, tabs: ['extraccion', 'forja', 'cria', 'genetica'] },
+  { id: 'mercado', label: k('Mercado'), icon: CuringJar, tabs: ['market', 'dispensario'] },
+  { id: 'cripto', label: k('Cripto'), icon: LeafCoin, tabs: ['tokenomica', 'whitepaper'] },
+  { id: 'perfil', label: k('Perfil'), icon: ProfileBadge, tabs: ['perfil'] },
 ];
 
 /** Accent colour of each zone (palette B "Noche Botánica"): panels, borders and glows follow it through the --zone variable. */

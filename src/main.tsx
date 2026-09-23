@@ -2,6 +2,7 @@ import {StrictMode, lazy, Suspense, useEffect, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import {initLang} from './i18n';
 import {AppErrorBoundary, reloadOnceForNewBuild} from './components/AppErrorBoundary.tsx';
 
 // Vite fires this when a lazy chunk of an older build no longer exists on the server: take the new build
@@ -40,10 +41,11 @@ function Root() {
   return <App />;
 }
 
-createRoot(document.getElementById('root')!).render(
+// el idioma (y su diccionario) se carga antes de dibujar, para que no aparezca un instante en el idioma equivocado
+void initLang().finally(() => createRoot(document.getElementById('root')!).render(
   <StrictMode>
    <AppErrorBoundary>
     <Root />
    </AppErrorBoundary>
   </StrictMode>,
-);
+));

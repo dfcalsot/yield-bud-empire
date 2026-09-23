@@ -8,6 +8,7 @@ import { useAssignedStaff } from '../../../context/GameContext';
 import { ROLE_INFO, variantOf, type StaffRole } from '../../../sim/staff';
 import { PremiumBust } from '../../staff/premium/PremiumBust';
 import { RARITY_STYLE } from '../../game/GameUI';
+import { t, k } from '../../../i18n';
 
 /**
  * NPC rig v2. Same contract as `Npc` (kind, text, mood, moodKey, bare) so it can replace it call site by call site,
@@ -19,13 +20,13 @@ export type NpcKindV2 = 'chrono' | 'foreman' | 'merchant' | 'farmer' | 'scientis
 const FIGURES: Record<NpcKindV2, FigureV2> = { chrono: Chrono, foreman: Nico, merchant: Flora, farmer: Tomas, scientist: Lucia, geneticist: Rafa, budtender: Marta };
 
 export const NPC_NAMES_V2: Record<NpcKindV2, string> = {
-  chrono: 'Chrono · Guía',
-  foreman: 'Nico · Capataz',
-  merchant: 'Flora · Grow Shop',
-  farmer: 'Tomás · Cultivador',
-  scientist: 'Dra. Lucía · Laboratorio',
-  geneticist: 'Prof. Rafa · Genetista',
-  budtender: 'Marta · Dispensaria',
+  chrono: k('Chrono · Guía'),
+  foreman: k('Nico · Capataz'),
+  merchant: k('Flora · Grow Shop'),
+  farmer: k('Tomás · Cultivador'),
+  scientist: k('Dra. Lucía · Laboratorio'),
+  geneticist: k('Prof. Rafa · Genetista'),
+  budtender: k('Marta · Dispensaria'),
 };
 
 export const NpcV2: React.FC<{
@@ -65,8 +66,8 @@ export const NpcV2: React.FC<{
   const talking = shown.length < text.length;
   const Fig = kind === 'merchant' && shop === 'floro' ? Floro : FIGURES[kind];
   const label = hired
-    ? `${hired.staff.name} · ${ROLE_INFO[kind as StaffRole].label} ${'★'.repeat(hired.staff.rank)}${hired.working ? '' : ' · sin pagar'}`
-    : kind === 'merchant' ? `${shopkeeperName(shop)} · Grow Shop` : NPC_NAMES_V2[kind];
+    ? `${hired.staff.name} · ${t(ROLE_INFO[kind as StaffRole].label)} ${'★'.repeat(hired.staff.rank)}${hired.working ? '' : t(' · sin pagar')}`
+    : kind === 'merchant' ? t('{v0} · Grow Shop', { v0: shopkeeperName(shop) }) : t(NPC_NAMES_V2[kind]);
 
   return (
     <div className={`flex items-end gap-1 min-w-0 ${className}`}>

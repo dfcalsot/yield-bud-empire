@@ -1,4 +1,5 @@
 import { hasZeroBits, sha256Words } from './sha256';
+import { t, k } from '../i18n';
 
 /** Tiny client for the account service (same origin, cookie session, CSRF header). */
 export interface ApiResult<T = any> { status: number; data: T }
@@ -84,20 +85,24 @@ function solveInline(salt: string, bits: number, onProgress?: (p: number) => voi
   });
 }
 
+/** guarda el idioma elegido en la cuenta (decide el idioma de los correos) */
+export const saveAccountLang = async (lang: string) => { try { await api('POST', '/api/auth/lang', { lang }); } catch { /* offline */ } };
+
 export const logoutServer = async () => { try { await api('POST', '/api/auth/logout'); } catch { /* offline */ } };
 
 export const ERR: Record<string, string> = {
-  captcha_missing: 'Falta la verificación anti-bots.', captcha_invalid: 'La verificación no es válida. Inténtalo de nuevo.', captcha_expired: 'La verificación caducó. Inténtalo de nuevo.',
-  captcha_replayed: 'La verificación ya se usó. Inténtalo de nuevo.', captcha_wrong: 'La verificación falló. Inténtalo de nuevo.', captcha_weak: 'La verificación no es suficiente. Recarga la página.',
-  terms_required: 'Para crear tu cuenta tenés que confirmar que tenés 18 años o más y aceptar los Términos y la Política de Privacidad (en «Soy nuevo»).',
-  invite_required: 'Para crear una cuenta nueva en la alfa (también con Google o X) hace falta un código de invitación: tocá «Soy nuevo» y escribilo.', invite_invalid: 'Ese código de invitación no existe, ya se usó o está vencido.', invite_email_mismatch: 'Ese código es personal: registrate con el mismo correo con el que hiciste el pre-registro (o entrá con Google usando ese correo).',
-  email_invalid: 'Ese correo no parece válido.', email_disposable: 'No aceptamos correos temporales o desechables.', email_domain: 'Ese dominio de correo no puede recibir mensajes.',
-  username_invalid: 'Usuario de 3 a 20 caracteres: letras, números, espacios y . _ -', username_reserved: 'Ese nombre está reservado.', username_taken: 'Ese usuario ya existe (o se parece demasiado a uno existente).',
-  ip_account_limit: 'Ya se crearon varias cuentas desde tu red. Inténtalo más tarde o entra con la que ya tienes.', rate_limited: 'Demasiados intentos. Espera un momento y vuelve a probar.',
-  busy: 'Estamos recibiendo muchas altas ahora mismo. Reintenta en un minuto.', bad_credentials: 'Usuario o contraseña incorrectos.', account_locked: 'Cuenta bloqueada un rato por intentos fallidos. Espera unos minutos.',
-  token_invalid: 'El enlace no es válido, caducó o ya se usó.', provider_not_configured: 'Este método aún no está activado en el servidor.', x_account_too_new: 'Tu cuenta de X es demasiado reciente (mínimo 60 días).',
-  x_account_too_small: 'Tu cuenta de X no cumple el mínimo de actividad.', email_not_verified: 'Google no confirmó tu correo.', state_invalid: 'El inicio de sesión caducó. Inténtalo de nuevo.', denied: 'Cancelaste el inicio de sesión.',
-  provider_error: 'El proveedor no respondió. Inténtalo de nuevo.', token_exchange: 'No pudimos completar el inicio de sesión con el proveedor.', profile: 'No pudimos leer tu perfil del proveedor.', signup_race: 'No se pudo crear la cuenta. Inténtalo de nuevo.',
-  cancelled: 'Verificación cancelada.', challenge_failed: 'No se pudo pedir la verificación al servidor. Revisa tu conexión e inténtalo de nuevo.', server_error: 'Error del servidor. Inténtalo de nuevo en un momento.', bad_request: 'Revisa los datos.', csrf: 'Petición rechazada por seguridad. Recarga la página.', bad_origin: 'Petición rechazada por seguridad. Recarga la página.',
+  captcha_missing: k('Falta la verificación anti-bots.'), captcha_invalid: k('La verificación no es válida. Inténtalo de nuevo.'), captcha_expired: k('La verificación caducó. Inténtalo de nuevo.'),
+  captcha_replayed: k('La verificación ya se usó. Inténtalo de nuevo.'), captcha_wrong: k('La verificación falló. Inténtalo de nuevo.'), captcha_weak: k('La verificación no es suficiente. Recarga la página.'),
+  terms_required: k('Para crear tu cuenta tenés que confirmar que tenés 18 años o más y aceptar los Términos y la Política de Privacidad (en «Soy nuevo»).'),
+  invite_required: k('Para crear una cuenta nueva en la alfa (también con Google o X) hace falta un código de invitación: tocá «Soy nuevo» y escribilo.'), invite_invalid: k('Ese código de invitación no existe, ya se usó o está vencido.'), invite_email_mismatch: k('Ese código es personal: registrate con el mismo correo con el que hiciste el pre-registro (o entrá con Google usando ese correo).'),
+  email_invalid: k('Ese correo no parece válido.'), email_disposable: k('No aceptamos correos temporales o desechables.'), email_domain: k('Ese dominio de correo no puede recibir mensajes.'),
+  username_invalid: k('Usuario de 3 a 20 caracteres: letras, números, espacios y . _ -'), username_reserved: k('Ese nombre está reservado.'), username_taken: k('Ese usuario ya existe (o se parece demasiado a uno existente).'),
+  ip_account_limit: k('Ya se crearon varias cuentas desde tu red. Inténtalo más tarde o entra con la que ya tienes.'), rate_limited: k('Demasiados intentos. Espera un momento y vuelve a probar.'),
+  busy: k('Estamos recibiendo muchas altas ahora mismo. Reintenta en un minuto.'), bad_credentials: k('Usuario o contraseña incorrectos.'), account_locked: k('Cuenta bloqueada un rato por intentos fallidos. Espera unos minutos.'),
+  token_invalid: k('El enlace no es válido, caducó o ya se usó.'), provider_not_configured: k('Este método aún no está activado en el servidor.'), x_account_too_new: k('Tu cuenta de X es demasiado reciente (mínimo 60 días).'),
+  x_account_too_small: k('Tu cuenta de X no cumple el mínimo de actividad.'), email_not_verified: k('Google no confirmó tu correo.'), state_invalid: k('El inicio de sesión caducó. Inténtalo de nuevo.'), denied: k('Cancelaste el inicio de sesión.'),
+  provider_error: k('El proveedor no respondió. Inténtalo de nuevo.'), token_exchange: k('No pudimos completar el inicio de sesión con el proveedor.'), profile: k('No pudimos leer tu perfil del proveedor.'), signup_race: k('No se pudo crear la cuenta. Inténtalo de nuevo.'),
+  cancelled: k('Verificación cancelada.'), challenge_failed: k('No se pudo pedir la verificación al servidor. Revisa tu conexión e inténtalo de nuevo.'), server_error: k('Error del servidor. Inténtalo de nuevo en un momento.'), bad_request: k('Revisa los datos.'), csrf: k('Petición rechazada por seguridad. Recarga la página.'), bad_origin: k('Petición rechazada por seguridad. Recarga la página.'),
 };
-export const errText = (d: any): string => (d?.error === 'password_weak' && d.message) || ERR[d?.error] || 'No se pudo completar la operación.';
+// los textos del servidor (password_weak) llegan en español y se traducen acá igual que los de la tabla
+export const errText = (d: any): string => t((d?.error === 'password_weak' && d.message) || ERR[d?.error] || 'No se pudo completar la operación.');

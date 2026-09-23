@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext';
 import { shortAddress } from '../utils/nft';
 import type { SolanaTransaction } from '../types';
 import { LeafCoin } from './icons/CannabisIcons';
+import { t } from '../i18n';
 
 const TYPE_INFO: Record<SolanaTransaction['type'], { label: string; color: string }> = {
   BURN_SPEEDUP: { label: 'Quema · Aceleración', color: '#fbbf24' },
@@ -44,7 +45,7 @@ export const TxToast: React.FC = () => {
   }, [transactions]);
 
   if (!tx) return null;
-  const info = TYPE_INFO[tx.type] ?? { label: 'Transacción', color: '#34d399' };
+  const info = TYPE_INFO[tx.type] ?? { label: t('Transacción'), color: '#34d399' };
   const done = stage === 'finalized';
   const amount = tx.amountFlora ? `${tx.amountFlora.toLocaleString()} $FLORA` : tx.amountSol ? `${tx.amountSol} SOL` : '';
 
@@ -60,7 +61,7 @@ export const TxToast: React.FC = () => {
               <span className="text-[11px] font-bold text-white truncate">{info.label}</span>
               <span className="text-[11px] font-mono font-bold shrink-0" style={{ color: info.color }}>{amount}</span>
             </div>
-            <div className="text-[10px] font-mono text-neutral-400 truncate">{shortAddress(tx.signature, 6, 6)} · slot #{tx.blockSlot.toLocaleString()}</div>
+            <div className="text-[10px] font-mono text-neutral-400 truncate">{t('{v0} · slot #{v1}', { v0: shortAddress(tx.signature, 6, 6), v1: tx.blockSlot.toLocaleString() })}</div>
           </div>
         </div>
         <div className="mt-2 flex items-center gap-2 text-[9.5px] font-mono uppercase tracking-wider">
@@ -68,7 +69,7 @@ export const TxToast: React.FC = () => {
             const reached = ['sending', 'confirmed', 'finalized'].indexOf(stage) >= i;
             return (
               <React.Fragment key={s}>
-                <span className={reached ? 'text-emerald-300' : 'text-neutral-600'}>{s === 'sending' ? 'Enviando' : s === 'confirmed' ? 'Confirmada' : 'Finalizada'}</span>
+                <span className={reached ? 'text-emerald-300' : 'text-neutral-600'}>{s === 'sending' ? t('Enviando') : s === 'confirmed' ? t('Confirmada') : t('Finalizada')}</span>
                 {i < 2 && <span className="flex-1 h-px" style={{ background: reached && i < ['sending', 'confirmed', 'finalized'].indexOf(stage) ? '#34d399' : '#1b3529' }} />}
               </React.Fragment>
             );

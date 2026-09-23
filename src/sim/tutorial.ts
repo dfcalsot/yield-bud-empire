@@ -1,4 +1,5 @@
 import type { MissionEvent, MissionReward, MissionState } from './missions';
+import { k } from '../i18n/core';
 
 /**
  * Chrono's tutorial: a short chain of steps that teaches a new player how to move and what to do first.
@@ -25,26 +26,26 @@ export interface TutorialStep {
 }
 
 export const STEPS: TutorialStep[] = [
-  { id: 'move', title: 'Muévete por el mundo', event: 'visit', goal: 1, tab: 'any', tour: 'dock', say: 'El dock de abajo te lleva a cada zona del juego. Toca cualquier icono para viajar.', hint: 'Toca un icono del dock',
-    reward: { lots: [{ id: 'water_50' }], xp: 20 }, thanks: '¡Así se viaja! Aquí tienes agua para empezar.' },
-  { id: 'bag', title: 'Tu maletín', event: 'openbag', goal: 1, tab: 'any', tour: 'bag', say: 'Todo lo que tienes vive en tu maletín: recursos, equipo, semillas y cosecha. Ábrelo con este botón o con la tecla I.', hint: 'Abre el maletín (tecla I)',
-    reward: { lots: [{ id: 'nut_biobizz' }], xp: 25 }, thanks: 'Ahora sabes dónde está todo. Un poco de abono de regalo.' },
-  { id: 'water', title: 'Riega tu planta', event: 'water', goal: 1, tab: 'cultivo', tour: 'water', say: 'Las plantas beben agua. Toca «Regar» en la barra de abajo (tecla 1) o toca la maceta de la planta.', hint: 'Toca «Regar»',
-    reward: { xp: 30 }, thanks: '¡Bien regada! El sustrato ya respira.' },
-  { id: 'feed', title: 'Dale de comer', event: 'feed', goal: 1, tab: 'cultivo', tour: 'feed', say: 'Además de agua necesita nutrientes. Toca el frasco para abonar.', hint: 'Toca «Abonar»',
-    reward: { xp: 30 }, thanks: 'Plantita feliz y alimentada.' },
-  { id: 'gauges', title: 'Lee el panel', event: 'gauges', goal: 1, tab: 'cultivo', tour: 'gauges', say: 'Estos medidores cuentan cómo está tu sala: clima, raíz y luz. Toca un grupo para ver el detalle; si algo se pone amarillo, te digo qué falla.', hint: 'Abre un grupo de medidores',
-    reward: { lots: [{ id: 'energy_20' }], xp: 30 }, thanks: 'Ya sabes leer tu cuarto. Unos kWh para la luz.' },
-  { id: 'process', title: 'Procesa tu flor', event: 'lab', goal: 1, tab: 'extraccion', say: 'La flor seca vale más procesada. Ve a Laboratorio → Extracción, elige una estación y corre un ciclo.', hint: 'Corre un ciclo en Extracción',
-    reward: { lots: [{ id: 'energy_20' }], xp: 60 }, thanks: '¡Primer extracto! Eso sí es industria.' },
-  { id: 'sell', title: 'Vende un lote', event: 'sell', goal: 1, tab: 'dispensario', say: 'Los lotes se venden en el dispensario: Mercado → Dispensario. Marta te atiende.', hint: 'Vende un lote',
-    reward: { xp: 50 }, thanks: 'Primera venta hecha. Así se empieza un imperio.' },
-  { id: 'buy', title: 'Compra suministros', event: 'buy', goal: 1, tab: 'market', say: 'Para seguir cultivando necesitas insumos. En Mercado → Grow Market compra lo que te falte.', hint: 'Compra algo en el Grow Market',
-    reward: { lots: [{ id: 'pest_neem' }], xp: 40 }, thanks: 'Buena compra. Un neem para las plagas, cortesía de la casa.' },
-  { id: 'planet', title: 'Conoce el Planeta', event: 'planet', goal: 1, tab: 'planeta', say: 'Más allá de tu sala hay siete regiones con parcelas NFT. Entra a Cultivo → Planeta y échales un vistazo.', hint: 'Abre el Planeta',
-    reward: { xp: 40 }, thanks: 'El mundo es grande. Ya lo explorarás.' },
-  { id: 'harvest', title: 'Tu primera cosecha', event: 'harvest', goal: 1, tab: 'cultivo', say: 'Cuando tu planta esté lista, cosecha. Crece en tiempo real: puedes esperar o acelerar el ciclo quemando $FLORA. Este paso es opcional, ¡vuelve cuando quieras!', hint: 'Cosecha una planta',
-    reward: { seeds: { seed_gelato_auto: 1 }, lots: [{ id: 'energy_20' }], xp: 150 }, thanks: '¡Cosechaste! Ya eres oficialmente cultivador de Yield Bud Empire.' },
+  { id: 'move', title: k('Muévete por el mundo'), event: 'visit', goal: 1, tab: 'any', tour: 'dock', say: k('El dock de abajo te lleva a cada zona del juego. Toca cualquier icono para viajar.'), hint: k('Toca un icono del dock'),
+    reward: { lots: [{ id: 'water_50' }], xp: 20 }, thanks: k('¡Así se viaja! Aquí tienes agua para empezar.') },
+  { id: 'bag', title: k('Tu maletín'), event: 'openbag', goal: 1, tab: 'any', tour: 'bag', say: k('Todo lo que tienes vive en tu maletín: recursos, equipo, semillas y cosecha. Ábrelo con este botón o con la tecla I.'), hint: k('Abre el maletín (tecla I)'),
+    reward: { lots: [{ id: 'nut_biobizz' }], xp: 25 }, thanks: k('Ahora sabes dónde está todo. Un poco de abono de regalo.') },
+  { id: 'water', title: k('Riega tu planta'), event: 'water', goal: 1, tab: 'cultivo', tour: 'water', say: k('Las plantas beben agua. Toca «Regar» en la barra de abajo (tecla 1) o toca la maceta de la planta.'), hint: k('Toca «Regar»'),
+    reward: { xp: 30 }, thanks: k('¡Bien regada! El sustrato ya respira.') },
+  { id: 'feed', title: k('Dale de comer'), event: 'feed', goal: 1, tab: 'cultivo', tour: 'feed', say: k('Además de agua necesita nutrientes. Toca el frasco para abonar.'), hint: k('Toca «Abonar»'),
+    reward: { xp: 30 }, thanks: k('Plantita feliz y alimentada.') },
+  { id: 'gauges', title: k('Lee el panel'), event: 'gauges', goal: 1, tab: 'cultivo', tour: 'gauges', say: k('Estos medidores cuentan cómo está tu sala: clima, raíz y luz. Toca un grupo para ver el detalle; si algo se pone amarillo, te digo qué falla.'), hint: k('Abre un grupo de medidores'),
+    reward: { lots: [{ id: 'energy_20' }], xp: 30 }, thanks: k('Ya sabes leer tu cuarto. Unos kWh para la luz.') },
+  { id: 'process', title: k('Procesa tu flor'), event: 'lab', goal: 1, tab: 'extraccion', say: k('La flor seca vale más procesada. Ve a Laboratorio → Extracción, elige una estación y corre un ciclo.'), hint: k('Corre un ciclo en Extracción'),
+    reward: { lots: [{ id: 'energy_20' }], xp: 60 }, thanks: k('¡Primer extracto! Eso sí es industria.') },
+  { id: 'sell', title: k('Vende un lote'), event: 'sell', goal: 1, tab: 'dispensario', say: k('Los lotes se venden en el dispensario: Mercado → Dispensario. Marta te atiende.'), hint: k('Vende un lote'),
+    reward: { xp: 50 }, thanks: k('Primera venta hecha. Así se empieza un imperio.') },
+  { id: 'buy', title: k('Compra suministros'), event: 'buy', goal: 1, tab: 'market', say: k('Para seguir cultivando necesitas insumos. En Mercado → Grow Market compra lo que te falte.'), hint: k('Compra algo en el Grow Market'),
+    reward: { lots: [{ id: 'pest_neem' }], xp: 40 }, thanks: k('Buena compra. Un neem para las plagas, cortesía de la casa.') },
+  { id: 'planet', title: k('Conoce el Planeta'), event: 'planet', goal: 1, tab: 'planeta', say: k('Más allá de tu sala hay siete regiones con parcelas NFT. Entra a Cultivo → Planeta y échales un vistazo.'), hint: k('Abre el Planeta'),
+    reward: { xp: 40 }, thanks: k('El mundo es grande. Ya lo explorarás.') },
+  { id: 'harvest', title: k('Tu primera cosecha'), event: 'harvest', goal: 1, tab: 'cultivo', say: k('Cuando tu planta esté lista, cosecha. Crece en tiempo real: puedes esperar o acelerar el ciclo quemando $FLORA. Este paso es opcional, ¡vuelve cuando quieras!'), hint: k('Cosecha una planta'),
+    reward: { seeds: { seed_gelato_auto: 1 }, lots: [{ id: 'energy_20' }], xp: 150 }, thanks: k('¡Cosechaste! Ya eres oficialmente cultivador de Yield Bud Empire.') },
 ];
 
 export interface TutorialState {

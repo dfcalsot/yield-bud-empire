@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { NpcV2, NPC_NAMES_V2 } from './rig/NpcV2';
 import type { Mood2 } from './rig/parts';
 import { shopkeeperName, type Shopkeeper } from './shopkeeper';
+import { t } from '../../i18n';
 
 /**
  * The cast: the people of the cannabis industry (grow shop, outdoor grower, lab, genetics, dispensary) plus Chrono, the guide.
@@ -21,7 +22,7 @@ export const NPC_NAMES: Record<NpcKind, string> = {
 };
 
 /** Display name of a character; the grow-shop keeper depends on the player's choice (Flora / Floro). */
-export const npcName = (kind: NpcKind, shop: Shopkeeper = 'flora') => (kind === 'merchant' ? `${shopkeeperName(shop)} · Grow Shop` : NPC_NAMES[kind]);
+export const npcName = (kind: NpcKind, shop: Shopkeeper = 'flora') => (kind === 'merchant' ? t('{v0} · Grow Shop', { v0: shopkeeperName(shop) }) : NPC_NAMES[kind]);
 
 /** Speech state for a character: `speak(text, mood)` restarts the reaction animation even when the mood repeats. */
 export function useNpcSay(initial: string, mood: Mood = 'idle') {

@@ -2,6 +2,7 @@ import type { StaffNft, StaffPity, StaffRole } from '../sim/staff';
 import type { Construction } from '../sim/facilities';
 import type { Depth } from '../sim/economy';
 import type { PityMap } from '../sim/avatars';
+import { k, t } from '../i18n/core';
 
 /**
  * The client of the server-owned economy (server/economy.mjs). The server keeps the wallet, the ledger and the NFTs; the game keeps
@@ -92,8 +93,11 @@ export async function pushCloudSave(data: Record<string, unknown>, savedAt: numb
 
 /** short Spanish text for the reasons an intent can be refused */
 export const REASON: Record<string, string> = {
-  insufficient: 'Saldo insuficiente', too_early: 'Todavía no puedes reclamar', build_in_progress: 'Ya hay una obra en marcha', skip_rung: 'No se salta ningún escalón', already_built: 'Esa instalación ya la tienes',
-  speedup_limit: 'Ya usaste las aceleraciones de hoy', not_on_board: 'Ese candidato ya no está en la bolsa', already_hired: 'Ese candidato ya es tuyo', roster_full: 'Tu plantilla está llena',
-  not_yours: 'Eso no es tuyo', wrong_role: 'Ese personaje no sirve para ese puesto', plot_taken: 'Esa tierra ya tiene dueño', too_many_lands: 'Ya tienes el máximo de tierras',
-  max_rank: 'Ya está en el rango máximo', already_claimed: 'Ya lo reclamaste', too_fast: 'Ese nivel aún no se puede cobrar', offline: 'Sin conexión con el servidor', listing_gone: 'Esa oferta ya no está disponible', own_listing: 'Esa oferta es tuya', too_many_listings: 'Ya tienes el máximo de ofertas activas', bad_params: 'Precio o dato no válido', rate_limited: 'Demasiado rápido, espera un momento',
+  insufficient: k('Saldo insuficiente'), too_early: k('Todavía no puedes reclamar'), build_in_progress: k('Ya hay una obra en marcha'), skip_rung: k('No se salta ningún escalón'), already_built: k('Esa instalación ya la tienes'),
+  speedup_limit: k('Ya usaste las aceleraciones de hoy'), not_on_board: k('Ese candidato ya no está en la bolsa'), already_hired: k('Ese candidato ya es tuyo'), roster_full: k('Tu plantilla está llena'),
+  not_yours: k('Eso no es tuyo'), wrong_role: k('Ese personaje no sirve para ese puesto'), plot_taken: k('Esa tierra ya tiene dueño'), too_many_lands: k('Ya tienes el máximo de tierras'),
+  max_rank: k('Ya está en el rango máximo'), already_claimed: k('Ya lo reclamaste'), too_fast: k('Ese nivel aún no se puede cobrar'), offline: k('Sin conexión con el servidor'), listing_gone: k('Esa oferta ya no está disponible'), own_listing: k('Esa oferta es tuya'), too_many_listings: k('Ya tienes el máximo de ofertas activas'), bad_params: k('Precio o dato no válido'), rate_limited: k('Demasiado rápido, espera un momento'),
 };
+/** el motivo de un rechazo del servidor, en el idioma del jugador (undefined si no hay texto para ese código) */
+export const reasonText = (code: string): string | undefined => (REASON[code] ? t(REASON[code]) : undefined);
+

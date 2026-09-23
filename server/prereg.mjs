@@ -63,10 +63,11 @@ CREATE TABLE IF NOT EXISTS invites (code TEXT PRIMARY KEY, note TEXT NOT NULL DE
 
   const seats = () => Number(q.seats.get()?.value ?? defaultSeats);
   const freeSeats = () => Math.max(0, seats() - q.invitedCount.get().n);
-  const linkFor = (code) => `${publicUrl.replace(/\/$/, '')}/?invite=${code}`;
+  // el enlace abre el juego en el idioma de la persona (el mismo del correo)
+  const linkFor = (code, lang) => `${publicUrl.replace(/\/$/, '')}/?invite=${code}${lang === 'en' || lang === 'es' ? `&lang=${lang}` : ''}`;
 
   async function mailCode(row, code) {
-    const m = inviteMail({ lang: row.lang, alias: row.alias, email: row.email, code, link: linkFor(code) });
+    const m = inviteMail({ lang: row.lang, alias: row.alias, email: row.email, code, link: linkFor(code, row.lang) });
     const delivered = await sendMail(row.email, m.subject, m.text);
     return delivered || !mustDeliver;
   }

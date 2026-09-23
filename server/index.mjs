@@ -89,7 +89,7 @@ CREATE INDEX IF NOT EXISTS idx_sessions_acc ON sessions(account_id);
 `);
 for (const f of ['accounts.db', 'accounts.db-wal', 'accounts.db-shm']) { try { fs.chmodSync(path.join(cfg.dataDir, f), 0o600); } catch { /* not created yet */ } }
 // qué versión de los Términos y la Política de Privacidad aceptó cada cuenta al crearse, y cuándo
-for (const col of ['terms_version TEXT', 'terms_accepted_at INTEGER']) { try { db.exec(`ALTER TABLE accounts ADD COLUMN ${col}`); } catch { /* ya existe */ } }
+for (const col of ['terms_version TEXT', 'terms_accepted_at INTEGER', 'lang TEXT']) { try { db.exec(`ALTER TABLE accounts ADD COLUMN ${col}`); } catch { /* ya existe */ } }
 // los códigos de la alfa pueden quedar atados al correo del pre-registro (bases creadas antes no tienen la columna)
 try { db.exec('ALTER TABLE invites ADD COLUMN email_key TEXT'); } catch { /* ya existe */ }
 
@@ -177,7 +177,26 @@ export const prereg = createPrereg({ db, sendMail, mustDeliver: !!cfg.smtpUrl, p
 /* ───────────────────────────── helpers ───────────────────────────── */
 
 class HttpError extends Error { constructor(status, code, extra = {}) { super(code); this.status = status; this.code = code; this.extra = extra; } }
-const publicAccount = (a) => ({ id: a.id, username: a.username, email: a.email ?? null, verified: !!a.email_verified, providers: q.identitiesOf.all(a.id).map((r) => r.provider), source: a.source, createdAt: a.created_at });
+const publicAccount = (a) => ({ id: a.id, username: a.username, email: a.email ?? null, verified: !!a.email_verified, providers: q.identitiesOf.all(a.id).map((r) => r.provider), source: a.source, createdAt: a.created_at, lang: a.lang ?? null });
+
+/* idioma de la cuenta (es/en): lo elige el juego (el del navegador o el que el jugador toca) y decide el idioma de los correos */
+const langOf = (v) => (v === 'es' || v === 'en' ? v : null);
+const setLangStmt = db.prepare('UPDATE accounts SET lang = ? WHERE id = ?');
+const MAIL = {
+  existing: {
+    es: (u) => ['Ya tienes una cuenta en Yield Bud Empire', `Alguien intentó crear una cuenta con este correo, pero ya tienes una (usuario: ${u}).\nSi fuiste tú, entra con tu contraseña o usa «Olvidé mi contraseña». Si no, ignora este mensaje.`],
+    en: (u) => ['You already have a Yield Bud Empire account', `Someone tried to create an account with this email, but you already have one (username: ${u}).\nIf it was you, sign in with your password or use "Forgot my password". If not, ignore this message.`],
+  },
+  verify: {
+    es: (u, link) => ['Confirma tu cuenta de Yield Bud Empire', `${u ? `¡Bienvenido, ${u}!\n\n` : ''}Confirma tu correo para empezar a jugar (el enlace vale 24 h):\n${link}\n\nSi no creaste esta cuenta, ignora este mensaje.`],
+    en: (u, link) => ['Confirm your Yield Bud Empire account', `${u ? `Welcome, ${u}!\n\n` : ''}Confirm your email to start playing (the link is valid for 24 h):\n${link}\n\nIf you did not create this account, ignore this message.`],
+  },
+  reset: {
+    es: (link) => ['Restablece tu contraseña de Yield Bud Empire', `Usa este enlace para elegir una contraseña nueva (vale 1 hora):\n${link}\n\nSi no lo pediste, ignóralo: tu cuenta sigue segura.`],
+    en: (link) => ['Reset your Yield Bud Empire password', `Use this link to choose a new password (valid for 1 hour):\n${link}\n\nIf you did not ask for it, ignore this email: your account is still safe.`],
+  },
+};
+const mailIn = (kind, lang, ...a) => (MAIL[kind][langOf(lang) ?? 'es'])(...a);
 
 function issueSession(ctx, accountId) {
   const token = rand(32), now = Date.now();
@@ -327,7 +346,7 @@ route('POST', '/api/auth/register', async (ctx) => {
   const existing = q.byEmailKey.get(eKey);
   if (existing) {
     // never reveal that the address is registered: same answer, and the owner gets a notice
-    await sendMail(email, 'Ya tienes una cuenta en Yield Bud Empire', `Alguien intentó crear una cuenta con este correo, pero ya tienes una (usuario: ${existing.username}).\nSi fuiste tú, entra con tu contraseña o usa «Olvidé mi contraseña». Si no, ignora este mensaje.`);
+    await sendMail(email, ...mailIn('existing', existing.lang ?? b.lang, existing.username));
     audit('signup_existing_email', existing.id, ctx.ipHash);
     return { ok: true, pending: true };
   }
@@ -342,10 +361,11 @@ route('POST', '/api/auth/register', async (ctx) => {
   catch { if (cfg.inviteOnly) q.refundInvite.run(invite); throw new HttpError(409, 'username_taken'); }   // lost a race on the unique keys
   if (cfg.inviteOnly) q.logInviteUse.run(invite, id, Date.now());
   q.setTerms.run(termsOf(b.termsVersion) || 'sin-version', Date.now(), id);
+  if (langOf(b.lang)) setLangStmt.run(b.lang, id);
   suspicious(ctx, id);
   const token = rand(32);
   q.addToken.run(hashToken(token), id, 'verify', Date.now() + 24 * 3600_000);
-  const sent = await sendMail(email, 'Confirma tu cuenta de Yield Bud Empire', `¡Bienvenido, ${username}!\n\nConfirma tu correo para empezar a jugar (el enlace vale 24 h):\n${linkFor('verify', token)}\n\nSi no creaste esta cuenta, ignora este mensaje.`);
+  const sent = await sendMail(email, ...mailIn('verify', b.lang, username, linkFor('verify', token)));
   audit('signup', id, ctx.ipHash);
   issueSession(ctx, id);
   return { ok: true, pending: true, emailSent: sent, ...(cfg.devLinks ? { devLink: linkFor('verify', token) } : {}) };
@@ -371,7 +391,7 @@ route('POST', '/api/auth/resend', async (ctx) => {
     limit(ctx, `resend:acc:${a.id}`, 1, 60_000);
     const token = rand(32);
     q.addToken.run(hashToken(token), a.id, 'verify', Date.now() + 24 * 3600_000);
-    await sendMail(a.email, 'Confirma tu cuenta de Yield Bud Empire', `Confirma tu correo (vale 24 h):\n${linkFor('verify', token)}`);
+    await sendMail(a.email, ...mailIn('verify', a.lang ?? b.lang, '', linkFor('verify', token)));
     if (cfg.devLinks) return { ok: true, devLink: linkFor('verify', token) };
   }
   return { ok: true };   // same answer whether or not the address exists
@@ -403,6 +423,16 @@ route('POST', '/api/auth/login', async (ctx) => {
   return { account: publicAccount(a) };
 });
 
+route('POST', '/api/auth/lang', async (ctx) => {
+  const a = sessionAccount(ctx);
+  if (!a) throw new HttpError(401, 'unauthenticated');
+  const b = await readJson(ctx.req);
+  const l = langOf(b.lang);
+  if (!l) throw new HttpError(400, 'bad_request');
+  limit(ctx, `lang:${a.id}`, 20, 60_000);
+  setLangStmt.run(l, a.id);
+  return { ok: true, lang: l };
+});
 route('POST', '/api/auth/logout', (ctx) => {
   const token = parseCookies(ctx.req.headers.cookie).cf_session;
   if (token) q.delSession.run(hashToken(token));
@@ -419,7 +449,7 @@ route('POST', '/api/auth/reset/request', async (ctx) => {
     limit(ctx, `reset:acc:${a.id}`, 3, 3600_000);
     const token = rand(32);
     q.addToken.run(hashToken(token), a.id, 'reset', Date.now() + 3600_000);
-    await sendMail(a.email, 'Restablece tu contraseña de Yield Bud Empire', `Usa este enlace para elegir una contraseña nueva (vale 1 hora):\n${linkFor('reset', token)}\n\nSi no lo pediste, ignóralo: tu cuenta sigue segura.`);
+    await sendMail(a.email, ...mailIn('reset', a.lang ?? b.lang, linkFor('reset', token)));
     audit('reset_request', a.id, ctx.ipHash);
     if (cfg.devLinks) return { ok: true, devLink: linkFor('reset', token) };
   }

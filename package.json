@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build",
+    "build": "node scripts/i18n-check.mjs && vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit",
+    "lint": "tsc --noEmit && node scripts/i18n-check.mjs",
     "auth": "node --disable-warning=ExperimentalWarning server/index.mjs",
     "auth:test": "node scripts/build-server-sim.mjs && node --disable-warning=ExperimentalWarning server/test.mjs",
     "build:server": "node scripts/build-server-sim.mjs"

@@ -78,7 +78,7 @@ import { PRODUCT_PRICE } from '../sim/products';
 import { boostWithinPhase, isHarvestable, phaseOf, PHASES, stageOf as stageFromProgress } from '../sim/phases';
 import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
 import { landOffers } from '../sim/lands';
-import { fetchState, importLocal, intent, fetchCloudSave, pushCloudSave, REASON, type ListingView, type Snapshot } from '../economy/ledger';
+import { fetchState, importLocal, intent, fetchCloudSave, pushCloudSave, reasonText, type ListingView, type Snapshot } from '../economy/ledger';
 import { mintAddressFor } from '../utils/nft';
 import { siteConditions, plotOffer, terroirOf, REGION_BY_ID, PLOT_SIZE, type PlotOffer } from '../sim/terroir';
 import { CHESTS, DUPLICATE_REFUND, EMPTY_PITY, DESIGN_BY_ID, rollChest, seasonOf, type AvatarDesign, type ChestId, type OwnedAvatar, type PityMap } from '../sim/avatars';
@@ -96,6 +96,7 @@ import {
 } from '../sim/staff';
 import type { NpcKind } from '../components/npc/Npc';
 import { claimStep as claimTutStep, emptyTutorial, normalizeTutorial, skipStep as skipTutStep, startTutorial as startTutState, type TutorialState } from '../sim/tutorial';
+import { t as tr } from '../i18n';
 export { calculateVpd };
 
 // Generate realistic Solana signature
@@ -426,7 +427,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const user = users.find(u => u.id === activeId) || users[0];
     return user?.preferredNetwork || 'devnet';
   });
-  const [connectedWalletType, setConnectedWalletType] = useState<string>('Phantom');
+  const [connectedWalletType, setConnectedWalletType] = useState<string>(tr('Phantom'));
   const [activeProviderInstance, setActiveProviderInstance] = useState<any>(null);
 
   // Wallet State
@@ -620,7 +621,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Brand & V2P
   const [brand, setBrand] = useState<VirtualBrand>({
     name: 'YieldSol Botanicals',
-    tagline: 'Genéticas de Cáñamo y Cannabis de Alta Pureza On-Chain',
+    tagline: tr('Genéticas de Cáñamo y Cannabis de Alta Pureza On-Chain'),
     level: 2,
     reputation: 98,
     dispensaryOpen: true,
@@ -657,11 +658,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getRankTitle = (level: number) => {
-    if (level === 1) return 'Novato del Sustrato';
-    if (level === 2) return 'Horticultor Botánico';
-    if (level === 3) return 'Alquimista de Terpenos';
-    if (level === 4) return 'Maestro Extractor Rosin';
-    return 'Titán Genético Multiverso';
+    if (level === 1) return tr('Novato del Sustrato');
+    if (level === 2) return tr('Horticultor Botánico');
+    if (level === 3) return tr('Alquimista de Terpenos');
+    if (level === 4) return tr('Maestro Extractor Rosin');
+    return tr('Titán Genético Multiverso');
   };
 
   const xpNeeded = getXpNeeded(playerLevel);
@@ -673,7 +674,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const nextCount = q.currentCount + increment;
         const completed = nextCount >= q.targetCount;
         if (completed) {
-          showNotification(`¡Misión lograda: "${q.title}"! Reclama tu recompensa en la barra de misiones`, 'success');
+          showNotification(tr('¡Misión lograda: "{title}"! Reclama tu recompensa en la barra de misiones', { title: q.title }), 'success');
         }
         return {
           ...q,
@@ -706,7 +707,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           origin: { y: 0.4 },
           colors: ['#10b981', '#fbbf24', '#a855f7', '#38bdf8']
         });
-        showNotification(`¡SUBISTE DE NIVEL! Rango: ${getRankTitle(nextLvl)} (Nivel ${nextLvl}) • Bono +${ECON.levelBonus} $FLORA`, 'success');
+        showNotification(tr('¡SUBISTE DE NIVEL! Rango: {v0} (Nivel {nextLvl}) • Bono +{levelBonus} $FLORA', { v0: getRankTitle(nextLvl), nextLvl, levelBonus: ECON.levelBonus }), 'success');
         return total - needed;
       }
       return total;
@@ -720,8 +721,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playQuestCompleteSound();
     setQuests(prev => prev.map(q => q.id === questId ? { ...q, isClaimed: true } : q));
     mintFlora(targetQuest.rewardFlora, 'quest', { id: targetQuest.id });
-    addXp(targetQuest.rewardXp, `Misión: ${targetQuest.title}`);
-    showNotification(`¡Recompensa reclamada! +${targetQuest.rewardFlora} $FLORA y +${targetQuest.rewardXp} XP`, 'success');
+    addXp(targetQuest.rewardXp, tr('Misión: {title}', { title: targetQuest.title }));
+    showNotification(tr('¡Recompensa reclamada! +{rewardFlora} $FLORA y +{rewardXp} XP', { rewardFlora: targetQuest.rewardFlora, rewardXp: targetQuest.rewardXp }), 'success');
   };
 
   const toggleSound = () => {
@@ -786,7 +787,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loadUserDataRef.current(uid, false);
         runTickRef.current();
         localSavedAtRef.current = cloud.savedAt;
-        showNotificationRef.current(`Partida recuperada de la nube: nivel ${(cloud.data as { playerLevel?: number }).playerLevel ?? 1}`, 'success');
+        showNotificationRef.current(tr('Partida recuperada de la nube: nivel {v0}', { v0: (cloud.data as { playerLevel?: number }).playerLevel ?? 1 }), 'success');
       }
       cloudReadyRef.current = true;
     }
@@ -1075,7 +1076,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setSolanaNetwork = useCallback((network: SolanaNetwork) => {
     setSolanaNetworkState(network);
     const netConfig = SOLANA_NETWORKS[network];
-    showNotification(`Red Solana cambiada a: ${netConfig.name}`, 'info');
+    showNotification(tr('Red Solana cambiada a: {name}', { name: netConfig.name }), 'info');
     setTimeout(() => {
       fetchLiveSolBalance(walletAddress, network).then(bal => {
         if (bal > 0) setSolBalance(bal);
@@ -1088,10 +1089,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (providerType === 'virtual') {
         const kp = generateSolanaKeypair();
         setWalletAddress(kp.publicKey);
-        setConnectedWalletType('Virtual Keypair');
+        setConnectedWalletType(tr('Virtual Keypair'));
         setIsWalletConnected(true);
         setActiveProviderInstance(null);
-        showNotification(`Billetera Virtual Solana generada: ${kp.publicKey.slice(0, 4)}...${kp.publicKey.slice(-4)}`, 'success');
+        showNotification(tr('Billetera Virtual Solana generada: {v0}...{v1}', { v0: kp.publicKey.slice(0, 4), v1: kp.publicKey.slice(-4) }), 'success');
         return true;
       }
 
@@ -1100,14 +1101,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setConnectedWalletType(res.providerName);
       setActiveProviderInstance(res.provider);
       setIsWalletConnected(true);
-      showNotification(`Billetera ${res.providerName} conectada: ${res.publicKey.slice(0, 4)}...${res.publicKey.slice(-4)}`, 'success');
+      showNotification(tr('Billetera {providerName} conectada: {v1}...{v2}', { providerName: res.providerName, v1: res.publicKey.slice(0, 4), v2: res.publicKey.slice(-4) }), 'success');
       
       fetchLiveSolBalance(res.publicKey, solanaNetwork).then(bal => {
         if (bal > 0) setSolBalance(bal);
       });
       return true;
     } catch (err: any) {
-      showNotification(err.message || 'Error al conectar billetera', 'burn');
+      showNotification(err.message || tr('Error al conectar billetera'), 'burn');
       return false;
     }
   }, [solanaNetwork, showNotification]);
@@ -1115,20 +1116,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const generateVirtualKeypair = useCallback(() => {
     const kp = generateSolanaKeypair();
     setWalletAddress(kp.publicKey);
-    setConnectedWalletType('Virtual Keypair');
+    setConnectedWalletType(tr('Virtual Keypair'));
     setIsWalletConnected(true);
-    showNotification(`Nueva clave Solana Ed25519 generada: ${kp.publicKey.slice(0, 6)}...`, 'success');
+    showNotification(tr('Nueva clave Solana Ed25519 generada: {v0}...', { v0: kp.publicKey.slice(0, 6) }), 'success');
     return { publicKey: kp.publicKey, secretKeyHex: kp.secretKeyHex };
   }, [showNotification]);
 
   const signAuthMessageTest = useCallback(async (): Promise<boolean> => {
     try {
-      const msg = `Yield Bud Empire Botanical Web3 Auth | Cultivador: ${currentUser?.displayName || 'Anónimo'} | Red: ${solanaNetwork} | Timestamp: ${Date.now()}`;
+      const msg = `Yield Bud Empire Botanical Web3 Auth | Cultivador: ${currentUser?.displayName || 'Anónimo'} | Red: ${solanaNetwork} | Timestamp: ${Date.now()}`;   // lo que se firma: no se traduce
       const res = await signSolanaMessage(activeProviderInstance, msg);
-      showNotification(`¡Firma criptográfica verificada con éxito! Hash: ${res.signature.slice(0, 10)}...`, 'success');
+      showNotification(tr('¡Firma criptográfica verificada con éxito! Hash: {v0}...', { v0: res.signature.slice(0, 10) }), 'success');
       return true;
     } catch (err: any) {
-      showNotification(`Firma cancelada: ${err.message || 'Error'}`, 'burn');
+      showNotification(tr('Firma cancelada: {v0}', { v0: err.message || tr('Error') }), 'burn');
       return false;
     }
   }, [activeProviderInstance, currentUser, solanaNetwork, showNotification]);
@@ -1137,15 +1138,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const requestAirdrop = useCallback(async () => {
     const netConfig = SOLANA_NETWORKS[solanaNetwork];
     if (solanaNetwork === 'mainnet-beta') {
-      showNotification('Mainnet: no hay airdrop. El $FLORA se gana cultivando y vendiendo; hay un reclamo diario en la barra superior.', 'info');
+      showNotification(tr('Mainnet: no hay airdrop. El $FLORA se gana cultivando y vendiendo; hay un reclamo diario en la barra superior.'), 'info');
       return;
     }
     try {
-      showNotification(`Solicitando 1.0 SOL de prueba en ${netConfig.name}...`, 'info');
+      showNotification(tr('Solicitando 1.0 SOL de prueba en {name}...', { name: netConfig.name }), 'info');
       await requestSolanaAirdrop(walletAddress, solanaNetwork, 1.0);
-      showNotification(`Llegó SOL de prueba a tu billetera en ${netConfig.badgeLabel}. El $FLORA del juego no cambia.`, 'success');
+      showNotification(tr('Llegó SOL de prueba a tu billetera en {badgeLabel}. El $FLORA del juego no cambia.', { badgeLabel: netConfig.badgeLabel }), 'success');
     } catch (err: any) {
-      showNotification(`No se pudo pedir el airdrop de ${netConfig.badgeLabel}: ${err?.message || 'la red no respondió'}. Inténtalo más tarde.`, 'info');
+      showNotification(tr('No se pudo pedir el airdrop de {badgeLabel}: {v1}. Inténtalo más tarde.', { badgeLabel: netConfig.badgeLabel, v1: err?.message || tr('la red no respondió') }), 'info');
     }
   }, [solanaNetwork, walletAddress, showNotification]);
 
@@ -1155,19 +1156,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const r = await intent<{ amount: number }>('claim_daily');
       if (!r.ok) {
         const left = Number((r.extra as { leftMs?: number } | undefined)?.leftMs ?? 0);
-        if (r.error === 'too_early' && left > 0) showNotification(`El reclamo diario vuelve en ${Math.floor(left / 3600_000)} h ${Math.ceil((left % 3600_000) / 60_000)} min.`, 'info');
-        else showNotification(REASON[r.error] ?? `No se pudo reclamar (${r.error})`, 'info');
+        if (r.error === 'too_early' && left > 0) showNotification(tr('El reclamo diario vuelve en {v0} h {v1} min.', { v0: Math.floor(left / 3600_000), v1: Math.ceil((left % 3600_000) / 60_000) }), 'info');
+        else showNotification(reasonText(r.error) ?? tr('No se pudo reclamar ({error})', { error: r.error }), 'info');
         void fetchState().then(x => x && applySnapshot(x));
         return;
       }
       applySnapshot(r.snapshot);
-      showNotification(`Reclamo diario: +${r.result.amount} $FLORA. Vuelve mañana; lo demás se gana cultivando.`, 'success');
+      showNotification(tr('Reclamo diario: +{amount} $FLORA. Vuelve mañana; lo demás se gana cultivando.', { amount: r.result.amount }), 'success');
       return;
     }
     const st = claimStatus(faucetAt, Date.now());
     if (!st.ok) {
       const h = Math.floor(st.leftMs / 3600_000), m = Math.ceil((st.leftMs % 3600_000) / 60_000);
-      showNotification(`El reclamo diario vuelve en ${h > 0 ? `${h} h ${m} min` : `${m} min`}.`, 'info');
+      showNotification(tr('El reclamo diario vuelve en {v0}.', { v0: h > 0 ? tr('{h} h {m} min', { h, m }) : `${m} min` }), 'info');
       return;
     }
     setFaucetAt(Date.now());
@@ -1176,7 +1177,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `tx-claim-${Date.now()}`, signature: generateSolanaSignature(), type: 'AIRDROP', amountFlora: ECON.dailyClaim, amountSol: 0,
       timestamp: Date.now(), status: 'confirmed', blockSlot: 248925100, memo: `Yield Bud Empire: reclamo diario +${ECON.dailyClaim} $FLORA`,
     }, ...prev.slice(0, 24)]);
-    showNotification(`Reclamo diario: +${ECON.dailyClaim} $FLORA. Vuelve mañana; lo demás se gana cultivando.`, 'success');
+    showNotification(tr('Reclamo diario: +{dailyClaim} $FLORA. Vuelve mañana; lo demás se gana cultivando.', { dailyClaim: ECON.dailyClaim }), 'success');
   };
 
   const connectWallet = useCallback(() => {
@@ -1185,8 +1186,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const disconnectWallet = useCallback(() => {
     setIsWalletConnected(false);
-    setConnectedWalletType('Ninguna');
-    showNotification('Billetera Solana desconectada', 'info');
+    setConnectedWalletType(tr('Ninguna'));
+    showNotification(tr('Billetera Solana desconectada'), 'info');
   }, [showNotification]);
 
   // --- USER AUTHENTICATION & MULTI-ACCOUNT ACTIONS ---
@@ -1208,7 +1209,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSolanaNetworkState(targetUser.preferredNetwork);
     }
     loadUserDataForUser(userId);
-    showNotification(`Sesión cambiada a: ${targetUser.displayName} (${targetUser.role})`, 'success');
+    showNotification(tr('Sesión cambiada a: {displayName} ({role})', { displayName: targetUser.displayName, role: targetUser.role }), 'success');
     return true;
   }, [currentUser, allUserProfiles, saveCurrentUserDataForUser, loadUserDataForUser, showNotification]);
 
@@ -1220,7 +1221,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveUserData(currentUser.id, { ...saved, profile: currentUser, migratedTo: undefined });
     loadUserDataForUser(currentUser.id, false);
     saveUserData(fromUserId, { ...saved, migratedTo: currentUser.id });
-    showNotification(`Partida recuperada: ${saved.plots?.length ?? 0} parcela(s), ${Math.round(saved.floraBalance ?? 0)} $FLORA, nivel ${saved.playerLevel ?? 1}`, 'success');
+    showNotification(tr('Partida recuperada: {v0} parcela(s), {v1} $FLORA, nivel {v2}', { v0: saved.plots?.length ?? 0, v1: Math.round(saved.floraBalance ?? 0), v2: saved.playerLevel ?? 1 }), 'success');
     return true;
   }, [currentUser, loadUserDataForUser, showNotification]);
 
@@ -1235,14 +1236,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (found) {
       return switchUserAccount(found.id);
     } else {
-      showNotification('Usuario o correo no encontrado. Puedes registrarte en la pestaña de Registro.', 'burn');
+      showNotification(tr('Usuario o correo no encontrado. Puedes registrarte en la pestaña de Registro.'), 'burn');
       return false;
     }
   }, [allUserProfiles, switchUserAccount, showNotification]);
 
   const registerUser = useCallback((profileData: Omit<UserProfile, 'id' | 'createdAt'>): boolean => {
     if (!profileData.username || !profileData.displayName) {
-      showNotification('Por favor completa nombre y usuario.', 'burn');
+      showNotification(tr('Por favor completa nombre y usuario.'), 'burn');
       return false;
     }
 
@@ -1300,7 +1301,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       trimGrams: 0,
       brand: {
         name: `${newProfile.displayName}'s Craft Botanicals`,
-        tagline: 'Genéticas puras cultivadas en Yield Bud Empire',
+        tagline: tr('Genéticas puras cultivadas en Yield Bud Empire'),
         level: 1,
         reputation: 100,
         dispensaryOpen: true,
@@ -1312,13 +1313,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     switchUserAccount(newId);
-    showNotification(`¡Bienvenido a Yield Bud Empire, ${newProfile.displayName}! Paquete de inicio activado (+500 $FLORA, 2.0 SOL).`, 'success');
+    showNotification(tr('¡Bienvenido a Yield Bud Empire, {displayName}! Paquete de inicio activado (+500 $FLORA, 2.0 SOL).', { displayName: newProfile.displayName }), 'success');
     return true;
   }, [walletAddress, switchUserAccount, showNotification]);
 
   const loginWithSolanaWallet = useCallback((): boolean => {
     if (!walletAddress) {
-      showNotification('Conecta tu billetera Solana primero para iniciar sesión con Web3.', 'burn');
+      showNotification(tr('Conecta tu billetera Solana primero para iniciar sesión con Web3.'), 'burn');
       return false;
     }
 
@@ -1347,7 +1348,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       saveCurrentUserDataForUser(currentUser.id);
     }
     setIsAuthenticated(false);
-    showNotification('Has cerrado sesión. Puedes ingresar con otra cuenta o con tu billetera Solana.', 'info');
+    showNotification(tr('Has cerrado sesión. Puedes ingresar con otra cuenta o con tu billetera Solana.'), 'info');
   }, [currentUser, saveCurrentUserDataForUser, showNotification]);
 
   const updateUserProfile = useCallback((updates: Partial<UserProfile>) => {
@@ -1356,7 +1357,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentUser(updated);
     saveUserProfile(updated);
     setAllUserProfiles(prev => prev.map(u => u.id === updated.id ? updated : u));
-    showNotification('Perfil de cultivador actualizado con éxito.', 'success');
+    showNotification(tr('Perfil de cultivador actualizado con éxito.'), 'success');
   }, [currentUser, showNotification]);
 
   // Real-time world clock: advances every plant by the *real* time elapsed (also after being away).
@@ -1417,23 +1418,23 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     const newPests = [...after.filter((p, i) => p.pest && !before[i]?.pest), ...plotAfterList.filter((p, i) => p.pest && !plotList[i]?.pest)];
     if (budget.energyKwh > 0 && eb.energyKwh <= 0 && (env.equip?.lampWatts ?? 0) > 0 && (env.equip?.solarKw ?? 0) * 0.25 < 0.3) {
-      showNotification('⚡ Se acabó la electricidad: las lámparas se apagaron y las plantas dejan de crecer. Compra un Bono de Energía en el Grow Market.', 'burn');
+      showNotification(tr('⚡ Se acabó la electricidad: las lámparas se apagaron y las plantas dejan de crecer. Compra un Bono de Energía en el Grow Market.'), 'burn');
     } else if (budget.waterL > 0 && eb.waterL <= 0 && (env.autoWater || env.gardener?.water)) {
-      showNotification('💧 El tanque de agua está vacío: el riego automático se detuvo.', 'burn');
+      showNotification(tr('💧 El tanque de agua está vacío: el riego automático se detuvo.'), 'burn');
     } else if (budget.gardenerDays > 0 && (eb.gardenerDays ?? 0) <= 0 && before.length > 0) {
-      showNotification('🧑‍🌾 Terminó el contrato de tu jardinero. Renuévalo en el Grow Market → Servicios de vivero.', 'info');
+      showNotification(tr('🧑‍🌾 Terminó el contrato de tu jardinero. Renuévalo en el Grow Market → Servicios de vivero.'), 'info');
     } else if (newPests.length > 0 && dt <= 1800) {
       const kinds = newPests.reduce<Record<string, number>>((m, p) => { const k = PEST_INFO[p.pest!.kind].label; m[k] = (m[k] ?? 0) + 1; return m; }, {});
-      showNotification(`🐛 Plaga detectada en ${newPests.length} planta${newPests.length > 1 ? 's' : ''} (${Object.entries(kinds).map(([k, n]) => `${k} ×${n}`).join(', ')}). Trátalas desde el botón Cuidado.`, 'burn');
+      showNotification(tr('🐛 Plaga detectada en {length} planta{v1} ({v2}). Trátalas desde el botón Cuidado.', { length: newPests.length, v1: newPests.length > 1 ? 's' : '', v2: Object.entries(kinds).map(([k, n]) => `${k} ×${n}`).join(', ') }), 'burn');
     }
     const allBefore = [...before, ...plotList];
     const allAfter = [...after, ...plotAfterList];
     const newMales = allAfter.filter((p, i) => isMale(p) && sexRevealed(p) && !(allBefore[i] && isMale(allBefore[i]) && sexRevealed(allBefore[i])));
     const newPollinated = allAfter.filter((p, i) => p.pollinated && !allBefore[i]?.pollinated);
     if (dt <= 1800 && newPollinated.length > 0) {
-      showNotification(`🐝 ¡Polinización! ${newPollinated.length} hembra${newPollinated.length > 1 ? 's' : ''} recibieron polen: darán un 40 % menos de flor pero también semillas. Habrá que quitar el macho a tiempo la próxima vez.`, 'burn');
+      showNotification(tr('🐝 ¡Polinización! {length} hembra{v1} recibieron polen: darán un 40 % menos de flor pero también semillas. Habrá que quitar el macho a tiempo la próxima vez.', { length: newPollinated.length, v1: newPollinated.length > 1 ? 's' : '' }), 'burn');
     } else if (dt <= 1800 && newMales.length > 0) {
-      showNotification(`♂ ¡Macho detectado en ${newMales.length} planta${newMales.length > 1 ? 's' : ''}! Quítalo antes de que llegue a flor (55 %) o polinizará a las hembras. También puedes guardarlo como padre.`, 'burn');
+      showNotification(tr('♂ ¡Macho detectado en {length} planta{v1}! Quítalo antes de que llegue a flor (55 %) o polinizará a las hembras. También puedes guardarlo como padre.', { length: newMales.length, v1: newMales.length > 1 ? 's' : '' }), 'burn');
     }
     if (dt > 1800) {
       // welcome-back summary for long absences
@@ -1443,7 +1444,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const ready = after.filter(p => p.stage === 'ready_harvest').length;
       const sick = pestCount(after);
       showNotification(
-        `Han pasado ${formatDuration(Math.min(dt, BALANCE.maxCatchUpSeconds))}: tus plantas crecieron +${grew.toFixed(1)}%${ready ? ` (${ready} listas para cosechar)` : ''}${thirsty ? `. ¡${thirsty} necesitan agua!` : '.'}${sick ? ` 🐛 ${sick} con plaga.` : ''}${newMales.length ? ` ♂ ${newMales.length} macho${newMales.length > 1 ? 's' : ''} por quitar.` : ''}${newPollinated.length ? ` 🐝 ${newPollinated.length} polinizada${newPollinated.length > 1 ? 's' : ''}.` : ''}`,
+        tr('Han pasado {v0}: tus plantas crecieron +{v1}%{v2}{v3}{v4}{v5}{v6}', { v0: formatDuration(Math.min(dt, BALANCE.maxCatchUpSeconds)), v1: grew.toFixed(1), v2: ready ? tr(' ({ready} listas para cosechar)', { ready }) : '', v3: thirsty ? tr('. ¡{thirsty} necesitan agua!', { thirsty }) : '.', v4: sick ? tr(' 🐛 {sick} con plaga.', { sick }) : '', v5: newMales.length ? tr(' ♂ {length} macho{v1} por quitar.', { length: newMales.length, v1: newMales.length > 1 ? 's' : '' }) : '', v6: newPollinated.length ? tr(' 🐝 {length} polinizada{v1}.', { length: newPollinated.length, v1: newPollinated.length > 1 ? 's' : '' }) : '' }),
         thirsty || sick ? 'info' : 'success'
       );
     }
@@ -1490,7 +1491,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!data?.savedAt) return;
     cloudPushedAtRef.current = Date.now();
     void pushCloudSave(data as Record<string, unknown>, data.savedAt).then(r => {
-      if (r?.stale) { cloudReadyRef.current = false; showNotificationRef.current('Hay una partida más nueva guardada desde otro dispositivo: recarga la página para traerla.', 'info'); }
+      if (r?.stale) { cloudReadyRef.current = false; showNotificationRef.current(tr('Hay una partida más nueva guardada desde otro dispositivo: recarga la página para traerla.'), 'info'); }
     });
   };
   useEffect(() => {
@@ -1514,8 +1515,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!next) {
       showNotification(
         kind === 'water'
-          ? `Sin agua suficiente (${amount.toFixed(1)} L necesarios, quedan ${stockOf(assets, 'water').toFixed(1)} L). Compra agua en el Grow Market.`
-          : `Sin nutrientes suficientes (${amount} ml necesarios, quedan ${Math.floor(stockOf(assets, 'nutrient'))} ml). Compra fertilizante en el Grow Market.`,
+          ? tr('Sin agua suficiente ({v0} L necesarios, quedan {v1} L). Compra agua en el Grow Market.', { v0: amount.toFixed(1), v1: stockOf(assets, 'water').toFixed(1) })
+          : tr('Sin nutrientes suficientes ({amount} ml necesarios, quedan {v1} ml). Compra fertilizante en el Grow Market.', { amount, v1: Math.floor(stockOf(assets, 'nutrient')) }),
         'burn'
       );
       return false;
@@ -1528,13 +1529,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const takeStation = (stationId: string | undefined): boolean => {
     if (!stationId) return true;
     if (!ownsStation(assets, stationId)) {
-      showNotification('Esta estación necesita su licencia NFT. Cómprala en el Grow Market → Licencias de laboratorio.', 'info');
+      showNotification(tr('Esta estación necesita su licencia NFT. Cómprala en el Grow Market → Licencias de laboratorio.'), 'info');
       return false;
     }
     const kwh = USE.labKwhPerCycle[stationId] ?? 0;
     if (kwh > 0) {
       if (stockOf(assets, 'energy') + 1e-9 < kwh) {
-        showNotification(`Sin electricidad: el ciclo necesita ${kwh} kWh y quedan ${stockOf(assets, 'energy').toFixed(1)} kWh. Compra un Bono de Energía.`, 'burn');
+        showNotification(tr('Sin electricidad: el ciclo necesita {kwh} kWh y quedan {v1} kWh. Compra un Bono de Energía.', { kwh, v1: stockOf(assets, 'energy').toFixed(1) }), 'burn');
         return false;
       }
       setAssets(prev => spendResource(prev, 'energy', kwh) ?? prev);
@@ -1556,8 +1557,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
     updateQuestProgress('quest_water_micro', 1);
     reportEvent('water', 1);
-    addXp(20, 'Riego y Calibración');
-    showNotification(`Riego completado en Planta #${selectedPlantIndex + 1} (+20 XP)`, 'info');
+    addXp(20, tr('Riego y Calibración'));
+    showNotification(tr('Riego completado en Planta #{v0} (+20 XP)', { v0: selectedPlantIndex + 1 }), 'info');
   };
 
   const waterAllPlants = () => {
@@ -1571,8 +1572,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     })));
     updateQuestProgress('quest_water_micro', 5);
     reportEvent('water', indoorPlants.length);
-    addXp(60, 'Riego Masivo Sala Indoor');
-    showNotification('¡Riego por goteo activado en las 3 filas (30 plantas de la sala)! (+60 XP)', 'info');
+    addXp(60, tr('Riego Masivo Sala Indoor'));
+    showNotification(tr('¡Riego por goteo activado en las 3 filas (30 plantas de la sala)! (+60 XP)'), 'info');
   };
 
   const feedNutrients = () => {
@@ -1591,8 +1592,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }));
     reportEvent('feed', 1);
-    addXp(25, 'Nutrición N-P-K');
-    showNotification(`Nutrición N-P-K optimizada en Planta #${selectedPlantIndex + 1} (+25 XP)`, 'info');
+    addXp(25, tr('Nutrición N-P-K'));
+    showNotification(tr('Nutrición N-P-K optimizada en Planta #{v0} (+25 XP)', { v0: selectedPlantIndex + 1 }), 'info');
   };
 
   const feedAllPlants = () => {
@@ -1608,8 +1609,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       lastFed: Date.now()
     })));
     reportEvent('feed', indoorPlants.length);
-    addXp(75, 'Fertirriego Masivo');
-    showNotification('Fertirriego N-P-K aplicado a las 30 plantas de la sala (+75 XP)', 'info');
+    addXp(75, tr('Fertirriego Masivo'));
+    showNotification(tr('Fertirriego N-P-K aplicado a las 30 plantas de la sala (+75 XP)'), 'info');
   };
 
   const setTemperature = (temp: number) => {
@@ -1643,7 +1644,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...p,
       lightSchedule: schedule
     })));
-    showNotification(`Ciclo fotoperiódico de la sala indoor ajustado a ${schedule}`, 'info');
+    showNotification(tr('Ciclo fotoperiódico de la sala indoor ajustado a {schedule}', { schedule }), 'info');
   };
 
   const PHASE_NAMES: Record<string, string> = Object.fromEntries(PHASES.map(x => [x.id, x.label]));
@@ -1656,36 +1657,36 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playClickSound();
     setIndoorPlants(prev => prev.map((p, idx) => (idx === selectedPlantIndex ? applyTechnique(p, technique) : p)));
     addXp(t.xp, t.label);
-    showNotification(`${t.label} en la planta #${selectedPlantIndex + 1}: +${Math.round(t.yieldBonus * 100)}% de rendimiento (+${t.xp} XP)`, 'info');
+    showNotification(tr('{label} en la planta #{v1}: +{v2}% de rendimiento (+{xp} XP)', { label: t.label, v1: selectedPlantIndex + 1, v2: Math.round(t.yieldBonus * 100), xp: t.xp }), 'info');
     return true;
   };
 
   const trainIndoorCanopy = () => {
     const eligible = indoorPlants.filter(p => canTrain(p, 'scrog', PHASE_NAMES).ok);
     if (eligible.length === 0) {
-      showNotification('El SCROG solo se instala en el vegetativo y una vez por planta: ahora ninguna planta de la sala cumple.', 'info');
+      showNotification(tr('El SCROG solo se instala en el vegetativo y una vez por planta: ahora ninguna planta de la sala cumple.'), 'info');
       return;
     }
     playClickSound();
     setIndoorPlants(prev => prev.map(p => (canTrain(p, 'scrog', PHASE_NAMES).ok ? applyTechnique(p, 'scrog') : p)));
-    addXp(TECHNIQUE_BY_ID.scrog.xp + eligible.length * 5, 'Entrenamiento Canopia SCROG');
-    showNotification(`SCROG instalado en ${eligible.length} planta${eligible.length > 1 ? 's' : ''} en vegetativo (+${Math.round(TECHNIQUE_BY_ID.scrog.yieldBonus * 100)}% de rendimiento cada una)`, 'info');
+    addXp(TECHNIQUE_BY_ID.scrog.xp + eligible.length * 5, tr('Entrenamiento Canopia SCROG'));
+    showNotification(tr('SCROG instalado en {length} planta{v1} en vegetativo (+{v2}% de rendimiento cada una)', { length: eligible.length, v1: eligible.length > 1 ? 's' : '', v2: Math.round(TECHNIQUE_BY_ID.scrog.yieldBonus * 100) }), 'info');
   };
 
   // Speed up growth by burning 25 $FLORA
   const speedUpGrowth = (): boolean => {
     const target = indoorPlants[selectedPlantIndex];
-    if (!target || isHarvestable(target)) { showNotification('Esta planta ya terminó de crecer: solo falta cosecharla.', 'info'); return false; }
+    if (!target || isHarvestable(target)) { showNotification(tr('Esta planta ya terminó de crecer: solo falta cosecharla.'), 'info'); return false; }
     if (boostWithinPhase(target.progressPercent, 35) - target.progressPercent < 1) {
-      showNotification(`Está al final de la fase de ${phaseOf(target.stage)?.label ?? 'crecimiento'}: entra en la siguiente y vuelve a acelerar. Nada se cobró.`, 'info');
+      showNotification(tr('Está al final de la fase de {v0}: entra en la siguiente y vuelve a acelerar. Nada se cobró.', { v0: phaseOf(target.stage)?.label ?? 'crecimiento' }), 'info');
       return false;
     }
     if (floraBalance < 25) {
-      showNotification('Saldo insuficiente: Necesitas al menos 25 $FLORA para acelerar el cultivo', 'info');
+      showNotification(tr('Saldo insuficiente: Necesitas al menos 25 $FLORA para acelerar el cultivo'), 'info');
       return false;
     }
 
-    recordBurnTransaction('BURN_SPEEDUP', 25, 'Yield Bud Empire: Aceleración Fotónica Planta Individual (Quema de 25 $FLORA)');
+    recordBurnTransaction('BURN_SPEEDUP', 25, tr('Yield Bud Empire: Aceleración Fotónica Planta Individual (Quema de 25 $FLORA)'));
     
     setIndoorPlants(prev => prev.map((p, idx) => {
       if (idx !== selectedPlantIndex) return p;
@@ -1693,28 +1694,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { ...p, progressPercent: nextProgress, stage: stageFromProgress(nextProgress) };
     }));
 
-    showNotification(`¡25 $FLORA quemados! Planta #${selectedPlantIndex + 1} avanza dentro de su fase actual (nunca se salta una).`, 'burn');
+    showNotification(tr('¡25 $FLORA quemados! Planta #{v0} avanza dentro de su fase actual (nunca se salta una).', { v0: selectedPlantIndex + 1 }), 'burn');
     return true;
   };
 
   const speedUpIndoorRoom = (): boolean => {
     if (!indoorPlants.some(p => !isHarvestable(p) && boostWithinPhase(p.progressPercent, 30) - p.progressPercent >= 1)) {
-      showNotification('Ninguna planta puede avanzar ahora: las que están al final de su fase deben entrar en la siguiente. Nada se cobró.', 'info');
+      showNotification(tr('Ninguna planta puede avanzar ahora: las que están al final de su fase deben entrar en la siguiente. Nada se cobró.'), 'info');
       return false;
     }
     if (floraBalance < 50) {
-      showNotification('Saldo insuficiente: Necesitas al menos 50 $FLORA para acelerar la sala completa', 'info');
+      showNotification(tr('Saldo insuficiente: Necesitas al menos 50 $FLORA para acelerar la sala completa'), 'info');
       return false;
     }
 
-    recordBurnTransaction('BURN_SPEEDUP', 50, 'Yield Bud Empire: Aceleración Fotónica Sala Indoor Completa (30 Plantas)');
+    recordBurnTransaction('BURN_SPEEDUP', 50, tr('Yield Bud Empire: Aceleración Fotónica Sala Indoor Completa (30 Plantas)'));
 
     setIndoorPlants(prev => prev.map(p => {
       const nextProgress = boostWithinPhase(p.progressPercent, 30);
       return { ...p, progressPercent: nextProgress, stage: stageFromProgress(nextProgress) };
     }));
 
-    showNotification('¡50 $FLORA quemados! Aceleración cuántica aplicada a las 3 filas (30 plantas de la sala)', 'burn');
+    showNotification(tr('¡50 $FLORA quemados! Aceleración cuántica aplicada a las 3 filas (30 plantas de la sala)'), 'burn');
     return true;
   };
 
@@ -1725,7 +1726,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isHarvestable(target)) {
       const ph = phaseOf(target.stage);
       const order = PHASES.map(x => x.label).join(' → ');
-      showNotification(`Aún no se puede cortar: la planta está en ${ph?.label ?? 'crecimiento'}. Debe pasar por ${order} y terminar la maduración.`, 'info');
+      showNotification(tr('Aún no se puede cortar: la planta está en {v0}. Debe pasar por {order} y terminar la maduración.', { v0: ph?.label ?? 'crecimiento', order }), 'info');
       return;
     }
     playHarvestChime();
@@ -1747,9 +1748,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     updateQuestProgress('quest_harvest_run', 1);
     if (!maleTarget) reportEvent('harvest', 1);
-    addXp(180, 'Cosecha F2P');
+    addXp(180, tr('Cosecha F2P'));
 
-    showNotification(maleTarget ? `Planta #${selectedPlantIndex + 1} era macho: no da flor. La sala queda libre para una hembra.` : `¡Cosecha exitosa! Planta #${selectedPlantIndex + 1}: +${flowerHarvested}g Flor Seca y +${trimHarvested}g Biomasa${seedsGot ? ` y 🌰 ${seedsGot} semillas (fue polinizada)` : ''} (+180 XP)`, 'success');
+    showNotification(maleTarget ? tr('Planta #{v0} era macho: no da flor. La sala queda libre para una hembra.', { v0: selectedPlantIndex + 1 }) : tr('¡Cosecha exitosa! Planta #{v0}: +{flowerHarvested}g Flor Seca y +{trimHarvested}g Biomasa{v3} (+180 XP)', { v0: selectedPlantIndex + 1, flowerHarvested, trimHarvested, v3: seedsGot ? tr(' y 🌰 {seedsGot} semillas (fue polinizada)', { seedsGot }) : '' }), 'success');
 
     // Reset plant to fresh seedling
     setIndoorPlants(prev => prev.map((p, idx) => {
@@ -1775,7 +1776,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .filter(({ p }) => isHarvestable(p));
 
     if (readyIndices.length === 0) {
-      showNotification('Aún no hay plantas listas para corte en la sala indoor.', 'info');
+      showNotification(tr('Aún no hay plantas listas para corte en la sala indoor.'), 'info');
       return;
     }
 
@@ -1817,8 +1818,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (totalFlower > 0) setMaterials(prev => addMaterials(prev, { fibra_cruda: Math.round(totalFlower * FIBRE_PER_FLOWER_GRAM) }));
     updateQuestProgress('quest_harvest_run', readyIndices.length);
     reportEvent('harvest', readyIndices.length - maleCut);
-    addXp(readyIndices.length * 150, 'Cosecha Sala Indoor');
-    showNotification(`¡Cosecha de Sala Completa! ${readyIndices.length} plantas cosechadas: +${totalFlower}g Flor Seca y +${totalTrim}g Biomasa${totalSeeds ? ` · 🌰 +${totalSeeds} semillas` : ''}${maleCut ? ` · ${maleCut} macho${maleCut > 1 ? 's' : ''} (sin flor)` : ''}`, 'success');
+    addXp(readyIndices.length * 150, tr('Cosecha Sala Indoor'));
+    showNotification(tr('¡Cosecha de Sala Completa! {length} plantas cosechadas: +{totalFlower}g Flor Seca y +{totalTrim}g Biomasa{v3}{v4}', { length: readyIndices.length, totalFlower, totalTrim, v3: totalSeeds ? tr(' · 🌰 +{totalSeeds} semillas', { totalSeeds }) : '', v4: maleCut ? tr(' · {maleCut} macho{v1} (sin flor)', { maleCut, v1: maleCut > 1 ? 's' : '' }) : '' }), 'success');
   };
 
   /** seeds of a strain go back to the seed bank inventory (pollinated females give seeds at harvest) */
@@ -1864,7 +1865,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }));
     reportEvent('plant', 1);
-    showNotification(`Semilla plantada en Planta #${selectedPlantIndex + 1}: ${strain.name}. ¡Inicia el monitoreo de microclima!`, 'info');
+    showNotification(tr('Semilla plantada en Planta #{v0}: {name}. ¡Inicia el monitoreo de microclima!', { v0: selectedPlantIndex + 1, name: strain.name }), 'info');
   };
 
   const plantIndoorBatch = (strain: Strain) => {
@@ -1873,8 +1874,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIndoorPlants(createInitialIndoorRoom(strain).slice(0, cap));
     setDormantPlants([]);
     setSelectedPlantIndex(0);
-    addXp(50, 'Siembra Sala Completa');
-    showNotification(`Sala resembrada con ${cap} ${cap === 1 ? 'planta' : 'plantas'} de ${strain.name}${cap < 30 ? ` (tu instalación da para ${cap})` : ' (3 filas en pares de 2)'}`, 'info');
+    addXp(50, tr('Siembra Sala Completa'));
+    showNotification(tr('Sala resembrada con {cap} {v1} de {name}{v3}', { cap, v1: cap === 1 ? tr('planta') : tr('plantas'), name: strain.name, v3: cap < 30 ? tr(' (tu instalación da para {cap})', { cap }) : tr(' (3 filas en pares de 2)') }), 'info');
   };
 
   // --- SEED BANK & INVENTORY ---
@@ -1884,13 +1885,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (currency === 'FLORA') {
       if (floraBalance < seed.priceFlora) {
-        showNotification(`Saldo insuficiente: Requiere ${seed.priceFlora} $FLORA`, 'info');
+        showNotification(tr('Saldo insuficiente: Requiere {priceFlora} $FLORA', { priceFlora: seed.priceFlora }), 'info');
         return false;
       }
-      recordBurnTransaction('BURN_PATENT', seed.priceFlora, `Yield Bud Empire: Compra de Pack de Semillas (${seed.name})`);
+      recordBurnTransaction('BURN_PATENT', seed.priceFlora, tr('Yield Bud Empire: Compra de Pack de Semillas ({name})', { name: seed.name }));
     } else {
       if (solBalance < seed.priceSol) {
-        showNotification(`Saldo insuficiente: Requiere ${seed.priceSol} SOL`, 'info');
+        showNotification(tr('Saldo insuficiente: Requiere {priceSol} SOL', { priceSol: seed.priceSol }), 'info');
         return false;
       }
       setSolBalance(prev => Number(Math.max(0, prev - seed.priceSol).toFixed(3)));
@@ -1916,15 +1917,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     playHarvestChime();
     reportEvent('seedbuy', 1);
-    addXp(35, 'Adquisición de Genética');
-    showNotification(`¡Pack de ${seed.seedsPerPack}x semillas de ${seed.name} añadido a tu inventario! (+35 XP)`, 'success');
+    addXp(35, tr('Adquisición de Genética'));
+    showNotification(tr('¡Pack de {seedsPerPack}x semillas de {name} añadido a tu inventario! (+35 XP)', { seedsPerPack: seed.seedsPerPack, name: seed.name }), 'success');
     return true;
   };
 
   const plantFromSeedBank = (seedId: string): boolean => {
     const available = seedInventory[seedId] || 0;
     if (available <= 0) {
-      showNotification('No tienes semillas disponibles de este tipo. Adquiere más en el Banco de Semillas.', 'info');
+      showNotification(tr('No tienes semillas disponibles de este tipo. Adquiere más en el Banco de Semillas.'), 'info');
       return false;
     }
 
@@ -1947,19 +1948,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const supply = suppliesMarket.find(s => s.id === supplyId);
     if (!supply) return false;
     if (supply.installed) {
-      showNotification('Este equipo ya está instalado en tu instalación.', 'info');
+      showNotification(tr('Este equipo ya está instalado en tu instalación.'), 'info');
       return false;
     }
 
     if (currency === 'FLORA') {
       if (floraBalance < supply.priceFlora) {
-        showNotification(`Saldo insuficiente: Requiere ${supply.priceFlora} $FLORA`, 'info');
+        showNotification(tr('Saldo insuficiente: Requiere {priceFlora} $FLORA', { priceFlora: supply.priceFlora }), 'info');
         return false;
       }
-      recordBurnTransaction('BURN_REPAIR', supply.priceFlora, `Yield Bud Empire: Instalación de Equipo de Cultivo (${supply.name})`);
+      recordBurnTransaction('BURN_REPAIR', supply.priceFlora, tr('Yield Bud Empire: Instalación de Equipo de Cultivo ({name})', { name: supply.name }));
     } else {
       if (solBalance < supply.priceSol) {
-        showNotification(`Saldo insuficiente: Requiere ${supply.priceSol} SOL`, 'info');
+        showNotification(tr('Saldo insuficiente: Requiere {priceSol} SOL', { priceSol: supply.priceSol }), 'info');
         return false;
       }
       setSolBalance(prev => Number(Math.max(0, prev - supply.priceSol).toFixed(3)));
@@ -1992,8 +1993,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     confetti({ particleCount: 60, spread: 70 });
-    addXp(60, 'Mejora de Equipamiento');
-    showNotification(`¡Hardware instalado: ${supply.name}! Automatización y sensores activos (+60 XP)`, 'success');
+    addXp(60, tr('Mejora de Equipamiento'));
+    showNotification(tr('¡Hardware instalado: {name}! Automatización y sensores activos (+60 XP)', { name: supply.name }), 'success');
     return true;
   };
 
@@ -2006,7 +2007,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // only consumables come in stacks; equipment and licences are bought one at a time
     const n = item.kind === 'consumable' ? Math.max(1, Math.min(20, Math.floor(qty) || 1)) : 1;
     if (item.kind === 'license' && item.stationId && ownsStation(assets, item.stationId)) {
-      showNotification('Ya tienes esta licencia.', 'info');
+      showNotification(tr('Ya tienes esta licencia.'), 'info');
       return false;
     }
     const totalFlora = Math.round(item.priceFlora * n * (1 - staffMods.shopDiscount));
@@ -2014,13 +2015,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const label = `${n > 1 ? `${n}× ` : ''}${item.name}`;
     if (currency === 'FLORA') {
       if (floraBalance < totalFlora) {
-        showNotification(`Saldo insuficiente: requiere ${totalFlora} $FLORA`, 'info');
+        showNotification(tr('Saldo insuficiente: requiere {totalFlora} $FLORA', { totalFlora }), 'info');
         return false;
       }
-      recordBurnTransaction('BURN_PURCHASE', totalFlora, `Yield Bud Empire: Mint NFT ${label} (${item.kind === 'consumable' ? 'consumible' : item.kind === 'license' ? 'licencia' : 'equipo'})`);
+      recordBurnTransaction('BURN_PURCHASE', totalFlora, tr('Yield Bud Empire: Mint NFT {label} ({v1})', { label, v1: item.kind === 'consumable' ? 'consumible' : item.kind === 'license' ? 'licencia' : 'equipo' }));
     } else {
       if (solBalance < totalSol) {
-        showNotification(`Saldo insuficiente: requiere ${totalSol} SOL`, 'info');
+        showNotification(tr('Saldo insuficiente: requiere {totalSol} SOL', { totalSol }), 'info');
         return false;
       }
       setSolBalance(prev => Number(Math.max(0, prev - totalSol).toFixed(3)));
@@ -2044,8 +2045,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (equip && item.category === 'ac') setAutoClimateActive(true);
     confetti({ particleCount: 40, spread: 60 });
     reportEvent('buy', 1);
-    addXp(item.tier * 15 * n, 'Compra de Equipamiento');
-    showNotification(`NFT minteado: ${label}${equip ? ' — instalado' : ''}${item.kind === 'consumable' ? ` (+${(item.amount ?? 0) * n} ${item.unit})` : ''}`, 'success');
+    addXp(item.tier * 15 * n, tr('Compra de Equipamiento'));
+    showNotification(tr('NFT minteado: {label}{v1}{v2}', { label, v1: equip ? tr(' — instalado') : '', v2: item.kind === 'consumable' ? ` (+${(item.amount ?? 0) * n} ${item.unit})` : '' }), 'success');
     return true;
   };
 
@@ -2072,17 +2073,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const item = asset && CATALOG_BY_ID[asset.catalogId];
     if (!asset || !item || asset.durability === undefined) return false;
     if (asset.durability >= 99) {
-      showNotification('Este equipo está como nuevo.', 'info');
+      showNotification(tr('Este equipo está como nuevo.'), 'info');
       return false;
     }
     const cost = repairCostOf(asset);
     if (floraBalance < cost) {
-      showNotification(`Saldo insuficiente: la reparación cuesta ${cost} $FLORA`, 'info');
+      showNotification(tr('Saldo insuficiente: la reparación cuesta {cost} $FLORA', { cost }), 'info');
       return false;
     }
-    recordBurnTransaction('BURN_REPAIR', cost, `Yield Bud Empire: Reparación de ${item.name} (quema permanente)`);
+    recordBurnTransaction('BURN_REPAIR', cost, tr('Yield Bud Empire: Reparación de {name} (quema permanente)', { name: item.name }));
     setAssets(prev => prev.map(a => a.id === assetId ? { ...a, durability: 100 } : a));
-    showNotification(`${item.name} reparado al 100 % (${cost} $FLORA quemados)`, 'success');
+    showNotification(tr('{name} reparado al 100 % ({cost} $FLORA quemados)', { name: item.name, cost }), 'success');
     return true;
   };
 
@@ -2091,7 +2092,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (plotId) { treatPlot(plotId); return; }
     const targets = indoorPlants.map((p, i) => ({ p, i })).filter(({ p, i }) => p.pest && (scope === 'all' || i === selectedPlantIndex));
     if (targets.length === 0) {
-      showNotification(scope === 'selected' ? 'Esta planta no tiene plagas.' : 'No hay plagas que tratar. ¡Bien cuidado!', 'info');
+      showNotification(scope === 'selected' ? tr('Esta planta no tiene plagas.') : tr('No hay plagas que tratar. ¡Bien cuidado!'), 'info');
       return;
     }
     // dry-run on a copy of the stock: a plant is treated only if there is enough product for it
@@ -2104,7 +2105,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       else missing.add(PEST_INFO[p.pest!.kind].cure);
     }
     if (jobs.length === 0) {
-      showNotification(`No tienes tratamiento: necesitas ${[...missing].join(' / ')}. Cómpralo en el Grow Market → Control de plagas.`, 'burn');
+      showNotification(tr('No tienes tratamiento: necesitas {v0}. Cómpralo en el Grow Market → Control de plagas.', { v0: [...missing].join(' / ') }), 'burn');
       return;
     }
     setAssets(prev => jobs.reduce((acc, j) => spendPest(acc, j.kind, USE.pestPerPlant).assets, prev));
@@ -2113,35 +2114,35 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return j && p.pest ? { ...p, pest: undefined, guard: j.guard, health: Math.min(100, p.health + 5) } : p;
     }));
     playClickSound();
-    addXp(15 * jobs.length, 'Control de plagas');
-    showNotification(`🧴 ${jobs.length} planta${jobs.length > 1 ? 's tratadas' : ' tratada'} y protegida${jobs.length > 1 ? 's' : ''} ${Math.max(...jobs.map(j => j.guard))} h${missing.size ? `. Faltó: ${[...missing].join(' / ')}` : ''}.`, missing.size ? 'info' : 'success');
+    addXp(15 * jobs.length, tr('Control de plagas'));
+    showNotification(tr('🧴 {length} planta{v1} tratada{v1} y protegida{v1} {v3} h{v4}.', { length: jobs.length, v1: jobs.length > 1 ? 's' : '', v3: Math.max(...jobs.map(j => j.guard)), v4: missing.size ? tr('. Faltó: {v0}', { v0: [...missing].join(' / ') }) : '' }), missing.size ? 'info' : 'success');
   };
 
   const cleanRoom = (): boolean => {
     const since = (Date.now() - care.lastCleanAt) / 3600000;
     if (since < USE.cleanCooldownHours) {
       const left = USE.cleanCooldownHours - since;
-      showNotification(`La sala ya está limpia. Podrás volver a limpiar en ${left >= 1 ? `${Math.floor(left)} h ${Math.round((left % 1) * 60)} min` : `${Math.max(1, Math.round(left * 60))} min`}.`, 'info');
+      showNotification(tr('La sala ya está limpia. Podrás volver a limpiar en {v0}.', { v0: left >= 1 ? tr('{v0} h {v1} min', { v0: Math.floor(left), v1: Math.round((left % 1) * 60) }) : `${Math.max(1, Math.round(left * 60))} min` }), 'info');
       return false;
     }
     playClickSound();
     setCare({ rating: Math.min(100, care.rating + USE.cleanGain), lastCleanAt: Date.now() });
-    addXp(20, 'Limpieza de la sala');
-    showNotification(`🧹 Sala limpia: calificación de jardinero +${Math.min(USE.cleanGain, 100 - Math.round(care.rating))}.`, 'success');
+    addXp(20, tr('Limpieza de la sala'));
+    showNotification(tr('🧹 Sala limpia: calificación de jardinero +{v0}.', { v0: Math.min(USE.cleanGain, 100 - Math.round(care.rating)) }), 'success');
     return true;
   };
 
   const recycleGarbage = () => {
     const trash = garbageOf(assets);
     if (trash.length === 0) {
-      showNotification('No hay basura que reciclar.', 'info');
+      showNotification(tr('No hay basura que reciclar.'), 'info');
       return;
     }
     const ids = new Set(trash.map(a => a.id));
     playClickSound();
     setAssets(prev => prev.filter(a => !ids.has(a.id)));
     setCare(c => ({ ...c, rating: Math.min(100, c.rating + trash.length * USE.recycleGain) }));
-    showNotification(`♻️ Reciclaste ${trash.length} objeto${trash.length > 1 ? 's' : ''} (frascos vacíos y equipo averiado): +${trash.length * USE.recycleGain} de calificación.`, 'success');
+    showNotification(tr('♻️ Reciclaste {length} objeto{v1} (frascos vacíos y equipo averiado): +{v2} de calificación.', { length: trash.length, v1: trash.length > 1 ? 's' : '', v2: trash.length * USE.recycleGain }), 'success');
   };
 
   // --- LAND PLOTS (the planet) ---
@@ -2157,14 +2158,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const buyPlot = async (offerId: string, currency: 'FLORA' | 'SOL' = 'FLORA'): Promise<boolean> => {
     if (ledgerRef.current && currency === 'FLORA') {
       const r = await intent<{ plot: { name: string; landRating: number; region: RegionId; priceFlora?: number } }>('buy_plot', { offerId });
-      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo comprar la tierra (${r.error})`, 'info'); void fetchState().then(x => x && applySnapshot(x)); return false; }
+      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo comprar la tierra ({error})', { error: r.error }), 'info'); void fetchState().then(x => x && applySnapshot(x)); return false; }
       applySnapshot(r.snapshot);
       const offer = plotOffer(r.result.plot.region, Number(offerId.split('-').pop()));
-      recordBurnTransaction('BURN_PURCHASE', offer.priceFlora, `Yield Bud Empire Planeta: Mint NFT parcela ${offer.name}`, true);
+      recordBurnTransaction('BURN_PURCHASE', offer.priceFlora, tr('Yield Bud Empire Planeta: Mint NFT parcela {name}', { name: offer.name }), true);
       confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
       reportEvent('plot', 1);
-      addXp(80, 'Compra de parcela');
-      showNotification(`🌎 Parcela minteada: ${offer.name} en ${REGION_BY_ID[offer.region].name} · nota ${offer.landRating}/10 · 36 plantas`, 'success');
+      addXp(80, tr('Compra de parcela'));
+      showNotification(tr('🌎 Parcela minteada: {name} en {v1} · nota {landRating}/10 · 36 plantas', { name: offer.name, v1: REGION_BY_ID[offer.region].name, landRating: offer.landRating }), 'success');
       return true;
     }
     const m = /^plot-([a-z_]+)-(\d+)$/.exec(offerId);
@@ -2172,19 +2173,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!m || !region || !REGION_BY_ID[region]) return false;
     const offer = plotOffer(region, Number(m[2]));
     if (!plotsForSale(region).offers.some(o => o.id === offer.id)) {
-      showNotification('Esa parcela ya no está a la venta.', 'info');
+      showNotification(tr('Esa parcela ya no está a la venta.'), 'info');
       return false;
     }
     const r = REGION_BY_ID[region];
     if (currency === 'FLORA') {
       if (floraBalance < offer.priceFlora) {
-        showNotification(`Saldo insuficiente: la parcela ${offer.name} cuesta ${offer.priceFlora} $FLORA`, 'info');
+        showNotification(tr('Saldo insuficiente: la parcela {name} cuesta {priceFlora} $FLORA', { name: offer.name, priceFlora: offer.priceFlora }), 'info');
         return false;
       }
-      recordBurnTransaction('BURN_PURCHASE', offer.priceFlora, `Yield Bud Empire Planeta: Mint NFT parcela ${offer.name} (${r.name}, nota ${offer.landRating}/10)`);
+      recordBurnTransaction('BURN_PURCHASE', offer.priceFlora, tr('Yield Bud Empire Planeta: Mint NFT parcela {name} ({v1}, nota {landRating}/10)', { name: offer.name, v1: r.name, landRating: offer.landRating }));
     } else {
       if (solBalance < offer.priceSol) {
-        showNotification(`Saldo insuficiente: la parcela cuesta ${offer.priceSol} SOL`, 'info');
+        showNotification(tr('Saldo insuficiente: la parcela cuesta {priceSol} SOL', { priceSol: offer.priceSol }), 'info');
         return false;
       }
       setSolBalance(prev => Number(Math.max(0, prev - offer.priceSol).toFixed(3)));
@@ -2196,8 +2197,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPlots(prev => [...prev, { id: offer.id, region, index: offer.index, name: offer.name, ratings: offer.ratings, landRating: offer.landRating, mintedAt: Date.now(), plants: [] }]);
     confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
     reportEvent('plot', 1);
-    addXp(80, 'Compra de parcela');
-    showNotification(`🌎 Parcela minteada: ${offer.name} en ${r.name} · nota ${offer.landRating}/10 · 36 plantas`, 'success');
+    addXp(80, tr('Compra de parcela'));
+    showNotification(tr('🌎 Parcela minteada: {name} en {v1} · nota {landRating}/10 · 36 plantas', { name: offer.name, v1: r.name, landRating: offer.landRating }), 'success');
     return true;
   };
 
@@ -2210,7 +2211,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const empty = Array.from({ length: PLOT_SIZE }, (_, i) => i).filter(i => !taken.has(i));
     const n = Math.min(count ?? empty.length, have, empty.length);
     if (n <= 0) {
-      showNotification(empty.length === 0 ? 'La parcela está llena: cosecha antes de sembrar.' : 'No tienes semillas de esa genética. Cómpralas en el Banco de Semillas.', 'info');
+      showNotification(empty.length === 0 ? tr('La parcela está llena: cosecha antes de sembrar.') : tr('No tienes semillas de esa genética. Cómpralas en el Banco de Semillas.'), 'info');
       return false;
     }
     const strain = seedItem.strainTemplate;
@@ -2227,8 +2228,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPlots(prev => prev.map(pl => pl.id === plotId ? { ...pl, plants: [...pl.plants, ...fresh] } : pl));
     playClickSound();
     reportEvent('plant', n);
-    addXp(n * 5, 'Siembra en parcela');
-    showNotification(`🌱 ${n} semilla${n > 1 ? 's' : ''} de ${strain.name} en ${plot.name}: ${ter.label}. ~${yieldEach} g por planta.`, ter.tone === 'down' ? 'info' : 'success');
+    addXp(n * 5, tr('Siembra en parcela'));
+    showNotification(tr('🌱 {n} semilla{v1} de {name} en {v3}: {label}. ~{yieldEach} g por planta.', { n, v1: n > 1 ? 's' : '', name: strain.name, v3: plot.name, label: ter.label, yieldEach }), ter.tone === 'down' ? 'info' : 'success');
     return true;
   };
 
@@ -2237,7 +2238,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!plot) return;
     const targets = plot.plants.filter(p => p.stage !== 'ready_harvest' && (all || p.soilMoisture < 60));
     if (targets.length === 0) {
-      showNotification(plot.plants.length ? 'Ninguna planta necesita riego ahora (todas ≥ 60 % de humedad).' : 'La parcela está vacía.', 'info');
+      showNotification(plot.plants.length ? tr('Ninguna planta necesita riego ahora (todas ≥ 60 % de humedad).') : tr('La parcela está vacía.'), 'info');
       return;
     }
     if (!takeResource('water', USE.waterPerPlantManual * targets.length)) return;
@@ -2245,8 +2246,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playWaterSound();
     setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.map(p => slots.has(p.slotIndex) ? { ...p, soilMoisture: Math.min(100, p.soilMoisture + 55), health: Math.min(100, p.health + 3), lastWatered: Date.now() } : p) }));
     reportEvent('water', targets.length);
-    addXp(targets.length * 3, 'Riego de parcela');
-    showNotification(`💧 ${targets.length} planta${targets.length > 1 ? 's regadas' : ' regada'} en ${plot.name} (${(USE.waterPerPlantManual * targets.length).toFixed(1)} L)`, 'info');
+    addXp(targets.length * 3, tr('Riego de parcela'));
+    showNotification(tr('💧 {length} planta{v1} regada{v1} en {name} ({v3} L)', { length: targets.length, v1: targets.length > 1 ? 's' : '', name: plot.name, v3: (USE.waterPerPlantManual * targets.length).toFixed(1) }), 'info');
   };
 
   const feedPlot = (plotId: string) => {
@@ -2254,7 +2255,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!plot) return;
     const targets = plot.plants.filter(p => p.stage !== 'ready_harvest' && p.ecLevel < 1.6);
     if (targets.length === 0) {
-      showNotification('Ninguna planta necesita abono ahora.', 'info');
+      showNotification(tr('Ninguna planta necesita abono ahora.'), 'info');
       return;
     }
     if (!takeResource('nutrient', USE.nutrientPerPlant * targets.length)) return;
@@ -2263,8 +2264,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playClickSound();
     setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.map(p => slots.has(p.slotIndex) ? { ...p, ecLevel: 2.1, phLevel: 6.2, feedBonus, health: Math.min(100, p.health + 5), lastFed: Date.now() } : p) }));
     reportEvent('feed', targets.length);
-    addXp(targets.length * 4, 'Abonado de parcela');
-    showNotification(`🧪 ${targets.length} planta${targets.length > 1 ? 's abonadas' : ' abonada'} en ${plot.name}`, 'info');
+    addXp(targets.length * 4, tr('Abonado de parcela'));
+    showNotification(tr('🧪 {length} planta{v1} abonada{v1} en {name}', { length: targets.length, v1: targets.length > 1 ? 's' : '', name: plot.name }), 'info');
   };
 
   const treatPlot = (plotId: string) => {
@@ -2272,7 +2273,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!plot) return;
     const targets = plot.plants.filter(p => p.pest);
     if (targets.length === 0) {
-      showNotification('No hay plagas en esta parcela.', 'info');
+      showNotification(tr('No hay plagas en esta parcela.'), 'info');
       return;
     }
     let cur = assets;
@@ -2284,14 +2285,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       else missing.add(PEST_INFO[p.pest!.kind].cure);
     }
     if (jobs.length === 0) {
-      showNotification(`No tienes tratamiento: necesitas ${[...missing].join(' / ')}. Cómpralo en el Grow Market → Control de plagas.`, 'burn');
+      showNotification(tr('No tienes tratamiento: necesitas {v0}. Cómpralo en el Grow Market → Control de plagas.', { v0: [...missing].join(' / ') }), 'burn');
       return;
     }
     setAssets(prev => jobs.reduce((acc, j) => spendPest(acc, j.kind, USE.pestPerPlant).assets, prev));
     setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.map(p => { const j = jobs.find(x => x.slot === p.slotIndex); return j && p.pest ? { ...p, pest: undefined, guard: j.guard, health: Math.min(100, p.health + 5) } : p; }) }));
     playClickSound();
-    addXp(15 * jobs.length, 'Control de plagas');
-    showNotification(`🧴 ${jobs.length} planta${jobs.length > 1 ? 's tratadas' : ' tratada'} en ${plot.name}${missing.size ? `. Faltó: ${[...missing].join(' / ')}` : ''}.`, missing.size ? 'info' : 'success');
+    addXp(15 * jobs.length, tr('Control de plagas'));
+    showNotification(tr('🧴 {length} planta{v1} tratada{v1} en {name}{v3}.', { length: jobs.length, v1: jobs.length > 1 ? 's' : '', name: plot.name, v3: missing.size ? tr('. Faltó: {v0}', { v0: [...missing].join(' / ') }) : '' }), missing.size ? 'info' : 'success');
   };
 
   const harvestPlot = (plotId: string) => {
@@ -2299,7 +2300,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!plot) return;
     const ready = plot.plants.filter(p => p.stage === 'ready_harvest');
     if (ready.length === 0) {
-      showNotification('Aún no hay plantas listas para cosechar en esta parcela.', 'info');
+      showNotification(tr('Aún no hay plantas listas para cosechar en esta parcela.'), 'info');
       return;
     }
     let flower = 0, trim = 0, seeds = 0, maleCut = 0;
@@ -2316,10 +2317,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (flower > 0) setMaterials(prev => addMaterials(prev, { fibra_cruda: Math.round(flower * FIBRE_PER_FLOWER_GRAM) }));
     updateQuestProgress('quest_harvest_run', ready.length);
     reportEvent('harvest', ready.length - maleCut);
-    addXp(ready.length * 180, 'Cosecha en parcela');
+    addXp(ready.length * 180, tr('Cosecha en parcela'));
     playHarvestChime();
     confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 }, colors: ['#10b981', '#34d399', '#f59e0b', '#a855f7', '#6366f1'] });
-    showNotification(`🌾 Cosecha en ${plot.name}: ${ready.length} plantas → +${flower} g de flor y +${trim} g de biomasa${seeds ? ` · 🌰 +${seeds} semillas` : ''}${maleCut ? ` · ${maleCut} macho${maleCut > 1 ? 's' : ''} sin flor` : ''}. La parcela queda libre para sembrar.`, 'success');
+    showNotification(tr('🌾 Cosecha en {name}: {length} plantas → +{flower} g de flor y +{trim} g de biomasa{v4}{v5}. La parcela queda libre para sembrar.', { name: plot.name, length: ready.length, flower, trim, v4: seeds ? tr(' · 🌰 +{seeds} semillas', { seeds }) : '', v5: maleCut ? tr(' · {maleCut} macho{v1} sin flor', { maleCut, v1: maleCut > 1 ? 's' : '' }) : '' }), 'success');
   };
 
   const plotEta = (plot: OwnedPlot, plant: PlantInGrow) => plotEtaSeconds(plant, plot.region, plot.ratings);
@@ -2329,19 +2330,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const chest = CHESTS[id];
     if (ledgerRef.current && currency === 'FLORA') {
       const r = await intent<{ designId: string; isNew: boolean; refund: number; owned: { designId: string; count: number; firstAt: number; serial: number } }>('avatar_chest', { chestId: id });
-      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo abrir el cofre (${r.error})`, 'info'); return null; }
+      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo abrir el cofre ({error})', { error: r.error }), 'info'); return null; }
       applySnapshot(r.snapshot);
-      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `Yield Bud Empire: ${chest.name} (mint de avatar NFT)`, true);
+      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, tr('Yield Bud Empire: {name} (mint de avatar NFT)', { name: chest.name }), true);
       const design = DESIGN_BY_ID[r.result.designId];
       playLevelUpSound();
-      addXp(design.rarity === 'legendary' ? 200 : design.rarity === 'epic' ? 80 : 30, 'Cofre de avatar');
+      addXp(design.rarity === 'legendary' ? 200 : design.rarity === 'epic' ? 80 : 30, tr('Cofre de avatar'));
       return { design, isNew: r.result.isNew, refund: r.result.refund, owned: { ...r.result.owned, mint: mintAddressFor(`av-${design.id}`) } };
     }
     if (currency === 'FLORA') {
-      if (floraBalance < chest.priceFlora) { showNotification(`Saldo insuficiente: el ${chest.name} cuesta ${chest.priceFlora} $FLORA`, 'info'); return null; }
-      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `Yield Bud Empire: ${chest.name} (mint de avatar NFT)`);
+      if (floraBalance < chest.priceFlora) { showNotification(tr('Saldo insuficiente: el {name} cuesta {priceFlora} $FLORA', { name: chest.name, priceFlora: chest.priceFlora }), 'info'); return null; }
+      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, tr('Yield Bud Empire: {name} (mint de avatar NFT)', { name: chest.name }));
     } else {
-      if (solBalance < chest.priceSol) { showNotification(`Saldo insuficiente: el ${chest.name} cuesta ${chest.priceSol} SOL`, 'info'); return null; }
+      if (solBalance < chest.priceSol) { showNotification(tr('Saldo insuficiente: el {name} cuesta {priceSol} SOL', { name: chest.name, priceSol: chest.priceSol }), 'info'); return null; }
       setSolBalance(prev => Number(Math.max(0, prev - chest.priceSol).toFixed(3)));
       setTransactions(prev => [{ id: `tx-chest-${Date.now()}`, signature: generateSolanaSignature(), type: 'BURN_PURCHASE', amountFlora: 0, amountSol: chest.priceSol, timestamp: Date.now(), status: 'confirmed', blockSlot: 248928000 + Math.floor(Math.random() * 5000), memo: `Yield Bud Empire: ${chest.name}` }, ...prev.slice(0, 24)]);
     }
@@ -2357,35 +2358,35 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAvatars(prev => (have ? prev.map(a => (a.designId === design.id ? owned : a)) : [...prev, owned]));
     if (refund) setFloraBalance(prev => prev + refund);
     playLevelUpSound();
-    addXp(design.rarity === 'legendary' ? 200 : design.rarity === 'epic' ? 80 : 30, 'Cofre de avatar');
+    addXp(design.rarity === 'legendary' ? 200 : design.rarity === 'epic' ? 80 : 30, tr('Cofre de avatar'));
     return { design, isNew: !have, refund, owned };
   };
 
   const equipAvatar = (designId: string | null) => {
     if (designId && !avatars.some(a => a.designId === designId)) return;
     updateUserProfile({ avatarNft: designId ?? undefined });
-    showNotification(designId ? `Avatar equipado: ${DESIGN_BY_ID[designId]?.name ?? designId}` : 'Avatar NFT desequipado.', 'success');
+    showNotification(designId ? tr('Avatar equipado: {v0}', { v0: DESIGN_BY_ID[designId]?.name ?? designId }) : tr('Avatar NFT desequipado.'), 'success');
   };
 
   const removeMales = (plotId?: string) => {
     if (plotId) {
       const plot = plots.find(pl => pl.id === plotId);
       const males = plot?.plants.filter(p => isMale(p) && sexRevealed(p)) ?? [];
-      if (!plot || males.length === 0) { showNotification('No hay machos por quitar en esta parcela.', 'info'); return; }
+      if (!plot || males.length === 0) { showNotification(tr('No hay machos por quitar en esta parcela.'), 'info'); return; }
       const slots = new Set(males.map(p => p.slotIndex));
       setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.filter(p => !slots.has(p.slotIndex)) }));
       playClickSound();
-      addXp(males.length * 10, 'Machos retirados');
-      showNotification(`♂ ${males.length} macho${males.length > 1 ? 's' : ''} arrancado${males.length > 1 ? 's' : ''} de ${plot.name}. Las hembras están a salvo de la polinización.`, 'success');
+      addXp(males.length * 10, tr('Machos retirados'));
+      showNotification(tr('♂ {length} macho{v1} arrancado{v2} de {name}. Las hembras están a salvo de la polinización.', { length: males.length, v1: males.length > 1 ? 's' : '', v2: males.length > 1 ? 's' : '', name: plot.name }), 'success');
       return;
     }
     const idx = indoorPlants.map((p, i) => ({ p, i })).filter(({ p }) => isMale(p) && sexRevealed(p)).map(x => x.i);
-    if (idx.length === 0) { showNotification('No hay machos por quitar en la sala.', 'info'); return; }
+    if (idx.length === 0) { showNotification(tr('No hay machos por quitar en la sala.'), 'info'); return; }
     const set = new Set(idx);
     setIndoorPlants(prev => prev.map((p, i) => set.has(i) ? { ...p, stage: 'seed' as GrowStage, progressPercent: 0, health: 98, soilMoisture: 80, plantedAt: Date.now(), trichomeMaturity: { clear: 100, milky: 0, amber: 0 }, sex: 'female' as const, pollinated: false, pest: undefined } : p));
     playClickSound();
-    addXp(idx.length * 10, 'Machos retirados');
-    showNotification(`♂ ${idx.length} macho${idx.length > 1 ? 's' : ''} retirado${idx.length > 1 ? 's' : ''} de la sala; su hueco vuelve a empezar como hembra.`, 'success');
+    addXp(idx.length * 10, tr('Machos retirados'));
+    showNotification(tr('♂ {length} macho{v1} retirado{v2} de la sala; su hueco vuelve a empezar como hembra.', { length: idx.length, v1: idx.length > 1 ? 's' : '', v2: idx.length > 1 ? 's' : '' }), 'success');
   };
 
   const keepMaleAsFather = (plotId: string, slot: number) => {
@@ -2396,18 +2397,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `donor_${Date.now()}`,
       role: 'Padre (Donante de Polen)',
       strain: plant.strain,
-      name: `Padre Donante ${plant.strain.name}`,
+      name: tr('Padre Donante {name}', { name: plant.strain.name }),
       health: plant.health,
       clonesCutCount: 0,
       pollenCollectedMg: 250,
       savedAt: Date.now(),
-      traits: [`THC: ${plant.strain.thcPercentage}%`, `Terpeno Dominante: ${Object.keys(plant.strain.terpenes)[0]}`, plant.strain.origin ? `Landrace de ${REGION_BY_ID[plant.strain.origin].name}` : 'Híbrido adaptable'],
+      traits: [`THC: ${plant.strain.thcPercentage}%`, tr('Terpeno Dominante: {v0}', { v0: Object.keys(plant.strain.terpenes)[0] }), plant.strain.origin ? tr('Landrace de {name}', { name: REGION_BY_ID[plant.strain.origin].name }) : tr('Híbrido adaptable')],
     };
     setMothersFathers(prev => [donor, ...prev]);
     setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.filter(p => p.slotIndex !== slot) }));
     playLevelUpSound();
-    addXp(75, 'Conservación Genética');
-    showNotification(`♂ ${donor.name} guardado en el Santuario de Madres & Padres: ya puedes cruzarlo en Genética (+75 XP).`, 'success');
+    addXp(75, tr('Conservación Genética'));
+    showNotification(tr('♂ {name} guardado en el Santuario de Madres & Padres: ya puedes cruzarlo en Genética (+75 XP).', { name: donor.name }), 'success');
   };
 
 
@@ -2435,7 +2436,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // --- NUTRIENT DOSING & BRAND FEEDING TABLES ---
   /** Apply a prepared solution: spends abono + water from the warehouse and sets the plant's measured EC / pH / growth bonus. */
   const applyFertigation = (f: FertigationInput): boolean => {
-    if (indoorPlants.length === 0) { showNotification('Siembra una planta para aplicarle la solución', 'info'); return false; }
+    if (indoorPlants.length === 0) { showNotification(tr('Siembra una planta para aplicarle la solución'), 'info'); return false; }
     const n = f.scope === 'all' ? indoorPlants.length : 1;
     if (!takeResource('nutrient', USE.nutrientPerPlant * n)) return false;
     playWaterSound();
@@ -2447,8 +2448,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       : p));
     const xp = Math.round(10 + f.score / 5);
     reportEvent('fertigate', 1);
-    addXp(xp, 'Fertirriego con receta propia');
-    showNotification(`${f.label}: EC ${f.ec} mS/cm · pH ${f.ph} · calidad ${f.score}/100 (+${xp} XP)`, f.score >= 55 ? 'success' : 'info');
+    addXp(xp, tr('Fertirriego con receta propia'));
+    showNotification(tr('{label}: EC {ec} mS/cm · pH {ph} · calidad {score}/100 (+{xp} XP)', { label: f.label, ec: f.ec, ph: f.ph, score: f.score, xp }), f.score >= 55 ? 'success' : 'info');
     return true;
   };
 
@@ -2488,7 +2489,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           co2Ppm: roomConfig.targetCo2Ppm
         };
       });
-      showNotification(`Traslado de sala: ${roomConfig.name}. Ajustando microclima a ${roomConfig.recommendedLightSchedule} (${roomConfig.targetTempC}°C)`, 'info');
+      showNotification(tr('Traslado de sala: {name}. Ajustando microclima a {recommendedLightSchedule} ({targetTempC}°C)', { name: roomConfig.name, recommendedLightSchedule: roomConfig.recommendedLightSchedule, targetTempC: roomConfig.targetTempC }), 'info');
     }
   };
 
@@ -2504,7 +2505,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playClickSound();
     setAutoWaterActive(prev => {
       const next = !prev;
-      showNotification(`Riego Automático: ${next ? 'ACTIVADO (Goteo inteligente cuando sustrato < 45%)' : 'DESACTIVADO (Manual)'}`, 'info');
+      showNotification(tr('Riego Automático: {v0}', { v0: next ? tr('ACTIVADO (Goteo inteligente cuando sustrato < 45%)') : tr('DESACTIVADO (Manual)') }), 'info');
       return next;
     });
   };
@@ -2513,14 +2514,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playClickSound();
     setAutoClimateActive(prev => {
       const next = !prev;
-      showNotification(`Control Climático Autónomo: ${next ? 'ACTIVADO (Termostato / Higrostato PID)' : 'DESACTIVADO (Manual)'}`, 'info');
+      showNotification(tr('Control Climático Autónomo: {v0}', { v0: next ? tr('ACTIVADO (Termostato / Higrostato PID)') : tr('DESACTIVADO (Manual)') }), 'info');
       return next;
     });
   };
 
   const calibrateMeter = (meterType: 'ph' | 'ec' | 'par' | 'lux') => {
     playClickSound();
-    addXp(15, 'Calibración Científica');
+    addXp(15, tr('Calibración Científica'));
     const descriptions = {
       ph: 'Sonda de pH calibrada con buffer patrón 4.01 / 7.01 (Precisión ±0.01 pH)',
       ec: 'Electroconductímetro calibrado en 1413 μS/cm (Lectura exacta mS/cm)',
@@ -2533,7 +2534,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // --- MOTHERS, FATHERS & BOTANICAL HYBRIDIZATION ---
   const saveCurrentPlantAsMotherOrFather = (role: 'Madre (Esquejes / Clones)' | 'Padre (Donante de Polen)'): boolean => {
     if (!activePlant) {
-      showNotification('No hay planta activa para conservar como donante.', 'info');
+      showNotification(tr('No hay planta activa para conservar como donante.'), 'info');
       return false;
     }
 
@@ -2541,22 +2542,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `donor_${Date.now()}`,
       role,
       strain: activePlant.strain,
-      name: `${role.includes('Madre') ? 'Madre Élite' : 'Padre Donante'} ${activePlant.strain.name}`,
+      name: `${role.includes('Madre') ? tr('Madre Élite') : tr('Padre Donante')} ${activePlant.strain.name}`,
       health: activePlant.health,
       clonesCutCount: 0,
       pollenCollectedMg: role.includes('Padre') ? 250 : 0,
       savedAt: Date.now(),
       traits: [
         `THC: ${activePlant.strain.thcPercentage}%`,
-        `Terpeno Dominante: ${Object.keys(activePlant.strain.terpenes)[0]}`,
-        'Resistencia a plagas'
+        tr('Terpeno Dominante: {v0}', { v0: Object.keys(activePlant.strain.terpenes)[0] }),
+        tr('Resistencia a plagas')
       ]
     };
 
     setMothersFathers(prev => [newDonor, ...prev]);
     playLevelUpSound();
-    addXp(75, 'Conservación Genética');
-    showNotification(`¡${newDonor.name} guardado en el Santuario de Madres & Padres! (+75 XP)`, 'success');
+    addXp(75, tr('Conservación Genética'));
+    showNotification(tr('¡{name} guardado en el Santuario de Madres & Padres! (+75 XP)', { name: newDonor.name }), 'success');
     return true;
   };
 
@@ -2566,11 +2567,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setMothersFathers(prev => prev.map(m => m.id === motherId ? { ...m, clonesCutCount: m.clonesCutCount + 1 } : m));
     playHarvestChime();
-    addXp(40, 'Corte de Esquejes');
+    addXp(40, tr('Corte de Esquejes'));
 
     // Plant the clone as seedling
     plantNewSeed(mother.strain);
-    showNotification(`¡Esqueje enraizado cortado de ${mother.name}! Plantado exitosamente (+40 XP)`, 'success');
+    showNotification(tr('¡Esqueje enraizado cortado de {name}! Plantado exitosamente (+40 XP)', { name: mother.name }), 'success');
     return true;
   };
 
@@ -2581,8 +2582,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const collectedMg = 150;
     setMothersFathers(prev => prev.map(f => f.id === fatherId ? { ...f, pollenCollectedMg: f.pollenCollectedMg + collectedMg } : f));
     playClickSound();
-    addXp(35, 'Recolección de Polen');
-    showNotification(`Se recolectaron +${collectedMg}mg de polen fértil de ${father.name} (+35 XP)`, 'success');
+    addXp(35, tr('Recolección de Polen'));
+    showNotification(tr('Se recolectaron +{collectedMg}mg de polen fértil de {name} (+35 XP)', { collectedMg, name: father.name }), 'success');
     return collectedMg;
   };
 
@@ -2590,12 +2591,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const mother = mothersFathers.find(m => m.id === motherId);
     const father = mothersFathers.find(f => f.id === fatherId);
     if (!mother || !father) {
-      showNotification('Selecciona una Madre receptora y un Padre donante de polen válidos.', 'info');
+      showNotification(tr('Selecciona una Madre receptora y un Padre donante de polen válidos.'), 'info');
       return null;
     }
 
     if (mother.id === father.id) {
-      showNotification('Debes seleccionar dos individuos distintos para cruzar.', 'info');
+      showNotification(tr('Debes seleccionar dos individuos distintos para cruzar.'), 'info');
       return null;
     }
 
@@ -2605,7 +2606,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const hybridSeedId = `hybrid_seed_${hybridStrain.id}`;
     const newSeedItem: SeedBankItem = {
       id: hybridSeedId,
-      name: `${hybridStrain.name} (F1 Hybrid)`,
+      name: tr('{name} (F1 Hybrid)', { name: hybridStrain.name }),
       breeder: `${brand.name} Lab Master`,
       seedType: 'Regular',
       lineage: `${mother.strain.name} x ${father.strain.name}`,
@@ -2614,10 +2615,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       floweringWeeks: 9,
       yieldGramsPerPlant: 165,
       difficulty: 'Avanzado',
-      dominantTerpenes: ['Mirceno', 'Limoneno', 'Cariofileno'],
+      dominantTerpenes: [tr('Mirceno'), tr('Limoneno'), tr('Cariofileno')],
       priceFlora: 200,
       priceSol: 0.25,
-      description: `Cruzamiento botánico F1 estabilizado entre ${mother.strain.name} y ${father.strain.name}.`,
+      description: tr('Cruzamiento botánico F1 estabilizado entre {name} y {v1}.', { name: mother.strain.name, v1: father.strain.name }),
       seedsPerPack: 5,
       imageTheme: 'emerald',
       inStock: true,
@@ -2628,8 +2629,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSeedInventory(prev => ({ ...prev, [hybridSeedId]: (prev[hybridSeedId] || 0) + 5 + staffMods.seedBonus }));
 
     confetti({ particleCount: 150, spread: 100 });
-    addXp(160, 'Hibridación F1 Exitosa');
-    showNotification(`¡Hibridación F1 Completada! Se generaron 5 semillas exclusivas de "${hybridStrain.name}" en tu inventario (+160 XP)`, 'success');
+    addXp(160, tr('Hibridación F1 Exitosa'));
+    showNotification(tr('¡Hibridación F1 Completada! Se generaron 5 semillas exclusivas de "{name}" en tu inventario (+160 XP)', { name: hybridStrain.name }), 'success');
     return hybridStrain;
   };
 
@@ -2639,39 +2640,39 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!target) return;
     if (ledgerRef.current) {
       // the server owns the ladder: it checks the rung, the money and the single build at a time, and starts the clock
-      if (target.unlocked) { showNotification(target.tier < currentFacility.tier ? `${target.name} ya la superaste: tu instalación actual es mejor.` : 'Esa es tu instalación actual.', 'info'); return; }
+      if (target.unlocked) { showNotification(target.tier < currentFacility.tier ? tr('{name} ya la superaste: tu instalación actual es mejor.', { name: target.name }) : tr('Esa es tu instalación actual.'), 'info'); return; }
       const r = await intent<{ hours: number }>('start_build', { facilityId });
-      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo empezar la obra (${r.error})`, 'info'); return; }
+      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo empezar la obra ({error})', { error: r.error }), 'info'); return; }
       applySnapshot(r.snapshot);
-      recordBurnTransaction('BURN_SPEEDUP', target.costFlora, `Yield Bud Empire: Obra de ${target.name}`, true);
+      recordBurnTransaction('BURN_SPEEDUP', target.costFlora, tr('Yield Bud Empire: Obra de {name}', { name: target.name }), true);
       const h = r.result.hours;
-      showNotification(`¡Obra iniciada: ${target.name}! Tardará ${h >= 24 ? `${Math.round(h / 24 * 10) / 10} días` : `${h} h`}. Puedes seguir cultivando mientras tanto.`, 'success');
+      showNotification(tr('¡Obra iniciada: {name}! Tardará {v1}. Puedes seguir cultivando mientras tanto.', { name: target.name, v1: h >= 24 ? tr('{v0} días', { v0: Math.round(h / 24 * 10) / 10 }) : `${h} h` }), 'success');
       return;
     }
     if (target.unlocked) {
-      if (target.tier < currentFacility.tier) showNotification(`${target.name} ya la superaste: tu instalación actual es mejor.`, 'info');
+      if (target.tier < currentFacility.tier) showNotification(tr('{name} ya la superaste: tu instalación actual es mejor.', { name: target.name }), 'info');
       else setCurrentFacility(target);
       return;
     }
     if (construction) {
       const b = facilities.find(f => f.id === construction.facilityId);
-      showNotification(`Ya hay una obra en marcha (${b?.name ?? 'instalación'}). Termínala antes de empezar otra.`, 'info');
+      showNotification(tr('Ya hay una obra en marcha ({v0}). Termínala antes de empezar otra.', { v0: b?.name ?? tr('instalación') }), 'info');
       return;
     }
     if (target.tier !== currentFacility.tier + 1) {
-      showNotification('No se salta ningún escalón: construye primero la instalación anterior.', 'info');
+      showNotification(tr('No se salta ningún escalón: construye primero la instalación anterior.'), 'info');
       return;
     }
     if (floraBalance < target.costFlora) {
-      showNotification(`Saldo insuficiente: la obra cuesta ${target.costFlora} $FLORA`, 'info');
+      showNotification(tr('Saldo insuficiente: la obra cuesta {costFlora} $FLORA', { costFlora: target.costFlora }), 'info');
       return;
     }
     const c = startConstruction(facilityId, Date.now());
     if (!c) return;
-    recordBurnTransaction('BURN_SPEEDUP', target.costFlora, `Yield Bud Empire: Obra de ${target.name}`);
+    recordBurnTransaction('BURN_SPEEDUP', target.costFlora, tr('Yield Bud Empire: Obra de {name}', { name: target.name }));
     setConstruction(c);
     const h = buildHoursOf(facilityId);
-    showNotification(`¡Obra iniciada: ${target.name}! Tardará ${h >= 24 ? `${Math.round(h / 24 * 10) / 10} días` : `${h} h`}. Puedes seguir cultivando mientras tanto.`, 'success');
+    showNotification(tr('¡Obra iniciada: {name}! Tardará {v1}. Puedes seguir cultivando mientras tanto.', { name: target.name, v1: h >= 24 ? tr('{v0} días', { v0: Math.round(h / 24 * 10) / 10 }) : `${h} h` }), 'success');
   };
 
   const finishConstruction = useCallback((c: Construction) => {
@@ -2681,7 +2682,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setFacilities(prev => prev.map(f => f.id === c.facilityId ? { ...f, unlocked: true } : f));
     setCurrentFacility({ ...target, unlocked: true });
     confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } });
-    showNotification(`¡Obra terminada! ${target.name}: ahora caben ${target.capacityPlants} ${target.capacityPlants === 1 ? 'planta' : 'plantas'}.`, 'success');
+    showNotification(tr('¡Obra terminada! {name}: ahora caben {capacityPlants} {v2}.', { name: target.name, capacityPlants: target.capacityPlants, v2: target.capacityPlants === 1 ? tr('planta') : tr('plantas') }), 'success');
   }, [showNotification]);
 
   // --- STAFF NFTs ---
@@ -2706,13 +2707,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const r = settleWages(staffRef.current, ids, floraRef.current, now);
         if (r.spent > 0) {
           setStaff(r.roster);
-          recordBurnTransaction('BURN_PURCHASE', r.spent, `Yield Bud Empire: Sueldos del personal (${ids.length} ${ids.length === 1 ? 'asistente' : 'asistentes'})`);
+          recordBurnTransaction('BURN_PURCHASE', r.spent, tr('Yield Bud Empire: Sueldos del personal ({length} {v1})', { length: ids.length, v1: ids.length === 1 ? 'asistente' : 'asistentes' }));
         }
         const fresh = r.unpaid.filter(id => !unpaidToldRef.current.has(id));
         if (fresh.length) {
           fresh.forEach(id => unpaidToldRef.current.add(id));
           const names = fresh.map(id => staffRef.current.find(x => x.id === id)?.name).filter(Boolean).join(', ');
-          showNotification(`Sin saldo para pagar el sueldo de ${names}: deja de trabajar hasta que puedas pagarle.`, 'info');
+          showNotification(tr('Sin saldo para pagar el sueldo de {names}: deja de trabajar hasta que puedas pagarle.', { names }), 'info');
         }
       }
       setStaffNow(now);
@@ -2725,20 +2726,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hireCandidate = async (c: Candidate): Promise<StaffNft | null> => {
     if (ledgerRef.current) {
       const r = await intent<{ staff: StaffNft }>('hire', { candidateId: c.id });
-      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo contratar (${r.error})`, 'info'); return null; }
+      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo contratar ({error})', { error: r.error }), 'info'); return null; }
       applySnapshot(r.snapshot);
-      recordBurnTransaction('BURN_PURCHASE', c.priceFlora, `Yield Bud Empire: Mint NFT de personal (${ROLE_INFO[r.result.staff.role].label} ${r.result.staff.name})`, true);
+      recordBurnTransaction('BURN_PURCHASE', c.priceFlora, tr('Yield Bud Empire: Mint NFT de personal ({label} {name})', { label: ROLE_INFO[r.result.staff.role].label, name: r.result.staff.name }), true);
       confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
-      showNotification(`¡${r.result.staff.name} se une como ${ROLE_INFO[r.result.staff.role].label}! Asígnale su puesto en el Maletín → Plantilla.`, 'success');
+      showNotification(tr('¡{name} se une como {label}! Asígnale su puesto en el Maletín → Plantilla.', { name: r.result.staff.name, label: ROLE_INFO[r.result.staff.role].label }), 'success');
       return r.result.staff;
     }
-    if (staff.some(x => x.id === c.id)) { showNotification('Ese candidato ya es tuyo.', 'info'); return null; }
-    if (floraBalance < c.priceFlora) { showNotification(`Saldo insuficiente: contratar cuesta ${c.priceFlora} $FLORA`, 'info'); return null; }
+    if (staff.some(x => x.id === c.id)) { showNotification(tr('Ese candidato ya es tuyo.'), 'info'); return null; }
+    if (floraBalance < c.priceFlora) { showNotification(tr('Saldo insuficiente: contratar cuesta {priceFlora} $FLORA', { priceFlora: c.priceFlora }), 'info'); return null; }
     const hire = hireFromBoard(c, Date.now());
-    recordBurnTransaction('BURN_PURCHASE', c.priceFlora, `Yield Bud Empire: Mint NFT de personal (${ROLE_INFO[hire.role].label} ${hire.name})`);
+    recordBurnTransaction('BURN_PURCHASE', c.priceFlora, tr('Yield Bud Empire: Mint NFT de personal ({label} {name})', { label: ROLE_INFO[hire.role].label, name: hire.name }));
     setStaff(prev => [...prev, hire]);
     confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
-    showNotification(`¡${hire.name} se une como ${ROLE_INFO[hire.role].label}! Asígnale su puesto en el Maletín → Plantilla.`, 'success');
+    showNotification(tr('¡{name} se une como {label}! Asígnale su puesto en el Maletín → Plantilla.', { name: hire.name, label: ROLE_INFO[hire.role].label }), 'success');
     return hire;
   };
 
@@ -2746,13 +2747,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const chest = STAFF_CHESTS[id];
     if (ledgerRef.current) {
       const r = await intent<{ staff: StaffNft }>('staff_chest', { chestId: id });
-      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo abrir el cofre (${r.error})`, 'info'); return null; }
+      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo abrir el cofre ({error})', { error: r.error }), 'info'); return null; }
       applySnapshot(r.snapshot);
-      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `Yield Bud Empire: ${chest.name}`, true);
+      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, tr('Yield Bud Empire: {name}', { name: chest.name }), true);
       return r.result.staff;
     }
-    if (floraBalance < chest.priceFlora) { showNotification(`Saldo insuficiente: ${chest.name} cuesta ${chest.priceFlora} $FLORA`, 'info'); return null; }
-    recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, `Yield Bud Empire: ${chest.name}`);
+    if (floraBalance < chest.priceFlora) { showNotification(tr('Saldo insuficiente: {name} cuesta {priceFlora} $FLORA', { name: chest.name, priceFlora: chest.priceFlora }), 'info'); return null; }
+    recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, tr('Yield Bud Empire: {name}', { name: chest.name }));
     const r = rollStaff(chest, staffPity[id], Date.now() % 1_000_000_000 + staff.length, Date.now());
     setStaffPity(prev => ({ ...prev, [id]: r.pity }));
     setStaff(prev => [...prev, r.staff]);
@@ -2761,64 +2762,64 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const openGift = async (giftId: number): Promise<{ amount: number; note: string } | null> => {
     const r = await intent<{ amount: number; note: string }>('open_gift', { giftId });
-    if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo abrir el cofre (${r.error})`, 'info'); void fetchState().then(x => x && applySnapshot(x)); return null; }
+    if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo abrir el cofre ({error})', { error: r.error }), 'info'); void fetchState().then(x => x && applySnapshot(x)); return null; }
     applySnapshot(r.snapshot);
     return r.result;
   };
   const listNft = async (ref: { nftId?: string; designId?: string }, price: number): Promise<boolean> => {
-    if (!ledgerRef.current) { showNotification('El mercado entre jugadores necesita conexión con el servidor.', 'info'); return false; }
+    if (!ledgerRef.current) { showNotification(tr('El mercado entre jugadores necesita conexión con el servidor.'), 'info'); return false; }
     const r = await intent<{ listingId: number; price: number }>('list', { ...ref, price });
-    if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo listar (${r.error})`, 'info'); return false; }
+    if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo listar ({error})', { error: r.error }), 'info'); return false; }
     applySnapshot(r.snapshot);
-    showNotification(`Puesto en el mercado por ${r.result.price} $FLORA. Queda en depósito hasta que se venda o lo retires.`, 'success');
+    showNotification(tr('Puesto en el mercado por {price} $FLORA. Queda en depósito hasta que se venda o lo retires.', { price: r.result.price }), 'success');
     return true;
   };
   const cancelListing = async (listingId: number): Promise<boolean> => {
     const r = await intent('cancel_listing', { listingId });
-    if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo retirar (${r.error})`, 'info'); return false; }
+    if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo retirar ({error})', { error: r.error }), 'info'); return false; }
     applySnapshot(r.snapshot);
-    showNotification('Oferta retirada: el NFT vuelve a tu colección.', 'success');
+    showNotification(tr('Oferta retirada: el NFT vuelve a tu colección.'), 'success');
     return true;
   };
   const buyListing = async (listingId: number): Promise<ListingView | null> => {
     const r = await intent<{ kind: ListingView['kind']; nftId: string; price: number; fee: number; data: Record<string, unknown> }>('buy_listing', { listingId });
-    if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo comprar (${r.error})`, 'info'); return null; }
+    if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo comprar ({error})', { error: r.error }), 'info'); return null; }
     applySnapshot(r.snapshot);
-    recordBurnTransaction('BURN_PROCESS', r.result.fee, 'Mercado entre jugadores: comisión de la venta', true);
-    showNotification(`¡Compra hecha! −${r.result.price} $FLORA (la comisión de ${r.result.fee} se quema).`, 'success');
+    recordBurnTransaction('BURN_PROCESS', r.result.fee, tr('Mercado entre jugadores: comisión de la venta'), true);
+    showNotification(tr('¡Compra hecha! −{price} $FLORA (la comisión de {fee} se quema).', { price: r.result.price, fee: r.result.fee }), 'success');
     return { id: listingId, nftId: r.result.nftId, kind: r.result.kind, rarity: '', price: r.result.price, createdAt: 0, sellerId: 0, data: r.result.data };
   };
 
   const assignStaff = async (role: StaffRole, staffId: string | null): Promise<void> => {
     if (ledgerRef.current) {
       const r = await intent('assign', { role, staffId });
-      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo asignar (${r.error})`, 'info'); return; }
+      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo asignar ({error})', { error: r.error }), 'info'); return; }
       applySnapshot(r.snapshot);
       const st = staffId ? r.snapshot.staff.find(x => x.id === staffId) : null;
-      if (st) showNotification(`${st.name} ocupa el puesto de ${ROLE_INFO[role].label} · sueldo ${wageOf(st)} $FLORA/día`, 'success');
+      if (st) showNotification(tr('{name} ocupa el puesto de {label} · sueldo {v2} $FLORA/día', { name: st.name, label: ROLE_INFO[role].label, v2: wageOf(st) }), 'success');
       return;
     }
     const st = staffId ? staff.find(x => x.id === staffId) : null;
     if (staffId && (!st || st.role !== role)) return;
     setStaffAssign(prev => { const n = { ...prev }; if (staffId) n[role] = staffId; else delete n[role]; return n; });
-    if (st) showNotification(`${st.name} ocupa el puesto de ${ROLE_INFO[role].label} · sueldo ${wageOf(st)} $FLORA/día`, 'success');
+    if (st) showNotification(tr('{name} ocupa el puesto de {label} · sueldo {v2} $FLORA/día', { name: st.name, label: ROLE_INFO[role].label, v2: wageOf(st) }), 'success');
   };
 
   const rankUpStaff = async (staffId: string): Promise<boolean> => {
     if (ledgerRef.current) {
       const r = await intent<{ staff: StaffNft }>('rank_up', { staffId });
-      if (!r.ok) { showNotification(REASON[r.error] ?? `No se pudo ascender (${r.error})`, 'info'); return false; }
+      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo ascender ({error})', { error: r.error }), 'info'); return false; }
       applySnapshot(r.snapshot);
-      showNotification(`${r.result.staff.name} asciende a rango ${r.result.staff.rank}. Su sueldo sube a ${wageOf(r.result.staff)} $FLORA/día.`, 'success');
+      showNotification(tr('{name} asciende a rango {rank}. Su sueldo sube a {v2} $FLORA/día.', { name: r.result.staff.name, rank: r.result.staff.rank, v2: wageOf(r.result.staff) }), 'success');
       return true;
     }
     const st = staff.find(x => x.id === staffId);
     const cost = st ? rankUpCost(st) : null;
-    if (!st || cost === null) { showNotification('Ya está en el rango máximo.', 'info'); return false; }
-    if (floraBalance < cost) { showNotification(`Saldo insuficiente: subir de rango cuesta ${cost} $FLORA`, 'info'); return false; }
-    recordBurnTransaction('BURN_PURCHASE', cost, `Yield Bud Empire: Ascenso de ${st.name} a rango ${st.rank + 1}`);
+    if (!st || cost === null) { showNotification(tr('Ya está en el rango máximo.'), 'info'); return false; }
+    if (floraBalance < cost) { showNotification(tr('Saldo insuficiente: subir de rango cuesta {cost} $FLORA', { cost }), 'info'); return false; }
+    recordBurnTransaction('BURN_PURCHASE', cost, tr('Yield Bud Empire: Ascenso de {name} a rango {v1}', { name: st.name, v1: st.rank + 1 }));
     setStaff(prev => prev.map(x => x.id === staffId ? { ...x, rank: x.rank + 1 } : x));
-    showNotification(`${st.name} asciende a rango ${st.rank + 1}. Su sueldo sube a ${wageOf({ rarity: st.rarity, rank: st.rank + 1 })} $FLORA/día.`, 'success');
+    showNotification(tr('{name} asciende a rango {v1}. Su sueldo sube a {v2} $FLORA/día.', { name: st.name, v1: st.rank + 1, v2: wageOf({ rarity: st.rarity, rank: st.rank + 1 }) }), 'success');
     return true;
   };
 
@@ -2826,22 +2827,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!construction) return false;
     if (ledgerRef.current) {
       const r = await intent<{ cutMs: number; cost: number; left: number }>('speedup_build');
-      if (!r.ok) { showNotification(r.error === 'speedup_limit' ? 'Ya usaste todas las aceleraciones de hoy. Mañana podrás recortar más; el resto lo pone el tiempo.' : REASON[r.error] ?? `No se pudo acelerar (${r.error})`, 'info'); return false; }
+      if (!r.ok) { showNotification(r.error === 'speedup_limit' ? tr('Ya usaste todas las aceleraciones de hoy. Mañana podrás recortar más; el resto lo pone el tiempo.') : reasonText(r.error) ?? tr('No se pudo acelerar ({error})', { error: r.error }), 'info'); return false; }
       applySnapshot(r.snapshot);
       const cutH = Math.round(r.result.cutMs / 360000) / 10;
-      recordBurnTransaction('BURN_SPEEDUP', r.result.cost, `Yield Bud Empire: Aceleración de obra (−${cutH} h)`, true);
-      showNotification(`Obra acelerada: −${cutH} h por ${r.result.cost} $FLORA quemados. Te quedan ${r.result.left} aceleraciones hoy.`, 'burn');
+      recordBurnTransaction('BURN_SPEEDUP', r.result.cost, tr('Yield Bud Empire: Aceleración de obra (−{cutH} h)', { cutH }), true);
+      showNotification(tr('Obra acelerada: −{cutH} h por {cost} $FLORA quemados. Te quedan {left} aceleraciones hoy.', { cutH, cost: r.result.cost, left: r.result.left }), 'burn');
       return true;
     }
     const q = speedUpQuote(construction, Date.now());
-    if (!q) { showNotification('Ya usaste todas las aceleraciones de hoy. Mañana podrás recortar más; el resto lo pone el tiempo.', 'info'); return false; }
-    if (floraBalance < q.costFlora) { showNotification(`Saldo insuficiente: acelerar cuesta ${q.costFlora} $FLORA`, 'info'); return false; }
+    if (!q) { showNotification(tr('Ya usaste todas las aceleraciones de hoy. Mañana podrás recortar más; el resto lo pone el tiempo.'), 'info'); return false; }
+    if (floraBalance < q.costFlora) { showNotification(tr('Saldo insuficiente: acelerar cuesta {costFlora} $FLORA', { costFlora: q.costFlora }), 'info'); return false; }
     const r = applySpeedUp(construction, Date.now());
     if (!r) return false;
     const cutH = Math.round(q.cutMs / 360000) / 10;
-    recordBurnTransaction('BURN_SPEEDUP', q.costFlora, `Yield Bud Empire: Aceleración de obra (−${cutH} h)`);
+    recordBurnTransaction('BURN_SPEEDUP', q.costFlora, tr('Yield Bud Empire: Aceleración de obra (−{cutH} h)', { cutH }));
     setConstruction(r.state);
-    showNotification(`Obra acelerada: −${cutH} h por ${q.costFlora} $FLORA quemados. Te quedan ${q.leftToday - 1} aceleraciones hoy.`, 'burn');
+    showNotification(tr('Obra acelerada: −{cutH} h por {costFlora} $FLORA quemados. Te quedan {v2} aceleraciones hoy.', { cutH, costFlora: q.costFlora, v2: q.leftToday - 1 }), 'burn');
     return true;
   };
 
@@ -2851,7 +2852,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // with the server the build finishes there: ask for the new state when the time is up
     const t = setTimeout(async () => {
       const snap = await fetchState();
-      if (snap) { applySnapshot(snap); if (!snap.construction) { confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } }); showNotification('¡Obra terminada! Tu nueva instalación ya está lista.', 'success'); } }
+      if (snap) { applySnapshot(snap); if (!snap.construction) { confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } }); showNotification(tr('¡Obra terminada! Tu nueva instalación ya está lista.'), 'success'); } }
     }, Math.min(2_000_000_000, Math.max(1500, construction.endsAt - Date.now() + 1500)));
     return () => clearTimeout(t);
   }, [ledgerOn, construction?.endsAt]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2879,7 +2880,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Process raw flower in Extraction Lab
   const processRawFlower = (type: 'cured_flower' | 'live_rosin' | 'full_spec_oil' | 'pure_terpenes', gramsInput: number): boolean => {
     if (rawFlowerGrams < gramsInput) {
-      showNotification(`No tienes suficiente flor cruda (requiere ${gramsInput}g)`, 'info');
+      showNotification(tr('No tienes suficiente flor cruda (requiere {gramsInput}g)', { gramsInput }), 'info');
       return false;
     }
 
@@ -2891,7 +2892,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const machine = machines.find(m => m.id === requiredMachineId);
     if (machine && machine.wearPercentage <= 15) {
-      showNotification(`La máquina ${machine.name} está averiada (desgaste crítico). ¡Repárala primero quemando $FLORA!`, 'info');
+      showNotification(tr('La máquina {name} está averiada (desgaste crítico). ¡Repárala primero quemando $FLORA!', { name: machine.name }), 'info');
       return false;
     }
 
@@ -2922,23 +2923,23 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (type === 'live_rosin') {
       productYieldGrams = Number((gramsInput * labMul * 0.22).toFixed(2));
-      name = `${currentStrainName} Live Rosin Sin Solventes (90u)`;
-      potency = '82.4% THC | 7.8% Terpenos';
+      name = tr('{currentStrainName} Live Rosin Sin Solventes (90u)', { currentStrainName });
+      potency = tr('82.4% THC | 7.8% Terpenos');
       value = Math.round(productYieldGrams * ECON.priceScale * 45);
     } else if (type === 'cured_flower') {
       productYieldGrams = Number((gramsInput * labMul).toFixed(2));
-      name = `${currentStrainName} Flor Curada Prémium en Frío`;
-      potency = '23.8% THC | 3.2% Terpenos';
+      name = tr('{currentStrainName} Flor Curada Prémium en Frío', { currentStrainName });
+      potency = tr('23.8% THC | 3.2% Terpenos');
       value = Math.round(productYieldGrams * ECON.priceScale * 9);
     } else if (type === 'full_spec_oil') {
       productYieldGrams = Number((gramsInput * labMul * 0.4).toFixed(2));
-      name = `${currentStrainName} Aceite Concentrado Full Spectrum`;
-      potency = '65.0% Cannabinoides Totales';
+      name = tr('{currentStrainName} Aceite Concentrado Full Spectrum', { currentStrainName });
+      potency = tr('65.0% Cannabinoides Totales');
       value = Math.round(productYieldGrams * ECON.priceScale * 25);
     } else {
       productYieldGrams = Number((gramsInput * labMul * 0.08).toFixed(2));
-      name = `Terpenos Puros Aislados de ${currentStrainName}`;
-      potency = '99.2% Terpenos Volátiles Preservados';
+      name = tr('Terpenos Puros Aislados de {currentStrainName}', { currentStrainName });
+      potency = tr('99.2% Terpenos Volátiles Preservados');
       value = Math.round(productYieldGrams * ECON.priceScale * 85);
     }
 
@@ -2957,8 +2958,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setProcessedProducts(prev => [newProd, ...prev]);
     reportEvent('lab', 1);
-    addXp(80, 'Extracción Industrial');
-    showNotification(`¡Extracción completada! Se crearon ${productYieldGrams}g de ${name} (Valor: ${value} $FLORA, +80 XP)`, 'success');
+    addXp(80, tr('Extracción Industrial'));
+    showNotification(tr('¡Extracción completada! Se crearon {productYieldGrams}g de {name} (Valor: {value} $FLORA, +80 XP)', { productYieldGrams, name, value }), 'success');
     return true;
   };
 
@@ -2979,10 +2980,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (t.flower > 0) setRawFlowerGrams(prev => Math.max(0, Number((prev - t.flower).toFixed(2))));
     if (t.trim > 0) setTrimGrams(prev => Math.max(0, Number((prev - t.trim).toFixed(2))));
     if (Object.keys(t.materials).length) setMaterials(prev => addMaterials(prev, t.materials, -1));
-    recordBurnTransaction('BURN_PROCESS', t.fee, `Yield Bud Empire Forja: ${r.name} ×${qty}`);
+    recordBurnTransaction('BURN_PROCESS', t.fee, tr('Yield Bud Empire Forja: {name} ×{qty}', { name: r.name, qty }));
     const now = Date.now();
     setForgeJobs(prev => [...prev, { id: `fj-${now}-${Math.random().toString(36).slice(2, 6)}`, recipeId, qty, startedAt: now, endsAt: now + t.minutes * 60_000 }]);
-    showNotification(`Forja: ${r.name} ×${qty} en marcha (${t.minutes} min). Se quemaron ${t.fee} $FLORA.`, 'success');
+    showNotification(tr('Forja: {name} ×{qty} en marcha ({minutes} min). Se quemaron {fee} $FLORA.', { name: r.name, qty, minutes: t.minutes, fee: t.fee }), 'success');
     return true;
   };
   // finished jobs deliver their materials or products (also the ones that finished while the player was away)
@@ -3006,9 +3007,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             createdAt: now, batchHash: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`,
           }, ...prev]);
         }
-        addXp(40 * j.qty, 'Forja');
+        addXp(40 * j.qty, tr('Forja'));
         reportEvent('lab', 1);
-        showNotification(`Forja terminada: ${r.name} ×${j.qty}. Míralo en el Maletín.`, 'success');
+        showNotification(tr('Forja terminada: {name} ×{qty}. Míralo en el Maletín.', { name: r.name, qty: j.qty }), 'success');
       }
       const ids = new Set(done.map(j => j.id));
       setForgeJobs(prev => prev.filter(j => !ids.has(j.id)));
@@ -3027,21 +3028,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const crossBreed = (motherId: string, fatherId: string, name: string, useReagent: boolean): boolean => {
     const mother = mothersFathers.find(m => m.id === motherId);
     const father = mothersFathers.find(f => f.id === fatherId);
-    if (!mother || !father) { showNotification('Selecciona una Madre y un Padre válidos.', 'info'); return false; }
+    if (!mother || !father) { showNotification(tr('Selecciona una Madre y un Padre válidos.'), 'info'); return false; }
     const stock = { tier: currentFacility.tier, hasChamber: ownsStation(assets, 'breeding'), jobs: breedingJobs.length, materials };
     const check = canBreed(stock, motherId, fatherId, useReagent);
     if (!check.ok) { showNotification(check.message, 'info'); return false; }
     if (!takeStation('breeding')) return false; // licence checked again + electricity
     const generation = capGeneration(Math.max(mother.generation ?? 1, father.generation ?? 1));
     setMaterials(prev => addMaterials(prev, breedingCost(useReagent), -1));
-    recordBurnTransaction('BURN_PROCESS', CHAMBER_FEE, `Yield Bud Empire Cría: cruce en cámara ${lineageLabel(mother.strain, father.strain, generation)}`);
+    recordBurnTransaction('BURN_PROCESS', CHAMBER_FEE, tr('Yield Bud Empire Cría: cruce en cámara {v0}', { v0: lineageLabel(mother.strain, father.strain, generation) }));
     const now = Date.now();
     const seed = (now ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
     setBreedingJobs(prev => [...prev, {
       id: `bj-${now}-${Math.random().toString(36).slice(2, 6)}`, motherId, fatherId, generation, useReagent, seed,
       name: name.trim() || `${mother.strain.name} x ${father.strain.name}`, startedAt: now, endsAt: now + CROSS_MINUTES * 60_000,
     }]);
-    showNotification(`Cría: cruce en cámara de ${mother.name} x ${father.name} en marcha (${Math.round(CROSS_MINUTES / 60)} h). Se quemaron ${CHAMBER_FEE} $FLORA.`, 'success');
+    showNotification(tr('Cría: cruce en cámara de {name} x {v1} en marcha ({v2} h). Se quemaron {CHAMBER_FEE} $FLORA.', { name: mother.name, v1: father.name, v2: Math.round(CROSS_MINUTES / 60), CHAMBER_FEE }), 'success');
     return true;
   };
   // finished chamber crosses deliver a new stabilised strain and a seed batch (also the ones that finished while away)
@@ -3069,14 +3070,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           cycleDurationSeconds: traits.cycleDurationSeconds,
           resinYieldMultiplier: traits.resinYieldMultiplier,
           colorTheme: mutated ? '#fb7185' : '#c084fc',
-          description: `Cruce de cámara ${lineageLabel(mother.strain, father.strain, j.generation)}${mutated ? ' · mutación detectada' : ''}.`,
+          description: tr('Cruce de cámara {v0}{v1}.', { v0: lineageLabel(mother.strain, father.strain, j.generation), v1: mutated ? tr(' · mutación detectada') : '' }),
         };
         const seeds = seedBatchSize(mother.vigorRating ?? 60, true, staffMods.seedBonus, rng);
         const seedId = `cria_seed_${j.id}`;
         const newSeedItem: SeedBankItem = {
           id: seedId, name: `${newStrain.name} (${GEN_LABEL[j.generation]})`, breeder: `${brand.name} Cámara de Cría`,
           seedType: 'Regular', lineage: newStrain.lineage, thcPercentage: newStrain.thcPercentage, cbdPercentage: newStrain.cbdPercentage,
-          floweringWeeks: 9, yieldGramsPerPlant: 165, difficulty: 'Avanzado', dominantTerpenes: ['Mirceno', 'Limoneno', 'Cariofileno'],
+          floweringWeeks: 9, yieldGramsPerPlant: 165, difficulty: 'Avanzado', dominantTerpenes: [tr('Mirceno'), tr('Limoneno'), tr('Cariofileno')],
           priceFlora: 0, priceSol: 0, description: newStrain.description, seedsPerPack: seeds, imageTheme: 'emerald', inStock: true, strainTemplate: newStrain,
         };
         setStrains(prev => [...prev, newStrain]);
@@ -3085,9 +3086,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setBreedingLog(prev => [{
           id: j.id, label: `${mother.name} x ${father.name}`, strainName: newStrain.name, generation: j.generation, mutated, seeds, createdAt: now,
         }, ...prev].slice(0, 100));
-        addXp(260, 'Cría en cámara');
+        addXp(260, tr('Cría en cámara'));
         reportEvent('breed', 1);
-        showNotification(`Cría terminada: "${newStrain.name}" (${GEN_LABEL[j.generation]}${mutated ? ', mutación' : ''}) — ${seeds} semillas en tu inventario.`, 'success');
+        showNotification(tr('Cría terminada: "{name}" ({v1}{v2}) — {seeds} semillas en tu inventario.', { name: newStrain.name, v1: GEN_LABEL[j.generation], v2: mutated ? tr(', mutación') : '', seeds }), 'success');
       }
       const ids = new Set(done.map(j => j.id));
       setBreedingJobs(prev => prev.filter(j => !ids.has(j.id)));
@@ -3100,16 +3101,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const runLabProcess = (spec: LabRunSpec): ProcessedProduct | null => {
     const stock = spec.inputKind === 'flower' ? rawFlowerGrams : trimGrams;
     if (spec.grams <= 0 || stock < spec.grams) {
-      showNotification(`No tienes suficiente ${spec.inputKind === 'flower' ? 'flor seca' : 'biomasa trim'} (requiere ${spec.grams}g)`, 'info');
+      showNotification(tr('No tienes suficiente {v0} (requiere {grams}g)', { v0: spec.inputKind === 'flower' ? tr('flor seca') : tr('biomasa trim'), grams: spec.grams }), 'info');
       return null;
     }
     const machine = machines.find(m => m.id === spec.machineId);
     if (machine && machine.wearPercentage <= 15) {
-      showNotification(`${machine.name} está averiada (desgaste crítico). ¡Repárala primero quemando $FLORA!`, 'info');
+      showNotification(tr('{name} está averiada (desgaste crítico). ¡Repárala primero quemando $FLORA!', { name: machine.name }), 'info');
       return null;
     }
     if (floraBalance < spec.feeFlora) {
-      showNotification(`Saldo insuficiente: el ciclo quema ${spec.feeFlora} $FLORA`, 'info');
+      showNotification(tr('Saldo insuficiente: el ciclo quema {feeFlora} $FLORA', { feeFlora: spec.feeFlora }), 'info');
       return null;
     }
     if (!takeStation(spec.stationId)) return null;
@@ -3117,7 +3118,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     playClickSound();
     if (spec.inputKind === 'flower') setRawFlowerGrams(prev => Math.max(0, Number((prev - spec.grams).toFixed(2))));
     else setTrimGrams(prev => Math.max(0, Number((prev - spec.grams).toFixed(2))));
-    recordBurnTransaction('BURN_PROCESS', spec.feeFlora, `Yield Bud Empire Lab: ${spec.label} (${spec.grams}g)`);
+    recordBurnTransaction('BURN_PROCESS', spec.feeFlora, tr('Yield Bud Empire Lab: {label} ({grams}g)', { label: spec.label, grams: spec.grams }));
 
     const wear = machine?.wearPercentage ?? 100;
     setMachines(prev => prev.map(m => {
@@ -3149,8 +3150,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setProcessedProducts(prev => [prod, ...prev]);
     reportEvent('lab', 1);
-    addXp(spec.xp ?? 90, 'Laboratorio Industrial');
-    showNotification(`Lote acuñado: ${outGrams}g de ${spec.label} (valor ${value} $FLORA, calidad ${quality}%). Se quemaron ${spec.feeFlora} $FLORA.`, 'success');
+    addXp(spec.xp ?? 90, tr('Laboratorio Industrial'));
+    showNotification(tr('Lote acuñado: {outGrams}g de {label} (valor {value} $FLORA, calidad {quality}%). Se quemaron {feeFlora} $FLORA.', { outGrams, label: spec.label, value, quality, feeFlora: spec.feeFlora }), 'success');
     return prod;
   };
 
@@ -3160,15 +3161,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!prod || prod.certified) return null;
     const machine = machines.find(m => m.id === 'hplc_analyzer');
     if (machine && machine.wearPercentage <= 15) {
-      showNotification('El cromatógrafo está averiado. ¡Repáralo primero quemando $FLORA!', 'info');
+      showNotification(tr('El cromatógrafo está averiado. ¡Repáralo primero quemando $FLORA!'), 'info');
       return null;
     }
     if (floraBalance < feeFlora) {
-      showNotification(`Saldo insuficiente: el análisis quema ${feeFlora} $FLORA`, 'info');
+      showNotification(tr('Saldo insuficiente: el análisis quema {feeFlora} $FLORA', { feeFlora }), 'info');
       return null;
     }
     if (!takeStation('hplc')) return null;
-    recordBurnTransaction('BURN_PROCESS', feeFlora, `Yield Bud Empire Lab: Análisis HPLC de ${prod.name}`);
+    recordBurnTransaction('BURN_PROCESS', feeFlora, tr('Yield Bud Empire Lab: Análisis HPLC de {name}', { name: prod.name }));
     setMachines(prev => prev.map(m => {
       if (m.id !== 'hplc_analyzer') return m;
       const next = Math.max(0, m.wearPercentage - m.wearRatePerCycle);
@@ -3202,8 +3203,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setProcessedProducts(prev => prev.map(p => (p.id === productId ? updated : p)));
     reportEvent('certify', 1);
-    addXp(70, 'Análisis de Laboratorio');
-    showNotification(`Certificado ${updated.coaHash} emitido: THC ${coa.thc}%, CBD ${coa.cbd}% (+18% valor, quema ${feeFlora} $FLORA)`, 'success');
+    addXp(70, tr('Análisis de Laboratorio'));
+    showNotification(tr('Certificado {coaHash} emitido: THC {thc}%, CBD {cbd}% (+18% valor, quema {feeFlora} $FLORA)', { coaHash: updated.coaHash, thc: coa.thc, cbd: coa.cbd, feeFlora }), 'success');
     return updated;
   };
 
@@ -3211,7 +3212,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const executeManualRosinPress = (yieldBonus: number, quality: number, isCritical: boolean) => {
     const gramsInput = 20;
     if (rawFlowerGrams < gramsInput) {
-      showNotification(`Se requieren al menos ${gramsInput}g de flor seca para prensar`, 'info');
+      showNotification(tr('Se requieren al menos {gramsInput}g de flor seca para prensar', { gramsInput }), 'info');
       return;
     }
 
@@ -3238,12 +3239,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newProd: ProcessedProduct = {
       id: `prod-manual-${Date.now()}`,
       name: isCritical 
-        ? `${currentStrainName} Live Rosin 90u (Prensado Crítico Zona Dorada)` 
-        : `${currentStrainName} Live Rosin Artesanal (Prensado Manual)`,
+        ? tr('{currentStrainName} Live Rosin 90u (Prensado Crítico Zona Dorada)', { currentStrainName }) 
+        : tr('{currentStrainName} Live Rosin Artesanal (Prensado Manual)', { currentStrainName }),
       type: 'live_rosin',
       strainOrigin: currentStrainName,
       quantityGrams: finalGrams,
-      potency: isCritical ? '86.8% THC | 9.1% Terpenos Puros' : '81.4% THC | 7.2% Terpenos',
+      potency: isCritical ? tr('86.8% THC | 9.1% Terpenos Puros') : tr('81.4% THC | 7.2% Terpenos'),
       qualityScore: quality,
       marketValueFlora: marketVal,
       createdAt: Date.now(),
@@ -3254,13 +3255,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isCritical) {
       updateQuestProgress('quest_rosin_gold', 1);
-      addXp(140, 'Extracción Crítica en Zona Dorada');
+      addXp(140, tr('Extracción Crítica en Zona Dorada'));
     } else {
-      addXp(70, 'Prensado Manual');
+      addXp(70, tr('Prensado Manual'));
     }
 
     showNotification(
-      `¡Prensado guardado en inventario! Obtenido +${finalGrams}g de Live Rosin (Valor: ${marketVal} $FLORA)`, 
+      tr('¡Prensado guardado en inventario! Obtenido +{finalGrams}g de Live Rosin (Valor: {marketVal} $FLORA)', { finalGrams, marketVal }), 
       'success'
     );
   };
@@ -3270,11 +3271,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const machine = machines.find(m => m.id === machineId);
     if (!machine) return false;
     if (floraBalance < machine.repairCostFlora) {
-      showNotification(`Saldo insuficiente: Requiere ${machine.repairCostFlora} $FLORA para reparar`, 'info');
+      showNotification(tr('Saldo insuficiente: Requiere {repairCostFlora} $FLORA para reparar', { repairCostFlora: machine.repairCostFlora }), 'info');
       return false;
     }
 
-    recordBurnTransaction('BURN_REPAIR', machine.repairCostFlora, `Yield Bud Empire: Mantenimiento y Restauración de ${machine.name}`);
+    recordBurnTransaction('BURN_REPAIR', machine.repairCostFlora, tr('Yield Bud Empire: Mantenimiento y Restauración de {name}', { name: machine.name }));
 
     setMachines(prev => prev.map(m => {
       if (m.id === machineId) {
@@ -3288,9 +3289,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
 
     updateQuestProgress('quest_machine_repair', 1);
-    addXp(120, 'Mantenimiento Deflacionario');
+    addXp(120, tr('Mantenimiento Deflacionario'));
 
-    showNotification(`¡${machine.name} reparada al 100%! Se quemaron ${machine.repairCostFlora} $FLORA de forma permanente (+120 XP)`, 'burn');
+    showNotification(tr('¡{name} reparada al 100%! Se quemaron {repairCostFlora} $FLORA de forma permanente (+120 XP)', { name: machine.name, repairCostFlora: machine.repairCostFlora }), 'burn');
     return true;
   };
 
@@ -3310,7 +3311,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const newStrain: Strain = {
       id: `strain-hybrid-${Date.now()}`,
-      name: name.trim() || `Gen ${parentA.name.slice(0, 4)} x ${parentB.name.slice(0, 4)}`,
+      name: name.trim() || tr('Gen {v0} x {v1}', { v0: parentA.name.slice(0, 4), v1: parentB.name.slice(0, 4) }),
       lineage: `${parentA.name} x ${parentB.name}`,
       type: 'Híbrido',
       thcPercentage: Math.min(32, Math.max(16, hybridThc)),
@@ -3320,34 +3321,34 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       cycleDurationSeconds: Math.round((parentA.cycleDurationSeconds + parentB.cycleDurationSeconds) / 2),
       resinYieldMultiplier: Number((Math.max(parentA.resinYieldMultiplier, parentB.resinYieldMultiplier) * 1.15).toFixed(2)),
       colorTheme: '#ec4899',
-      description: `Cruzamiento genético experimental desarrollado en el laboratorio Yield Bud Empire entre ${parentA.name} y ${parentB.name}.`
+      description: tr('Cruzamiento genético experimental desarrollado en el laboratorio Yield Bud Empire entre {name} y {v1}.', { name: parentA.name, v1: parentB.name })
     };
 
     setStrains(prev => [...prev, newStrain]);
     updateQuestProgress('quest_genomic_breed', 1);
     reportEvent('breed', 1);
-    addXp(220, 'Hibridación Genética');
-    showNotification(`¡Nueva genética creada con éxito: ${newStrain.name}! (+220 XP)`, 'success');
+    addXp(220, tr('Hibridación Genética'));
+    showNotification(tr('¡Nueva genética creada con éxito: {name}! (+220 XP)', { name: newStrain.name }), 'success');
     return newStrain;
   };
 
   // Register patent on Solana (Burns 250 $FLORA)
   const registerPatent = (strain: Strain): boolean => {
     if (floraBalance < 250) {
-      showNotification('Saldo insuficiente: Registrar una patente genómica on-chain requiere quemar 250 $FLORA', 'info');
+      showNotification(tr('Saldo insuficiente: Registrar una patente genómica on-chain requiere quemar 250 $FLORA'), 'info');
       return false;
     }
 
     const sig = generateSolanaSignature();
-    recordBurnTransaction('BURN_PATENT', 250, `Yield Bud Empire: Registro On-Chain de Patente Genómica (${strain.name})`);
+    recordBurnTransaction('BURN_PATENT', 250, tr('Yield Bud Empire: Registro On-Chain de Patente Genómica ({name})', { name: strain.name }));
 
     const newPatent: GenomicPatent = {
       id: `pat-${Date.now()}`,
       strainName: strain.name,
       patentNumber: `SOL-PAT-${Math.floor(1000 + Math.random() * 9000)}-CF`,
       solanaSignature: sig,
-      parentA: strain.lineage.split(' x ')[0] || 'Genética Silvestre',
-      parentB: strain.lineage.split(' x ')[1] || 'Cultivar Solana',
+      parentA: strain.lineage.split(' x ')[0] || tr('Genética Silvestre'),
+      parentB: strain.lineage.split(' x ')[1] || tr('Cultivar Solana'),
       creatorWallet: `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`,
       registeredDate: new Date().toISOString().split('T')[0],
       thc: strain.thcPercentage,
@@ -3368,9 +3369,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     updateQuestProgress('quest_genomic_breed', 1);
     reportEvent('patent', 1);
-    addXp(300, 'Patente Genómica On-Chain');
+    addXp(300, tr('Patente Genómica On-Chain'));
 
-    showNotification(`¡Patente ${newPatent.patentNumber} registrada en Solana! Se quemaron 250 $FLORA (+300 XP)`, 'burn');
+    showNotification(tr('¡Patente {patentNumber} registrada en Solana! Se quemaron 250 $FLORA (+300 XP)', { patentNumber: newPatent.patentNumber }), 'burn');
     return true;
   };
 
@@ -3381,7 +3382,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name,
       tagline
     }));
-    showNotification('Marca virtual actualizada correctamente', 'info');
+    showNotification(tr('Marca virtual actualizada correctamente'), 'info');
   };
 
   // Sell product in Virtual Dispensary
@@ -3405,13 +3406,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       playHarvestChime();
       setProcessedProducts(prev => prev.filter(p => p.id !== productId));
       const r = await intent<{ gross: number; fee: number; net: number; ratio: number }>('sell', { type: prod.type, recipe: prod.recipeId, grams: prod.quantityGrams });
-      if (!r.ok) { setProcessedProducts(prev => [prod, ...prev]); showNotification(REASON[r.error] ?? `No se pudo vender (${r.error})`, 'info'); return; }
+      if (!r.ok) { setProcessedProducts(prev => [prod, ...prev]); showNotification(reasonText(r.error) ?? tr('No se pudo vender ({error})', { error: r.error }), 'info'); return; }
       applySnapshot(r.snapshot);
       setBrand(prev => ({ ...prev, totalSalesFlora: prev.totalSalesFlora + r.result.gross, reputation: Math.min(100, prev.reputation + 1) }));
       reportEvent('sell', 1);
-      recordBurnTransaction('BURN_PROCESS', r.result.fee, `Yield Bud Empire Dispensario: comisión y licencia (${prod.name})`, true);
-      const sat = r.result.ratio < 0.8 ? ` · el mercado está saturado: pagó al ${Math.round(r.result.ratio * 100)} % del precio` : '';
-      showNotification(`¡Venta realizada en el Dispensario! Recibiste +${r.result.net} $FLORA (comisión y licencia ${r.result.fee} quemados${sat})`, 'success');
+      recordBurnTransaction('BURN_PROCESS', r.result.fee, tr('Yield Bud Empire Dispensario: comisión y licencia ({name})', { name: prod.name }), true);
+      const sat = r.result.ratio < 0.8 ? tr(' · el mercado está saturado: pagó al {v0} % del precio', { v0: Math.round(r.result.ratio * 100) }) : '';
+      showNotification(tr('¡Venta realizada en el Dispensario! Recibiste +{net} $FLORA (comisión y licencia {fee} quemados{sat})', { net: r.result.net, fee: r.result.fee, sat }), 'success');
       return;
     }
 
@@ -3420,7 +3421,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setMarketDepth(saleRevenue(prod.marketValueFlora / Math.max(0.01, prod.quantityGrams), prod.quantityGrams, marketDepth, Date.now()).depth);
     setFloraBalance(prev => prev + q.gross);
     const rate = burnRateOfSale(currentFacility.tier);
-    recordBurnTransaction('BURN_PROCESS', q.fee, `Yield Bud Empire Dispensario: comisión de mercado y licencia ${(rate * 100).toFixed(1)} % (${prod.name})`);
+    recordBurnTransaction('BURN_PROCESS', q.fee, tr('Yield Bud Empire Dispensario: comisión de mercado y licencia {v0} % ({name})', { v0: (rate * 100).toFixed(1), name: prod.name }));
     setProcessedProducts(prev => prev.filter(p => p.id !== productId));
     setBrand(prev => ({
       ...prev,
@@ -3429,23 +3430,23 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
 
     reportEvent('sell', 1);
-    const saturated = q.ratio < 0.8 ? ` · el mercado está saturado: pagó al ${Math.round(q.ratio * 100)} % del precio` : '';
-    showNotification(`¡Venta realizada en el Dispensario! Recibiste +${q.net} $FLORA${staffMods.sellBonus > 0 ? ` (incluye +${Math.round(staffMods.sellBonus * 100)} % de tu dispensaria)` : ''} (comisión y licencia ${q.fee} quemados${saturated})`, 'success');
+    const saturated = q.ratio < 0.8 ? tr(' · el mercado está saturado: pagó al {v0} % del precio', { v0: Math.round(q.ratio * 100) }) : '';
+    showNotification(tr('¡Venta realizada en el Dispensario! Recibiste +{net} $FLORA{v1} (comisión y licencia {fee} quemados{saturated})', { net: q.net, v1: staffMods.sellBonus > 0 ? tr(' (incluye +{v0} % de tu dispensaria)', { v0: Math.round(staffMods.sellBonus * 100) }) : '', fee: q.fee, saturated }), 'success');
   };
 
   // Redeem V2P (Virtual to Physical)
   const redeemV2p = (item: V2pRedemptionItem, shippingDetails: { name: string; country: string }): boolean => {
     if (floraBalance < item.requiredFlora) {
-      showNotification(`Saldo insuficiente: Requiere ${item.requiredFlora} $FLORA para canjear este producto físico`, 'info');
+      showNotification(tr('Saldo insuficiente: Requiere {requiredFlora} $FLORA para canjear este producto físico', { requiredFlora: item.requiredFlora }), 'info');
       return false;
     }
     if (item.stockPhysical <= 0) {
-      showNotification('Agotado temporalmente en el almacén físico', 'info');
+      showNotification(tr('Agotado temporalmente en el almacén físico'), 'info');
       return false;
     }
 
     const sig = generateSolanaSignature();
-    recordBurnTransaction('V2P_CLAIM', item.requiredFlora, `Yield Bud Empire: Canje Físico V2P (${item.title}) a ${shippingDetails.country}`);
+    recordBurnTransaction('V2P_CLAIM', item.requiredFlora, tr('Yield Bud Empire: Canje Físico V2P ({title}) a {country}', { title: item.title, country: shippingDetails.country }));
 
     setV2pItems(prev => prev.map(i => i.id === item.id ? { ...i, stockPhysical: i.stockPhysical - 1 } : i));
     setRedeemedV2pList(prev => [
@@ -3460,7 +3461,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       origin: { y: 0.5 }
     });
 
-    showNotification(`¡Orden V2P confirmada! Se quemaron ${item.requiredFlora} $FLORA. Certificado emitido en Solana`, 'success');
+    showNotification(tr('¡Orden V2P confirmada! Se quemaron {requiredFlora} $FLORA. Certificado emitido en Solana', { requiredFlora: item.requiredFlora }), 'success');
     return true;
   };
 
@@ -3476,27 +3477,27 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return next;
       });
     }
-    addXp(Math.round(r.xp * (1 + staffMods.missionBonus)), `Misión: ${title}`);
+    addXp(Math.round(r.xp * (1 + staffMods.missionBonus)), tr('Misión: {title}', { title }));
     playHarvestChime();
     confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#fbbf24', '#38bdf8'] });
     const list = rewardSummary(r, id => CATALOG_BY_ID[id]?.name ?? id, id => seedBank.find(x => x.id === id)?.name ?? id).join(' · ');
-    showNotification(`🎁 Misión cumplida: ${title} — ${list}`, 'success');
+    showNotification(tr('🎁 Misión cumplida: {title} — {list}', { title, list }), 'success');
   };
 
   const claimStoryMission = (id: string): string | null => {
     const c = claimStory(missionsRef.current, id);
     if (!c) return null;
     applyMissions(c.state);
-    grantReward(c.reward, c.title);
-    return c.say;
+    grantReward(c.reward, tr(c.title));
+    return tr(c.say);
   };
 
   const claimErrandMission = (npc: NpcKind): string | null => {
     const c = claimErrand(missionsRef.current, npc);
     if (!c) return null;
     applyMissions(c.state);
-    grantReward(c.reward, c.title);
-    return c.say;
+    grantReward(c.reward, tr(c.title));
+    return tr(c.say);
   };
 
   // --- CHRONO'S TUTORIAL ---
@@ -3505,8 +3506,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const c = claimTutStep(tutorialRef.current, missionsRef.current);
     if (!c) return null;
     applyTutorial(c.state);
-    grantReward(c.reward, c.title);
-    return c.say;
+    grantReward(c.reward, tr(c.title));
+    return tr(c.say);
   };
   const skipTutorialStep = () => applyTutorial(skipTutStep(tutorialRef.current, missionsRef.current));
   const patchTutorial = (p: Partial<TutorialState>) => applyTutorial({ ...tutorialRef.current, ...p });

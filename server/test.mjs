@@ -609,6 +609,22 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(r), E1.id);
   ok('nivel: el estado del servidor informa el nivel más alto ya pagado', (await state(E1)).snapshot.level === 4 && (await state(EN)).snapshot.level === 1);
 }
+// ── idioma de la cuenta: correos en inglés para quien juega en inglés
+{
+  cfg.inviteOnly = false;
+  const j = {};
+  const r = await reg({ jar: j, body: { email: 'english.player@example.com', username: 'English Grower', lang: 'en' } });
+  const me = await call('GET', '/api/auth/me', { jar: j, ip: r.ip });
+  ok('idioma: la cuenta guarda el idioma con el que se registró', me.json.account.lang === 'en');
+  ok('idioma: el correo de confirmación sale en inglés', /Confirm your Yield Bud Empire account[\s\S]*Welcome, English Grower!/.test(outbox()));
+  let l = await call('POST', '/api/auth/lang', { jar: j, ip: r.ip, body: { lang: 'es' } });
+  ok('idioma: el jugador lo puede cambiar', l.status === 200 && (await call('GET', '/api/auth/me', { jar: j, ip: r.ip })).json.account.lang === 'es');
+  l = await call('POST', '/api/auth/lang', { jar: j, ip: r.ip, body: { lang: 'fr' } });
+  ok('idioma: solo es o en', l.status === 400);
+  ok('idioma: sin sesión no se puede cambiar', (await call('POST', '/api/auth/lang', { ip: newIp(), body: { lang: 'en' } })).status === 401);
+  const r2 = await reg({ body: { email: 'sin.idioma@example.com', username: 'Sin Idioma' } });
+  ok('idioma: sin idioma el correo sale en español', r2.status === 200 && /Confirma tu cuenta de Yield Bud Empire[\s\S]*Bienvenido, Sin Idioma/.test(outbox()));
+}
 cfg.inviteOnly = true;
 cfg.inviteOnly = false;
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');

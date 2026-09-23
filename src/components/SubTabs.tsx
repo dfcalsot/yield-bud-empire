@@ -1,5 +1,6 @@
 import React from 'react';
 import { NAV_TABS, groupOfTab } from '../nav';
+import { t } from '../i18n';
 
 interface SubTabsProps {
   currentTab: string;
@@ -29,7 +30,7 @@ export const SubTabs: React.FC<SubTabsProps> = ({ currentTab, setCurrentTab }) =
             }`}
           >
             <Icon className="w-4 h-4" />
-            {tab.label}
+            {t(tab.label)}
           </button>
         );
       })}

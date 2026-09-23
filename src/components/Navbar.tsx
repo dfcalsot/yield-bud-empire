@@ -15,7 +15,9 @@ import { Avatar } from './profile/AvatarArt';
 import { SOLANA_NETWORKS } from '../utils/solana';
 import { YieldMark } from './brand/YieldLogo';
 import { YieldBudWordmark } from './brand/YieldBudWordmark';
+import { LangSwitch } from '../i18n/LangSwitch';
 import { ECON, claimStatus } from '../sim/economy';
+import { t } from '../i18n';
 
 interface NavbarProps {
   setCurrentTab: (tab: string) => void;
@@ -61,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onOpenWalletModal}
             className="flex items-center gap-1.5 font-medium hover:text-white transition cursor-pointer text-left"
-            title="Wallet del juego: tus $FLORA, NFT y billeteras vinculadas"
+            title={t('Wallet del juego: tus $FLORA, NFT y billeteras vinculadas')}
           >
             <span className={`w-2 h-2 rounded-full ${netConfig.badgeColor} animate-pulse`}></span>
             <span className="text-white font-semibold">{netConfig.name}</span>
@@ -72,28 +74,28 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="hidden md:inline text-neutral-600">|</span>
           <span className="hidden md:flex items-center gap-1">
             <Cpu className="w-3.5 h-3.5 text-neutral-500" />
-            Tiempo de bloque: <strong className="text-neutral-300 font-mono">392ms</strong>
+            {t('Tiempo de bloque:')}{' '}<strong className="text-neutral-300 font-mono">392ms</strong>
           </span>
           <span className="hidden lg:inline text-neutral-600">|</span>
           <span className="hidden lg:inline text-neutral-400">
-            Tarifa de red promedio: <strong className="text-emerald-400 font-mono">0.000005 SOL</strong>
+            {t('Tarifa de red promedio:')}{' '}<strong className="text-emerald-400 font-mono">0.000005 SOL</strong>
           </span>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 bg-neutral-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/20 text-amber-300">
             <Flame className="w-3.5 h-3.5 text-amber-500 animate-bounce" />
-            <span>Total Quemado:</span>
+            <span>{t('Total Quemado:')}</span>
             <strong className="font-mono text-amber-400 font-bold">{totalFloraBurned.toLocaleString()} $FLORA</strong>
           </div>
 
           <button
             onClick={claimDaily}
-            title={claim.ok ? `Reclamo diario de $FLORA (+${ECON.dailyClaim}): una vez cada 24 h` : 'Ya reclamaste hoy'}
+            title={claim.ok ? t('Reclamo diario de $FLORA (+{dailyClaim}): una vez cada 24 h', { dailyClaim: ECON.dailyClaim }) : t('Ya reclamaste hoy')}
             className={`flex items-center gap-1 text-[11px] border px-2 py-0.5 rounded transition cursor-pointer font-medium ${claim.ok ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-neutral-800/60 text-neutral-400 border-neutral-700'}`}
           >
             <Sparkles className="w-3 h-3" />
-            <span>{claim.ok ? `Reclamo diario +${ECON.dailyClaim}` : `Reclamo en ${Math.floor(claim.leftMs / 3600_000)} h ${Math.ceil((claim.leftMs % 3600_000) / 60_000)} min`}</span>
+            <span>{claim.ok ? t('Reclamo diario +{dailyClaim}', { dailyClaim: ECON.dailyClaim }) : t('Reclamo en {v0} h {v1} min', { v0: Math.floor(claim.leftMs / 3600_000), v1: Math.ceil((claim.leftMs % 3600_000) / 60_000) })}</span>
           </button>
         </div>
       </div>
@@ -110,10 +112,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <YieldBudWordmark className="shrink-0" />
             <div className="hidden 2xl:block">
               <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 text-neutral-300 rounded">
-                Solana
+                {t('Solana')}
               </span>
               <p className="text-[11px] text-neutral-400 mt-0.5">
-                Multiverso Botánico Descentralizado
+                {t('Multiverso Botánico Descentralizado')}
               </p>
             </div>
           </div>
@@ -142,18 +144,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Cultivator Level */}
-          <div className="hidden lg:flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 px-2.5 py-1.5 rounded-lg text-neutral-300" title={`Rango: ${rankTitle}`}>
+          <div className="hidden lg:flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 px-2.5 py-1.5 rounded-lg text-neutral-300" title={t('Rango: {rankTitle}', { rankTitle })}>
             <Award className="w-4 h-4 text-amber-400" />
             <div className="text-right">
-              <span className="text-[10px] text-neutral-400 block leading-none font-semibold">NIVEL</span>
-              <span className="font-mono text-xs font-bold text-amber-300 leading-tight">Nv. {playerLevel}</span>
+              <span className="text-[10px] text-neutral-400 block leading-none font-semibold">{t('NIVEL')}</span>
+              <span className="font-mono text-xs font-bold text-amber-300 leading-tight">{t('Nv.')} {playerLevel}</span>
             </div>
           </div>
+
+          {/* Idioma */}
+          <LangSwitch signedIn className="shrink-0" />
 
           {/* Sound Toggle */}
           <button
             onClick={toggleSound}
-            aria-label={soundEnabled ? "Silenciar audio" : "Activar audio"}
+            aria-label={soundEnabled ? t('Silenciar audio') : t('Activar audio')}
             className="p-2 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 transition cursor-pointer"
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4" />}
@@ -163,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {isAuthenticated && currentUser ? (
             <button
               onClick={() => setCurrentTab('perfil')}
-              title={`Perfil: ${currentUser.displayName} (@${currentUser.username}) - ${currentUser.role}`}
+              title={t('Perfil: {displayName} (@{username}) - {role}', { displayName: currentUser.displayName, username: currentUser.username, role: t(currentUser.role) })}
               className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 border border-emerald-500/30 px-2 sm:px-2.5 py-1.5 rounded-lg text-neutral-200 transition cursor-pointer"
             >
               <Avatar profile={currentUser} size={26} />
@@ -172,7 +177,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {currentUser.displayName}
                 </span>
                 <span className="text-[9px] text-emerald-400 font-mono block leading-none">
-                  {currentUser.role.split(' ')[0]}
+                  {t(currentUser.role).split(' ')[0]}
                 </span>
               </div>
             </button>
@@ -182,7 +187,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs px-2 sm:px-2.5 py-1.5 rounded-lg text-emerald-300 font-medium transition cursor-pointer"
             >
               <User className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Ingresar</span>
+              <span>{t('Ingresar')}</span>
             </button>
           )}
 
@@ -190,14 +195,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onOpenWalletModal}
             className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 text-xs px-2 sm:px-2.5 py-1.5 rounded-lg text-neutral-300 hover:text-white transition cursor-pointer font-mono"
-            title="Wallet del juego: vincula Solana o Ronin"
+            title={t('Wallet del juego: vincula Solana o Ronin')}
           >
             <Wallet className="w-3.5 h-3.5 text-purple-400" />
             <span className="hidden lg:inline text-[9px] px-1 py-0.2 rounded bg-neutral-800 text-neutral-400 font-mono">
               {netConfig.badgeLabel}
             </span>
             <span className="hidden lg:inline">
-              {isWalletConnected ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : 'Wallet'}
+              {isWalletConnected ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : t('Wallet')}
             </span>
           </button>
         </div>
