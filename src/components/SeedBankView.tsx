@@ -21,6 +21,7 @@ import { MintCeremony } from './MintCeremony';
 import { GeneticCardData, cardFromSeed } from '../utils/nft';
 import { Npc, useNpc } from './npc/Npc';
 import { NpcMissions } from './missions/NpcMissions';
+import { t as tr } from '../i18n';
 // three.js is heavy: only fetch it when the Seed Bank tab is opened
 const SeedVault = lazy(() => import('./SeedVault').then((m) => ({ default: m.SeedVault })));
 
@@ -40,17 +41,17 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
     transactions
   } = useGame();
 
-  const npc = useNpc('¡Hola! Soy el Prof. Rafa. Aquí guardo la genética del mundo. Las landrace rinden el doble en su región de origen: mira el Planeta.');
+  const npc = useNpc(tr('¡Hola! Soy el Prof. Rafa. Aquí guardo la genética del mundo. Las landrace rinden el doble en su región de origen: mira el Planeta.'));
   const [mint, setMint] = useState<{ card: GeneticCardData; fee: string; startedAt: number } | null>(null);
   const mintTx = mint ? transactions.find(t => t.timestamp >= mint.startedAt) : undefined;
 
   const handleBuy = (seed: SeedBankItem) => {
     const startedAt = Date.now();
     if (buySeed(seed.id, selectedCurrency)) {
-      npc.speak(seed.seedType === 'Landrace' ? `¡Una landrace pura, ${seed.name}! Plántala en su región de origen y verás la diferencia.` : `¡Buena elección! ${seed.name}. Cuida el riego los primeros días.`, 'happy');
+      npc.speak(seed.seedType === 'Landrace' ? tr('¡Una landrace pura, {name}! Plántala en su región de origen y verás la diferencia.', { name: seed.name }) : tr('¡Buena elección! {name}. Cuida el riego los primeros días.', { name: seed.name }), 'happy');
       setMint({
         card: cardFromSeed(seed, (seedInventory[seed.id] || 0) + seed.seedsPerPack),
-        fee: selectedCurrency === 'FLORA' ? `Quema ${seed.priceFlora} $FLORA` : `${seed.priceSol} SOL`,
+        fee: selectedCurrency === 'FLORA' ? tr('Quema {priceFlora} $FLORA', { priceFlora: seed.priceFlora }) : `${seed.priceSol} SOL`,
         startedAt,
       });
     }
@@ -60,11 +61,11 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
   const [selectedCurrency, setSelectedCurrency] = useState<'FLORA' | 'SOL'>('FLORA');
 
   npc.tips.current = () => [
-    'Los híbridos se adaptan a cualquier clima; las landrace exigen su tierra pero rinden mucho más.',
-    'Hindu Kush ama Afganistán, Acapulco Gold México, Lamb’s Bread Jamaica… cada región tiene su landrace.',
-    'Una semilla se gasta al plantar en una parcela: piensa bien dónde la siembras.',
-    'Con un jardinero contratado, tus parcelas se riegan y se abonan solas.',
-    ...(Object.values(seedInventory).reduce((a, q) => a + q, 0) === 0 ? ['No tienes semillas. Compra un pack y ve al Planeta a sembrar.'] : []),
+    tr('Los híbridos se adaptan a cualquier clima; las landrace exigen su tierra pero rinden mucho más.'),
+    tr('Hindu Kush ama Afganistán, Acapulco Gold México, Lamb’s Bread Jamaica… cada región tiene su landrace.'),
+    tr('Una semilla se gasta al plantar en una parcela: piensa bien dónde la siembras.'),
+    tr('Con un jardinero contratado, tus parcelas se riegan y se abonan solas.'),
+    ...(Object.values(seedInventory).reduce((a, q) => a + q, 0) === 0 ? [tr('No tienes semillas. Compra un pack y ve al Planeta a sembrar.')] : []),
   ];
   const totalSeedsOwned = Object.values(seedInventory).reduce((acc, qty) => acc + qty, 0);
 
@@ -78,7 +79,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="geneticist" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>
+      <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="geneticist" text={tr(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>
       <NpcMissions npc="geneticist" onSay={npc.speak} />
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-emerald-950/60 via-neutral-900 to-neutral-950 border border-emerald-500/20 rounded-2xl p-5 sm:p-7 relative overflow-hidden">
@@ -89,19 +90,19 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold uppercase tracking-wider">
                 <Dna className="w-3.5 h-3.5 text-emerald-400" />
-                Banco de Semillas Botánico & Genoteca
+                {tr('Banco de Semillas Botánico & Genoteca')}
               </span>
               <span className="text-xs text-neutral-500 font-mono hidden sm:inline">
-                Certificación Fito-Onchain
+                {tr('Certificación Fito-Onchain')}
               </span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-bold font-serif text-white tracking-tight">
-              Bóveda Global de Genéticas de Cannabis
+              {tr('Bóveda Global de Genéticas de Cannabis')}
             </h1>
 
             <p className="text-sm text-neutral-300 leading-relaxed">
-              Adquiere genéticas puras Landrace, híbridos estabilizados y automáticas de alto rendimiento. Las compras con <strong className="text-amber-400 font-mono">$FLORA</strong> ejecutan quema deflacionaria on-chain; las compras con <strong className="text-purple-300 font-mono">SOL</strong> liquidan en el pool botánico descentralizado.
+              {tr('Adquiere genéticas puras Landrace, híbridos estabilizados y automáticas de alto rendimiento. Las compras con')}{' '}<strong className="text-amber-400 font-mono">$FLORA</strong>{' '}{tr('ejecutan quema deflacionaria on-chain; las compras con')}{' '}<strong className="text-purple-300 font-mono">SOL</strong>{' '}{tr('liquidan en el pool botánico descentralizado.')}
             </p>
           </div>
 
@@ -110,19 +111,19 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
             <div className="flex items-center justify-between text-xs pb-2 border-b border-neutral-800">
               <span className="text-neutral-400 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                En tu Bóveda Fría:
+                {tr('En tu Bóveda Fría:')}
               </span>
               <span className="font-mono text-emerald-400 font-bold text-sm">
-                {totalSeedsOwned} semillas
+                {tr('{totalSeedsOwned} semillas', { totalSeedsOwned })}
               </span>
             </div>
 
             <div className="flex items-center justify-between text-xs">
-              <span className="text-neutral-400">Saldo $FLORA:</span>
+              <span className="text-neutral-400">{tr('Saldo $FLORA:')}</span>
               <span className="font-mono text-amber-300 font-bold">{floraBalance.toLocaleString()} $FLORA</span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-neutral-400">Saldo SOL:</span>
+              <span className="text-neutral-400">{tr('Saldo SOL:')}</span>
               <span className="font-mono text-purple-300 font-bold">{solBalance} SOL</span>
             </div>
 
@@ -137,7 +138,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
                 }`}
               >
                 <Flame className="w-3 h-3 text-amber-400" />
-                Pagar en $FLORA
+                {tr('Pagar en $FLORA')}
               </button>
               <button
                 onClick={() => setSelectedCurrency('SOL')}
@@ -148,7 +149,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
                 }`}
               >
                 <Coins className="w-3 h-3 text-purple-400" />
-                Pagar en SOL
+                {tr('Pagar en SOL')}
               </button>
             </div>
           </div>
@@ -159,7 +160,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
       <Suspense
         fallback={
           <div className="hud-panel h-72 flex items-center justify-center text-xs font-mono text-cyan-200/70 animate-pulse">
-            Enfriando cámara…
+            {tr('Enfriando cámara…')}
           </div>
         }
       >
@@ -177,12 +178,12 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-3">
         <div className="flex flex-wrap items-center gap-2 text-xs">
           {[
-            { id: 'all', label: 'Todas las Variedades' },
-            { id: 'Feminizada', label: 'Feminizadas (Fotoperiódicas)' },
-            { id: 'Autofloreciente', label: 'Autoflorecientes (Fast)' },
-            { id: 'Landrace', label: 'Landrace Puras' },
-            { id: 'Regular', label: 'Regulares (Breeding)' },
-            { id: 'inventory', label: `Mis Semillas (${totalSeedsOwned})` }
+            { id: 'all', label: tr('Todas las Variedades') },
+            { id: 'Feminizada', label: tr('Feminizadas (Fotoperiódicas)') },
+            { id: 'Autofloreciente', label: tr('Autoflorecientes (Fast)') },
+            { id: 'Landrace', label: tr('Landrace Puras') },
+            { id: 'Regular', label: tr('Regulares (Breeding)') },
+            { id: 'inventory', label: tr('Mis Semillas ({totalSeedsOwned})', { totalSeedsOwned }) }
           ].map(tab => (
             <button
               key={tab.id}
@@ -193,13 +194,13 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
                   : 'bg-neutral-900/60 border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800'
               }`}
             >
-              {tab.label}
+              {tr(tab.label)}
             </button>
           ))}
         </div>
 
         <div className="text-xs text-neutral-400 flex items-center gap-1 font-mono">
-          <span>Sala activa:</span>
+          <span>{tr('Sala activa:')}</span>
           <span className="text-emerald-400 font-bold uppercase">{currentRoom}</span>
         </div>
       </div>
@@ -212,14 +213,14 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
 
           return (
             <GeneticCard key={seed.id} card={cardFromSeed(seed, ownedCount)} selected={ownedCount > 0}>
-              <p className="text-[11px] text-neutral-400 leading-snug line-clamp-2">{seed.description}</p>
+              <p className="text-[11px] text-neutral-400 leading-snug line-clamp-2">{tr(seed.description)}</p>
               <div className="flex items-center justify-between text-[10px] font-mono text-neutral-500">
-                <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-400" />{seed.breeder}</span>
-                <span>Dificultad: {seed.difficulty}</span>
+                <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-400" />{tr(seed.breeder)}</span>
+                <span>{tr('Dificultad: {difficulty}', { difficulty: tr(seed.difficulty) })}</span>
               </div>
 
               <div className="flex items-center justify-between text-xs">
-                <span className="text-neutral-400">Pack x{seed.seedsPerPack}</span>
+                <span className="text-neutral-400">{tr('Pack x{seedsPerPack}', { seedsPerPack: seed.seedsPerPack })}</span>
                 <span className="font-mono font-bold text-sm">
                   {selectedCurrency === 'FLORA' ? (
                     <span className="text-amber-400 flex items-center gap-1"><Flame className="w-3.5 h-3.5 text-amber-500" />{seed.priceFlora} $FLORA</span>
@@ -242,7 +243,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  Acuñar pack
+                  {tr('Acuñar pack')}
                 </button>
 
                 <button
@@ -260,7 +261,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
                   }`}
                 >
                   <Sprout className="w-3.5 h-3.5" />
-                  {ownedCount > 0 ? 'Sembrar' : 'Sin semillas'}
+                  {ownedCount > 0 ? tr('Sembrar') : tr('Sin semillas')}
                 </button>
               </div>
             </GeneticCard>
@@ -275,7 +276,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
           feeText={mint.fee}
           signature={mintTx?.signature}
           slot={mintTx?.blockSlot}
-          closeLabel="Ver en mi bóveda"
+          closeLabel={tr('Ver en mi bóveda')}
           onClose={() => setMint(null)}
         />
       )}
@@ -284,37 +285,37 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
       <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-6 space-y-4">
         <div className="flex items-center gap-2 text-white font-serif text-lg font-bold">
           <Info className="w-5 h-5 text-emerald-400" />
-          Guía Técnica de Genéticas & Selección Botánica
+          {tr('Guía Técnica de Genéticas & Selección Botánica')}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-neutral-300 leading-relaxed">
           <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800/70 space-y-2">
             <h4 className="font-bold text-purple-300 flex items-center gap-1.5 font-mono uppercase">
               <Layers className="w-4 h-4 text-purple-400" />
-              1. Feminizadas Fotoperiódicas
+              {tr('1. Feminizadas Fotoperiódicas')}
             </h4>
             <p className="text-neutral-400">
-              Garantizan 99.9% de plantas hembra productoras de flores y resina mediante reversión con tiosulfato de plata (STS). Requieren 18 horas de luz en vegetativo y estricto 12/12 para florecer.
+              {tr('Garantizan 99.9% de plantas hembra productoras de flores y resina mediante reversión con tiosulfato de plata (STS). Requieren 18 horas de luz en vegetativo y estricto 12/12 para florecer.')}
             </p>
           </div>
 
           <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800/70 space-y-2">
             <h4 className="font-bold text-amber-300 flex items-center gap-1.5 font-mono uppercase">
               <Zap className="w-4 h-4 text-amber-400" />
-              2. Autoflorecientes (Ruderalis)
+              {tr('2. Autoflorecientes (Ruderalis)')}
             </h4>
             <p className="text-neutral-400">
-              Cruces con <em>Cannabis Ruderalis</em> siberiano. Florecen automáticamente según la edad de la planta (a los 21-28 días) sin importar el fotoperiodo de luz. Cosechas rápidas en 8-10 semanas.
+              {tr('Cruces con')}{' '}<em>{tr('Cannabis Ruderalis')}</em>{' '}{tr('siberiano. Florecen automáticamente según la edad de la planta (a los 21-28 días) sin importar el fotoperiodo de luz. Cosechas rápidas en 8-10 semanas.')}
             </p>
           </div>
 
           <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800/70 space-y-2">
             <h4 className="font-bold text-yellow-300 flex items-center gap-1.5 font-mono uppercase">
               <Compass className="w-4 h-4 text-yellow-400" />
-              3. Regulares & Landrace Puras
+              {tr('3. Regulares & Landrace Puras')}
             </h4>
             <p className="text-neutral-400">
-              Contienen machos y hembras en ratio natural 50/50. Son indispensables para el banco de madres/padres y la obtención de polen fértil con el que crear nuevas líneas híbridas F1 on-chain.
+              {tr('Contienen machos y hembras en ratio natural 50/50. Son indispensables para el banco de madres/padres y la obtención de polen fértil con el que crear nuevas líneas híbridas F1 on-chain.')}
             </p>
           </div>
         </div>

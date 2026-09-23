@@ -27,6 +27,7 @@ import {
   playCriticalHitSound,
   playClickSound 
 } from '../utils/audio';
+import { t } from '../i18n';
 
 interface LabVisualizerProps {
   selectedMachineCategory: 'press' | 'extractor' | 'dryer';
@@ -115,7 +116,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
       // Blowout!
       setMiniGameResult({
         status: 'blowout',
-        message: '¡Rotura de Papel Parchment (Blowout)! Presión excesiva (>135 PSI). El extracto perdió pureza.',
+        message: t('¡Rotura de Papel Parchment (Blowout)! Presión excesiva (>135 PSI). El extracto perdió pureza.'),
         yieldBonus: -15,
         quality: 68
       });
@@ -133,12 +134,12 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
       setDripCount(prev => prev + 4);
       setMiniGameResult({
         status: 'critical',
-        message: '¡PRENSADO CRÍTICO LEGENDARIO! Flujo continuo de Live Rosin 90u en la Zona Dorada. (+35% Rendimiento)',
+        message: t('¡PRENSADO CRÍTICO LEGENDARIO! Flujo continuo de Live Rosin 90u en la Zona Dorada. (+35% Rendimiento)'),
         yieldBonus: 35,
         quality: 99
       });
 
-      if (addXp) addXp(120, 'Extracción Crítica en Zona Dorada');
+      if (addXp) addXp(120, t('Extracción Crítica en Zona Dorada'));
       if (onExecuteManualPress) onExecuteManualPress(35, 99, true);
 
     } else if (finalPsi >= 70 && finalPsi <= 135) {
@@ -147,19 +148,19 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
       setDripCount(prev => prev + 2);
       setMiniGameResult({
         status: 'good',
-        message: 'Prensado Óptimo: Resina dorada extraída con éxito (+15% Rendimiento).',
+        message: t('Prensado Óptimo: Resina dorada extraída con éxito (+15% Rendimiento).'),
         yieldBonus: 15,
         quality: 90
       });
 
-      if (addXp) addXp(60, 'Prensado Manual Exitoso');
+      if (addXp) addXp(60, t('Prensado Manual Exitoso'));
       if (onExecuteManualPress) onExecuteManualPress(15, 90, false);
 
     } else {
       // Underpressed
       setMiniGameResult({
         status: 'low',
-        message: 'Presión Insuficiente: No se alcanzaron los 80 PSI requeridos para exudar los tricomas.',
+        message: t('Presión Insuficiente: No se alcanzaron los 80 PSI requeridos para exudar los tricomas.'),
         yieldBonus: -20,
         quality: 72
       });
@@ -178,7 +179,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
           <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
             <Zap className="w-4 h-4 text-amber-400" />
-            Estación de Trabajo Fitoquímica Interactiva
+            {t('Estación de Trabajo Fitoquímica Interactiva')}
           </h3>
         </div>
 
@@ -193,7 +194,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
             }`}
           >
             <Flame className="w-3.5 h-3.5 text-amber-400" />
-            <span>Prensa 10T</span>
+            <span>{t('Prensa 10T')}</span>
           </button>
 
           <button
@@ -205,7 +206,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
             }`}
           >
             <RotateCw className="w-3.5 h-3.5 text-purple-400" />
-            <span>Rotavapor</span>
+            <span>{t('Rotavapor')}</span>
           </button>
 
           <button
@@ -217,7 +218,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
             }`}
           >
             <Snowflake className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Liofilizador</span>
+            <span>{t('Liofilizador')}</span>
           </button>
         </div>
       </div>
@@ -247,31 +248,31 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
         {/* Top Machine Status Telemetry Bar */}
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 bg-neutral-900/90 backdrop-blur-md px-3.5 py-2 rounded-xl border border-neutral-800 text-xs font-mono">
           <div className="flex items-center gap-2">
-            <span className="text-neutral-400">Equipo:</span>
-            <span className="text-white font-bold">{activeMachine.name}</span>
+            <span className="text-neutral-400">{t('Equipo:')}</span>
+            <span className="text-white font-bold">{t(activeMachine.name)}</span>
             <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
               activeMachine.wearPercentage > 50 
                 ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' 
                 : (activeMachine.wearPercentage > 20 ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30')
             }`}>
-              {activeMachine.wearPercentage}% Salud
+              {t('{wearPercentage}% Salud', { wearPercentage: activeMachine.wearPercentage })}
             </span>
           </div>
 
           <div className="flex items-center gap-3 text-[11px]">
             {selectedMachineCategory === 'press' && (
               <span className="text-amber-400 flex items-center gap-1">
-                <Thermometer className="w-3.5 h-3.5" /> Placas: 82°C (180°F)
+                <Thermometer className="w-3.5 h-3.5" />{' '}{t('Placas: 82°C (180°F)')}
               </span>
             )}
             {selectedMachineCategory === 'extractor' && (
               <span className="text-purple-400 flex items-center gap-1">
-                <RotateCw className="w-3.5 h-3.5 animate-spin" /> {rotovapRpm} RPM | -0.098 MPa
+                <RotateCw className="w-3.5 h-3.5 animate-spin" />{' '}{t('{rotovapRpm} RPM | -0.098 MPa', { rotovapRpm })}
               </span>
             )}
             {selectedMachineCategory === 'dryer' && (
               <span className="text-cyan-400 flex items-center gap-1">
-                <Snowflake className="w-3.5 h-3.5" /> {freezeTemp}°C SubZero | 80 mTorr
+                <Snowflake className="w-3.5 h-3.5" />{' '}{t('{freezeTemp}°C SubZero | 80 mTorr', { freezeTemp })}
               </span>
             )}
 
@@ -282,7 +283,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                 className="flex items-center gap-1 px-2.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] transition cursor-pointer disabled:opacity-40"
               >
                 <Wrench className="w-2.5 h-2.5" />
-                <span>Reparar (-{activeMachine.repairCostFlora} $FLORA)</span>
+                <span>{t('Reparar (-{repairCostFlora} $FLORA)', { repairCostFlora: activeMachine.repairCostFlora })}</span>
               </button>
             )}
           </div>
@@ -300,7 +301,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                 <div className="w-full h-8 bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 rounded-lg border border-neutral-600 flex items-center justify-between px-3 shadow-md">
                   <div className="flex items-center gap-1 text-[10px] font-mono text-amber-400 font-bold">
                     <Flame className="w-3 h-3 text-amber-500" />
-                    <span>10-TON PNEUMATIC PRESS</span>
+                    <span>{t('10-TON PNEUMATIC PRESS')}</span>
                   </div>
                   <div className="flex gap-1">
                     <span className={`w-2 h-2 rounded-full ${isPressing ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'}`}></span>
@@ -325,14 +326,14 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                         : '0 0 10px rgba(245, 158, 11, 0.3)'
                     }}
                   >
-                    <span>PLACA SUPERIOR • 82°C</span>
+                    <span>{t('PLACA SUPERIOR • 82°C')}</span>
                   </div>
 
                   {/* Filter Bag / Parchment Paper with Golden Rosin Exudation */}
                   <div className="relative w-44 h-9 my-1 flex items-center justify-center">
                     {/* Parchment pouch */}
                     <div className="w-36 h-6 bg-amber-100/90 border border-amber-300 rounded shadow-sm flex items-center justify-center text-[9px] font-mono text-neutral-800 font-semibold z-10">
-                      <span>Bolsa Rosin 90μ</span>
+                      <span>{t('Bolsa Rosin 90μ')}</span>
                     </div>
 
                     {/* Golden Rosin Oozing Drops Animation */}
@@ -347,7 +348,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
 
                   {/* Fixed Lower Heated Plate */}
                   <div className="w-48 h-8 rounded-lg bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 border-2 border-amber-300 shadow-lg flex items-center justify-center text-[10px] font-mono font-bold text-neutral-950">
-                    <span>PLACA INFERIOR • 82°C</span>
+                    <span>{t('PLACA INFERIOR • 82°C')}</span>
                   </div>
                 </div>
 
@@ -360,7 +361,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                       style={{ height: `${Math.min(100, 20 + dripCount * 15)}%` }}
                     >
                       <div className="text-[8px] font-mono text-neutral-950 font-bold text-center leading-none">
-                        Live Rosin
+                        {t('Live Rosin')}
                       </div>
                     </div>
                   </div>
@@ -385,7 +386,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                 {/* Left: Heated Water Bath with Rotating Evaporation Flask */}
                 <div className="flex flex-col items-center">
                   <div className="text-[10px] font-mono text-purple-300 font-bold mb-1">
-                    Baño María 45°C
+                    {t('Baño María 45°C')}
                   </div>
 
                   {/* Water Bath Bowl */}
@@ -405,7 +406,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                       <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 via-amber-500 to-purple-600 opacity-70 animate-spin"></div>
                     </div>
                   </div>
-                  <span className="text-[9px] font-mono text-neutral-400 mt-1">Matraz de Evaporación</span>
+                  <span className="text-[9px] font-mono text-neutral-400 mt-1">{t('Matraz de Evaporación')}</span>
                 </div>
 
                 {/* Center: Glass Vapor Duct & Condenser Spiral Coil */}
@@ -424,18 +425,18 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                       <span className="w-1.5 h-3 bg-purple-400 rounded-full animate-bounce"></span>
                     </div>
                   </div>
-                  <span className="text-[9px] font-mono text-cyan-300 mt-1">Serpentín Frío (-15°C)</span>
+                  <span className="text-[9px] font-mono text-cyan-300 mt-1">{t('Serpentín Frío (-15°C)')}</span>
                 </div>
 
                 {/* Right: Pure Terpenes Receiving Flask */}
                 <div className="flex flex-col items-center">
                   <div className="text-[10px] font-mono text-emerald-400 font-bold mb-1">
-                    Terpenos 99%
+                    {t('Terpenos 99%')}
                   </div>
                   <div className="w-20 h-24 rounded-b-full border-2 border-emerald-400/60 bg-neutral-950 p-1 flex flex-col justify-end shadow-lg shadow-emerald-950/60">
                     <div className="w-full h-10 bg-gradient-to-t from-emerald-500 via-yellow-400 to-transparent rounded-b-full animate-pulse"></div>
                   </div>
-                  <span className="text-[9px] font-mono text-neutral-400 mt-1">Matraz Colector</span>
+                  <span className="text-[9px] font-mono text-neutral-400 mt-1">{t('Matraz Colector')}</span>
                 </div>
               </div>
             </div>
@@ -450,9 +451,9 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                 {/* Cryo chamber top badge */}
                 <div className="flex items-center justify-between text-[10px] font-mono border-b border-neutral-800 pb-2">
                   <span className="text-cyan-400 font-bold flex items-center gap-1">
-                    <Snowflake className="w-3.5 h-3.5 text-cyan-300" /> VACIADO CRIOGÉNICO
+                    <Snowflake className="w-3.5 h-3.5 text-cyan-300" />{' '}{t('VACIADO CRIOGÉNICO')}
                   </span>
-                  <span className="text-neutral-400">Bomba Edwards 80 mTorr</span>
+                  <span className="text-neutral-400">{t('Bomba Edwards 80 mTorr')}</span>
                 </div>
 
                 {/* Cold vacuum chamber interior with frost trays */}
@@ -463,7 +464,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                   {/* Frost Trays with Frosty Buds */}
                   {[1, 2, 3].map((tray) => (
                     <div key={tray} className="relative z-10 w-full h-8 bg-neutral-900 border border-cyan-400/40 rounded-lg flex items-center justify-around px-3 shadow">
-                      <span className="text-[8px] font-mono text-cyan-300">Bandeja #{tray}</span>
+                      <span className="text-[8px] font-mono text-cyan-300">{t('Bandeja #{tray}', { tray })}</span>
                       <div className="flex items-center gap-3">
                         <span className="w-4 h-4 rounded-full bg-emerald-600 border border-cyan-300 shadow-sm shadow-cyan-300 flex items-center justify-center text-[8px] text-white">❄</span>
                         <span className="w-4 h-4 rounded-full bg-emerald-500 border border-cyan-300 shadow-sm shadow-cyan-300 flex items-center justify-center text-[8px] text-white">❄</span>
@@ -474,8 +475,8 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                 </div>
 
                 <div className="flex justify-between items-center text-[10px] font-mono pt-1 text-neutral-400">
-                  <span>Crio-Preservación de Tricomas</span>
-                  <span className="text-cyan-300 font-bold">100% Retención de Color</span>
+                  <span>{t('Crio-Preservación de Tricomas')}</span>
+                  <span className="text-cyan-300 font-bold">{t('100% Retención de Color')}</span>
                 </div>
               </div>
             </div>
@@ -489,19 +490,19 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
               <div>
                 <span className="text-xs font-bold text-white uppercase font-mono flex items-center gap-1.5">
                   <Gauge className="w-4 h-4 text-amber-400" />
-                  Mini-Juego: Prensado de Precisión (Zona Dorada 85 - 125 PSI)
+                  {t('Mini-Juego: Prensado de Precisión (Zona Dorada 85 - 125 PSI)')}
                 </span>
                 <p className="text-[11px] text-neutral-400">
-                  Mantén presionado el actuador hidráulico. Suelta dentro de la <strong className="text-amber-300 font-bold">Zona Dorada</strong> para desbloquear un Prensado Crítico (+35% de Resina).
+                  {t('Mantén presionado el actuador hidráulico. Suelta dentro de la')}{' '}<strong className="text-amber-300 font-bold">{t('Zona Dorada')}</strong>{' '}{t('para desbloquear un Prensado Crítico (+35% de Resina).')}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-neutral-950 border border-neutral-800 text-white">
-                  Presión: {Math.round(pressurePsi)} PSI
+                  {t('Presión: {v0} PSI', { v0: Math.round(pressurePsi) })}
                 </span>
                 <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-neutral-950 border border-neutral-800 text-amber-400">
-                  Tiempo: {pressHoldSeconds.toFixed(1)}s
+                  {t('Tiempo: {v0}s', { v0: pressHoldSeconds.toFixed(1) })}
                 </span>
               </div>
             </div>
@@ -514,13 +515,13 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
               {/* SWEET SPOT / ZONA DORADA (85 - 125 PSI = ~56% to 83%) */}
               <div className="absolute left-[56%] top-0 bottom-0 w-[27%] bg-gradient-to-r from-amber-500/40 via-yellow-400/50 to-amber-500/40 border-x-2 border-amber-400 flex items-center justify-center">
                 <span className="text-[9px] font-mono font-bold text-amber-300 uppercase tracking-widest pointer-events-none">
-                  ZONA DORADA
+                  {t('ZONA DORADA')}
                 </span>
               </div>
 
               {/* Blowout Danger zone (125 - 150 PSI = 83% to 100%) */}
               <div className="absolute right-0 top-0 bottom-0 w-[17%] bg-red-950/60 border-l border-red-500 flex items-center justify-center">
-                <span className="text-[8px] font-mono text-red-400">PELIGRO</span>
+                <span className="text-[8px] font-mono text-red-400">{t('PELIGRO')}</span>
               </div>
 
               {/* Dynamic Fill Needle */}
@@ -548,13 +549,13 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
                 <Gauge className="w-5 h-5 text-neutral-950" />
-                <span>{isPressing ? '¡COMPRIMIENDO! SUELTA EN LA ZONA DORADA...' : 'MANTENER PRESIONADO PARA PRENSAR'}</span>
+                <span>{isPressing ? t('¡COMPRIMIENDO! SUELTA EN LA ZONA DORADA...') : t('MANTENER PRESIONADO PARA PRENSAR')}</span>
               </button>
 
               {/* Quick info tag */}
               <div className="text-[11px] text-neutral-400 font-mono text-center sm:text-right shrink-0">
-                <span>Rendimiento Base: 22%</span>
-                <span className="text-amber-400 block font-bold">Crítico: +35% Resina Pura</span>
+                <span>{t('Rendimiento Base: 22%')}</span>
+                <span className="text-amber-400 block font-bold">{t('Crítico: +35% Resina Pura')}</span>
               </div>
             </div>
 
@@ -575,11 +576,11 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                   ) : (
                     <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
                   ))}
-                  <span className="font-medium">{miniGameResult.message}</span>
+                  <span className="font-medium">{t(miniGameResult.message)}</span>
                 </div>
 
                 <div className="font-mono text-right shrink-0 font-bold">
-                  {miniGameResult.yieldBonus > 0 ? `+${miniGameResult.yieldBonus}% Resina` : `${miniGameResult.yieldBonus}%`}
+                  {miniGameResult.yieldBonus > 0 ? t('+{yieldBonus}% Resina', { yieldBonus: miniGameResult.yieldBonus }) : `${miniGameResult.yieldBonus}%`}
                 </div>
               </div>
             )}
@@ -593,8 +594,8 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
               <Sparkles className="w-4 h-4 text-purple-400" />
               <span className="text-neutral-300 font-medium">
                 {selectedMachineCategory === 'extractor' 
-                  ? 'Destilador al vacío activo en bucle de extracción continua de terpenos aromáticos.' 
-                  : 'Liofilizador en ciclo criogénico continuo: humedad residual < 2%.'}
+                  ? t('Destilador al vacío activo en bucle de extracción continua de terpenos aromáticos.') 
+                  : t('Liofilizador en ciclo criogénico continuo: humedad residual < 2%.')}
               </span>
             </div>
 
@@ -607,7 +608,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                   }}
                   className="px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-mono transition cursor-pointer"
                 >
-                  Ajustar RPM ({rotovapRpm})
+                  {t('Ajustar RPM ({rotovapRpm})', { rotovapRpm })}
                 </button>
               )}
 
@@ -619,7 +620,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
                   }}
                   className="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-mono transition cursor-pointer"
                 >
-                  Calibrar Temp ({freezeTemp}°C)
+                  {t('Calibrar Temp ({freezeTemp}°C)', { freezeTemp })}
                 </button>
               )}
             </div>

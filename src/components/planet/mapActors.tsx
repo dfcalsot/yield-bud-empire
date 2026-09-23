@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { REGIONS } from '../../sim/terroir';
 import { proj } from './WorldMap';
+import { t as tr } from '../../i18n';
 
 /**
  * The life of the world map: cargo ships and sailboats on the sea lanes, aeroplanes crossing the sky with their contrails, a whale,
@@ -92,7 +93,7 @@ const Ufo: React.FC<{ visit: Visit; onCatch: () => void }> = ({ visit, onCatch }
   const l1 = Math.hypot(tx - fx, ty - 26 - fy), l2 = Math.hypot(ax - tx, ay - (ty - 26));
   const f = (l1 / (l1 + l2)).toFixed(3);
   return (
-    <g key={visit.id} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); onCatch(); }} role="button" aria-label="Un ovni: toca para saludar" data-testid="ufo">
+    <g key={visit.id} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); onCatch(); }} role="button" aria-label={tr('Un ovni: toca para saludar')} data-testid="ufo">
       <g>
         <animateMotion dur={`${dur}s`} fill="freeze" path={d} keyPoints={`0;${f};${f};1`} keyTimes="0;0.36;0.68;1" calcMode="linear" />
         <g transform="scale(1.6)"><g className="pl-ufo">

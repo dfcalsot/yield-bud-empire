@@ -1,5 +1,6 @@
 import type { GenomicPatent, MotherFatherPlant, SeedBankItem, Strain } from '../types';
 import type { Rarity } from '../components/game/GameUI';
+import { t as tr, k, localize } from '../i18n/core';
 
 /**
  * View-model + helpers for the collectible genetics cards.
@@ -75,7 +76,7 @@ export const rarityOf = (thc: number, difficulty: string, opts: { patented?: boo
 };
 
 const topTerpenes = (t: Strain['terpenes']): string[] => {
-  const labels: Record<string, string> = { myrcene: 'Mirceno', limonene: 'Limoneno', caryophyllene: 'Cariofileno', pinene: 'Pineno', linalool: 'Linalool' };
+  const labels: Record<string, string> = { myrcene: tr('Mirceno'), limonene: tr('Limoneno'), caryophyllene: tr('Cariofileno'), pinene: tr('Pineno'), linalool: tr('Linalool') };
   return Object.entries(t)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
@@ -84,7 +85,7 @@ const topTerpenes = (t: Strain['terpenes']): string[] => {
 
 const pct = (v: number, max: number) => Math.max(0, Math.min(100, (v / max) * 100));
 
-const TERPENE_LABELS: Record<string, string> = { myrcene: 'Mirceno', limonene: 'Limoneno', caryophyllene: 'Cariofileno', pinene: 'Pineno', linalool: 'Linalool' };
+const TERPENE_LABELS: Record<string, string> = localize<Record<string, string>>({ myrcene: k('Mirceno'), limonene: k('Limoneno'), caryophyllene: k('Cariofileno'), pinene: k('Pineno'), linalool: k('Linalool') }, ['myrcene', 'limonene', 'caryophyllene', 'pinene', 'linalool']);
 
 const terpeneProfileOf = (t: Strain['terpenes']): GeneticCardData['terpeneProfile'] =>
   Object.entries(t)
@@ -93,14 +94,14 @@ const terpeneProfileOf = (t: Strain['terpenes']): GeneticCardData['terpeneProfil
 
 /** Characteristics every Strain carries (used by seeds, hybrids, patents and donors). */
 const strainAttrs = (st: Strain): CardAttr[] => [
-  { label: 'Fenotipo', value: st.type },
-  { label: 'Linaje', value: st.lineage },
+  { label: tr('Fenotipo'), value: tr(st.type) },
+  { label: tr('Linaje'), value: tr(st.lineage) },
   { label: 'THC', value: `${st.thcPercentage}%` },
   { label: 'CBD', value: `${st.cbdPercentage}%` },
-  { label: 'Dificultad', value: st.difficulty },
-  { label: 'Ciclo simulado', value: `${Math.round(st.cycleDurationSeconds / 60)} min` },
-  { label: 'Multiplicador de resina', value: `x${st.resinYieldMultiplier}` },
-  { label: 'Patente', value: st.isPatented ? st.patentId ?? 'Registrada' : 'Sin patente' },
+  { label: tr('Dificultad'), value: tr(st.difficulty) },
+  { label: tr('Ciclo simulado'), value: `${Math.round(st.cycleDurationSeconds / 60)} min` },
+  { label: tr('Multiplicador de resina'), value: `x${st.resinYieldMultiplier}` },
+  { label: tr('Patente'), value: st.isPatented ? st.patentId ?? tr('Registrada') : tr('Sin patente') },
 ];
 
 export const cardFromSeed = (seed: SeedBankItem, owned = 0): GeneticCardData => ({
@@ -118,30 +119,30 @@ export const cardFromSeed = (seed: SeedBankItem, owned = 0): GeneticCardData => 
   stats: [
     { label: 'THC', value: pct(seed.thcPercentage, 32), text: `${seed.thcPercentage}%`, color: '#34d399' },
     { label: 'CBD', value: pct(seed.cbdPercentage, 12), text: `${seed.cbdPercentage}%`, color: '#22d3ee' },
-    { label: 'Rend.', value: pct(seed.yieldGramsPerPlant, 250), text: `~${seed.yieldGramsPerPlant}g`, color: '#fbbf24' },
-    { label: 'Ciclo', value: pct(14 - seed.floweringWeeks, 8), text: `${seed.floweringWeeks} sem`, color: '#c084fc' },
+    { label: tr('Rend.'), value: pct(seed.yieldGramsPerPlant, 250), text: `~${seed.yieldGramsPerPlant}g`, color: '#fbbf24' },
+    { label: tr('Ciclo'), value: pct(14 - seed.floweringWeeks, 8), text: `${seed.floweringWeeks} sem`, color: '#c084fc' },
   ],
-  meta: [seed.strainTemplate.type, `Dif. ${seed.difficulty}`, `${seed.seedsPerPack} sem/pack`],
+  meta: [tr(seed.strainTemplate.type), tr('Dif. {difficulty}', { difficulty: tr(seed.difficulty) }), `${seed.seedsPerPack} sem/pack`],
   description: seed.description,
   terpeneProfile: terpeneProfileOf(seed.strainTemplate.terpenes),
   attributes: [
-    { label: 'Genética', value: seed.name },
-    { label: 'Criador', value: seed.breeder },
-    { label: 'Tipo de semilla', value: seed.seedType },
-    { label: 'Fenotipo', value: seed.strainTemplate.type },
-    { label: 'Linaje', value: seed.lineage },
+    { label: tr('Genética'), value: seed.name },
+    { label: tr('Criador'), value: tr(seed.breeder) },
+    { label: tr('Tipo de semilla'), value: tr(seed.seedType) },
+    { label: tr('Fenotipo'), value: tr(seed.strainTemplate.type) },
+    { label: tr('Linaje'), value: tr(seed.lineage) },
     { label: 'THC', value: `${seed.thcPercentage}%` },
     { label: 'CBD', value: `${seed.cbdPercentage}%` },
-    { label: 'Floración', value: `${seed.floweringWeeks} semanas` },
-    { label: 'Rendimiento', value: `~${seed.yieldGramsPerPlant} g/planta` },
-    { label: 'Dificultad', value: seed.difficulty },
-    { label: 'Ciclo simulado', value: `${Math.round(seed.strainTemplate.cycleDurationSeconds / 60)} min` },
-    { label: 'Multiplicador de resina', value: `x${seed.strainTemplate.resinYieldMultiplier}` },
-    { label: 'Terpenos dominantes', value: seed.dominantTerpenes.join(', ') },
-    { label: 'Pack', value: `${seed.seedsPerPack} semillas` },
-    { label: 'Precio', value: `${seed.priceFlora} $FLORA · ${seed.priceSol} SOL` },
-    { label: 'Patente', value: seed.strainTemplate.isPatented ? seed.strainTemplate.patentId ?? 'Registrada' : 'Sin patente' },
-    { label: 'Stock', value: seed.inStock ? 'Disponible' : 'Agotado' },
+    { label: tr('Floración'), value: `${seed.floweringWeeks} semanas` },
+    { label: tr('Rendimiento'), value: `~${seed.yieldGramsPerPlant} g/planta` },
+    { label: tr('Dificultad'), value: tr(seed.difficulty) },
+    { label: tr('Ciclo simulado'), value: `${Math.round(seed.strainTemplate.cycleDurationSeconds / 60)} min` },
+    { label: tr('Multiplicador de resina'), value: `x${seed.strainTemplate.resinYieldMultiplier}` },
+    { label: tr('Terpenos dominantes'), value: seed.dominantTerpenes.join(', ') },
+    { label: tr('Pack'), value: `${seed.seedsPerPack} semillas` },
+    { label: tr('Precio'), value: `${seed.priceFlora} $FLORA · ${seed.priceSol} SOL` },
+    { label: tr('Patente'), value: seed.strainTemplate.isPatented ? seed.strainTemplate.patentId ?? tr('Registrada') : tr('Sin patente') },
+    { label: tr('Stock'), value: seed.inStock ? tr('Disponible') : tr('Agotado') },
   ],
 });
 
@@ -149,7 +150,7 @@ export const cardFromStrain = (strain: Strain, kind: 'hybrid' | 'patent' = 'hybr
   id: strain.id,
   name: strain.name,
   subtitle: strain.lineage,
-  tag: kind === 'patent' ? 'Patente On-Chain' : strain.type === 'Híbrido' ? 'Híbrido F1' : strain.type,
+  tag: kind === 'patent' ? tr('Patente On-Chain') : strain.type === 'Híbrido' ? tr('Híbrido F1') : strain.type,
   kind,
   color: strain.colorTheme || '#ec4899',
   rarity: rarityOf(strain.thcPercentage, strain.difficulty, { patented: kind === 'patent' || !!strain.isPatented }),
@@ -160,27 +161,27 @@ export const cardFromStrain = (strain: Strain, kind: 'hybrid' | 'patent' = 'hybr
   stats: [
     { label: 'THC', value: pct(strain.thcPercentage, 32), text: `${strain.thcPercentage}%`, color: '#34d399' },
     { label: 'CBD', value: pct(strain.cbdPercentage, 12), text: `${strain.cbdPercentage}%`, color: '#22d3ee' },
-    { label: 'Resina', value: pct(strain.resinYieldMultiplier, 2), text: `x${strain.resinYieldMultiplier}`, color: '#fbbf24' },
-    { label: 'Ciclo', value: pct(3600 - strain.cycleDurationSeconds, 3000), text: `${Math.round(strain.cycleDurationSeconds / 60)} min`, color: '#c084fc' },
+    { label: tr('Resina'), value: pct(strain.resinYieldMultiplier, 2), text: `x${strain.resinYieldMultiplier}`, color: '#fbbf24' },
+    { label: tr('Ciclo'), value: pct(3600 - strain.cycleDurationSeconds, 3000), text: `${Math.round(strain.cycleDurationSeconds / 60)} min`, color: '#c084fc' },
   ],
-  meta: [strain.type, `Dif. ${strain.difficulty}`],
+  meta: [tr(strain.type), tr('Dif. {difficulty}', { difficulty: tr(strain.difficulty) })],
   description: strain.description,
   terpeneProfile: terpeneProfileOf(strain.terpenes),
-  attributes: [{ label: 'Genética', value: strain.name }, ...strainAttrs(strain)],
+  attributes: [{ label: tr('Genética'), value: strain.name }, ...strainAttrs(strain)],
 });
 
 export const cardFromPatent = (pat: GenomicPatent, strain?: Strain): GeneticCardData => {
   const base = strain ? cardFromStrain(strain, 'patent', pat.patentNumber) : null;
   const patentAttrs: CardAttr[] = [
-    { label: 'N.º de patente', value: pat.patentNumber },
-    { label: 'Registrada', value: pat.registeredDate },
-    { label: 'Titular', value: pat.creatorWallet },
-    { label: 'Parental A', value: pat.parentA },
-    { label: 'Parental B', value: pat.parentB },
-    { label: 'Terpeno dominante', value: pat.dominantTerpene },
-    { label: 'Quema de registro', value: `${pat.floraBurnedFee} $FLORA` },
+    { label: tr('N.º de patente'), value: pat.patentNumber },
+    { label: tr('Registrada'), value: pat.registeredDate },
+    { label: tr('Titular'), value: pat.creatorWallet },
+    { label: tr('Parental A'), value: pat.parentA },
+    { label: tr('Parental B'), value: pat.parentB },
+    { label: tr('Terpeno dominante'), value: tr(pat.dominantTerpene) },
+    { label: tr('Quema de registro'), value: `${pat.floraBurnedFee} $FLORA` },
   ];
-  if (base) return { ...base, attributes: [{ label: 'Genética', value: pat.strainName }, ...patentAttrs, ...base.attributes.slice(1)] };
+  if (base) return { ...base, attributes: [{ label: tr('Genética'), value: tr(pat.strainName) }, ...patentAttrs, ...base.attributes.slice(1)] };
   return (
     {
       id: pat.id,
@@ -198,9 +199,9 @@ export const cardFromPatent = (pat: GenomicPatent, strain?: Strain): GeneticCard
         { label: 'THC', value: pct(pat.thc, 32), text: `${pat.thc}%`, color: '#34d399' },
         { label: 'CBD', value: pct(pat.cbd, 12), text: `${pat.cbd}%`, color: '#22d3ee' },
       ],
-      meta: ['Patente'],
+      meta: [tr('Patente')],
       terpeneProfile: [],
-      attributes: [{ label: 'Genética', value: pat.strainName }, ...patentAttrs, { label: 'THC', value: `${pat.thc}%` }, { label: 'CBD', value: `${pat.cbd}%` }],
+      attributes: [{ label: tr('Genética'), value: tr(pat.strainName) }, ...patentAttrs, { label: 'THC', value: `${pat.thc}%` }, { label: 'CBD', value: `${pat.cbd}%` }],
     }
   );
 };
@@ -208,34 +209,34 @@ export const cardFromPatent = (pat: GenomicPatent, strain?: Strain): GeneticCard
 /** Mother / father plants as collectible cards (id keeps the serial + mint unique per individual). */
 export const cardFromDonor = (d: MotherFatherPlant): GeneticCardData => {
   const base = cardFromStrain(d.strain, 'hybrid');
-  const isMother = d.role.startsWith('Madre');
+  const isMother = d.role.startsWith(tr('Madre'));
   const thc = d.thcPercentage ?? d.strain.thcPercentage;
   return {
     ...base,
     id: d.id,
     name: d.strainName ?? d.name,
-    tag: `${isMother ? 'Madre' : d.role.startsWith('Padre') ? 'Donante' : 'Hembra rev.'} #${d.generation ?? 1}`,
+    tag: `${isMother ? tr('Madre') : d.role.startsWith(tr('Padre')) ? tr('Donante') : tr('Hembra rev.')} #${d.generation ?? 1}`,
     thc,
     stats: [
       { label: 'THC', value: pct(thc, 32), text: `${thc}%`, color: '#34d399' },
-      { label: 'Vigor', value: pct((d.vigorRating ?? 5) * 10, 100), text: `${d.vigorRating ?? 5}/10`, color: '#c084fc' },
-      { label: 'Salud', value: d.health, text: `${d.health}%`, color: '#22d3ee' },
+      { label: tr('Vigor'), value: pct((d.vigorRating ?? 5) * 10, 100), text: `${d.vigorRating ?? 5}/10`, color: '#c084fc' },
+      { label: tr('Salud'), value: d.health, text: `${d.health}%`, color: '#22d3ee' },
       isMother
-        ? { label: 'Esquejes', value: pct(d.clonesHarvested ?? d.clonesCutCount, 20), text: `${d.clonesHarvested ?? d.clonesCutCount}`, color: '#fbbf24' }
-        : { label: 'Polen', value: pct(d.pollenGramsCollected ?? 0, 20), text: `${d.pollenGramsCollected ?? 0}g`, color: '#fbbf24' },
+        ? { label: tr('Esquejes'), value: pct(d.clonesHarvested ?? d.clonesCutCount, 20), text: `${d.clonesHarvested ?? d.clonesCutCount}`, color: '#fbbf24' }
+        : { label: tr('Polen'), value: pct(d.pollenGramsCollected ?? 0, 20), text: `${d.pollenGramsCollected ?? 0}g`, color: '#fbbf24' },
     ],
-    meta: [d.strain.type, isMother ? 'Madre' : 'Donante'],
+    meta: [tr(d.strain.type), isMother ? tr('Madre') : tr('Donante')],
     attributes: [
-      { label: 'Genética', value: d.strainName ?? d.name },
-      { label: 'Rol', value: d.role },
-      { label: 'Generación', value: `${d.generation ?? 1}` },
-      { label: 'Edad', value: `${d.ageDays ?? 0} días` },
-      { label: 'Vigor', value: `${d.vigorRating ?? 5}/10` },
-      { label: 'Salud', value: `${d.health}%` },
+      { label: tr('Genética'), value: tr(d.strainName) ?? d.name },
+      { label: tr('Rol'), value: tr(d.role) },
+      { label: tr('Generación'), value: `${d.generation ?? 1}` },
+      { label: tr('Edad'), value: `${d.ageDays ?? 0} días` },
+      { label: tr('Vigor'), value: `${d.vigorRating ?? 5}/10` },
+      { label: tr('Salud'), value: `${d.health}%` },
       isMother
-        ? { label: 'Esquejes tomados', value: `${d.clonesHarvested ?? d.clonesCutCount}` }
-        : { label: 'Polen recolectado', value: `${d.pollenGramsCollected ?? 0} g` },
-      { label: 'Rasgos', value: d.traits?.length ? d.traits.join(', ') : '—' },
+        ? { label: tr('Esquejes tomados'), value: `${d.clonesHarvested ?? d.clonesCutCount}` }
+        : { label: tr('Polen recolectado'), value: `${d.pollenGramsCollected ?? 0} g` },
+      { label: tr('Rasgos'), value: d.traits?.length ? d.traits.join(', ') : '—' },
       ...strainAttrs(d.strain).slice(1),
     ],
   };

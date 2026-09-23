@@ -17,6 +17,7 @@ import {
   Gauge,
   Sliders
 } from 'lucide-react';
+import { t } from '../i18n';
 
 export const ExtractionLabView: React.FC = () => {
   const {
@@ -40,38 +41,38 @@ export const ExtractionLabView: React.FC = () => {
   const processOptions = [
     {
       id: 'live_rosin',
-      name: 'Live Rosin Prensado Térmico (90u)',
-      description: 'Extracción sin solventes mediante presión de 10T y temperatura suave (82°C). Retiene el espectro completo de cannabinoides.',
+      name: t('Live Rosin Prensado Térmico (90u)'),
+      description: t('Extracción sin solventes mediante presión de 10T y temperatura suave (82°C). Retiene el espectro completo de cannabinoides.'),
       requiredMachine: 'Prensa Térmica Hidráulica 10 Toneladas',
-      yieldRatio: '22% retorno de resina dorada',
-      valueMultiplier: 'Alto valor comercial',
+      yieldRatio: t('22% retorno de resina dorada'),
+      valueMultiplier: t('Alto valor comercial'),
       badgeColor: 'text-amber-400 border-amber-500/30 bg-amber-500/10'
     },
     {
       id: 'cured_flower',
-      name: 'Flor Curada en Frío (Freeze-Drying)',
-      description: 'Curado criogénico al vacío. Evita la oxidación de tricomas y garantiza cogollos con olor y color hiper-fresco.',
+      name: t('Flor Curada en Frío (Freeze-Drying)'),
+      description: t('Curado criogénico al vacío. Evita la oxidación de tricomas y garantiza cogollos con olor y color hiper-fresco.'),
       requiredMachine: 'Liofilizador Criogénico SubZero',
-      yieldRatio: '100% retención de volumen',
-      valueMultiplier: 'Estándar Premium',
+      yieldRatio: t('100% retención de volumen'),
+      valueMultiplier: t('Estándar Premium'),
       badgeColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
     },
     {
       id: 'pure_terpenes',
-      name: 'Aislamiento Fraccionado de Terpenos',
-      description: 'Destilación rotativa al vacío de terpenos volátiles (Mirceno, Limoneno, Linalol). Pureza botánica del 99%.',
+      name: t('Aislamiento Fraccionado de Terpenos'),
+      description: t('Destilación rotativa al vacío de terpenos volátiles (Mirceno, Limoneno, Linalol). Pureza botánica del 99%.'),
       requiredMachine: 'Destilador Rotativo de Terpenos (Rotavapor)',
-      yieldRatio: '8% destilado concentrado',
-      valueMultiplier: 'Ultra-Exclusivo (V2P / Vapes)',
+      yieldRatio: t('8% destilado concentrado'),
+      valueMultiplier: t('Ultra-Exclusivo (V2P / Vapes)'),
       badgeColor: 'text-purple-400 border-purple-500/30 bg-purple-500/10'
     },
     {
       id: 'full_spec_oil',
-      name: 'Aceite Full Spectrum Grado Farmacéutico',
-      description: 'Maceración y refinamiento en frío de cannabinoides y flavonoides activos para tinturas sublinguales medicinales.',
+      name: t('Aceite Full Spectrum Grado Farmacéutico'),
+      description: t('Maceración y refinamiento en frío de cannabinoides y flavonoides activos para tinturas sublinguales medicinales.'),
       requiredMachine: 'Destilador Rotativo de Terpenos (Rotavapor)',
-      yieldRatio: '40% extracto oleoso',
-      valueMultiplier: 'Demanda Alta',
+      yieldRatio: t('40% extracto oleoso'),
+      valueMultiplier: t('Demanda Alta'),
       badgeColor: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'
     }
   ];
@@ -89,29 +90,29 @@ export const ExtractionLabView: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 font-mono flex items-center gap-1.5">
               <Gamepad2 className="w-3.5 h-3.5 text-purple-400" />
-              Laboratorio Fitoquímico Animado & Gaming
+              {t('Laboratorio Fitoquímico Animado & Gaming')}
             </span>
             <span className="text-xs text-neutral-400 font-mono hidden sm:inline">
-              Rango: {rankTitle} (Nivel {playerLevel})
+              {t('Rango: {rankTitle} (Nivel {playerLevel})', { rankTitle, playerLevel })}
             </span>
           </div>
           <h2 className="text-xl font-bold text-white mt-1 flex items-center gap-2 font-serif">
             <FlaskConical className="w-5 h-5 text-emerald-400" />
-            Laboratorio de Extracción & Prensado Interactivo
+            {t('Laboratorio de Extracción & Prensado Interactivo')}
           </h2>
           <p className="text-xs text-neutral-400 mt-0.5">
-            Prensa resinas en la Zona Dorada con mecánicas hidráulicas en tiempo real, destila terpenos puros al vacío y mantén la maquinaria quemando $FLORA.
+            {t('Prensa resinas en la Zona Dorada con mecánicas hidráulicas en tiempo real, destila terpenos puros al vacío y mantén la maquinaria quemando $FLORA.')}
           </p>
         </div>
 
         {/* Current Available Stock */}
         <div className="flex items-center gap-3">
           <div className="bg-neutral-950 border border-neutral-800 px-4 py-2 rounded-xl text-center">
-            <span className="text-[10px] text-neutral-500 uppercase font-mono block">Materia Prima Disponible</span>
-            <span className="text-base font-bold text-emerald-400 font-mono">{rawFlowerGrams}g Flor Seca</span>
+            <span className="text-[10px] text-neutral-500 uppercase font-mono block">{t('Materia Prima Disponible')}</span>
+            <span className="text-base font-bold text-emerald-400 font-mono">{t('{rawFlowerGrams}g Flor Seca', { rawFlowerGrams })}</span>
           </div>
           <div className="bg-neutral-950 border border-neutral-800 px-4 py-2 rounded-xl text-center">
-            <span className="text-[10px] text-neutral-500 uppercase font-mono block">Biomasa Trim</span>
+            <span className="text-[10px] text-neutral-500 uppercase font-mono block">{t('Biomasa Trim')}</span>
             <span className="text-base font-bold text-amber-400 font-mono">{trimGrams}g</span>
           </div>
         </div>
@@ -129,7 +130,7 @@ export const ExtractionLabView: React.FC = () => {
             }`}
           >
             <FlaskConical className="w-4 h-4 text-cyan-300" />
-            <span>Planta Industrial (7 estaciones)</span>
+            <span>{t('Planta Industrial (7 estaciones)')}</span>
           </button>
 
           <button
@@ -141,7 +142,7 @@ export const ExtractionLabView: React.FC = () => {
             }`}
           >
             <Gamepad2 className="w-4 h-4 text-emerald-400" />
-            <span>Taller Interactivo (Mini-Juego Rosin & Animaciones)</span>
+            <span>{t('Taller Interactivo (Mini-Juego Rosin & Animaciones)')}</span>
           </button>
 
           <button
@@ -153,7 +154,7 @@ export const ExtractionLabView: React.FC = () => {
             }`}
           >
             <Sliders className="w-4 h-4 text-purple-400" />
-            <span>Refinado por Lotes Industriales</span>
+            <span>{t('Refinado por Lotes Industriales')}</span>
           </button>
 
           <button
@@ -165,12 +166,12 @@ export const ExtractionLabView: React.FC = () => {
             }`}
           >
             <Wrench className="w-4 h-4 text-amber-400" />
-            <span>Bahía de Maquinaria ({machines.length})</span>
+            <span>{t('Bahía de Maquinaria ({length})', { length: machines.length })}</span>
           </button>
         </div>
 
         <span className="text-xs text-neutral-500 font-mono hidden md:inline">
-          Desgaste Deflacionario On-Chain
+          {t('Desgaste Deflacionario On-Chain')}
         </span>
       </div>
 
@@ -197,14 +198,14 @@ export const ExtractionLabView: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Wrench className="w-4 h-4 text-amber-400" />
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                    Estado de Equipos de Laboratorio
+                    {t('Estado de Equipos de Laboratorio')}
                   </h3>
                 </div>
                 <button
                   onClick={() => setActiveTab('machinery')}
                   className="text-[11px] text-amber-400 hover:underline font-mono cursor-pointer"
                 >
-                  Ver todos
+                  {t('Ver todos')}
                 </button>
               </div>
 
@@ -215,9 +216,9 @@ export const ExtractionLabView: React.FC = () => {
                   return (
                     <div key={m.id} className="p-2.5 rounded-xl bg-neutral-950/80 border border-neutral-800 flex items-center justify-between gap-3 text-xs">
                       <div>
-                        <div className="font-semibold text-white text-xs">{m.name}</div>
+                        <div className="font-semibold text-white text-xs">{t(m.name)}</div>
                         <div className="text-[10px] text-neutral-400 font-mono">
-                          Desgaste: -{m.wearRatePerCycle}% por extracción
+                          {t('Desgaste: -{wearRatePerCycle}% por extracción', { wearRatePerCycle: m.wearRatePerCycle })}
                         </div>
                       </div>
 
@@ -231,7 +232,7 @@ export const ExtractionLabView: React.FC = () => {
                             disabled={floraBalance < m.repairCostFlora}
                             className="px-2 py-0.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 rounded text-[11px] font-mono cursor-pointer disabled:opacity-50"
                           >
-                            Reparar ({m.repairCostFlora} $F)
+                            {t('Reparar ({repairCostFlora} $F)', { repairCostFlora: m.repairCostFlora })}
                           </button>
                         )}
                       </div>
@@ -247,17 +248,17 @@ export const ExtractionLabView: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-emerald-400" />
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                    Extractos Listos ({processedProducts.length})
+                    {t('Extractos Listos ({length})', { length: processedProducts.length })}
                   </h3>
                 </div>
                 <span className="text-[10px] font-mono text-neutral-400">
-                  Total en Stock
+                  {t('Total en Stock')}
                 </span>
               </div>
 
               {processedProducts.length === 0 ? (
                 <p className="text-xs text-neutral-500 py-3 text-center font-mono">
-                  Presiona el mini-juego para prensar tu primer lote de Live Rosin.
+                  {t('Presiona el mini-juego para prensar tu primer lote de Live Rosin.')}
                 </p>
               ) : (
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
@@ -267,17 +268,17 @@ export const ExtractionLabView: React.FC = () => {
                       className="p-3 rounded-xl bg-neutral-950/80 border border-neutral-800/80 flex items-center justify-between gap-3 text-xs"
                     >
                       <div>
-                        <div className="font-bold text-white text-xs">{prod.name}</div>
+                        <div className="font-bold text-white text-xs">{t(prod.name)}</div>
                         <div className="text-[11px] text-neutral-400 font-mono">
-                          {prod.quantityGrams}g • {prod.potency}
+                          {prod.quantityGrams}g • {t(prod.potency)}
                         </div>
                         <div className="text-[10px] text-neutral-500 font-mono">
-                          Hash: {prod.batchHash}
+                          {t('Hash: {batchHash}', { batchHash: prod.batchHash })}
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <span className="text-[10px] text-neutral-500 uppercase font-mono block">Valor</span>
+                        <span className="text-[10px] text-neutral-500 uppercase font-mono block">{t('Valor')}</span>
                         <span className="font-mono font-bold text-emerald-400 text-sm">
                           {prod.marketValueFlora} $FLORA
                         </span>
@@ -300,17 +301,17 @@ export const ExtractionLabView: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-emerald-400" />
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                    Protocolo de Refinado Automatizado
+                    {t('Protocolo de Refinado Automatizado')}
                   </h3>
                 </div>
                 <span className="text-[11px] font-mono text-neutral-400">
-                  Lote On-Chain
+                  {t('Lote On-Chain')}
                 </span>
               </div>
 
               {/* Select Method */}
               <div className="space-y-2.5">
-                <span className="text-xs text-neutral-300 font-medium">1. Selecciona el Tipo de Extracto:</span>
+                <span className="text-xs text-neutral-300 font-medium">{t('1. Selecciona el Tipo de Extracto:')}</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {processOptions.map((opt) => {
                     const isSelected = selectedProcess === opt.id;
@@ -326,11 +327,11 @@ export const ExtractionLabView: React.FC = () => {
                       >
                         <div>
                           <div className="flex items-center justify-between mb-1">
-                            <h4 className="text-xs font-bold text-white">{opt.name}</h4>
+                            <h4 className="text-xs font-bold text-white">{t(opt.name)}</h4>
                             {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
                           </div>
                           <p className="text-[11px] text-neutral-400 leading-snug line-clamp-2">
-                            {opt.description}
+                            {t(opt.description)}
                           </p>
                         </div>
 
@@ -349,8 +350,8 @@ export const ExtractionLabView: React.FC = () => {
               {/* Select Input Grams */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-neutral-300 font-medium">2. Cantidad de Flor Cruda a Procesar:</span>
-                  <span className="font-mono text-emerald-400 font-bold">{gramsToProcess} gramos</span>
+                  <span className="text-neutral-300 font-medium">{t('2. Cantidad de Flor Cruda a Procesar:')}</span>
+                  <span className="font-mono text-emerald-400 font-bold">{t('{gramsToProcess} gramos', { gramsToProcess })}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <input
@@ -364,12 +365,12 @@ export const ExtractionLabView: React.FC = () => {
                   />
                 </div>
                 <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
-                  <span>Mín: 5g</span>
+                  <span>{t('Mín: 5g')}</span>
                   <button 
                     onClick={() => setGramsToProcess(rawFlowerGrams)}
                     className="text-emerald-400 hover:underline cursor-pointer"
                   >
-                    Usar Todo ({rawFlowerGrams}g)
+                    {t('Usar Todo ({rawFlowerGrams}g)', { rawFlowerGrams })}
                   </button>
                 </div>
               </div>
@@ -382,7 +383,7 @@ export const ExtractionLabView: React.FC = () => {
                   className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-neutral-950 font-bold text-sm shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Cpu className="w-4 h-4" />
-                  <span>Ejecutar Extracción Industrial ({gramsToProcess}g)</span>
+                  <span>{t('Ejecutar Extracción Industrial ({gramsToProcess}g)', { gramsToProcess })}</span>
                 </button>
               </div>
             </div>
@@ -394,17 +395,17 @@ export const ExtractionLabView: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-emerald-400" />
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                    Extractos en Inventario ({processedProducts.length})
+                    {t('Extractos en Inventario ({length})', { length: processedProducts.length })}
                   </h3>
                 </div>
                 <span className="text-[11px] text-neutral-400">
-                  Listos para venta o V2P
+                  {t('Listos para venta o V2P')}
                 </span>
               </div>
 
               {processedProducts.length === 0 ? (
                 <p className="text-xs text-neutral-500 py-4 text-center">
-                  Aún no has procesado extractos. Inicia un lote de Live Rosin o Terpenos para abastecer tu dispensario.
+                  {t('Aún no has procesado extractos. Inicia un lote de Live Rosin o Terpenos para abastecer tu dispensario.')}
                 </p>
               ) : (
                 <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
@@ -414,17 +415,17 @@ export const ExtractionLabView: React.FC = () => {
                       className="p-3 rounded-xl bg-neutral-950/80 border border-neutral-800 flex items-center justify-between gap-3 text-xs"
                     >
                       <div className="space-y-0.5">
-                        <h4 className="font-bold text-white">{prod.name}</h4>
+                        <h4 className="font-bold text-white">{t(prod.name)}</h4>
                         <p className="text-[11px] text-neutral-400 font-mono">
-                          {prod.quantityGrams}g | {prod.potency}
+                          {prod.quantityGrams}g | {t(prod.potency)}
                         </p>
                         <span className="text-[10px] text-neutral-500 font-mono">
-                          Hash de Lote: {prod.batchHash}
+                          {t('Hash de Lote: {batchHash}', { batchHash: prod.batchHash })}
                         </span>
                       </div>
 
                       <div className="text-right">
-                        <span className="text-[10px] text-neutral-500 block uppercase font-mono">Valor Mercado</span>
+                        <span className="text-[10px] text-neutral-500 block uppercase font-mono">{t('Valor Mercado')}</span>
                         <span className="font-mono font-bold text-emerald-400 text-sm">
                           {prod.marketValueFlora} $FLORA
                         </span>
@@ -446,16 +447,16 @@ export const ExtractionLabView: React.FC = () => {
               <Wrench className="w-5 h-5 text-amber-400" />
               <div>
                 <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                  Depreciación y Mantenimiento de Maquinaria
+                  {t('Depreciación y Mantenimiento de Maquinaria')}
                 </h3>
                 <p className="text-xs text-neutral-400">
-                  La fricción y el uso continuo degradan la maquinaria. Reparar cada equipo quema $FLORA en la red Solana.
+                  {t('La fricción y el uso continuo degradan la maquinaria. Reparar cada equipo quema $FLORA en la red Solana.')}
                 </p>
               </div>
             </div>
             <span className="text-xs font-mono text-amber-400 flex items-center gap-1">
               <Flame className="w-3.5 h-3.5 text-amber-500" />
-              Mecanismo Deflacionario Activo
+              {t('Mecanismo Deflacionario Activo')}
             </span>
           </div>
 
@@ -475,14 +476,14 @@ export const ExtractionLabView: React.FC = () => {
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <h4 className="text-xs font-bold text-white">{machine.name}</h4>
+                      <h4 className="text-xs font-bold text-white">{t(machine.name)}</h4>
                       <span className={`text-xs font-mono font-bold ${
                         isCritical ? 'text-red-400' : (isWarning ? 'text-amber-400' : 'text-emerald-400')
                       }`}>
                         {machine.wearPercentage}%
                       </span>
                     </div>
-                    <p className="text-[11px] text-neutral-400 line-clamp-2">{machine.description}</p>
+                    <p className="text-[11px] text-neutral-400 line-clamp-2">{t(machine.description)}</p>
                   </div>
 
                   <div className="space-y-2">
@@ -498,7 +499,7 @@ export const ExtractionLabView: React.FC = () => {
 
                     <div className="flex items-center justify-between text-xs pt-1">
                       <span className="text-[11px] text-neutral-500 font-mono">
-                        Desgaste: -{machine.wearRatePerCycle}%
+                        {t('Desgaste: -{wearRatePerCycle}%', { wearRatePerCycle: machine.wearRatePerCycle })}
                       </span>
 
                       {machine.wearPercentage < 100 && (
@@ -508,7 +509,7 @@ export const ExtractionLabView: React.FC = () => {
                           className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 rounded-lg text-xs font-mono font-semibold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Flame className="w-3 h-3 text-amber-400" />
-                          <span>Reparar ({machine.repairCostFlora} $FLORA)</span>
+                          <span>{t('Reparar ({repairCostFlora} $FLORA)', { repairCostFlora: machine.repairCostFlora })}</span>
                         </button>
                       )}
                     </div>

@@ -4,6 +4,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { REGIONS } from '../../sim/terroir';
 import type { RegionId } from '../../types';
 import { CONTINENTS, MONTI_GAME_URL, MONTI_URL, proj, type MapSkin } from './WorldMap';
+import { t as tr } from '../../i18n';
 
 /**
  * Optional 3D globe for the Planet (behind a toggle, lazy-loaded). Same data as the flat map: the seven regions, your
@@ -148,7 +149,7 @@ export const Globe3D: React.FC<Props> = (props) => {
       <Canvas dpr={[1, 1.5]} camera={{ position: [0, 0, 3.15], fov: 38 }} gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}>
         <Scene {...props} ctl={ctl} />
       </Canvas>
-      <span className="pointer-events-none absolute left-3 bottom-2 text-[10px] font-mono text-sky-200/70">Arrastra para girar · toca una región</span>
+      <span className="pointer-events-none absolute left-3 bottom-2 text-[10px] font-mono text-sky-200/70">{tr('Arrastra para girar · toca una región')}</span>
     </div>
   );
 };

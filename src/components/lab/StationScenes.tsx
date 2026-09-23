@@ -1,5 +1,6 @@
 import React, { useId } from 'react';
 import type { StationId } from '../../lab/stations';
+import { t } from '../../i18n';
 
 /**
  * Animated SVG scenes for the industrial lab stations.
@@ -147,7 +148,7 @@ const RosinScene: React.FC<SceneProps> = ({ accent }) => {
         <rect x="70" y="252" width="86" height="82" rx="10" fill={`url(#${id}glass)`} stroke="#c6f4ff" strokeOpacity="0.55" strokeWidth="2.5" />
         <rect x="76" y="240" width="74" height="14" rx="4" fill="#2f403e" stroke="#5d7773" />
         {[[92, 300, 13], [118, 306, 14], [138, 296, 11], [104, 280, 12], [130, 278, 12]].map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r} fill={i % 2 ? '#3f8f3a' : '#57b04a'} stroke="#245a22" />)}
-        <text x="113" y="352" textAnchor="middle" fontSize="10" fontFamily="monospace" fill={accent}>flor seca</text>
+        <text x="113" y="352" textAnchor="middle" fontSize="10" fontFamily="monospace" fill={accent}>{t('flor seca')}</text>
         {[0, 1, 2].map((i) => (
           <g key={i}>
             <rect x={470 + i * 44} y="290" width="34" height="44" rx="6" fill={`url(#${id}glass)`} stroke="#c6f4ff" strokeOpacity="0.5" />
@@ -271,7 +272,7 @@ const TerpSoupScene: React.FC<SceneProps> = ({ accent, variant }) => {
       <rect x="420" y="120" width="10" height="176" rx="5" fill="#0d1817" stroke="#3a4c49" />
       <rect x="422" y="150" width="6" height="146" rx="3" fill="#fb7185" className="lb-tbb" style={{ transform: 'scaleY(calc(0.35 + 0.6 * var(--p, 0)))' }} />
       <text x="425" y="112" textAnchor="middle" fontSize="11" fill="#fb7185" fontFamily="monospace">°C</text>
-      <text x="470" y="240" fontSize="11" fill={accent} fontFamily="monospace">{diamonds ? 'THCa · cristalización' : 'live sauce · 42 °C'}</text>
+      <text x="470" y="240" fontSize="11" fill={accent} fontFamily="monospace">{diamonds ? t('THCa · cristalización') : t('live sauce · 42 °C')}</text>
     </g>
   );
 };
@@ -497,9 +498,9 @@ const HplcScene: React.FC<SceneProps> = ({ accent, profile }) => {
       {[0, 1, 2, 3, 4, 5].map((i) => <line key={i} x1={388 + i * 43} y1="98" x2={388 + i * 43} y2="270" stroke="#14322d" />)}
       <path d={d} pathLength={1} fill="none" stroke="#34d399" strokeWidth="2.6" strokeLinejoin="round" style={{ strokeDasharray: 1, strokeDashoffset: 'calc(1 - var(--p, 0))', filter: 'drop-shadow(0 0 4px #34d399)' }} />
       {peaks.map((k, i) => (
-        <text key={k.label} x={k.x} y={base - k.h - 8} textAnchor="middle" fontSize="11" fontFamily="monospace" fill={k.color} style={{ opacity: `clamp(0, calc((var(--p, 0) - ${0.18 + i * 0.15}) * 7), 1)` }}>{k.label}</text>
+        <text key={k.label} x={k.x} y={base - k.h - 8} textAnchor="middle" fontSize="11" fontFamily="monospace" fill={k.color} style={{ opacity: `clamp(0, calc((var(--p, 0) - ${0.18 + i * 0.15}) * 7), 1)` }}>{t(k.label)}</text>
       ))}
-      <text x="388" y="94" fontSize="10" fontFamily="monospace" fill="#5f7d78">HPLC-UV 228 nm · mAU</text>
+      <text x="388" y="94" fontSize="10" fontFamily="monospace" fill="#5f7d78">{t('HPLC-UV 228 nm · mAU')}</text>
       <rect x="470" y="288" width="96" height="10" rx="5" fill="#1b3529" />
       <rect x="470" y="288" width="96" height="10" rx="5" fill={accent} className="lb-tbl" style={{ transform: 'scaleX(var(--p, 0))' }} />
     </g>
@@ -518,7 +519,7 @@ export const StationScene: React.FC<SceneProps & { station: StationId; className
     : station === 'rotavap' ? RotavapScene
     : HplcScene;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className={`lb-scene ${running ? 'is-run' : ''} ${className ?? ''}`} role="img" aria-label={`Estación ${station}`}>
+    <svg viewBox={`0 0 ${W} ${H}`} className={`lb-scene ${running ? 'is-run' : ''} ${className ?? ''}`} role="img" aria-label={t('Estación {station}', { station })}>
       <Scene running={running} {...rest} />
     </svg>
   );

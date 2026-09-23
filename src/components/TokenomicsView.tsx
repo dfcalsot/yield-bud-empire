@@ -14,6 +14,7 @@ import {
   Lock,
   ExternalLink
 } from 'lucide-react';
+import { t } from '../i18n';
 
 export const TokenomicsView: React.FC = () => {
   const {
@@ -58,25 +59,25 @@ export const TokenomicsView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono">
-              Modelo Económico Deflacionario $FLORA v1.0
+              {t('Modelo Económico Deflacionario $FLORA v1.0')}
             </span>
             <span className="text-xs text-neutral-400 font-mono">
-              Solana SPL Standard
+              {t('Solana SPL Standard')}
             </span>
           </div>
           <h2 className="text-xl font-bold text-white mt-1 flex items-center gap-2 font-serif">
             <BarChart3 className="w-5 h-5 text-emerald-400" />
-            Tokenómica Sostenible & Mecanismos de Quema
+            {t('Tokenómica Sostenible & Mecanismos de Quema')}
           </h2>
           <p className="text-xs text-neutral-400 mt-0.5">
-            A diferencia de los juegos GameFi inflacionarios tradicionales, Yield Bud Empire integra sumideros obligatorios de circuito cerrado para garantizar la apreciación y escasez del token.
+            {t('A diferencia de los juegos GameFi inflacionarios tradicionales, Yield Bud Empire integra sumideros obligatorios de circuito cerrado para garantizar la apreciación y escasez del token.')}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="bg-neutral-950 border border-amber-500/30 px-4 py-2 rounded-xl text-center">
             <span className="text-[10px] text-amber-400 uppercase font-mono block flex items-center justify-center gap-1">
-              <Flame className="w-3 h-3 text-amber-500" /> Total Quemado
+              <Flame className="w-3 h-3 text-amber-500" />{' '}{t('Total Quemado')}
             </span>
             <span className="text-lg font-bold text-amber-400 font-mono">
               {totalFloraBurned.toLocaleString()} $FLORA
@@ -90,15 +91,15 @@ export const TokenomicsView: React.FC = () => {
         {/* Sink 1: Speedup */}
         <div className="hud-panel p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-emerald-400 font-semibold">Sumidero 1</span>
+            <span className="text-xs font-mono text-emerald-400 font-semibold">{t('Sumidero 1')}</span>
             <Flame className="w-4 h-4 text-emerald-400" />
           </div>
-          <h3 className="text-sm font-bold text-white">Aceleración de Cultivo</h3>
+          <h3 className="text-sm font-bold text-white">{t('Aceleración de Cultivo')}</h3>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            Omitir tiempos de espera biológicos e inducir fotoperiodos cuánticos quema permanentemente 25 $FLORA por ciclo.
+            {t('Omitir tiempos de espera biológicos e inducir fotoperiodos cuánticos quema permanentemente 25 $FLORA por ciclo.')}
           </p>
           <div className="pt-2 border-t border-neutral-800 flex justify-between items-baseline">
-            <span className="text-[11px] text-neutral-500 font-mono">Total Quemado:</span>
+            <span className="text-[11px] text-neutral-500 font-mono">{t('Total Quemado:')}</span>
             <span className="text-xs font-mono text-emerald-300 font-bold">{burnStats.speedUp.toLocaleString()} $FLORA</span>
           </div>
         </div>
@@ -106,15 +107,15 @@ export const TokenomicsView: React.FC = () => {
         {/* Sink 2: Repairs */}
         <div className="hud-panel p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-amber-400 font-semibold">Sumidero 2</span>
+            <span className="text-xs font-mono text-amber-400 font-semibold">{t('Sumidero 2')}</span>
             <Flame className="w-4 h-4 text-amber-400" />
           </div>
-          <h3 className="text-sm font-bold text-white">Desgaste de Maquinaria</h3>
+          <h3 className="text-sm font-bold text-white">{t('Desgaste de Maquinaria')}</h3>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            Las prensas térmicas y rotavapores pierden eficiencia con el uso. Reparar equipos destruye tokens de circulación activa.
+            {t('Las prensas térmicas y rotavapores pierden eficiencia con el uso. Reparar equipos destruye tokens de circulación activa.')}
           </p>
           <div className="pt-2 border-t border-neutral-800 flex justify-between items-baseline">
-            <span className="text-[11px] text-neutral-500 font-mono">Total Quemado:</span>
+            <span className="text-[11px] text-neutral-500 font-mono">{t('Total Quemado:')}</span>
             <span className="text-xs font-mono text-amber-300 font-bold">{burnStats.repairs.toLocaleString()} $FLORA</span>
           </div>
         </div>
@@ -122,15 +123,15 @@ export const TokenomicsView: React.FC = () => {
         {/* Sink 3: Patents */}
         <div className="hud-panel p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-purple-400 font-semibold">Sumidero 3</span>
+            <span className="text-xs font-mono text-purple-400 font-semibold">{t('Sumidero 3')}</span>
             <Flame className="w-4 h-4 text-purple-400" />
           </div>
-          <h3 className="text-sm font-bold text-white">Patentes Genómicas</h3>
+          <h3 className="text-sm font-bold text-white">{t('Patentes Genómicas')}</h3>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            Registrar cepas exclusivas como NFT on-chain en Solana requiere una tarifa de quema de 250 $FLORA no reembolsable.
+            {t('Registrar cepas exclusivas como NFT on-chain en Solana requiere una tarifa de quema de 250 $FLORA no reembolsable.')}
           </p>
           <div className="pt-2 border-t border-neutral-800 flex justify-between items-baseline">
-            <span className="text-[11px] text-neutral-500 font-mono">Total Quemado:</span>
+            <span className="text-[11px] text-neutral-500 font-mono">{t('Total Quemado:')}</span>
             <span className="text-xs font-mono text-purple-300 font-bold">{burnStats.patents.toLocaleString()} $FLORA</span>
           </div>
         </div>
@@ -138,15 +139,15 @@ export const TokenomicsView: React.FC = () => {
         {/* Sink 4: V2P Redemption */}
         <div className="hud-panel p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-cyan-400 font-semibold">Sumidero 4</span>
+            <span className="text-xs font-mono text-cyan-400 font-semibold">{t('Sumidero 4')}</span>
             <Flame className="w-4 h-4 text-cyan-400" />
           </div>
-          <h3 className="text-sm font-bold text-white">Canje de Bienes Físicos (V2P)</h3>
+          <h3 className="text-sm font-bold text-white">{t('Canje de Bienes Físicos (V2P)')}</h3>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            Cada canje por terpenos botánicos o ropa de cáñamo destruye tokens en proporción directa con el costo del bien físico.
+            {t('Cada canje por terpenos botánicos o ropa de cáñamo destruye tokens en proporción directa con el costo del bien físico.')}
           </p>
           <div className="pt-2 border-t border-neutral-800 flex justify-between items-baseline">
-            <span className="text-[11px] text-neutral-500 font-mono">Total Quemado:</span>
+            <span className="text-[11px] text-neutral-500 font-mono">{t('Total Quemado:')}</span>
             <span className="text-xs font-mono text-cyan-300 font-bold">{burnStats.v2p.toLocaleString()} $FLORA</span>
           </div>
         </div>
@@ -159,22 +160,22 @@ export const TokenomicsView: React.FC = () => {
             <Sliders className="w-5 h-5 text-emerald-400" />
             <div>
               <h3 className="text-base font-bold text-white font-mono uppercase">
-                Simulador Dinámico de Deflación Multiverso
+                {t('Simulador Dinámico de Deflación Multiverso')}
               </h3>
               <p className="text-xs text-neutral-400">
-                Ajusta las variables de adopción para modelar la contracción del suministro circulante a 12 meses.
+                {t('Ajusta las variables de adopción para modelar la contracción del suministro circulante a 12 meses.')}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-mono">
             <div>
-              <span className="text-neutral-500 block text-[10px]">QUEMA DIARIA ESTIMADA</span>
-              <span className="text-amber-400 font-bold">{dailyNetworkBurn.toLocaleString()} $FLORA / día</span>
+              <span className="text-neutral-500 block text-[10px]">{t('QUEMA DIARIA ESTIMADA')}</span>
+              <span className="text-amber-400 font-bold">{t('{v0} $FLORA / día', { v0: dailyNetworkBurn.toLocaleString() })}</span>
             </div>
             <div>
-              <span className="text-neutral-500 block text-[10px]">QUEMA ANUAL PROYECTADA</span>
-              <span className="text-emerald-400 font-bold">{annualNetworkBurn.toLocaleString()} $FLORA / año</span>
+              <span className="text-neutral-500 block text-[10px]">{t('QUEMA ANUAL PROYECTADA')}</span>
+              <span className="text-emerald-400 font-bold">{t('{v0} $FLORA / año', { v0: annualNetworkBurn.toLocaleString() })}</span>
             </div>
           </div>
         </div>
@@ -183,8 +184,8 @@ export const TokenomicsView: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="text-neutral-300 font-medium">Jugadores Activos Diarios (DAU):</span>
-              <span className="font-mono text-emerald-400 font-bold">{simulatedDau.toLocaleString()} jugadores</span>
+              <span className="text-neutral-300 font-medium">{t('Jugadores Activos Diarios (DAU):')}</span>
+              <span className="font-mono text-emerald-400 font-bold">{t('{v0} jugadores', { v0: simulatedDau.toLocaleString() })}</span>
             </div>
             <input
               type="range"
@@ -196,16 +197,16 @@ export const TokenomicsView: React.FC = () => {
               className="w-full accent-emerald-500 cursor-pointer h-2 bg-neutral-800 rounded-lg"
             />
             <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
-              <span>1,000 (Fase Alfa)</span>
-              <span>50,000 (Lanzamiento)</span>
-              <span>150,000+ (Expansión Global)</span>
+              <span>{t('1,000 (Fase Alfa)')}</span>
+              <span>{t('50,000 (Lanzamiento)')}</span>
+              <span>{t('150,000+ (Expansión Global)')}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="text-neutral-300 font-medium">Tasa de Quema Diaria por Jugador (Reparaciones + Aceleración):</span>
-              <span className="font-mono text-amber-400 font-bold">{simulatedWearBurnRate} $FLORA / usuario</span>
+              <span className="text-neutral-300 font-medium">{t('Tasa de Quema Diaria por Jugador (Reparaciones + Aceleración):')}</span>
+              <span className="font-mono text-amber-400 font-bold">{t('{simulatedWearBurnRate} $FLORA / usuario', { simulatedWearBurnRate })}</span>
             </div>
             <input
               type="range"
@@ -217,9 +218,9 @@ export const TokenomicsView: React.FC = () => {
               className="w-full accent-amber-500 cursor-pointer h-2 bg-neutral-800 rounded-lg"
             />
             <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
-              <span>5 $FLORA (Casual)</span>
-              <span>20 $FLORA (Estándar)</span>
-              <span>50 $FLORA (Cultivador Industrial)</span>
+              <span>{t('5 $FLORA (Casual)')}</span>
+              <span>{t('20 $FLORA (Estándar)')}</span>
+              <span>{t('50 $FLORA (Cultivador Industrial)')}</span>
             </div>
           </div>
         </div>
@@ -229,10 +230,10 @@ export const TokenomicsView: React.FC = () => {
           <div className="flex justify-between items-center text-xs">
             <span className="text-neutral-300 font-semibold font-mono flex items-center gap-2">
               <TrendingDown className="w-4 h-4 text-emerald-400" />
-              Curva de Contracción del Suministro Circulante (Mes 1 a Mes 12)
+              {t('Curva de Contracción del Suministro Circulante (Mes 1 a Mes 12)')}
             </span>
             <span className="text-[11px] font-mono text-neutral-500">
-              Suministro Inicial: 100,000,000 $FLORA
+              {t('Suministro Inicial: 100,000,000 $FLORA')}
             </span>
           </div>
 
@@ -286,8 +287,8 @@ export const TokenomicsView: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap justify-between text-xs font-mono text-neutral-400 pt-2 border-t border-neutral-900">
-            <span>Suministro Proyectado en Mes 12: <strong className="text-emerald-400 font-bold">{projectedSupply1Year.toLocaleString()} $FLORA</strong></span>
-            <span>Contracción de Suministro: <strong className="text-amber-400 font-bold">-{(100 - (projectedSupply1Year / INITIAL_MAX_SUPPLY) * 100).toFixed(2)}%</strong></span>
+            <span>{t('Suministro Proyectado en Mes 12:')}{' '}<strong className="text-emerald-400 font-bold">{projectedSupply1Year.toLocaleString()} $FLORA</strong></span>
+            <span>{t('Contracción de Suministro:')}{' '}<strong className="text-amber-400 font-bold">-{(100 - (projectedSupply1Year / INITIAL_MAX_SUPPLY) * 100).toFixed(2)}%</strong></span>
           </div>
         </div>
       </div>
@@ -298,12 +299,12 @@ export const TokenomicsView: React.FC = () => {
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-emerald-400" />
             <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-              Registro de Transacciones & Quemados en Solana (Devnet)
+              {t('Registro de Transacciones & Quemados en Solana (Devnet)')}
             </h3>
           </div>
           <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5" />
-            Anchor Smart Contracts
+            {t('Anchor Smart Contracts')}
           </span>
         </div>
 
@@ -320,13 +321,13 @@ export const TokenomicsView: React.FC = () => {
                       ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                       : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
                   }`}>
-                    {tx.type}
+                    {t(tx.type)}
                   </span>
                   <span className="text-neutral-400 truncate max-w-xs">{tx.memo}</span>
                 </div>
                 <div className="text-[10px] text-neutral-500 flex items-center gap-3">
-                  <span>Slot: #{tx.blockSlot}</span>
-                  <span className="truncate max-w-[200px]">Sig: {tx.signature}</span>
+                  <span>{t('Slot: #{blockSlot}', { blockSlot: tx.blockSlot })}</span>
+                  <span className="truncate max-w-[200px]">{t('Sig: {signature}', { signature: tx.signature })}</span>
                 </div>
               </div>
 
@@ -336,7 +337,7 @@ export const TokenomicsView: React.FC = () => {
                 }`}>
                   {tx.type.includes('BURN') ? `-${tx.amountFlora}` : `+${tx.amountFlora}`} $FLORA
                 </span>
-                <span className="text-[10px] text-neutral-500 block">Tarifa: ~0.000005 SOL</span>
+                <span className="text-[10px] text-neutral-500 block">{t('Tarifa: ~0.000005 SOL')}</span>
               </div>
             </div>
           ))}

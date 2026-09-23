@@ -1,4 +1,5 @@
 import React, { useId } from 'react';
+import { t as tr } from '../../i18n';
 
 /**
  * Ilustraciones animadas del juego (SVG puro, sin fotos): instalaciones de cultivo, productos V2P y arte del whitepaper.
@@ -67,7 +68,7 @@ const Tent: React.FC<{ p: string }> = ({ p }) => (
     <rect x="186" y="98" width="44" height="26" rx="4" fill="#020617" stroke="#334155" />
     <text x="208" y="109" textAnchor="middle" fontSize="8" fill="#34d399" fontFamily="monospace">24.2°C</text>
     <text x="208" y="119" textAnchor="middle" fontSize="8" fill="#38bdf8" fontFamily="monospace">RH 62%</text>
-    <text x="14" y="140" fontSize="7" fill="#64748b" fontFamily="monospace">CARPA 80×80</text>
+    <text x="14" y="140" fontSize="7" fill="#64748b" fontFamily="monospace">{tr('CARPA 80×80')}</text>
   </>
 );
 
@@ -102,7 +103,7 @@ const Greenhouse: React.FC<{ p: string }> = ({ p }) => (
     <g transform="translate(14 84)"><rect x="0" y="0" width="16" height="34" rx="6" fill="#334155" stroke="#94a3b8" /><rect x="5" y="-5" width="6" height="6" rx="1" fill="#94a3b8" /><text x="8" y="21" textAnchor="middle" fontSize="6.5" fill="#67e8f9" fontFamily="monospace">CO₂</text>{[0, 1, 2].map((i) => <circle key={i} className="fa-rise" cx={8 + i * 3 - 3} cy="-6" r="2" fill="none" stroke="#67e8f9" style={{ animationDelay: `${i * 0.9}s` }} />)}</g>
     {/* deshumidificador */}
     <g transform="translate(206 92)"><rect width="28" height="26" rx="4" fill="#1e293b" stroke="#64748b" /><circle cx="14" cy="10" r="6" fill="#0f172a" stroke="#38bdf8" /><g className="fa-spin"><path d="M14 10 m-4 0 h8 M14 6 v8" stroke="#38bdf8" strokeWidth="1.4" /></g>{[0, 1].map((i) => <path key={i} className="fa-fall" d={`M${9 + i * 10} 24 q2 3 0 5 q-2 -2 0 -5`} fill="#38bdf8" style={{ animationDelay: `${i * 0.7}s` }} />)}</g>
-    <text x="120" y="142" textAnchor="middle" fontSize="7.5" fill="#67e8f9" fontFamily="monospace" className="fa-pulse">CO₂ 1200 ppm · SOLAR</text>
+    <text x="120" y="142" textAnchor="middle" fontSize="7.5" fill="#67e8f9" fontFamily="monospace" className="fa-pulse">{tr('CO₂ 1200 ppm · SOLAR')}</text>
   </>
 );
 
@@ -138,14 +139,14 @@ const Hydro: React.FC<{ p: string }> = ({ p }) => (
     <rect x="22" y="112" width="196" height="20" rx="6" fill="#082f49" stroke="#38bdf8" strokeOpacity="0.6" />
     <rect x="26" y="120" width="188" height="9" rx="4" fill="#0ea5e9" opacity="0.5" />
     {[0, 1, 2, 3, 4, 5].map((i) => <circle key={i} className="fa-rise" cx={44 + i * 30} cy="124" r="2" fill="#e0f2fe" opacity="0.7" style={{ animationDelay: `${i * 0.55}s` }} />)}
-    <text x="120" y="145" textAnchor="middle" fontSize="7.5" fill="#7dd3fc" fontFamily="monospace">AEROPONÍA · UV · LED DINÁMICO</text>
+    <text x="120" y="145" textAnchor="middle" fontSize="7.5" fill="#7dd3fc" fontFamily="monospace">{tr('AEROPONÍA · UV · LED DINÁMICO')}</text>
   </>
 );
 
 export const FacilityArt: React.FC<{ kind: string; className?: string; slice?: boolean; label?: string }> = ({ kind, className, slice, label }) => {
   const p = uid(useId());
   return (
-    <svg viewBox="0 0 240 150" className={`fa-art ${className ?? ''}`} preserveAspectRatio={slice ? 'xMidYMid slice' : 'xMidYMid meet'} role="img" aria-label={label ?? 'Instalación de cultivo'}>
+    <svg viewBox="0 0 240 150" className={`fa-art ${className ?? ''}`} preserveAspectRatio={slice ? 'xMidYMid slice' : 'xMidYMid meet'} role="img" aria-label={label ?? tr('Instalación de cultivo')}>
       {kind === 'greenhouse_commercial' ? <Greenhouse p={p} /> : kind === 'lab_pharma_hydro' ? <Hydro p={p} /> : <Tent p={p} />}
     </svg>
   );
@@ -160,7 +161,7 @@ const Leaf: React.FC<{ s?: number }> = ({ s = 1 }) => (
 export const V2pArt: React.FC<{ id: string; className?: string }> = ({ id, className }) => {
   const p = uid(useId());
   return (
-    <svg viewBox="0 0 120 120" className={`fa-art ${className ?? ''}`} role="img" aria-label="Producto V2P">
+    <svg viewBox="0 0 120 120" className={`fa-art ${className ?? ''}`} role="img" aria-label={tr('Producto V2P')}>
       <defs>
         <radialGradient id={`${p}g`} cx="50%" cy="45%" r="60%"><stop offset="0" stopColor="#fbbf24" stopOpacity="0.3" /><stop offset="1" stopColor="#000" stopOpacity="0" /></radialGradient>
         <linearGradient id={`${p}amber`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#f59e0b" /><stop offset="1" stopColor="#92400e" /></linearGradient>
@@ -187,7 +188,7 @@ export const V2pArt: React.FC<{ id: string; className?: string }> = ({ id, class
           <text x="60" y="76" textAnchor="middle" fontSize="6" fontWeight="700" fill="#14532d">CBD</text>
           <path className="fa-fall" d="M66 24 q3 5 0 8 q-3 -3 0 -8" fill="#fbbf24" />
           <path className="fa-fall" d="M66 24 q3 5 0 8 q-3 -3 0 -8" fill="#fbbf24" style={{ animationDelay: '1s' }} />
-          <text x="60" y="114" textAnchor="middle" fontSize="7" fill="#86efac" fontFamily="monospace">1500 mg</text>
+          <text x="60" y="114" textAnchor="middle" fontSize="7" fill="#86efac" fontFamily="monospace">{tr('1500 mg')}</text>
         </g>
       ) : (
         <g>
@@ -195,7 +196,7 @@ export const V2pArt: React.FC<{ id: string; className?: string }> = ({ id, class
           <rect x="49" y="44" width="22" height="14" rx="3" fill="#0f172a" stroke="#94a3b8" />
           <path d="M60 44 V30 Q60 22 66 22" stroke="#e2e8f0" strokeWidth="5" fill="none" strokeLinecap="round" />
           <rect x="47" y="72" width="26" height="20" rx="3" fill="#fffbeb" opacity="0.92" />
-          <text x="60" y="80" textAnchor="middle" fontSize="5.4" fontWeight="700" fill="#78350f">TERPENOS</text>
+          <text x="60" y="80" textAnchor="middle" fontSize="5.4" fontWeight="700" fill="#78350f">{tr('TERPENOS')}</text>
           <text x="60" y="88" textAnchor="middle" fontSize="5" fill="#92400e">15 ml</text>
           {/* molécula */}
           <g transform="translate(96 40)" className="fa-bob"><polygon points="0,-9 8,-4.5 8,4.5 0,9 -8,4.5 -8,-4.5" fill="none" stroke="#fbbf24" strokeWidth="1.6" />{[[0, -9], [8, 4.5], [-8, 4.5]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="2.2" fill="#fbbf24" />)}</g>
@@ -214,7 +215,7 @@ export const WhitepaperHeroArt: React.FC<{ className?: string }> = ({ className 
   const nodes = [[90, 70], [230, 150], [380, 60], [520, 140], [660, 50], [800, 130], [940, 70], [1080, 150], [1220, 60], [300, 250], [610, 260], [900, 250], [1160, 270]];
   const links = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [1, 9], [3, 10], [5, 11], [7, 12], [9, 10], [10, 11], [11, 12], [2, 4], [6, 8]];
   return (
-    <svg viewBox="0 0 1400 320" className={`fa-art ${className ?? ''}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label="Red de Yield Bud Empire">
+    <svg viewBox="0 0 1400 320" className={`fa-art ${className ?? ''}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label={tr('Red de Yield Bud Empire')}>
       <defs><radialGradient id={`${p}n`} cx="50%" cy="50%" r="50%"><stop offset="0" stopColor="#34d399" stopOpacity="0.9" /><stop offset="1" stopColor="#34d399" stopOpacity="0" /></radialGradient></defs>
       {links.map(([a, b], i) => <line key={i} className="fa-flow" x1={nodes[a][0]} y1={nodes[a][1]} x2={nodes[b][0]} y2={nodes[b][1]} stroke="#34d399" strokeOpacity="0.4" strokeWidth="1.4" style={{ animationDuration: `${1.6 + (i % 4) * 0.5}s` }} />)}
       {nodes.map(([x, y], i) => <g key={i}><circle className="fa-pulse" cx={x} cy={y} r="26" fill={`url(#${p}n)`} style={{ animationDelay: `${i * 0.3}s` }} /><circle cx={x} cy={y} r="4.5" fill="#a7f3d0" /></g>)}

@@ -1,5 +1,6 @@
 import type { Strain, TerpeneProfile } from '../types';
 import type { MaterialId } from './forge';
+import { t as tr } from '../i18n/core';
 
 /**
  * Cría (breeding): pure trait-inheritance and seed-yield math, no React and no side effects — the caller (GameContext)
@@ -127,13 +128,13 @@ export interface BreedStock {
 
 /** can a chamber cross of `mother`/`father` start now? Says why not, in words a player understands. */
 export function canBreed(stock: BreedStock, motherId: string, fatherId: string, useReagent: boolean): BreedCheck {
-  if (!motherId || !fatherId || motherId === fatherId) return { ok: false, reason: 'parents', message: 'Elige una Madre y un Padre distintos para cruzar.' };
-  if (!stock.hasChamber) return { ok: false, reason: 'chamber', message: 'Necesitas la Cámara de cría (Grow Market → Licencias).' };
-  if (stock.tier < BREEDING_LIMITS.minTier) return { ok: false, reason: 'tier', message: `La cámara pide una instalación de nivel ${BREEDING_LIMITS.minTier} o más.` };
-  if (stock.jobs >= BREEDING_LIMITS.jobs) return { ok: false, reason: 'jobs', message: `Ya hay ${BREEDING_LIMITS.jobs} cruces en marcha en la cámara.` };
+  if (!motherId || !fatherId || motherId === fatherId) return { ok: false, reason: 'parents', message: tr('Elige una Madre y un Padre distintos para cruzar.') };
+  if (!stock.hasChamber) return { ok: false, reason: 'chamber', message: tr('Necesitas la Cámara de cría (Grow Market → Licencias).') };
+  if (stock.tier < BREEDING_LIMITS.minTier) return { ok: false, reason: 'tier', message: tr('La cámara pide una instalación de nivel {minTier} o más.', { minTier: BREEDING_LIMITS.minTier }) };
+  if (stock.jobs >= BREEDING_LIMITS.jobs) return { ok: false, reason: 'jobs', message: tr('Ya hay {jobs} cruces en marcha en la cámara.', { jobs: BREEDING_LIMITS.jobs }) };
   for (const [id, need] of Object.entries(breedingCost(useReagent))) {
     const have = stock.materials[id as MaterialId] ?? 0;
-    if (have < (need as number)) return { ok: false, reason: 'material', message: `Falta ${(need as number) - have} de ${id}.` };
+    if (have < (need as number)) return { ok: false, reason: 'material', message: tr('Falta {v0} de {id}.', { v0: (need as number) - have, id }) };
   }
   return { ok: true };
 }

@@ -4,6 +4,7 @@ import { FarmScene } from './planet/FarmScene';
 import { dayIndexOf, REGION_BY_ID, weatherOn } from '../sim/terroir';
 import { shortAddress } from '../utils/nft';
 import type { LandCardData } from '../utils/land';
+import { t } from '../i18n';
 
 const Meter: React.FC<{ label: string; value: number; color: string }> = ({ label, value, color }) => (
   <div className="flex items-center gap-1.5 text-[9.5px] font-mono">
@@ -42,25 +43,25 @@ export const LandCard: React.FC<{
       <Body type={onClick ? 'button' : undefined} onClick={onClick} className={`block w-full text-left ${onClick ? 'cursor-pointer' : ''}`} data-land-card={card.id}>
         <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5 text-[10px] font-mono uppercase tracking-wider">
           <span className="font-black" style={{ color: rc, textShadow: `0 0 10px ${rc}88` }}>◆ {label}</span>
-          <span className="text-neutral-400">Tierra NFT · {card.serial}</span>
+          <span className="text-neutral-400">{t('Tierra NFT · {serial}', { serial: card.serial })}</span>
         </div>
         <div className="relative mx-2.5 rounded-xl overflow-hidden border border-white/10" style={{ aspectRatio: '16 / 8' }}>
           <FarmScene regionId={card.region} color={card.color} lon={region.lon} nowMs={now} weather={weather} />
           <span className="absolute left-2 top-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-black/60 border border-white/15 text-white">{card.emoji} {card.regionName}</span>
-          <span className="absolute right-2 top-1.5 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-black/60 border" style={{ color: rc, borderColor: rc }}>nota {card.landRating}</span>
+          <span className="absolute right-2 top-1.5 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-black/60 border" style={{ color: rc, borderColor: rc }}>{t('nota {landRating}', { landRating: card.landRating })}</span>
           {badges && <span className="absolute left-2 bottom-1.5 flex gap-1">{badges}</span>}
         </div>
         <div className="px-3 pt-2 pb-2.5 space-y-1.5">
           <div className="flex items-baseline justify-between gap-2">
-            <h4 className="font-mono font-black text-white text-[15px] truncate">{card.name}</h4>
+            <h4 className="font-mono font-black text-white text-[15px] truncate">{t(card.name)}</h4>
             <span className="text-[10px] font-mono text-neutral-400 shrink-0">{card.edition}</span>
           </div>
-          <Meter label="Agua" value={card.ratings.water} color="linear-gradient(90deg,#0284c7,#7dd3fc)" />
-          <Meter label="Sol" value={card.ratings.sunlight} color="linear-gradient(90deg,#ca8a04,#fde047)" />
-          <Meter label="Suelo" value={card.ratings.soil} color="linear-gradient(90deg,#059669,#6ee7b7)" />
+          <Meter label={t('Agua')} value={card.ratings.water} color="linear-gradient(90deg,#0284c7,#7dd3fc)" />
+          <Meter label={t('Sol')} value={card.ratings.sunlight} color="linear-gradient(90deg,#ca8a04,#fde047)" />
+          <Meter label={t('Suelo')} value={card.ratings.soil} color="linear-gradient(90deg,#059669,#6ee7b7)" />
           <div className="flex items-center justify-between text-[9.5px] font-mono text-neutral-500 pt-0.5">
-            <span>{card.slots} plantas · {card.climate}</span>
-            <span title="Identificador simulado">SIM {shortAddress(card.mint, 3, 3)}</span>
+            <span>{t('{slots} plantas · {climate}', { slots: card.slots, climate: card.climate })}</span>
+            <span title={t('Identificador simulado')}>SIM {shortAddress(card.mint, 3, 3)}</span>
           </div>
         </div>
       </Body>

@@ -1,4 +1,5 @@
-/**
+
+import { t } from '../i18n/core';/**
  * Ronin Wallet (browser extension) speaks EIP-1193 through `window.ronin.provider`. We only ever ask it for the account and a
  * `personal_sign` of a message the server issued: no transactions, nothing that moves funds.
  */
@@ -17,15 +18,15 @@ const toHex = (s: string): string => '0x' + Array.from(new TextEncoder().encode(
 
 export async function connectRonin(): Promise<{ address: string; provider: Eip1193 }> {
   const provider = roninProvider();
-  if (!provider) throw new Error('No se encontró Ronin Wallet. Instala la extensión desde wallet.roninchain.com.');
+  if (!provider) throw new Error(t('No se encontró Ronin Wallet. Instala la extensión desde wallet.roninchain.com.'));
   try {
     const accts = (await provider.request({ method: 'eth_requestAccounts' })) as string[];
     const address = accts?.[0];
-    if (!address) throw new Error('Ronin Wallet no devolvió ninguna cuenta.');
+    if (!address) throw new Error(t('Ronin Wallet no devolvió ninguna cuenta.'));
     return { address, provider };
   } catch (e) {
     const err = e as { code?: number; message?: string };
-    throw new Error(err.code === 4001 ? 'Rechazaste la conexión en Ronin Wallet.' : err.message || 'No se pudo conectar Ronin Wallet.');
+    throw new Error(err.code === 4001 ? t('Rechazaste la conexión en Ronin Wallet.') : err.message || t('No se pudo conectar Ronin Wallet.'));
   }
 }
 
@@ -34,6 +35,6 @@ export async function signRonin(provider: Eip1193, address: string, message: str
   try { return (await provider.request({ method: 'personal_sign', params: [toHex(message), address] })) as string; }
   catch (e) {
     const err = e as { code?: number; message?: string };
-    throw new Error(err.code === 4001 ? 'Rechazaste la firma en Ronin Wallet.' : err.message || 'No se pudo firmar.');
+    throw new Error(err.code === 4001 ? t('Rechazaste la firma en Ronin Wallet.') : err.message || t('No se pudo firmar.'));
   }
 }

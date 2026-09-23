@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { SolanaNetwork } from '../types';
 import { SOLANA_NETWORKS, detectSolanaProviders } from '../utils/solana';
+import { t } from '../i18n';
 
 interface SolanaWalletModalProps {
   isOpen: boolean;
@@ -117,13 +118,13 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2 font-serif tracking-wide">
-                Conexión Solana Web3
+                {t('Conexión Solana Web3')}
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono text-white ${currentNetworkConfig.badgeColor}`}>
                   {currentNetworkConfig.badgeLabel}
                 </span>
               </h3>
               <p className="text-xs text-neutral-400">
-                Soporte para Red Oficial (Mainnet), Devnet, Testnet y cualquier wallet
+                {t('Soporte para Red Oficial (Mainnet), Devnet, Testnet y cualquier wallet')}
               </p>
             </div>
           </div>
@@ -140,10 +141,10 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
           <div className="flex items-center justify-between text-xs">
             <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5 text-emerald-400" />
-              Seleccionar Red Solana:
+              {t('Seleccionar Red Solana:')}
             </span>
             <span className="text-[10px] text-neutral-500 font-mono">
-              RPC: {currentNetworkConfig.name}
+              {t('RPC: {name}', { name: currentNetworkConfig.name })}
             </span>
           </div>
 
@@ -167,7 +168,7 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
                     <span className="truncate">{cfg.badgeLabel}</span>
                   </div>
                   <span className="text-[9px] opacity-80 font-mono">
-                    {cfg.isOfficial ? 'Oficial ($)' : 'Pruebas'}
+                    {cfg.isOfficial ? t('Oficial ($)') : t('Pruebas')}
                   </span>
                 </button>
               );
@@ -175,7 +176,7 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
           </div>
 
           <p className="text-[11px] text-neutral-400 px-1 italic">
-            {currentNetworkConfig.description}
+            {t(currentNetworkConfig.description)}
           </p>
         </div>
 
@@ -187,7 +188,7 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-[10px] uppercase font-mono text-neutral-500 flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  Billetera Conectada ({connectedWalletType})
+                  {t('Billetera Conectada ({connectedWalletType})', { connectedWalletType })}
                 </span>
                 <a
                   href={explorerUrl}
@@ -195,7 +196,7 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
                   rel="noreferrer"
                   className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-mono transition"
                 >
-                  <span>Explorer</span>
+                  <span>{t('Explorer')}</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
@@ -207,7 +208,7 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
                 <button
                   onClick={handleCopy}
                   className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition cursor-pointer shrink-0"
-                  title="Copiar clave pública"
+                  title={t('Copiar clave pública')}
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
@@ -218,12 +219,12 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-neutral-500 uppercase">Saldo SOL ({currentNetworkConfig.badgeLabel})</span>
+                  <span className="text-[10px] font-mono text-neutral-500 uppercase">{t('Saldo SOL ({badgeLabel})', { badgeLabel: currentNetworkConfig.badgeLabel })}</span>
                   <button
                     onClick={handleRefreshBalance}
                     disabled={isRefreshing}
                     className="text-neutral-400 hover:text-white p-0.5 cursor-pointer disabled:opacity-50"
-                    title="Actualizar saldo desde RPC"
+                    title={t('Actualizar saldo desde RPC')}
                   >
                     <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-purple-400' : ''}`} />
                   </button>
@@ -231,15 +232,15 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
                 <span className="text-lg font-bold text-purple-400 font-mono block">
                   {solBalance.toFixed(3)} SOL
                 </span>
-                <span className="text-[10px] text-neutral-500 font-mono">Gas de red para firmas</span>
+                <span className="text-[10px] text-neutral-500 font-mono">{t('Gas de red para firmas')}</span>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-1">
-                <span className="text-[10px] font-mono text-neutral-500 uppercase block">Saldo $FLORA</span>
+                <span className="text-[10px] font-mono text-neutral-500 uppercase block">{t('Saldo $FLORA')}</span>
                 <span className="text-lg font-bold text-emerald-400 font-mono block">
                   {floraBalance.toLocaleString()} $FLORA
                 </span>
-                <span className="text-[10px] text-neutral-500 font-mono">Token Botánico SPL</span>
+                <span className="text-[10px] text-neutral-500 font-mono">{t('Token Botánico SPL')}</span>
               </div>
             </div>
 
@@ -249,10 +250,10 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
                 <div className="space-y-0.5">
                   <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5" />
-                    Faucet de Fondos {currentNetworkConfig.badgeLabel}
+                    {t('Faucet de Fondos {badgeLabel}', { badgeLabel: currentNetworkConfig.badgeLabel })}
                   </span>
                   <p className="text-[11px] text-neutral-400">
-                    Solicita 1.0 SOL y +500 $FLORA de prueba para acelerar cultivos y patentar genéticas.
+                    {t('Solicita 1.0 SOL y +500 $FLORA de prueba para acelerar cultivos y patentar genéticas.')}
                   </p>
                 </div>
 
@@ -262,14 +263,14 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
                   className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow disabled:opacity-50"
                 >
                   <Sparkles className={`w-3.5 h-3.5 ${isAirdropping ? 'animate-spin' : ''}`} />
-                  <span>{isAirdropping ? 'Solicitando...' : '+1 SOL & +500 FLORA'}</span>
+                  <span>{isAirdropping ? t('Solicitando...') : t('+1 SOL & +500 FLORA')}</span>
                 </button>
               </div>
             ) : (
               <div className="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-500/30 flex items-center gap-3">
                 <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
                 <p className="text-[11px] text-amber-200">
-                  Estás en <strong>Solana Mainnet Oficial</strong>. Tus transacciones e identificadores interactúan con la red principal.
+                  {t('Estás en')}{' '}<strong>{t('Solana Mainnet Oficial')}</strong>{t('. Tus transacciones e identificadores interactúan con la red principal.')}
                 </p>
               </div>
             )}
@@ -283,7 +284,7 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
                 className="py-2.5 px-3 rounded-xl bg-neutral-950 hover:bg-neutral-850 border border-neutral-800 hover:border-neutral-700 text-neutral-200 text-xs font-medium transition cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-                <span>{isSigning ? 'Firmando...' : 'Firmar Mensaje Auth'}</span>
+                <span>{isSigning ? t('Firmando...') : t('Firmar Mensaje Auth')}</span>
               </button>
 
               <button
@@ -292,7 +293,7 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
                 className="py-2.5 px-3 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-medium transition cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Wallet className="w-3.5 h-3.5 text-purple-400" />
-                <span>Ingresar con esta Wallet</span>
+                <span>{t('Ingresar con esta Wallet')}</span>
               </button>
             </div>
 
@@ -302,20 +303,20 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase font-mono text-amber-400 flex items-center gap-1">
                     <Key className="w-3 h-3" />
-                    Clave Secreta Ed25519 (Billetera de Laboratorio)
+                    {t('Clave Secreta Ed25519 (Billetera de Laboratorio)')}
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowSecretKey(!showSecretKey)}
                     className="text-[10px] text-neutral-400 hover:text-white underline cursor-pointer"
                   >
-                    {showSecretKey ? 'Ocultar' : 'Ver Clave Privada'}
+                    {showSecretKey ? t('Ocultar') : t('Ver Clave Privada')}
                   </button>
                 </div>
 
                 {showSecretKey && (
                   <div className="p-2 bg-neutral-900 rounded-lg font-mono text-[10px] text-amber-300 break-all select-all">
-                    {generatedSecretKey || 'Keypair cargada en memoria segura de sesión.'}
+                    {generatedSecretKey || t('Keypair cargada en memoria segura de sesión.')}
                   </div>
                 )}
               </div>
@@ -325,14 +326,14 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
             <div className="pt-2 flex justify-between items-center text-xs font-mono border-t border-neutral-800">
               <span className="text-neutral-500 flex items-center gap-1.5">
                 <span className={`w-2 h-2 rounded-full ${currentNetworkConfig.badgeColor}`}></span>
-                Solana {currentNetworkConfig.badgeLabel} Activo
+                {t('Solana {badgeLabel} Activo', { badgeLabel: currentNetworkConfig.badgeLabel })}
               </span>
               <button
                 onClick={disconnectWallet}
                 className="text-red-400 hover:text-red-300 flex items-center gap-1 cursor-pointer transition"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>Desconectar</span>
+                <span>{t('Desconectar')}</span>
               </button>
             </div>
           </div>
@@ -340,7 +341,7 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
           /* DISCONNECTED STATE: SHOW WALLET PROVIDERS */
           <div className="space-y-4">
             <p className="text-xs text-neutral-400">
-              Conecta tu billetera Solana preferida (Phantom, Solflare, Backpack o cualquier extensión compatible) o genera una billetera virtual instantánea para interactuar con la red.
+              {t('Conecta tu billetera Solana preferida (Phantom, Solflare, Backpack o cualquier extensión compatible) o genera una billetera virtual instantánea para interactuar con la red.')}
             </p>
 
             <div className="space-y-2">
@@ -358,16 +359,16 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
                       <div>
                         <div className="flex items-center gap-2">
                           <h4 className="text-xs font-bold text-white group-hover:text-emerald-300 transition">
-                            {p.name}
+                            {t(p.name)}
                           </h4>
                           {p.isDetected && p.id !== 'virtual' && (
                             <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                              Detectada
+                              {t('Detectada')}
                             </span>
                           )}
                         </div>
                         <p className="text-[11px] text-neutral-400 leading-tight">
-                          {p.description}
+                          {t(p.description)}
                         </p>
                       </div>
                     </div>
@@ -379,7 +380,7 @@ export const SolanaWalletModal: React.FC<SolanaWalletModalProps> = ({
             </div>
 
             <div className="pt-2 text-center text-neutral-500 text-[11px] font-mono">
-              La conexión es no-custodial. Las claves privadas nunca salen de tu dispositivo o extensión.
+              {t('La conexión es no-custodial. Las claves privadas nunca salen de tu dispositivo o extensión.')}
             </div>
           </div>
         )}

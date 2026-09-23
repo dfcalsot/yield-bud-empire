@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { SeedBankItem } from '../types';
 import { HudPanel, NeonButton, StatBar } from './game/GameUI';
 import { ColdChamber, ColdThermometer, Seed, Trichome } from './icons/CannabisIcons';
+import { t as tr, k, localize } from '../i18n';
 
 /* ───────────────────────────── helpers ───────────────────────────── */
 
@@ -186,7 +187,7 @@ const Vial: React.FC<VialProps> = ({ item, owned, position, selected, onSelect }
   const seedCount = Math.min(owned, 14);
 
   const label = useMemo(
-    () => makeLabelTexture(item.name, owned > 0 ? `x${owned}` : 'vacío', tint),
+    () => makeLabelTexture(item.name, owned > 0 ? `x${owned}` : tr('vacío'), tint),
     [item.name, owned, tint],
   );
   useEffect(() => () => label.dispose(), [label]);
@@ -611,11 +612,11 @@ const Thermostat: React.FC<{ temp: number; ideal: boolean }> = ({ temp, ideal })
 
 /* ───────────────────────────── main component ───────────────────────────── */
 
-const PRESETS = [
-  { label: 'Ambiente', temp: 22 },
-  { label: 'Refrigerador ideal', temp: 5 },
-  { label: 'Congelador', temp: -18 },
-];
+const PRESETS = localize([
+  { label: k('Ambiente'), temp: 22 },
+  { label: k('Refrigerador ideal'), temp: 5 },
+  { label: k('Congelador'), temp: -18 },
+], ['label']);
 
 interface SeedVaultProps {
   seeds: SeedBankItem[];
@@ -651,14 +652,14 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
   const isLongIdeal = setpoint <= -15 && setpoint >= -22;
   const ideal = isShortIdeal || isLongIdeal;
   const verdict = isShortIdeal
-    ? { text: 'Zona ideal: 4–8 °C, 20–30 % HR', tone: 'text-emerald-300' }
+    ? { text: tr('Zona ideal: 4–8 °C, 20–30 % HR'), tone: 'text-emerald-300' }
     : isLongIdeal
-    ? { text: 'Ideal a largo plazo: −18 °C sellado con sílica', tone: 'text-cyan-300' }
+    ? { text: tr('Ideal a largo plazo: −18 °C sellado con sílica'), tone: 'text-cyan-300' }
     : setpoint > 15
-    ? { text: 'Demasiado cálido: la viabilidad cae rápido', tone: 'text-orange-300' }
+    ? { text: tr('Demasiado cálido: la viabilidad cae rápido'), tone: 'text-orange-300' }
     : setpoint < -22 || (setpoint < 4 && setpoint > -15)
-    ? { text: 'Zona intermedia: evita ciclos de descongelado', tone: 'text-amber-300' }
-    : { text: 'Aceptable, pero no óptimo', tone: 'text-amber-300' };
+    ? { text: tr('Zona intermedia: evita ciclos de descongelado'), tone: 'text-amber-300' }
+    : { text: tr('Aceptable, pero no óptimo'), tone: 'text-amber-300' };
 
   // Germination playback
   const germ = useRef(0);
@@ -705,20 +706,20 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
   const lastPointer = useRef<{ x: number; y: number } | null>(null);
 
   const stageLabel =
-    germPct === 0 ? 'Latente (dormancia)'
-    : germPct < 0.15 ? 'Imbibición'
-    : germPct < 0.6 ? 'Radícula emerge'
-    : germPct < 1 ? 'Cotiledones abren'
-    : 'Plántula lista';
+    germPct === 0 ? tr('Latente (dormancia)')
+    : germPct < 0.15 ? tr('Imbibición')
+    : germPct < 0.6 ? tr('Radícula emerge')
+    : germPct < 1 ? tr('Cotiledones abren')
+    : tr('Plántula lista');
 
   return (
     <div ref={rootRef} className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
       {/* ── 3D cold chamber ── */}
       <HudPanel
-        title={<><ColdChamber className="w-4 h-4 text-cyan-300" /> Cámara fría 01 · Bóveda genética</>}
+        title={<><ColdChamber className="w-4 h-4 text-cyan-300" />{' '}{tr('Cámara fría 01 · Bóveda genética')}</>}
         accessory={
           <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${ideal ? 'border-emerald-400/50 text-emerald-300 bg-emerald-400/10' : 'border-amber-400/40 text-amber-300 bg-amber-400/10'}`}>
-            {ideal ? '● TEMPERATURA IDEAL' : '● AJUSTAR TEMPERATURA'}
+            {ideal ? tr('● TEMPERATURA IDEAL') : tr('● AJUSTAR TEMPERATURA')}
           </span>
         }
       >
@@ -735,20 +736,20 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
           </Canvas>
           <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-cyan-200/80">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse" />
-            {shownTemp.toFixed(1)} °C · 25 % HR · sílica activa
+            {tr('{v0} °C · 25 % HR · sílica activa', { v0: shownTemp.toFixed(1) })}
           </div>
           <div className="pointer-events-none absolute left-3 bottom-3 hidden sm:block text-[10px] font-mono text-neutral-400">
-            Clic en un frasco para inspeccionar · mueve el mouse para mirar dentro
+            {tr('Clic en un frasco para inspeccionar · mueve el mouse para mirar dentro')}
           </div>
         </div>
       </HudPanel>
 
       {/* ── side column ── */}
       <div className="space-y-5 min-w-0">
-        <HudPanel title={<><ColdThermometer className="w-4 h-4 text-cyan-300" /> Termostato de cámara</>}>
+        <HudPanel title={<><ColdThermometer className="w-4 h-4 text-cyan-300" />{' '}{tr('Termostato de cámara')}</>}>
           <div className="px-4 pb-4 space-y-3">
             <Thermostat temp={shownTemp} ideal={ideal} />
-            <p className={`text-center text-xs font-semibold ${verdict.tone}`}>{verdict.text}</p>
+            <p className={`text-center text-xs font-semibold ${verdict.tone}`}>{tr(verdict.text)}</p>
 
             <input
               type="range"
@@ -758,12 +759,12 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
               value={setpoint}
               onChange={(e) => setSetpoint(Number(e.target.value))}
               className="w-full accent-emerald-400"
-              aria-label="Temperatura objetivo de la cámara"
+              aria-label={tr('Temperatura objetivo de la cámara')}
             />
             <div className="flex flex-wrap gap-2 justify-center">
               {PRESETS.map((p) => (
                 <NeonButton key={p.label} tone={p.temp === setpoint ? 'emerald' : 'cyan'} onClick={() => setSetpoint(p.temp)} className="!py-1 !px-2.5 !text-[10px]">
-                  {p.label} {p.temp}°
+                  {tr(p.label)} {p.temp}°
                 </NeonButton>
               ))}
             </div>
@@ -774,7 +775,7 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
                 return (
                   <StatBar
                     key={y}
-                    label={`Viabilidad a ${y} ${y === 1 ? 'año' : 'años'}`}
+                    label={tr('Viabilidad a {y} {v1}', { y, v1: y === 1 ? tr('año') : tr('años') })}
                     valueLabel={`${v.toFixed(0)}%`}
                     value={v}
                     color={v > 80 ? '#34d399' : v > 40 ? '#fbbf24' : '#f87171'}
@@ -782,13 +783,13 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
                 );
               })}
               <p className="text-[10px] text-neutral-500 leading-snug">
-                Modelo educativo: cada ~6 °C menos duplica la vida útil de la semilla. Guarda en frasco de vidrio hermético con sílica gel y a oscuras.
+                {tr('Modelo educativo: cada ~6 °C menos duplica la vida útil de la semilla. Guarda en frasco de vidrio hermético con sílica gel y a oscuras.')}
               </p>
             </div>
           </div>
         </HudPanel>
 
-        <HudPanel title={<><Seed className="w-4 h-4 text-emerald-300" /> Inspector de semilla</>}>
+        <HudPanel title={<><Seed className="w-4 h-4 text-emerald-300" />{' '}{tr('Inspector de semilla')}</>}>
           <div className="px-4 pb-4 space-y-3">
             {selected ? (
               <>
@@ -820,23 +821,23 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
                     {stageLabel}
                   </div>
                   <div className="pointer-events-none absolute right-3 bottom-2 text-[10px] font-mono text-neutral-400">
-                    arrastra para girar
+                    {tr('arrastra para girar')}
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-baseline justify-between gap-2">
-                    <h4 className="font-serif font-bold text-white text-base truncate">{selected.name}</h4>
-                    <span className="text-[10px] font-mono text-neutral-400 shrink-0">{selected.seedType}</span>
+                    <h4 className="font-serif font-bold text-white text-base truncate">{tr(selected.name)}</h4>
+                    <span className="text-[10px] font-mono text-neutral-400 shrink-0">{tr(selected.seedType)}</span>
                   </div>
-                  <div className="text-[11px] font-mono text-neutral-500 truncate">{selected.lineage}</div>
+                  <div className="text-[11px] font-mono text-neutral-500 truncate">{tr(selected.lineage)}</div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-center">
                   {[
                     { k: 'THC', v: `${selected.thcPercentage}%`, c: 'text-emerald-300' },
                     { k: 'CBD', v: `${selected.cbdPercentage}%`, c: 'text-cyan-300' },
-                    { k: 'En bóveda', v: `${owned}`, c: 'text-amber-300' },
+                    { k: tr('En bóveda'), v: `${owned}`, c: 'text-amber-300' },
                   ].map((s) => (
                     <div key={s.k} className="rounded-lg bg-neutral-950/70 border border-neutral-800 py-1.5">
                       <div className="text-[9px] uppercase tracking-wider text-neutral-500">{s.k}</div>
@@ -855,18 +856,18 @@ export const SeedVault: React.FC<SeedVaultProps> = ({ seeds, inventory, onPlant 
                     }}
                   >
                     <Trichome className="w-4 h-4" />
-                    {playing ? 'Pausar' : germPct >= 1 ? 'Reiniciar' : germPct > 0 ? 'Continuar' : 'Ver germinación'}
+                    {playing ? tr('Pausar') : germPct >= 1 ? tr('Reiniciar') : germPct > 0 ? tr('Continuar') : tr('Ver germinación')}
                   </NeonButton>
                   {onPlant && (
                     <NeonButton tone="amber" disabled={owned <= 0} onClick={() => onPlant(selected.id)}>
                       <Seed className="w-4 h-4" />
-                      Sembrar
+                      {tr('Sembrar')}
                     </NeonButton>
                   )}
                 </div>
               </>
             ) : (
-              <p className="text-xs text-neutral-500">No hay genéticas en la bóveda.</p>
+              <p className="text-xs text-neutral-500">{tr('No hay genéticas en la bóveda.')}</p>
             )}
           </div>
         </HudPanel>

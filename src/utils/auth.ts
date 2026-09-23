@@ -1,47 +1,48 @@
 import { UserProfile, UserAccountData, PlantInGrow, Strain } from '../types';
+import { k } from '../i18n/core';
 
 export const DEFAULT_DEMO_USERS: UserProfile[] = [
   {
     id: 'usr-satoshi',
     username: 'satoshi_grower',
     email: 'satoshi@chronoflora.sol',
-    displayName: 'Satoshi Grower',
+    displayName: k('Satoshi Grower'),
     avatar: '👨‍🌾',
     role: 'Master Grower',
     walletAddress: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
     preferredNetwork: 'devnet',
-    bio: 'Pionero de la botánica descentralizada. Especialista en fenocaza de tricomas glandulares en Solana.',
+    bio: k('Pionero de la botánica descentralizada. Especialista en fenocaza de tricomas glandulares en Solana.'),
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 45,
     experienceLevel: 14,
-    facilityName: 'Satoshi Genetic Sanctuary'
+    facilityName: k('Satoshi Genetic Sanctuary')
   },
   {
     id: 'usr-elena',
     username: 'elena_botanist',
     email: 'elena.rosin@chronoflora.sol',
-    displayName: 'Dra. Elena Ramos',
+    displayName: k('Dra. Elena Ramos'),
     avatar: '👩‍🔬',
     role: 'Genetista Comercial',
     walletAddress: 'GSo1anaBioLab99ZpQo24hRtMvWzKpN5e8yUcTa492Xw1',
     preferredNetwork: 'mainnet-beta',
-    bio: 'Doctora en fitoquímica cannábica y extracción de colofonia viva sin solventes (Solventless Rosin).',
+    bio: k('Doctora en fitoquímica cannábica y extracción de colofonia viva sin solventes (Solventless Rosin).'),
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 20,
     experienceLevel: 9,
-    facilityName: 'Laboratorio Fitoquímico Ramos'
+    facilityName: k('Laboratorio Fitoquímico Ramos')
   },
   {
     id: 'usr-novice',
     username: 'novato_verde',
     email: 'aprendiz@chronoflora.sol',
-    displayName: 'Carlos Aprendiz',
+    displayName: k('Carlos Aprendiz'),
     avatar: '🌱',
     role: 'Principiante Botánico',
     walletAddress: '9NoviceSproutKeyDevnet7718293746251624890123',
     preferredNetwork: 'testnet',
-    bio: 'Comenzando mi primer ciclo de cultivo hidropónico guiado por las tablas de nutrición oficiales.',
+    bio: k('Comenzando mi primer ciclo de cultivo hidropónico guiado por las tablas de nutrición oficiales.'),
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2,
     experienceLevel: 2,
-    facilityName: 'Carpa Casera 80x80'
+    facilityName: k('Carpa Casera 80x80')
   }
 ];
 

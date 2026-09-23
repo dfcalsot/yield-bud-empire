@@ -8,6 +8,7 @@ import { formatDuration, isMale, isThirsty, maleCount, PEST_INFO, sexRevealed, S
 import { dayIndexOf, PLOT_SIZE, REGION_BY_ID, siteConditions, terroirOf, weatherOn } from '../../sim/terroir';
 import type { OwnedPlot, PlantInGrow } from '../../types';
 import type { Mood } from '../npc/Npc';
+import { t as tr, k, localize } from '../../i18n';
 
 /* ───────────────────────── one plant of the field ───────────────────────── */
 
@@ -16,7 +17,7 @@ const STAGE_COLOR: Record<string, string> = { seed: '#a16207', seedling: '#84cc1
 export const PlantTile: React.FC<{ plant?: PlantInGrow; selected: boolean; index: number; onClick: () => void }> = ({ plant, selected, index, onClick }) => {
   if (!plant) {
     return (
-      <button onClick={onClick} className="pl-tile pl-tile--empty" aria-label={`Hueco ${index + 1} vacío`}>
+      <button onClick={onClick} className="pl-tile pl-tile--empty" aria-label={tr('Hueco {v0} vacío', { v0: index + 1 })}>
         <span className="pl-mound" />
       </button>
     );
@@ -27,7 +28,7 @@ export const PlantTile: React.FC<{ plant?: PlantInGrow; selected: boolean; index
   const c = plant.strain.colorTheme || STAGE_COLOR[plant.stage];
   const thirsty = isThirsty(plant);
   return (
-    <button onClick={onClick} className={`pl-tile ${selected ? 'is-sel' : ''} ${plant.stage === 'ready_harvest' ? 'is-ready' : ''}`} aria-label={`Planta ${index + 1}: ${plant.strain.name}, ${Math.round(plant.progressPercent)} %`}>
+    <button onClick={onClick} className={`pl-tile ${selected ? 'is-sel' : ''} ${plant.stage === 'ready_harvest' ? 'is-ready' : ''}`} aria-label={tr('Planta {v0}: {name}, {v2} %', { v0: index + 1, name: plant.strain.name, v2: Math.round(plant.progressPercent) })}>
       <svg viewBox="0 0 40 40" className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden>
         <ellipse cx="20" cy="36" rx="9" ry="2.6" fill="#000" opacity=".3" />
         <g className="pl-sway" style={{ animationDelay: `${-(index % 9) * 0.37}s`, transformOrigin: '20px 36px' }}>
@@ -55,24 +56,24 @@ export const PlantTile: React.FC<{ plant?: PlantInGrow; selected: boolean; index
           </g>
         </g>
       </svg>
-      {plant.pest && <span className="pl-badge pl-badge--pest" title={PEST_INFO[plant.pest.kind].label}>{PEST_INFO[plant.pest.kind].emoji}</span>}
-      {!plant.pest && thirsty && <span className="pl-badge pl-badge--thirst" title="Necesita agua">💧</span>}
-      {isMale(plant) && sexRevealed(plant) && <span className="pl-badge pl-badge--male" title="Macho: quítalo antes de la floración">♂</span>}
-      {plant.pollinated && <span className="pl-badge pl-badge--bee" title="Polinizada: menos flor, dará semillas">🐝</span>}
+      {plant.pest && <span className="pl-badge pl-badge--pest" title={tr(PEST_INFO[plant.pest.kind].label)}>{PEST_INFO[plant.pest.kind].emoji}</span>}
+      {!plant.pest && thirsty && <span className="pl-badge pl-badge--thirst" title={tr('Necesita agua')}>💧</span>}
+      {isMale(plant) && sexRevealed(plant) && <span className="pl-badge pl-badge--male" title={tr('Macho: quítalo antes de la floración')}>♂</span>}
+      {plant.pollinated && <span className="pl-badge pl-badge--bee" title={tr('Polinizada: menos flor, dará semillas')}>🐝</span>}
     </button>
   );
 };
 
 /* ───────────────────────── the plot ───────────────────────── */
 
-const WEATHER_TIP: Record<string, string> = {
-  sunny: 'Buen día de sol: crecen rápido pero el sustrato se seca.',
-  cloudy: 'Nublado: llega menos luz, crecen más despacio.',
-  rain: 'Llueve: ahorras riego, pero la humedad favorece el moho.',
-  storm: '¡Tormenta! Las plantas sufren daño mientras dure.',
-  heat: 'Ola de calor: riega más y vigila los ácaros.',
-  cold: 'Frente frío: casi no crecen hasta que suba la temperatura.',
-};
+const WEATHER_TIP: Record<string, string> = localize({
+  sunny: k('Buen día de sol: crecen rápido pero el sustrato se seca.'),
+  cloudy: k('Nublado: llega menos luz, crecen más despacio.'),
+  rain: k('Llueve: ahorras riego, pero la humedad favorece el moho.'),
+  storm: k('¡Tormenta! Las plantas sufren daño mientras dure.'),
+  heat: k('Ola de calor: riega más y vigila los ácaros.'),
+  cold: k('Frente frío: casi no crecen hasta que suba la temperatura.'),
+}, ['sunny', 'cloudy', 'rain', 'storm', 'heat', 'cold']);
 
 export const PlotScreen: React.FC<{
   plot: OwnedPlot;
@@ -107,15 +108,15 @@ export const PlotScreen: React.FC<{
     <div className="space-y-4">
       {/* header */}
       <div className="flex flex-wrap items-center gap-3">
-        <button onClick={onBack} className="care-btn"><ArrowLeft className="w-3.5 h-3.5" /> Planeta</button>
+        <button onClick={onBack} className="care-btn"><ArrowLeft className="w-3.5 h-3.5" />{' '}{tr('Planeta')}</button>
         <div className="min-w-0">
-          <h2 className="font-serif text-xl font-black text-white leading-tight">{region.emoji} {plot.name} <span className="text-sm font-mono font-normal text-neutral-400">· {region.name} · {region.climate}</span></h2>
+          <h2 className="font-serif text-xl font-black text-white leading-tight">{region.emoji} {tr(plot.name)} <span className="text-sm font-mono font-normal text-neutral-400">· {tr(region.name)} · {region.climate}</span></h2>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10.5px] font-mono text-neutral-400 mt-0.5">
-            <span>Nota <b className="text-amber-300">{plot.landRating}</b>/10</span>
-            <span>💧 agua <b className="text-sky-300">{plot.ratings.water}</b></span>
-            <span>☀️ sol <b className="text-yellow-300">{plot.ratings.sunlight}</b></span>
-            <span>🌱 suelo <b className="text-emerald-300">{plot.ratings.soil}</b></span>
-            <span>{growing}/{PLOT_SIZE} plantas</span>
+            <span>{tr('Nota')}{' '}<b className="text-amber-300">{plot.landRating}</b>/10</span>
+            <span>{tr('💧 agua')}{' '}<b className="text-sky-300">{plot.ratings.water}</b></span>
+            <span>{tr('☀️ sol')}{' '}<b className="text-yellow-300">{plot.ratings.sunlight}</b></span>
+            <span>{tr('🌱 suelo')}{' '}<b className="text-emerald-300">{plot.ratings.soil}</b></span>
+            <span>{tr('{growing}/{PLOT_SIZE} plantas', { growing, PLOT_SIZE })}</span>
           </div>
         </div>
       </div>
@@ -133,25 +134,25 @@ export const PlotScreen: React.FC<{
             {w.kind === 'cold' && <div className="pl-cold" />}
             <div className="relative z-[1] grid grid-cols-6 gap-1.5 sm:gap-2">
               {Array.from({ length: PLOT_SIZE }, (_, i) => (
-                <PlantTile key={i} index={i} plant={bySlot.get(i)} selected={sel === i} onClick={() => { setSel(i); const p = bySlot.get(i); if (!p) { setPlanting(true); onSpeak('¡Hueco libre! Elige qué sembrar: la landrace de esta región rinde el doble.'); } else { setPlanting(false); } }} />
+                <PlantTile key={i} index={i} plant={bySlot.get(i)} selected={sel === i} onClick={() => { setSel(i); const p = bySlot.get(i); if (!p) { setPlanting(true); onSpeak(tr('¡Hueco libre! Elige qué sembrar: la landrace de esta región rinde el doble.')); } else { setPlanting(false); } }} />
               ))}
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button className="care-btn" onClick={() => setPlanting((v) => !v)}><Sprout className="w-3.5 h-3.5" /> Sembrar</button>
-            <button className="care-btn" onClick={() => act(() => { waterPlot(plot.id); setShower((k) => k + 1); }, thirsty ? '¡A regar se ha dicho!' : 'Todas tienen agua de sobra, patrón.', thirsty ? 'happy' : 'idle')}><Droplets className="w-3.5 h-3.5" /> Regar sedientas{thirsty ? ` (${thirsty})` : ''}</button>
-            <button className="care-btn" onClick={() => act(() => feedPlot(plot.id), 'Un buen abono y a crecer.')}><FlaskConical className="w-3.5 h-3.5" /> Abonar</button>
-            <button className={`care-btn ${sick ? 'care-btn--hot' : ''}`} disabled={sick === 0} onClick={() => act(() => treatPests('all', plot.id), 'Plaga controlada. ¡Bicho fuera!')}><Bug className="w-3.5 h-3.5" /> Tratar plagas{sick ? ` (${sick})` : ''}</button>
-            {males > 0 && <button className="care-btn care-btn--male" onClick={() => act(() => removeMales(plot.id), '¡Fuera los machos! Así no polinizan a las hembras.')}>♂ Quitar machos ({males})</button>}
-            <button className={`care-btn ${ready ? 'care-btn--gold' : ''}`} disabled={ready === 0} onClick={() => act(() => harvestPlot(plot.id), '¡Qué cosecha, compadre! Mira esas flores.')}><Scissors className="w-3.5 h-3.5" /> Cosechar{ready ? ` (${ready})` : ''}</button>
+            <button className="care-btn" onClick={() => setPlanting((v) => !v)}><Sprout className="w-3.5 h-3.5" />{' '}{tr('Sembrar')}</button>
+            <button className="care-btn" onClick={() => act(() => { waterPlot(plot.id); setShower((k) => k + 1); }, thirsty ? tr('¡A regar se ha dicho!') : tr('Todas tienen agua de sobra, patrón.'), thirsty ? 'happy' : 'idle')}><Droplets className="w-3.5 h-3.5" />{' '}{tr('Regar sedientas{v0}', { v0: thirsty ? ` (${thirsty})` : '' })}</button>
+            <button className="care-btn" onClick={() => act(() => feedPlot(plot.id), tr('Un buen abono y a crecer.'))}><FlaskConical className="w-3.5 h-3.5" />{' '}{tr('Abonar')}</button>
+            <button className={`care-btn ${sick ? 'care-btn--hot' : ''}`} disabled={sick === 0} onClick={() => act(() => treatPests('all', plot.id), tr('Plaga controlada. ¡Bicho fuera!'))}><Bug className="w-3.5 h-3.5" />{' '}{tr('Tratar plagas{v0}', { v0: sick ? ` (${sick})` : '' })}</button>
+            {males > 0 && <button className="care-btn care-btn--male" onClick={() => act(() => removeMales(plot.id), tr('¡Fuera los machos! Así no polinizan a las hembras.'))}>{tr('♂ Quitar machos ({males})', { males })}</button>}
+            <button className={`care-btn ${ready ? 'care-btn--gold' : ''}`} disabled={ready === 0} onClick={() => act(() => harvestPlot(plot.id), tr('¡Qué cosecha, compadre! Mira esas flores.'))}><Scissors className="w-3.5 h-3.5" />{' '}{tr('Cosechar{v0}', { v0: ready ? ` (${ready})` : '' })}</button>
           </div>
 
           {planting && (
             <div className="hud-panel p-3 space-y-2" style={{ background: 'rgba(3, 14, 11, 0.97)' }}>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-300">Elige la semilla · {PLOT_SIZE - growing} huecos libres</div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-300">{tr('Elige la semilla · {v0} huecos libres', { v0: PLOT_SIZE - growing })}</div>
               {seedsOwned.length === 0 && (
-                <div className="text-xs text-neutral-400 flex items-center justify-between gap-3">No tienes semillas. <button className="care-btn" onClick={onOpenSeedBank}><Sparkles className="w-3.5 h-3.5" /> Banco de Semillas</button></div>
+                <div className="text-xs text-neutral-400 flex items-center justify-between gap-3">{tr('No tienes semillas.')}{' '}<button className="care-btn" onClick={onOpenSeedBank}><Sparkles className="w-3.5 h-3.5" />{' '}{tr('Banco de Semillas')}</button></div>
               )}
               <div className="grid gap-2 sm:grid-cols-2">
                 {seedsOwned.map((s) => {
@@ -161,12 +162,12 @@ export const PlotScreen: React.FC<{
                   return (
                     <div key={s.id} className={`rounded-lg border p-2 ${t.tone === 'up' ? 'border-emerald-400/60 bg-emerald-400/5' : t.tone === 'down' ? 'border-red-400/40 bg-red-500/5' : 'border-neutral-700 bg-neutral-950/60'}`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[12px] font-bold text-white truncate">{s.strainTemplate.name}</span>
+                        <span className="text-[12px] font-bold text-white truncate">{tr(s.strainTemplate.name)}</span>
                         <span className="text-[10px] font-mono text-neutral-400">×{have}</span>
                       </div>
-                      <div className="text-[10px] font-mono text-neutral-400">{s.seedType === 'Regular' || s.seedType === 'Landrace' ? '⚥ ~50 % machos: hay que sexarlas' : '♀ 100 % hembras'}</div>
-                      <div className={`text-[10.5px] font-mono ${t.tone === 'up' ? 'text-emerald-300' : t.tone === 'down' ? 'text-red-300' : 'text-neutral-400'}`}>{t.label} · crece {Math.round(t.growth * 100)} % · cosecha {Math.round(t.yield * 100)} %</div>
-                      <button className="care-btn w-full mt-1.5" disabled={n <= 0} onClick={() => { if (plantPlot(plot.id, s.id, n)) { onSpeak(t.tone === 'up' ? `¡${s.strainTemplate.name} en su tierra! Esto va a dar un cosechón.` : t.tone === 'down' ? `Mmm, ${s.strainTemplate.name} aquí sufrirá un poco… pero probemos.` : `A sembrar ${s.strainTemplate.name}.`, 'happy'); setPlanting(false); } }}>Sembrar {n > 0 ? `×${n}` : ''}</button>
+                      <div className="text-[10px] font-mono text-neutral-400">{s.seedType === 'Regular' || s.seedType === 'Landrace' ? tr('⚥ ~50 % machos: hay que sexarlas') : tr('♀ 100 % hembras')}</div>
+                      <div className={`text-[10.5px] font-mono ${t.tone === 'up' ? 'text-emerald-300' : t.tone === 'down' ? 'text-red-300' : 'text-neutral-400'}`}>{tr('{label} · crece {v1} % · cosecha {v2} %', { label: t.label, v1: Math.round(t.growth * 100), v2: Math.round(t.yield * 100) })}</div>
+                      <button className="care-btn w-full mt-1.5" disabled={n <= 0} onClick={() => { if (plantPlot(plot.id, s.id, n)) { onSpeak(t.tone === 'up' ? tr('¡{name} en su tierra! Esto va a dar un cosechón.', { name: s.strainTemplate.name }) : t.tone === 'down' ? tr('Mmm, {name} aquí sufrirá un poco… pero probemos.', { name: s.strainTemplate.name }) : tr('A sembrar {name}.', { name: s.strainTemplate.name }), 'happy'); setPlanting(false); } }}>{tr('Sembrar {v0}', { v0: n > 0 ? `×${n}` : '' })}</button>
                     </div>
                   );
                 })}
@@ -179,23 +180,23 @@ export const PlotScreen: React.FC<{
         <div className="space-y-3">
           <div className="hud-panel p-3">
             <div className="flex items-center justify-between">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-sky-300">Clima en {region.name}</div>
-              <div className="text-[10px] font-mono text-neutral-400 flex items-center gap-1">{now.daylight ? <Sun className="w-3.5 h-3.5 text-yellow-300" /> : <Moon className="w-3.5 h-3.5 text-indigo-300" />} {now.daylight ? 'de día' : 'de noche'}</div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-sky-300">{tr('Clima en {name}', { name: region.name })}</div>
+              <div className="text-[10px] font-mono text-neutral-400 flex items-center gap-1">{now.daylight ? <Sun className="w-3.5 h-3.5 text-yellow-300" /> : <Moon className="w-3.5 h-3.5 text-indigo-300" />} {now.daylight ? tr('de día') : tr('de noche')}</div>
             </div>
             <div className="flex items-center gap-3 mt-1.5">
               <span className="text-3xl leading-none">{w.emoji}</span>
               <div>
-                <div className="text-sm font-bold text-white">{w.label}</div>
-                <div className="text-[10.5px] font-mono text-neutral-300 flex gap-3"><span className="flex items-center gap-1"><Thermometer className="w-3 h-3" /> {now.tempC} °C</span><span className="flex items-center gap-1"><Wind className="w-3 h-3" /> {now.rh} % HR</span></div>
+                <div className="text-sm font-bold text-white">{tr(w.label)}</div>
+                <div className="text-[10.5px] font-mono text-neutral-300 flex gap-3"><span className="flex items-center gap-1"><Thermometer className="w-3 h-3" /> {now.tempC} °C</span><span className="flex items-center gap-1"><Wind className="w-3 h-3" />{' '}{tr('{rh} % HR', { rh: now.rh })}</span></div>
               </div>
             </div>
             <p className="text-[11px] text-neutral-400 leading-snug mt-1.5">{WEATHER_TIP[w.kind]}</p>
             <div className="grid grid-cols-3 gap-1.5 mt-2">
               {forecast.slice(1).map((f, i) => (
                 <div key={i} className="rounded-md border border-neutral-800 bg-neutral-950/60 px-1.5 py-1 text-center">
-                  <div className="text-[9px] font-mono text-neutral-500">{i === 0 ? 'mañana' : `+${i + 1} d`}</div>
+                  <div className="text-[9px] font-mono text-neutral-500">{i === 0 ? tr('mañana') : `+${i + 1} d`}</div>
                   <div className="text-lg leading-none">{f.emoji}</div>
-                  <div className="text-[9px] font-mono text-neutral-300 truncate">{f.label}</div>
+                  <div className="text-[9px] font-mono text-neutral-300 truncate">{tr(f.label)}</div>
                 </div>
               ))}
             </div>
@@ -206,10 +207,10 @@ export const PlotScreen: React.FC<{
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="text-sm font-bold text-white truncate">{plant.strain.name}</div>
-                    <div className="text-[10px] font-mono text-neutral-400">hueco #{(plant.slotIndex ?? 0) + 1} · {plant.stage === 'ready_harvest' ? '¡lista!' : STAGE_LABEL[plant.stage]}</div>
+                    <div className="text-sm font-bold text-white truncate">{tr(plant.strain.name)}</div>
+                    <div className="text-[10px] font-mono text-neutral-400">{tr('hueco #{v0} · {v1}', { v0: (plant.slotIndex ?? 0) + 1, v1: plant.stage === 'ready_harvest' ? tr('¡lista!') : STAGE_LABEL[plant.stage] })}</div>
                   </div>
-                  {(() => { const t = terroirOf(plant.strain.origin, plot.region, plot.ratings); return <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${t.tone === 'up' ? 'text-emerald-300 border-emerald-400/50' : t.tone === 'down' ? 'text-red-300 border-red-400/40' : 'text-neutral-300 border-neutral-600'}`}>{t.label}</span>; })()}
+                  {(() => { const t = terroirOf(plant.strain.origin, plot.region, plot.ratings); return <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${t.tone === 'up' ? 'text-emerald-300 border-emerald-400/50' : t.tone === 'down' ? 'text-red-300 border-red-400/40' : 'text-neutral-300 border-neutral-600'}`}>{tr(t.label)}</span>; })()}
                 </div>
                 <div className="relative h-44 rounded-lg overflow-hidden bg-[#03100c] border border-emerald-400/15">
                   <PlantView
@@ -218,26 +219,26 @@ export const PlotScreen: React.FC<{
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10.5px] font-mono">
-                  <span className="text-neutral-400">Progreso <b className="text-white">{Math.round(plant.progressPercent)}%</b></span>
-                  <span className="text-neutral-400">Salud <b className={plant.health > 70 ? 'text-emerald-300' : plant.health > 45 ? 'text-amber-300' : 'text-red-300'}>{plant.health}%</b></span>
-                  <span className="text-neutral-400">Sustrato <b className={isThirsty(plant) ? 'text-cyan-300' : 'text-white'}>{plant.soilMoisture}%</b></span>
+                  <span className="text-neutral-400">{tr('Progreso')}{' '}<b className="text-white">{Math.round(plant.progressPercent)}%</b></span>
+                  <span className="text-neutral-400">{tr('Salud')}{' '}<b className={plant.health > 70 ? 'text-emerald-300' : plant.health > 45 ? 'text-amber-300' : 'text-red-300'}>{plant.health}%</b></span>
+                  <span className="text-neutral-400">{tr('Sustrato')}{' '}<b className={isThirsty(plant) ? 'text-cyan-300' : 'text-white'}>{plant.soilMoisture}%</b></span>
                   <span className="text-neutral-400">EC <b className="text-white">{plant.ecLevel}</b></span>
-                  <span className="text-neutral-400 col-span-2">{plant.stage === 'ready_harvest' ? '¡Lista para cosechar!' : `Cosecha en ~${formatDuration(plotEta(plot, plant))}`} · ~{plant.estimatedDryYieldGrams} g</span>
-                  <span className="col-span-2 text-neutral-400">Sexo: {sexRevealed(plant) ? (isMale(plant) ? <b className="text-sky-300">♂ macho (no da flor)</b> : <b className="text-pink-300">♀ hembra</b>) : <b className="text-neutral-300">? se revela al {SEX_REVEAL_AT} %</b>}{plant.pollinated && <b className="text-amber-300"> · 🐝 polinizada (−40 % flor, da semillas)</b>}</span>
+                  <span className="text-neutral-400 col-span-2">{plant.stage === 'ready_harvest' ? tr('¡Lista para cosechar!') : tr('Cosecha en ~{v0}', { v0: formatDuration(plotEta(plot, plant)) })} · ~{plant.estimatedDryYieldGrams} g</span>
+                  <span className="col-span-2 text-neutral-400">{tr('Sexo:')}{' '}{sexRevealed(plant) ? (isMale(plant) ? <b className="text-sky-300">{tr('♂ macho (no da flor)')}</b> : <b className="text-pink-300">{tr('♀ hembra')}</b>) : <b className="text-neutral-300">{tr('? se revela al {SEX_REVEAL_AT} %', { SEX_REVEAL_AT })}</b>}{plant.pollinated && <b className="text-amber-300">{' '}{tr('· 🐝 polinizada (−40 % flor, da semillas)')}</b>}</span>
                   {isMale(plant) && sexRevealed(plant) && (
                     <span className="col-span-2 flex gap-1.5 pt-1">
-                      <button className="care-btn care-btn--male flex-1" onClick={() => { removeMales(plot.id); setSel(null); }}>Arrancar machos</button>
-                      <button className="care-btn flex-1" onClick={() => { keepMaleAsFather(plot.id, plant.slotIndex ?? -1); setSel(null); onSpeak('¡Buen padre para cruzar! Lo guardé en el Santuario.', 'happy'); }}>Guardar como padre</button>
+                      <button className="care-btn care-btn--male flex-1" onClick={() => { removeMales(plot.id); setSel(null); }}>{tr('Arrancar machos')}</button>
+                      <button className="care-btn flex-1" onClick={() => { keepMaleAsFather(plot.id, plant.slotIndex ?? -1); setSel(null); onSpeak(tr('¡Buen padre para cruzar! Lo guardé en el Santuario.'), 'happy'); }}>{tr('Guardar como padre')}</button>
                     </span>
                   )}
-                  {plant.pest && <span className="col-span-2 text-pink-300">{PEST_INFO[plant.pest.kind].emoji} {PEST_INFO[plant.pest.kind].label} desde hace {Math.max(1, Math.round(plant.pest.hours))} h · cura: {PEST_INFO[plant.pest.kind].cure}</span>}
+                  {plant.pest && <span className="col-span-2 text-pink-300">{tr('{emoji} {label} desde hace {v2} h · cura: {cure}', { emoji: PEST_INFO[plant.pest.kind].emoji, label: PEST_INFO[plant.pest.kind].label, v2: Math.max(1, Math.round(plant.pest.hours)), cure: PEST_INFO[plant.pest.kind].cure })}</span>}
                 </div>
               </div>
             ) : (
               <div className="h-full min-h-[13rem] flex flex-col items-center justify-center text-center text-xs text-neutral-500 gap-1.5">
                 <Sprout className="w-7 h-7 text-emerald-400/50" />
-                Toca una planta para verla en 3D, o un hueco vacío para sembrar.
-                <div className="text-[10px] font-mono text-neutral-600">Agua {resources.water.toFixed(0)} L · abono {Math.floor(resources.nutrient)} ml</div>
+                {tr('Toca una planta para verla en 3D, o un hueco vacío para sembrar.')}
+                <div className="text-[10px] font-mono text-neutral-600">{tr('Agua {v0} L · abono {v1} ml', { v0: resources.water.toFixed(0), v1: Math.floor(resources.nutrient) })}</div>
               </div>
             )}
           </div>

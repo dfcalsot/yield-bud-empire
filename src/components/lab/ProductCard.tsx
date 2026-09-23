@@ -4,6 +4,7 @@ import type { ProcessedProduct } from '../../types';
 import { RarityFrame, RARITY_STYLE, Rarity } from '../game/GameUI';
 import { PRODUCT_INFO, STATION_BY_ID } from '../../lab/stations';
 import { CuringJar } from '../icons/CannabisIcons';
+import { t as tr } from '../../i18n';
 
 export const rarityOfQuality = (q: number): Rarity => (q >= 98 ? 'legendary' : q >= 95 ? 'epic' : q >= 92 ? 'rare' : 'common');
 
@@ -18,7 +19,7 @@ export const ProductCard: React.FC<{ product: ProcessedProduct; className?: stri
     <RarityFrame rarity={rarity} className={`w-full ${className}`}>
       <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5 text-[10px] font-mono uppercase tracking-wider">
         <span className="font-black" style={{ color: rc, textShadow: `0 0 10px ${rc}88` }}>◆ {rarityLabel}</span>
-        <span className="text-neutral-400">{info.label}</span>
+        <span className="text-neutral-400">{tr(info.label)}</span>
       </div>
 
       <div className="relative mx-2.5 rounded-xl overflow-hidden border border-white/10 aspect-[16/9] flex items-center justify-center" style={{ background: `radial-gradient(circle at 50% 45%, ${info.color}44 0%, ${info.color}14 50%, #030907 85%)` }}>
@@ -33,14 +34,14 @@ export const ProductCard: React.FC<{ product: ProcessedProduct; className?: stri
       </div>
 
       <div className="px-3 pt-2.5">
-        <h4 className="font-serif text-[13.5px] leading-tight font-bold text-white" title={product.name}>{product.name}</h4>
-        <div className="text-[10px] font-mono text-neutral-400 truncate">{product.potency}</div>
+        <h4 className="font-serif text-[13.5px] leading-tight font-bold text-white" title={tr(product.name)}>{tr(product.name)}</h4>
+        <div className="text-[10px] font-mono text-neutral-400 truncate">{tr(product.potency)}</div>
       </div>
 
       <div className="px-3 pt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
         {[
-          { l: 'Calidad', v: product.qualityScore, t: `${product.qualityScore}%`, c: '#34d399' },
-          { l: 'Valor', v: Math.min(100, product.marketValueFlora / 8), t: `${product.marketValueFlora} $FLORA`, c: '#fbbf24' },
+          { l: tr('Calidad'), v: product.qualityScore, t: `${product.qualityScore}%`, c: '#34d399' },
+          { l: tr('Valor'), v: Math.min(100, product.marketValueFlora / 8), t: `${product.marketValueFlora} $FLORA`, c: '#fbbf24' },
         ].map((s) => (
           <div key={s.l}>
             <div className="flex justify-between text-[9px] font-mono uppercase tracking-wider text-neutral-400"><span>{s.l}</span><span style={{ color: s.c }}>{s.t}</span></div>
@@ -60,9 +61,9 @@ export const ProductCard: React.FC<{ product: ProcessedProduct; className?: stri
       )}
 
       <div className="mx-3 mt-2.5 mb-2.5 flex items-center justify-between gap-2 px-2 py-1 rounded-lg bg-black/40 border border-white/10 text-[10px] font-mono">
-        <span className="text-neutral-500 shrink-0">LOTE</span>
+        <span className="text-neutral-500 shrink-0">{tr('LOTE')}</span>
         <span className="text-emerald-300 truncate" title={product.batchHash}>{product.batchHash}</span>
-        <span className="text-[8px] px-1 rounded bg-neutral-700/70 text-neutral-300 shrink-0" title="Identificador de lote simulado en Devnet">SIM</span>
+        <span className="text-[8px] px-1 rounded bg-neutral-700/70 text-neutral-300 shrink-0" title={tr('Identificador de lote simulado en Devnet')}>SIM</span>
       </div>
     </RarityFrame>
   );

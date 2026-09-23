@@ -10,11 +10,12 @@ import type { ProcessedProduct } from '../../types';
 import { CATALOG_BY_ID, USE } from '../../economy/catalog';
 import { Npc, useNpc } from '../npc/Npc';
 import { NpcMissions } from '../missions/NpcMissions';
+import { t, k, localize } from '../../i18n';
 
 const wearFactorOf = (wear: number) => (wear > 60 ? 1 : wear > 40 ? 0.93 : 0.85);
 
 const STATUS_COLOR: Record<string, string> = { operativo: '#34d399', mantenimiento_requerido: '#fbbf24', averiado: '#f87171' };
-const STATUS_LABEL: Record<string, string> = { operativo: 'Operativa', mantenimiento_requerido: 'Requiere mantenimiento', averiado: 'Averiada' };
+const STATUS_LABEL: Record<string, string> = localize({ operativo: k('Operativa'), mantenimiento_requerido: k('Requiere mantenimiento'), averiado: k('Averiada') }, ['operativo', 'mantenimiento_requerido', 'averiado']);
 
 /**
  * Planta Industrial: the animated extraction floor.
@@ -37,7 +38,7 @@ export const LabFloor: React.FC = () => {
   const [result, setResult] = useState<ProcessedProduct | null>(null);
   const [profile, setProfile] = useState<CoaProfile | null>(null);
   const [hplcId, setHplcId] = useState<string | null>(null);
-  const npc = useNpc('¡Bienvenido a la Planta Industrial! Soy la Dra. Lucía. Elige una estación y cuéntame qué vamos a procesar.');
+  const npc = useNpc(t('¡Bienvenido a la Planta Industrial! Soy la Dra. Lucía. Elige una estación y cuéntame qué vamos a procesar.'));
   const firstStation = useRef(true);
 
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -61,8 +62,8 @@ export const LabFloor: React.FC = () => {
     npc.speak(`${station.name}: ${station.blurb}`);
   }, [stationId]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (phase === 'running') npc.speak(`Calibrando la ${station.name}… ¡no toques nada, por favor!`, 'busy');
-    else if (phase === 'done' && result) npc.speak(stationId === 'hplc' ? '¡Análisis completo! Mira el certificado: cada cannabinoide y terpeno, medido al miligramo.' : `¡Lote listo! ${result.name}. Sale directo al inventario, mira qué calidad.`, 'happy');
+    if (phase === 'running') npc.speak(t('Calibrando la {name}… ¡no toques nada, por favor!', { name: station.name }), 'busy');
+    else if (phase === 'done' && result) npc.speak(stationId === 'hplc' ? t('¡Análisis completo! Mira el certificado: cada cannabinoide y terpeno, medido al miligramo.') : t('¡Lote listo! {name}. Sale directo al inventario, mira qué calidad.', { name: result.name }), 'happy');
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stock = recipe ? (recipe.inputKind === 'flower' ? rawFlowerGrams : trimGrams) : 0;
@@ -85,16 +86,16 @@ export const LabFloor: React.FC = () => {
   const kwhNeeded = USE.labKwhPerCycle[stationId] ?? 0;
   const licence = CATALOG_BY_ID[`lic_${stationId}`];
   let blocker = '';
-  if (phase === 'running') blocker = 'Ciclo en marcha…';
-  else if (!ownsStation(stationId)) blocker = 'Estación sin licencia NFT';
-  else if (broken) blocker = 'Máquina averiada: repárala primero';
-  else if (kwhNeeded > resources.energy + 1e-9) blocker = `Sin electricidad (${kwhNeeded} kWh por ciclo)`;
+  if (phase === 'running') blocker = t('Ciclo en marcha…');
+  else if (!ownsStation(stationId)) blocker = t('Estación sin licencia NFT');
+  else if (broken) blocker = t('Máquina averiada: repárala primero');
+  else if (kwhNeeded > resources.energy + 1e-9) blocker = t('Sin electricidad ({kwhNeeded} kWh por ciclo)', { kwhNeeded });
   else if (stationId === 'hplc') {
-    if (!hplcSelected) blocker = 'No hay lotes sin certificar';
-    else if (floraBalance < HPLC_FEE) blocker = `Saldo insuficiente (${HPLC_FEE} $FLORA)`;
+    if (!hplcSelected) blocker = t('No hay lotes sin certificar');
+    else if (floraBalance < HPLC_FEE) blocker = t('Saldo insuficiente ({HPLC_FEE} $FLORA)', { HPLC_FEE });
   } else if (recipe) {
-    if (maxAllowed < recipe.minGrams) blocker = `Necesitas ≥ ${recipe.minGrams}g de ${recipe.inputKind === 'flower' ? 'flor' : 'trim'}`;
-    else if (floraBalance < recipe.feeFlora) blocker = `Saldo insuficiente (${recipe.feeFlora} $FLORA)`;
+    if (maxAllowed < recipe.minGrams) blocker = t('Necesitas ≥ {minGrams}g de {v1}', { minGrams: recipe.minGrams, v1: recipe.inputKind === 'flower' ? 'flor' : 'trim' });
+    else if (floraBalance < recipe.feeFlora) blocker = t('Saldo insuficiente ({feeFlora} $FLORA)', { feeFlora: recipe.feeFlora });
   }
 
   const begin = (ms: number) => {
@@ -113,7 +114,7 @@ export const LabFloor: React.FC = () => {
   };
 
   const start = () => {
-    if (blocker) { if (phase !== 'running') npc.speak(`No puedo empezar todavía: ${blocker.toLowerCase()}.`, 'sad'); return; }
+    if (blocker) { if (phase !== 'running') npc.speak(t('No puedo empezar todavía: {v0}.', { v0: blocker.toLowerCase() }), 'sad'); return; }
     if (stationId === 'hplc') {
       if (!hplcSelected) return;
       const updated = certifyProduct(hplcSelected.id, HPLC_FEE);
@@ -148,12 +149,12 @@ export const LabFloor: React.FC = () => {
   };
 
   npc.tips.current = () => [
-    'Las estaciones gastan electricidad en cada ciclo: mira tu autonomía antes de empezar.',
-    'Una máquina desgastada rinde menos. Repárala antes de que se averíe.',
-    'Certifica tus lotes con el HPLC: un COA sube su valor en el dispensario.',
-    'La flor da rosin y hash de mejor calidad; el trim es ideal para bubble hash.',
-    ...(rawFlowerGrams < 10 ? ['Casi no te queda flor seca. Cosecha en las parcelas o en la sala para seguir produciendo.'] : []),
-    ...(!ownsStation(stationId) ? [`Esta estación necesita su licencia NFT. Puedes comprarla aquí mismo.`] : []),
+    t('Las estaciones gastan electricidad en cada ciclo: mira tu autonomía antes de empezar.'),
+    t('Una máquina desgastada rinde menos. Repárala antes de que se averíe.'),
+    t('Certifica tus lotes con el HPLC: un COA sube su valor en el dispensario.'),
+    t('La flor da rosin y hash de mejor calidad; el trim es ideal para bubble hash.'),
+    ...(rawFlowerGrams < 10 ? [t('Casi no te queda flor seca. Cosecha en las parcelas o en la sala para seguir produciendo.')] : []),
+    ...(!ownsStation(stationId) ? [t('Esta estación necesita su licencia NFT. Puedes comprarla aquí mismo.')] : []),
   ];
   const recent = processedProducts.filter((p) => p.id !== result?.id || phase === 'idle').slice(0, 8);
   const running = phase === 'running';
@@ -164,10 +165,10 @@ export const LabFloor: React.FC = () => {
       <div className="hud-panel p-3 sm:p-4">
         <div className="flex flex-wrap items-stretch gap-2 sm:gap-3 text-xs">
           {[
-            { k: 'Cosecha', v: `${rawFlowerGrams} g flor · ${trimGrams} g trim`, c: '#34d399' },
-            { k: 'Estación', v: station.short, c: station.color },
-            { k: 'Lote NFT', v: `${processedProducts.length} lotes en inventario`, c: '#c084fc' },
-            { k: 'Dispensario V2P', v: 'Vende desde Mercado', c: '#22d3ee' },
+            { k: t('Cosecha'), v: t('{rawFlowerGrams} g flor · {trimGrams} g trim', { rawFlowerGrams, trimGrams }), c: '#34d399' },
+            { k: t('Estación'), v: station.short, c: station.color },
+            { k: t('Lote NFT'), v: t('{length} lotes en inventario', { length: processedProducts.length }), c: '#c084fc' },
+            { k: t('Dispensario V2P'), v: t('Vende desde Mercado'), c: '#22d3ee' },
           ].map((s, i, arr) => (
             <React.Fragment key={s.k}>
               <div className="flex-1 min-w-[9.5rem] px-3 py-2 rounded-xl bg-neutral-950/70 border" style={{ borderColor: `${s.c}55` }}>
@@ -178,14 +179,14 @@ export const LabFloor: React.FC = () => {
             </React.Fragment>
           ))}
           <div className="flex-1 min-w-[12rem] px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-400/40">
-            <div className="text-[9px] font-mono uppercase tracking-wider text-amber-300/80 flex items-center gap-1"><Flame className="w-3 h-3" /> Sumidero deflacionario</div>
-            <div className="font-mono font-bold text-[11.5px] text-amber-300">{burnStats.repairs.toLocaleString()} $FLORA quemados en lab + mantenimiento</div>
-            <div className="text-[9px] font-mono text-neutral-500">Total del juego: {totalFloraBurned.toLocaleString()} $FLORA</div>
+            <div className="text-[9px] font-mono uppercase tracking-wider text-amber-300/80 flex items-center gap-1"><Flame className="w-3 h-3" />{' '}{t('Sumidero deflacionario')}</div>
+            <div className="font-mono font-bold text-[11.5px] text-amber-300">{t('{v0} $FLORA quemados en lab + mantenimiento', { v0: burnStats.repairs.toLocaleString() })}</div>
+            <div className="text-[9px] font-mono text-neutral-500">{t('Total del juego: {v0} $FLORA', { v0: totalFloraBurned.toLocaleString() })}</div>
           </div>
         </div>
       </div>
 
-      <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="scientist" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>
+      <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="scientist" text={t(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>
       <NpcMissions npc="scientist" onSay={npc.speak} />
 
       {/* station rail */}
@@ -205,10 +206,10 @@ export const LabFloor: React.FC = () => {
             >
               <div className="flex items-center gap-2">
                 <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${s.color}1f`, color: s.color }}><Icon className="w-5 h-5" /></span>
-                <span className="text-[11px] font-bold text-white leading-tight">{s.short}</span>
+                <span className="text-[11px] font-bold text-white leading-tight">{t(s.short)}</span>
               </div>
               <div className="mt-1.5 h-1 rounded-full bg-neutral-800 overflow-hidden"><div className="h-full" style={{ width: `${w}%`, background: w > 40 ? '#34d399' : w > 15 ? '#fbbf24' : '#f87171' }} /></div>
-              <div className={`text-[9px] font-mono mt-0.5 ${ownsStation(s.id) ? 'text-neutral-500' : 'text-pink-300'}`}>{ownsStation(s.id) ? `Desgaste ${100 - Math.round(w)}%` : '🔒 Sin licencia'}</div>
+              <div className={`text-[9px] font-mono mt-0.5 ${ownsStation(s.id) ? 'text-neutral-500' : 'text-pink-300'}`}>{ownsStation(s.id) ? t('Desgaste {v0}%', { v0: 100 - Math.round(w) }) : t('🔒 Sin licencia')}</div>
             </button>
           );
         })}
@@ -224,21 +225,21 @@ export const LabFloor: React.FC = () => {
 
             <div className="absolute left-3 top-3 flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-white/10">
               <span className="w-2 h-2 rounded-full" style={{ background: STATUS_COLOR[machine?.status ?? 'operativo'], boxShadow: `0 0 8px ${STATUS_COLOR[machine?.status ?? 'operativo']}` }} />
-              <span className="text-[11px] font-bold text-white">{station.name}</span>
+              <span className="text-[11px] font-bold text-white">{t(station.name)}</span>
               <span className="text-[10px] font-mono text-neutral-400 hidden sm:inline">{STATUS_LABEL[machine?.status ?? 'operativo']}</span>
             </div>
             {running && (
               <div className="absolute right-3 top-3 px-2.5 py-1.5 rounded-lg bg-neutral-950/80 border border-white/10 text-[11px] font-mono" style={{ color: station.color }}>
-                Ciclo <span ref={pctRef}>0%</span>
+                {t('Ciclo')}{' '}<span ref={pctRef}>0%</span>
               </div>
             )}
             <div className="absolute left-3 bottom-3 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-400/40 text-[10.5px] font-mono text-amber-300">
               <Flame className={`w-3.5 h-3.5 ${running ? 'lb-blink' : ''}`} />
-              {stationId === 'hplc' ? `Quema ${HPLC_FEE} $FLORA` : recipe ? `Quema ${recipe.feeFlora} $FLORA` : ''} · {kwhNeeded} kWh
+              {stationId === 'hplc' ? t('Quema {HPLC_FEE} $FLORA', { HPLC_FEE }) : recipe ? t('Quema {feeFlora} $FLORA', { feeFlora: recipe.feeFlora }) : ''} · {kwhNeeded} kWh
             </div>
             {machine && (
               <div className="absolute right-3 bottom-3 px-2.5 py-1 rounded-lg bg-neutral-950/80 border border-white/10 text-[10.5px] font-mono text-neutral-300">
-                −{machine.wearRatePerCycle}% desgaste / ciclo
+                {t('−{wearRatePerCycle}% desgaste / ciclo', { wearRatePerCycle: machine.wearRatePerCycle })}
               </div>
             )}
 
@@ -247,10 +248,10 @@ export const LabFloor: React.FC = () => {
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#020806]/88 p-3">
                 <div className="w-[15.5rem] space-y-2.5 text-center">
                   <div className="font-serif font-black text-lg tracking-[0.25em] uppercase" style={{ color: RARITY_STYLE[rarityOfQuality(result.qualityScore)].color }}>
-                    {stationId === 'hplc' ? 'Certificado emitido' : 'Lote acuñado'}
+                    {stationId === 'hplc' ? t('Certificado emitido') : t('Lote acuñado')}
                   </div>
                   <div className="mint-reveal"><ProductCard product={result} /></div>
-                  <NeonButton tone="emerald" onClick={collect} className="w-full">Recoger lote</NeonButton>
+                  <NeonButton tone="emerald" onClick={collect} className="w-full">{t('Recoger lote')}</NeonButton>
                 </div>
               </div>
             )}
@@ -258,9 +259,9 @@ export const LabFloor: React.FC = () => {
         </HudPanel>
 
         {/* controls */}
-        <HudPanel title={<>{React.createElement(station.icon, { className: 'w-4 h-4' })} {station.short}</>}>
+        <HudPanel title={<>{React.createElement(station.icon, { className: 'w-4 h-4' })} {t(station.short)}</>}>
           <div className="px-4 pb-4 space-y-3.5 text-xs">
-            <p className="text-neutral-400 leading-snug">{station.blurb}</p>
+            <p className="text-neutral-400 leading-snug">{t(station.blurb)}</p>
 
             {stationId !== 'hplc' && recipe && (
               <>
@@ -273,32 +274,32 @@ export const LabFloor: React.FC = () => {
                       style={{ borderColor: i === recipeIdx ? station.color : 'rgba(80,110,100,0.3)' }}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-white">{r.name}</span>
+                        <span className="font-bold text-white">{t(r.name)}</span>
                         <span className="font-mono text-[10px] px-1.5 rounded border border-white/15 text-neutral-300">{r.inputKind === 'flower' ? 'FLOR' : 'TRIM'}</span>
                       </div>
-                      <div className="text-[10.5px] text-neutral-400">{r.desc}</div>
+                      <div className="text-[10.5px] text-neutral-400">{t(r.desc)}</div>
                     </button>
                   ))}
                 </div>
 
                 <div>
                   <div className="flex justify-between font-mono text-[10.5px] mb-1">
-                    <span className="text-neutral-400">Cargar {recipe.inputKind === 'flower' ? 'flor seca' : 'biomasa trim'}</span>
+                    <span className="text-neutral-400">{t('Cargar {v0}', { v0: recipe.inputKind === 'flower' ? t('flor seca') : t('biomasa trim') })}</span>
                     <span className="text-white font-bold">{g} g <span className="text-neutral-500">/ {Math.floor(stock)} g</span></span>
                   </div>
                   <input
                     type="range" min={recipe.minGrams} max={Math.max(recipe.minGrams, maxAllowed)} step={recipe.step} value={g}
                     onChange={(e) => setGrams(Number(e.target.value))} disabled={phase !== 'idle' || maxAllowed < recipe.minGrams}
-                    className="w-full accent-emerald-400" aria-label="Gramos a procesar"
+                    className="w-full accent-emerald-400" aria-label={t('Gramos a procesar')}
                   />
                 </div>
 
                 <dl className="grid grid-cols-2 gap-2 font-mono">
                   {[
-                    { k: 'Rendimiento est.', v: `~${estOut} g`, c: '#34d399' },
-                    { k: 'Valor est.', v: `~${estValue} $FLORA`, c: '#fbbf24' },
-                    { k: 'Quema', v: `${recipe.feeFlora} $FLORA`, c: '#fb923c' },
-                    { k: 'Eficiencia', v: `${Math.round(wf * 100)}%`, c: wf === 1 ? '#34d399' : '#fbbf24' },
+                    { k: t('Rendimiento est.'), v: `~${estOut} g`, c: '#34d399' },
+                    { k: t('Valor est.'), v: t('~{estValue} $FLORA', { estValue }), c: '#fbbf24' },
+                    { k: t('Quema'), v: `${recipe.feeFlora} $FLORA`, c: '#fb923c' },
+                    { k: t('Eficiencia'), v: `${Math.round(wf * 100)}%`, c: wf === 1 ? '#34d399' : '#fbbf24' },
                   ].map((d) => (
                     <div key={d.k} className="rounded-lg bg-neutral-950/70 border border-neutral-800 px-2.5 py-1.5">
                       <dt className="text-[9px] uppercase tracking-wider text-neutral-500">{d.k}</dt>
@@ -311,9 +312,9 @@ export const LabFloor: React.FC = () => {
 
             {stationId === 'hplc' && (
               <div className="space-y-2">
-                <div className="text-[10.5px] font-mono text-neutral-400">Elige el lote a analizar (+18% de valor con COA)</div>
+                <div className="text-[10.5px] font-mono text-neutral-400">{t('Elige el lote a analizar (+18% de valor con COA)')}</div>
                 {uncertified.length === 0 ? (
-                  <p className="text-neutral-500 py-3 text-center">No hay lotes sin certificar. Procesa flor en otra estación primero.</p>
+                  <p className="text-neutral-500 py-3 text-center">{t('No hay lotes sin certificar. Procesa flor en otra estación primero.')}</p>
                 ) : (
                   <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
                     {uncertified.map((p) => (
@@ -323,8 +324,8 @@ export const LabFloor: React.FC = () => {
                         className={`w-full text-left px-3 py-2 rounded-xl border transition cursor-pointer ${hplcSelected?.id === p.id ? 'bg-neutral-900/90' : 'bg-neutral-950/50 hover:bg-neutral-900/60'}`}
                         style={{ borderColor: hplcSelected?.id === p.id ? station.color : 'rgba(80,110,100,0.3)' }}
                       >
-                        <div className="font-bold text-white truncate">{p.name}</div>
-                        <div className="text-[10px] font-mono text-neutral-400">{PRODUCT_INFO[p.type].label} · {p.quantityGrams} g · {p.marketValueFlora} $FLORA</div>
+                        <div className="font-bold text-white truncate">{t(p.name)}</div>
+                        <div className="text-[10px] font-mono text-neutral-400">{t(PRODUCT_INFO[p.type].label)} · {p.quantityGrams} g · {p.marketValueFlora} $FLORA</div>
                       </button>
                     ))}
                   </div>
@@ -335,27 +336,27 @@ export const LabFloor: React.FC = () => {
             {/* machine health */}
             <div className="rounded-xl bg-neutral-950/70 border border-neutral-800 p-2.5 space-y-1.5">
               <div className="flex items-center justify-between font-mono text-[10.5px]">
-                <span className="text-neutral-400 truncate">{machine?.name}</span>
+                <span className="text-neutral-400 truncate">{t(machine?.name)}</span>
                 <span style={{ color: wear > 40 ? '#34d399' : wear > 15 ? '#fbbf24' : '#f87171' }}>{Math.round(wear)}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-neutral-800 overflow-hidden"><div className="h-full transition-[width] duration-700" style={{ width: `${wear}%`, background: wear > 40 ? '#34d399' : wear > 15 ? '#fbbf24' : '#f87171' }} /></div>
               {wear <= 40 && machine && (
                 <NeonButton tone="amber" onClick={() => repairMachine(machine.id)} disabled={floraBalance < machine.repairCostFlora || running} className="w-full !py-1.5">
-                  <Wrench className="w-3.5 h-3.5" /> Reparar · quema {machine.repairCostFlora} $FLORA
+                  <Wrench className="w-3.5 h-3.5" />{' '}{t('Reparar · quema {repairCostFlora} $FLORA', { repairCostFlora: machine.repairCostFlora })}
                 </NeonButton>
               )}
             </div>
 
             {!ownsStation(stationId) && licence && (
               <div className="rounded-lg border border-pink-300/30 bg-pink-400/5 p-2.5 space-y-2">
-                <p className="text-[11px] text-pink-100 leading-snug">Esta estación se desbloquea con su licencia NFT.</p>
+                <p className="text-[11px] text-pink-100 leading-snug">{t('Esta estación se desbloquea con su licencia NFT.')}</p>
                 <NeonButton tone="magenta" onClick={() => buyAsset(licence.id)} disabled={floraBalance < licence.priceFlora} className="w-full !py-1.5">
-                  Adquirir licencia · quema {licence.priceFlora} $FLORA
+                  {t('Adquirir licencia · quema {priceFlora} $FLORA', { priceFlora: licence.priceFlora })}
                 </NeonButton>
               </div>
             )}
             <NeonButton tone="emerald" onClick={start} disabled={!!blocker} className="w-full !py-3 text-sm">
-              {running ? 'Procesando…' : stationId === 'hplc' ? 'Analizar lote' : 'Iniciar ciclo'}
+              {running ? t('Procesando…') : stationId === 'hplc' ? t('Analizar lote') : t('Iniciar ciclo')}
             </NeonButton>
             {blocker && !running && <p className="text-[10.5px] font-mono text-amber-300 text-center -mt-1.5">{blocker}</p>}
           </div>
@@ -363,10 +364,10 @@ export const LabFloor: React.FC = () => {
       </div>
 
       {/* minted batches */}
-      <HudPanel title="Lotes acuñados (inventario NFT)" accessory={<span className="text-[10px] font-mono text-neutral-500">{processedProducts.length} en total</span>}>
+      <HudPanel title={t('Lotes acuñados (inventario NFT)')} accessory={<span className="text-[10px] font-mono text-neutral-500">{t('{length} en total', { length: processedProducts.length })}</span>}>
         <div className="px-4 pb-4">
           {recent.length === 0 ? (
-            <p className="text-xs text-neutral-500 text-center py-6">Aún no hay lotes. Inicia un ciclo en cualquier estación.</p>
+            <p className="text-xs text-neutral-500 text-center py-6">{t('Aún no hay lotes. Inicia un ciclo en cualquier estación.')}</p>
           ) : (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-4">
               {recent.map((p) => <ProductCard key={p.id} product={p} />)}

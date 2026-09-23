@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import './farm.css';
 import type { RegionId } from '../../types';
 import type { WeatherKind } from '../../sim/terroir';
+import { t as tr } from '../../i18n';
 
 /**
  * The view above a plot: sky, sun or moon at the region's LOCAL solar time, three parallax hill layers in the region's
@@ -79,7 +80,7 @@ export const FarmScene: React.FC<{ regionId: RegionId; color: string; lon: numbe
   const clouds = useMemo(() => [[40, 22, 46, 0], [220, 38, 60, -18], [420, 16, 52, -33]] as const, []);
   const id = `fs${regionId}`;
   return (
-    <svg viewBox="0 0 600 118" preserveAspectRatio="xMidYMax slice" className="fs-scene" role="img" aria-label={`Paisaje de ${regionId}: ${day ? 'de día' : 'de noche'}`}>
+    <svg viewBox="0 0 600 118" preserveAspectRatio="xMidYMax slice" className="fs-scene" role="img" aria-label={tr('Paisaje de {regionId}: {v1}', { regionId, v1: day ? tr('de día') : tr('de noche') })}>
       <defs>
         <linearGradient id={`${id}sky`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={top} /><stop offset="1" stopColor={bottom} /></linearGradient>
         <radialGradient id={`${id}sun`}><stop offset="0" stopColor="#fff7c2" /><stop offset=".45" stopColor="#fde047" stopOpacity=".9" /><stop offset="1" stopColor="#fde047" stopOpacity="0" /></radialGradient>

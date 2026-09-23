@@ -3,18 +3,18 @@ import { useGame } from '../context/GameContext';
 import { shortAddress } from '../utils/nft';
 import type { SolanaTransaction } from '../types';
 import { LeafCoin } from './icons/CannabisIcons';
-import { t } from '../i18n';
+import { t, k, localize } from '../i18n';
 
-const TYPE_INFO: Record<SolanaTransaction['type'], { label: string; color: string }> = {
-  BURN_SPEEDUP: { label: 'Quema · Aceleración', color: '#fbbf24' },
-  BURN_REPAIR: { label: 'Quema · Reparación', color: '#fb923c' },
-  BURN_PATENT: { label: 'Quema · Genética', color: '#f59e0b' },
-  BURN_PROCESS: { label: 'Quema · Laboratorio', color: '#f97316' },
-  BURN_PURCHASE: { label: 'Quema · Compra NFT', color: '#38bdf8' },
-  AIRDROP: { label: 'Airdrop', color: '#34d399' },
-  V2P_CLAIM: { label: 'Canje V2P', color: '#22d3ee' },
-  DISPENSARY_SALE: { label: 'Venta dispensario', color: '#c084fc' },
-};
+const TYPE_INFO: Record<SolanaTransaction['type'], { label: string; color: string }> = localize<Record<SolanaTransaction['type'], { label: string; color: string }>>({
+  BURN_SPEEDUP: { label: k('Quema · Aceleración'), color: '#fbbf24' },
+  BURN_REPAIR: { label: k('Quema · Reparación'), color: '#fb923c' },
+  BURN_PATENT: { label: k('Quema · Genética'), color: '#f59e0b' },
+  BURN_PROCESS: { label: k('Quema · Laboratorio'), color: '#f97316' },
+  BURN_PURCHASE: { label: k('Quema · Compra NFT'), color: '#38bdf8' },
+  AIRDROP: { label: k('Airdrop'), color: '#34d399' },
+  V2P_CLAIM: { label: k('Canje V2P'), color: '#22d3ee' },
+  DISPENSARY_SALE: { label: k('Venta dispensario'), color: '#c084fc' },
+}, ['label']);
 
 type Stage = 'sending' | 'confirmed' | 'finalized';
 

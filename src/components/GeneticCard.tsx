@@ -4,6 +4,7 @@ import { RarityFrame, RARITY_STYLE } from './game/GameUI';
 import { CannabisLeaf, DnaLeaf, Seed } from './icons/CannabisIcons';
 import { SeedArt } from './SeedArt';
 import { GeneticCardData, mintAddressFor, serialFor, shortAddress } from '../utils/nft';
+import { t as tr } from '../i18n';
 
 interface GeneticCardProps {
   card: GeneticCardData;
@@ -26,7 +27,7 @@ export const GeneticCardBack: React.FC<{ color: string; rarity: GeneticCardData[
       <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(30deg, #34d39922 12%, transparent 12.5%, transparent 87%, #34d39922 87.5%), linear-gradient(150deg, #34d39922 12%, transparent 12.5%, transparent 87%, #34d39922 87.5%)', backgroundSize: '28px 48px' }} />
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
         <CannabisLeaf className="w-24 h-24" />
-        <div className="font-serif font-black tracking-[0.3em] text-sm" style={{ color: rc, textShadow: `0 0 14px ${rc}` }}>YIELD BUD EMPIRE</div>
+        <div className="font-serif font-black tracking-[0.3em] text-sm" style={{ color: rc, textShadow: `0 0 14px ${rc}` }}>{tr('YIELD BUD EMPIRE')}</div>
       </div>
     </div>
   );
@@ -122,12 +123,12 @@ export const GeneticCard: React.FC<GeneticCardProps> = ({ card, selected, faceDo
                 {/* name + species / difficulty chips */}
                 <div className="px-3 pt-2.5">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-serif text-[15px] leading-tight font-bold text-white min-h-[2.4em]" title={card.name}>{card.name}</h3>
-                    <button onClick={flip} aria-label="Ver ficha técnica completa" title="Ficha técnica completa" className="shrink-0 mt-0.5 p-1 rounded-md border border-white/15 text-neutral-300 hover:text-emerald-300 hover:border-emerald-300/50 cursor-pointer transition">
+                    <h3 className="font-serif text-[15px] leading-tight font-bold text-white min-h-[2.4em]" title={tr(card.name)}>{tr(card.name)}</h3>
+                    <button onClick={flip} aria-label={tr('Ver ficha técnica completa')} title={tr('Ficha técnica completa')} className="shrink-0 mt-0.5 p-1 rounded-md border border-white/15 text-neutral-300 hover:text-emerald-300 hover:border-emerald-300/50 cursor-pointer transition">
                       <Info className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <div className="text-[10.5px] font-mono text-neutral-400 truncate" title={card.subtitle}>{card.subtitle}</div>
+                  <div className="text-[10.5px] font-mono text-neutral-400 truncate" title={tr(card.subtitle)}>{tr(card.subtitle)}</div>
                   <div className="mt-1.5 flex flex-wrap gap-1">
                     {card.meta.map((m) => (
                       <span key={m} className="text-[9.5px] px-1.5 py-0.5 rounded border font-mono" style={{ borderColor: `${rc}55`, color: rc, background: `${rc}12` }}>{m}</span>
@@ -140,8 +141,8 @@ export const GeneticCard: React.FC<GeneticCardProps> = ({ card, selected, faceDo
                   {card.stats.map((s) => (
                     <div key={s.label}>
                       <div className="flex justify-between text-[9px] font-mono uppercase tracking-wider text-neutral-400">
-                        <span>{s.label}</span>
-                        <span style={{ color: s.color }}>{s.text}</span>
+                        <span>{tr(s.label)}</span>
+                        <span style={{ color: s.color }}>{tr(s.text)}</span>
                       </div>
                       <div className="h-1.5 rounded-sm bg-neutral-950 border border-neutral-700/60 overflow-hidden">
                         <div className="h-full" style={{ width: `${s.value}%`, background: `repeating-linear-gradient(90deg, ${s.color} 0 4px, transparent 4px 5px)`, boxShadow: `0 0 8px ${s.color}88` }} />
@@ -159,10 +160,10 @@ export const GeneticCard: React.FC<GeneticCardProps> = ({ card, selected, faceDo
 
                 {/* mint */}
                 <div className="mx-3 mt-2.5 mb-2.5 flex items-center justify-between gap-2 px-2 py-1 rounded-lg bg-black/40 border border-white/10 text-[10px] font-mono">
-                  <span className="text-neutral-500 shrink-0">MINT</span>
-                  <span className="text-emerald-300 truncate" title={`${mint} (identificador simulado en Devnet)`}>{shortAddress(mint, 5, 5)}</span>
-                  <span className="text-[8px] px-1 rounded bg-neutral-700/70 text-neutral-300 shrink-0" title="La red del juego es una simulación de Devnet">SIM</span>
-                  <button onClick={copyMint} aria-label="Copiar mint address" className="text-neutral-400 hover:text-emerald-300 cursor-pointer shrink-0">
+                  <span className="text-neutral-500 shrink-0">{tr('MINT')}</span>
+                  <span className="text-emerald-300 truncate" title={tr('{mint} (identificador simulado en Devnet)', { mint })}>{shortAddress(mint, 5, 5)}</span>
+                  <span className="text-[8px] px-1 rounded bg-neutral-700/70 text-neutral-300 shrink-0" title={tr('La red del juego es una simulación de Devnet')}>SIM</span>
+                  <button onClick={copyMint} aria-label={tr('Copiar mint address')} className="text-neutral-400 hover:text-emerald-300 cursor-pointer shrink-0">
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
@@ -174,22 +175,22 @@ export const GeneticCard: React.FC<GeneticCardProps> = ({ card, selected, faceDo
               {flipped && (
                 <div className="absolute inset-0 flex flex-col" style={{ background: `linear-gradient(160deg, ${card.color}22, #04090a 55%)` }}>
                   <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5 text-[10px] font-mono uppercase tracking-wider shrink-0">
-                    <span className="font-black" style={{ color: rc }}>◆ Ficha técnica</span>
-                    <button onClick={flip} aria-label="Volver a la carta" className="p-1 rounded-md border border-white/15 text-neutral-300 hover:text-white cursor-pointer">
+                    <span className="font-black" style={{ color: rc }}>{tr('◆ Ficha técnica')}</span>
+                    <button onClick={flip} aria-label={tr('Volver a la carta')} className="p-1 rounded-md border border-white/15 text-neutral-300 hover:text-white cursor-pointer">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
                   <div className="px-3 pb-3 overflow-y-auto scrollbar-none space-y-3 text-[11px]">
                     <div>
-                      <h3 className="font-serif text-base font-bold text-white leading-tight">{card.name}</h3>
+                      <h3 className="font-serif text-base font-bold text-white leading-tight">{tr(card.name)}</h3>
                       <div className="text-[10px] font-mono text-neutral-500">{serialFor(card.id)} · {rarityLabel}</div>
                     </div>
 
                     <dl className="space-y-1">
                       {card.attributes.map((a, i) => (
                         <div key={`${a.label}${i}`} className="flex justify-between gap-3 border-b border-white/5 pb-1">
-                          <dt className="text-neutral-500 font-mono shrink-0">{a.label}</dt>
+                          <dt className="text-neutral-500 font-mono shrink-0">{tr(a.label)}</dt>
                           <dd className="text-neutral-100 text-right break-words min-w-0">{a.value}</dd>
                         </div>
                       ))}
@@ -197,11 +198,11 @@ export const GeneticCard: React.FC<GeneticCardProps> = ({ card, selected, faceDo
 
                     {card.terpeneProfile.length > 0 && (
                       <div>
-                        <div className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 mb-1">Perfil terpénico</div>
+                        <div className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 mb-1">{tr('Perfil terpénico')}</div>
                         <div className="space-y-1">
                           {card.terpeneProfile.map((t) => (
                             <div key={t.label} className="grid grid-cols-[5.5rem_1fr_2.6rem] items-center gap-2 font-mono">
-                              <span className="text-neutral-300 truncate">{t.label}</span>
+                              <span className="text-neutral-300 truncate">{tr(t.label)}</span>
                               <div className="h-1.5 rounded-sm bg-neutral-950 border border-neutral-700/60 overflow-hidden">
                                 <div className="h-full" style={{ width: `${Math.min(100, (t.pct / 1.2) * 100)}%`, background: card.color, boxShadow: `0 0 6px ${card.color}` }} />
                               </div>
@@ -212,12 +213,12 @@ export const GeneticCard: React.FC<GeneticCardProps> = ({ card, selected, faceDo
                       </div>
                     )}
 
-                    {card.description && <p className="text-neutral-400 leading-snug">{card.description}</p>}
+                    {card.description && <p className="text-neutral-400 leading-snug">{tr(card.description)}</p>}
 
                     <div className="rounded-lg bg-black/40 border border-white/10 p-2 font-mono">
                       <div className="flex items-center justify-between text-[9px] text-neutral-500 uppercase tracking-wider mb-1">
-                        <span>Mint address · Devnet simulada</span>
-                        <button onClick={copyMint} aria-label="Copiar mint address" className="text-neutral-400 hover:text-emerald-300 cursor-pointer">
+                        <span>{tr('Mint address · Devnet simulada')}</span>
+                        <button onClick={copyMint} aria-label={tr('Copiar mint address')} className="text-neutral-400 hover:text-emerald-300 cursor-pointer">
                           {copied ? <Check className="w-3 h-3 text-emerald-300" /> : <Copy className="w-3 h-3" />}
                         </button>
                       </div>

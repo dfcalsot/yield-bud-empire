@@ -19,6 +19,7 @@ import {
   X
 } from 'lucide-react';
 import { UserProfile } from '../types';
+import { t } from '../i18n';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -61,7 +62,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
   const [regEmail, setRegEmail] = useState('');
   const [regRole, setRegRole] = useState<UserProfile['role']>('Master Grower');
   const [regAvatar, setRegAvatar] = useState('👨‍🌾');
-  const [regFacility, setRegFacility] = useState('Santuario Botánico');
+  const [regFacility, setRegFacility] = useState(t('Santuario Botánico'));
   const [regBio, setRegBio] = useState('');
 
   if (!isOpen) return null;
@@ -88,8 +89,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
       email: regEmail.trim().toLowerCase() || `${regUsername.trim()}@chronoflora.sol`,
       role: regRole,
       avatar: regAvatar,
-      facilityName: regFacility.trim() || 'Mi Jardín Botánico',
-      bio: regBio.trim() || 'Cultivador apasionado de genéticas botánicas en Solana.',
+      facilityName: regFacility.trim() || t('Mi Jardín Botánico'),
+      bio: regBio.trim() || t('Cultivador apasionado de genéticas botánicas en Solana.'),
       experienceLevel: 1,
       preferredNetwork: solanaNetwork,
       walletAddress: isWalletConnected ? walletAddress : undefined
@@ -119,13 +120,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
             </div>
             <div>
               <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-1.5 font-serif tracking-wide">
-                Acceso de Cultivador
+                {t('Acceso de Cultivador')}
                 <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-md font-mono">
-                  Multi-Usuario
+                  {t('Multi-Usuario')}
                 </span>
               </h3>
               <p className="text-xs text-neutral-400">
-                Cada usuario tiene sus plantas, semillas, equipos y tokens aislados
+                {t('Cada usuario tiene sus plantas, semillas, equipos y tokens aislados')}
               </p>
             </div>
           </div>
@@ -149,7 +150,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
             }`}
           >
             <LogIn className="w-3.5 h-3.5" />
-            <span>Ingresar</span>
+            <span>{t('Ingresar')}</span>
           </button>
 
           <button
@@ -162,7 +163,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
-            <span>Crear Cuenta</span>
+            <span>{t('Crear Cuenta')}</span>
           </button>
 
           <button
@@ -175,7 +176,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
             }`}
           >
             <Wallet className="w-3.5 h-3.5 text-purple-400" />
-            <span>Solana 1-Click</span>
+            <span>{t('Solana 1-Click')}</span>
           </button>
         </div>
 
@@ -185,7 +186,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
             <form onSubmit={handleLoginSubmit} className="space-y-3">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-neutral-300 flex items-center justify-between">
-                  <span>Usuario, Correo o Clave Pública Solana</span>
+                  <span>{t('Usuario, Correo o Clave Pública Solana')}</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
@@ -195,7 +196,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
                     type="text"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
-                    placeholder="ej. satoshi_grower o satoshi@chronoflora.sol"
+                    placeholder={t('ej. satoshi_grower o satoshi@chronoflora.sol')}
                     className="w-full pl-9 pr-3 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                     required
                   />
@@ -207,14 +208,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
                 className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs rounded-xl shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Ingresar a Mi Cultivo</span>
+                <span>{t('Ingresar a Mi Cultivo')}</span>
               </button>
             </form>
 
             {/* Quick Demo Accounts Selection */}
             <div className="pt-2 border-t border-neutral-800 space-y-2">
               <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider block">
-                Cambio Rápido de Cuenta (Cuentas Demostrativas con datos separados)
+                {t('Cambio Rápido de Cuenta (Cuentas Demostrativas con datos separados)')}
               </span>
 
               <div className="grid grid-cols-1 gap-2">
@@ -237,12 +238,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
                             <span className="text-xs font-bold text-white truncate">{user.displayName}</span>
                             {isCurrent && (
                               <span className="text-[9px] px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded font-semibold">
-                                Activo
+                                {t('Activo')}
                               </span>
                             )}
                           </div>
                           <p className="text-[10px] text-neutral-400 truncate">
-                            @{user.username} • <span className="text-neutral-300 font-medium">{user.role}</span> (Nv. {user.experienceLevel || 1})
+                            @{user.username} • <span className="text-neutral-300 font-medium">{t(user.role)}</span> (Nv. {user.experienceLevel || 1})
                           </p>
                         </div>
                       </div>
@@ -259,7 +260,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
                               : 'bg-neutral-800 text-neutral-300 hover:bg-emerald-500/20 hover:text-emerald-300'
                           }`}
                         >
-                          {isCurrent ? 'Actual' : 'Entrar'}
+                          {isCurrent ? t('Actual') : t('Entrar')}
                         </button>
                       </div>
                     </div>
@@ -275,24 +276,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
           <form onSubmit={handleRegisterSubmit} className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-neutral-300">Nombre de Cultivador</label>
+                <label className="text-[11px] font-semibold text-neutral-300">{t('Nombre de Cultivador')}</label>
                 <input
                   type="text"
                   value={regDisplayName}
                   onChange={(e) => setRegDisplayName(e.target.value)}
-                  placeholder="ej. Mateo Botánico"
+                  placeholder={t('ej. Mateo Botánico')}
                   className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-neutral-300">Nombre de Usuario (@handle)</label>
+                <label className="text-[11px] font-semibold text-neutral-300">{t('Nombre de Usuario (@handle)')}</label>
                 <input
                   type="text"
                   value={regUsername}
                   onChange={(e) => setRegUsername(e.target.value)}
-                  placeholder="ej. mateo_grow"
+                  placeholder={t('ej. mateo_grow')}
                   className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                   required
                 />
@@ -301,7 +302,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-neutral-300">Correo Electrónico</label>
+                <label className="text-[11px] font-semibold text-neutral-300">{t('Correo Electrónico')}</label>
                 <input
                   type="email"
                   value={regEmail}
@@ -312,7 +313,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-neutral-300">Rol de Cultivo</label>
+                <label className="text-[11px] font-semibold text-neutral-300">{t('Rol de Cultivo')}</label>
                 <select
                   value={regRole}
                   onChange={(e) => setRegRole(e.target.value as any)}
@@ -327,7 +328,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
 
             {/* Avatar Selection */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-neutral-300">Selecciona tu Avatar Botánico</label>
+              <label className="text-[11px] font-semibold text-neutral-300">{t('Selecciona tu Avatar Botánico')}</label>
               <div className="flex flex-wrap gap-2">
                 {AVATAR_OPTIONS.map((av) => (
                   <button
@@ -347,22 +348,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-neutral-300">Nombre de tu Instalación de Cultivo</label>
+              <label className="text-[11px] font-semibold text-neutral-300">{t('Nombre de tu Instalación de Cultivo')}</label>
               <input
                 type="text"
                 value={regFacility}
                 onChange={(e) => setRegFacility(e.target.value)}
-                placeholder="ej. Armario Biológico 120x120 o Invernadero Solana"
+                placeholder={t('ej. Armario Biológico 120x120 o Invernadero Solana')}
                 className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-neutral-300">Biografía / Enfoque de Cultivo</label>
+              <label className="text-[11px] font-semibold text-neutral-300">{t('Biografía / Enfoque de Cultivo')}</label>
               <textarea
                 value={regBio}
                 onChange={(e) => setRegBio(e.target.value)}
-                placeholder="Describe tus metas genéticas o técnicas favoritas de cultivo..."
+                placeholder={t('Describe tus metas genéticas o técnicas favoritas de cultivo...')}
                 rows={2}
                 className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 resize-none"
               />
@@ -374,8 +375,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
                 <Sparkles className="w-4 h-4" />
               </div>
               <div className="text-[11px] text-neutral-300">
-                <strong className="text-emerald-300 font-semibold block">Paquete de Inicio Incluido:</strong>
-                +500 $FLORA, +2.0 SOL de prueba, 2 semillas feminizadas y cuarto vegetativo equipado.
+                <strong className="text-emerald-300 font-semibold block">{t('Paquete de Inicio Incluido:')}</strong>
+                {t('+500 $FLORA, +2.0 SOL de prueba, 2 semillas feminizadas y cuarto vegetativo equipado.')}
               </div>
             </div>
 
@@ -384,7 +385,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
               className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs rounded-xl shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
             >
               <UserPlus className="w-4 h-4" />
-              <span>Registrar e Iniciar mi Jardín</span>
+              <span>{t('Registrar e Iniciar mi Jardín')}</span>
             </button>
           </form>
         )}
@@ -399,14 +400,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
             </div>
 
             <div className="space-y-1">
-              <h4 className="text-sm font-bold text-white">Inicio de Sesión Criptográfico con Solana</h4>
+              <h4 className="text-sm font-bold text-white">{t('Inicio de Sesión Criptográfico con Solana')}</h4>
               <p className="text-xs text-neutral-400 max-w-sm mx-auto">
-                Vincula tu clave pública de Solana (Mainnet, Devnet o Testnet). Tus datos y patentes quedarán firmados bajo tu dirección.
+                {t('Vincula tu clave pública de Solana (Mainnet, Devnet o Testnet). Tus datos y patentes quedarán firmados bajo tu dirección.')}
               </p>
             </div>
 
             <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 text-left space-y-1.5">
-              <span className="text-[10px] uppercase font-mono text-neutral-500 block">Billetera Activa Detectada:</span>
+              <span className="text-[10px] uppercase font-mono text-neutral-500 block">{t('Billetera Activa Detectada:')}</span>
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs text-emerald-400 truncate">
                   {walletAddress}
@@ -423,11 +424,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
               className="w-full py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-600 hover:from-purple-500 hover:to-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
             >
               <Wallet className="w-4 h-4" />
-              <span>Autenticar con mi Billetera Solana</span>
+              <span>{t('Autenticar con mi Billetera Solana')}</span>
             </button>
 
             <p className="text-[10px] text-neutral-500">
-              No requiere contraseña. Si es tu primera vez, se creará un perfil on-chain con 500 $FLORA de bienvenida.
+              {t('No requiere contraseña. Si es tu primera vez, se creará un perfil on-chain con 500 $FLORA de bienvenida.')}
             </p>
           </div>
         )}

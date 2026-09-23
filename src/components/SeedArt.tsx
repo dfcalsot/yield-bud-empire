@@ -1,4 +1,5 @@
 import React, { useId } from 'react';
+import { t as tr } from '../i18n';
 
 /**
  * Animated cannabis seed for the seed cards (replaces the static leaf inside the ring).
@@ -48,7 +49,7 @@ export const SeedArt: React.FC<SeedArtProps> = ({ tint, rarityColor, rarity, own
   const halo = rarity === 'epic' || rarity === 'legendary';
 
   return (
-    <svg viewBox="0 0 200 200" className={className} role="img" aria-label="Semilla de cannabis">
+    <svg viewBox="0 0 200 200" className={className} role="img" aria-label={tr('Semilla de cannabis')}>
       <defs>
         <linearGradient id={`b${uid}`} x1="0.15" y1="0" x2="0.85" y2="1">
           <stop offset="0" stopColor={light} />

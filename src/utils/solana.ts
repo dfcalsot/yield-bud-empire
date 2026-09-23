@@ -1,38 +1,39 @@
 import { Connection, PublicKey, LAMPORTS_PER_SOL, Keypair } from '@solana/web3.js';
 import { SolanaNetwork, SolanaNetworkConfig, SolanaWalletProviderInfo } from '../types';
+import { t, k, localize } from '../i18n/core';
 
-export const SOLANA_NETWORKS: Record<SolanaNetwork, SolanaNetworkConfig> = {
+export const SOLANA_NETWORKS: Record<SolanaNetwork, SolanaNetworkConfig> = localize<Record<SolanaNetwork, SolanaNetworkConfig>>({
   'mainnet-beta': {
     id: 'mainnet-beta',
-    name: 'Solana Mainnet (Oficial)',
-    badgeLabel: 'Mainnet Oficial',
+    name: k('Solana Mainnet (Oficial)'),
+    badgeLabel: k('Mainnet Oficial'),
     rpcUrl: 'https://api.mainnet-beta.solana.com',
     explorerCluster: '',
     badgeColor: 'bg-emerald-500',
     isOfficial: true,
-    description: 'Red de producción oficial de Solana con valor real y contratos SPL activos.'
+    description: k('Red de producción oficial de Solana con valor real y contratos SPL activos.')
   },
   'devnet': {
     id: 'devnet',
-    name: 'Solana Devnet',
-    badgeLabel: 'Devnet',
+    name: k('Solana Devnet'),
+    badgeLabel: k('Devnet'),
     rpcUrl: 'https://api.devnet.solana.com',
     explorerCluster: '?cluster=devnet',
     badgeColor: 'bg-purple-500',
     isOfficial: false,
-    description: 'Red para desarrolladores con faucet gratuito de SOL y despliegue ágil.'
+    description: k('Red para desarrolladores con faucet gratuito de SOL y despliegue ágil.')
   },
   'testnet': {
     id: 'testnet',
-    name: 'Solana Testnet',
-    badgeLabel: 'Testnet',
+    name: k('Solana Testnet'),
+    badgeLabel: k('Testnet'),
     rpcUrl: 'https://api.testnet.solana.com',
     explorerCluster: '?cluster=testnet',
     badgeColor: 'bg-amber-500',
     isOfficial: false,
-    description: 'Red de validadores de prueba de estrés y verificación de consenso.'
+    description: k('Red de validadores de prueba de estrés y verificación de consenso.')
   }
-};
+}, ['name', 'badgeLabel', 'description']);
 
 // Singleton connection cache per network
 const connectionCache: Partial<Record<SolanaNetwork, Connection>> = {};
@@ -66,48 +67,48 @@ export function detectSolanaProviders(): SolanaWalletProviderInfo[] {
   return [
     {
       id: 'phantom',
-      name: 'Phantom Wallet',
+      name: t('Phantom Wallet'),
       iconName: 'ghost',
       isInstalled: !!phantom,
       isDetected: !!phantom?.isPhantom,
       website: 'https://phantom.app',
-      description: 'La billetera más popular del ecosistema Solana con soporte Mainnet y Devnet.'
+      description: t('La billetera más popular del ecosistema Solana con soporte Mainnet y Devnet.')
     },
     {
       id: 'solflare',
-      name: 'Solflare Wallet',
+      name: t('Solflare Wallet'),
       iconName: 'flame',
       isInstalled: !!solflare,
       isDetected: !!solflare?.isSolflare,
       website: 'https://solflare.com',
-      description: 'Billetera integral con control total de claves, staking y cambio de RPCs.'
+      description: t('Billetera integral con control total de claves, staking y cambio de RPCs.')
     },
     {
       id: 'backpack',
-      name: 'Backpack xNFT',
+      name: t('Backpack xNFT'),
       iconName: 'backpack',
       isInstalled: !!backpack,
       isDetected: !!backpack?.isBackpack,
       website: 'https://backpack.app',
-      description: 'Billetera criptográfica avanzada con soporte nativo de aplicaciones xNFT.'
+      description: t('Billetera criptográfica avanzada con soporte nativo de aplicaciones xNFT.')
     },
     {
       id: 'injected',
-      name: 'Cualquier Billetera Solana Conectada',
+      name: t('Cualquier Billetera Solana Conectada'),
       iconName: 'wallet',
       isInstalled: !!window?.solana,
       isDetected: !!window?.solana,
       website: 'https://solana.com/wallets',
-      description: 'Detecta automáticamente cualquier extensión de navegador compatible con Solana.'
+      description: t('Detecta automáticamente cualquier extensión de navegador compatible con Solana.')
     },
     {
       id: 'virtual',
-      name: 'Billetera Criptográfica Virtual (Keypair)',
+      name: t('Billetera Criptográfica Virtual (Keypair)'),
       iconName: 'key',
       isInstalled: true,
       isDetected: true,
       website: 'https://solana.com',
-      description: 'Genera instantáneamente un par de claves Ed25519 compatible con Testnet y Devnet.'
+      description: t('Genera instantáneamente un par de claves Ed25519 compatible con Testnet y Devnet.')
     }
   ];
 }
@@ -119,35 +120,35 @@ export async function connectBrowserWallet(providerType: 'phantom' | 'solflare' 
   provider: any;
 }> {
   if (typeof window === 'undefined') {
-    throw new Error('El navegador no está disponible.');
+    throw new Error(t('El navegador no está disponible.'));
   }
 
   let provider: any = null;
-  let name = 'Solana Wallet';
+  let name = t('Solana Wallet');
 
   if (providerType === 'phantom') {
     provider = window.phantom?.solana || (window.solana?.isPhantom ? window.solana : null);
-    name = 'Phantom';
+    name = t('Phantom');
   } else if (providerType === 'solflare') {
     provider = window.solflare || (window.solana?.isSolflare ? window.solana : null);
-    name = 'Solflare';
+    name = t('Solflare');
   } else if (providerType === 'backpack') {
     provider = window.backpack;
-    name = 'Backpack';
+    name = t('Backpack');
   } else {
     provider = window.solana;
-    name = 'Solana Injected';
+    name = t('Solana Injected');
   }
 
   if (!provider) {
-    throw new Error(`No se encontró la extensión de ${name}. Por favor instálala o utiliza la Billetera Virtual.`);
+    throw new Error(t('No se encontró la extensión de {name}. Por favor instálala o utiliza la Billetera Virtual.', { name }));
   }
 
   try {
     const resp = await provider.connect();
     const pubKey = resp?.publicKey?.toString() || provider.publicKey?.toString();
     if (!pubKey) {
-      throw new Error('No se pudo obtener la clave pública de la billetera.');
+      throw new Error(t('No se pudo obtener la clave pública de la billetera.'));
     }
     return {
       publicKey: pubKey,
@@ -156,9 +157,9 @@ export async function connectBrowserWallet(providerType: 'phantom' | 'solflare' 
     };
   } catch (err: any) {
     if (err.code === 4001) {
-      throw new Error('Conexión rechazada por el usuario en la billetera.');
+      throw new Error(t('Conexión rechazada por el usuario en la billetera.'));
     }
-    throw new Error(err.message || 'Error al conectar la billetera Solana.');
+    throw new Error(err.message || t('Error al conectar la billetera Solana.'));
   }
 }
 
@@ -195,7 +196,7 @@ export async function requestSolanaAirdrop(publicKeyStr: string, network: Solana
   success: boolean;
 }> {
   if (network === 'mainnet-beta') {
-    throw new Error('No se pueden solicitar airdrops gratuitos en Solana Mainnet Oficial. Usa Devnet o Testnet.');
+    throw new Error(t('No se pueden solicitar airdrops gratuitos en Solana Mainnet Oficial. Usa Devnet o Testnet.'));
   }
 
   try {

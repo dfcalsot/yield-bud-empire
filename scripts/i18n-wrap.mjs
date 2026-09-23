@@ -22,8 +22,10 @@ const mark = args.includes('--mark');
 const dataMode = args.includes('--data');
 const DATA_FIELDS = new Set(['name', 'description', 'label', 'title', 'blurb', 'desc', 'short', 'subtitle', 'tagline', 'role', 'effect', 'place', 'cause', 'cure',
   'look', 'confirm', 'fix', 'brief', 'note', 'weeks', 'spec', 'categoryLabel', 'stageName', 'instructions', 'productName', 'line', 'ask', 'thanks', 'hint', 'say', 'how',
-  'strainDesc', 'terp', 'text', 'detail', 'headline', 'message', 'unit', 'potency', 'lineageLabel', 'type', 'difficulty', 'category', 'seedType', 'origin']);
+  'strainDesc', 'terp', 'text', 'detail', 'headline', 'message', 'unit', 'potency', 'lineageLabel', 'type', 'difficulty', 'category', 'seedType', 'origin', 'lineage', 'breeder', 'strainName']);
 const allProps = args.includes('--all-props');
+// --ui-props=a,b,c: campos extra que en estos archivos son texto de interfaz (listas locales de una pantalla)
+const extraUi = (args.find((x) => x.startsWith('--ui-props=')) ?? '').slice(11).split(',').filter(Boolean);
 const files = args.filter((a) => !a.startsWith('--'));
 
 const UI_PROPS = new Set(['title', 'text', 'label', 'desc', 'description', 'hint', 'message', 'msg', 'body', 'subtitle', 'sub', 'tip', 'tips', 'note', 'say', 'cta',
@@ -34,10 +36,11 @@ const NEVER_PROPS = new Set(['brand', 'element', 'symbol', 'id', 'key', 'type', 
 const NON_UI_ATTRS = new Set(['className', 'class', 'id', 'key', 'href', 'src', 'type', 'name', 'role', 'style', 'variant', 'kind', 'mood', 'size', 'd', 'fill', 'stroke',
   'viewBox', 'transform', 'points', 'rel', 'target', 'method', 'autoComplete', 'inputMode', 'pattern', 'lang', 'dir', 'htmlFor', 'value', 'defaultValue', 'data-testid',
   'strokeLinecap', 'strokeLinejoin', 'fillRule', 'clipRule', 'mask', 'filter', 'preserveAspectRatio', 'xmlns', 'gradientUnits', 'maskUnits', 'textAnchor', 'dominantBaseline',
-  'fontFamily', 'fontWeight', 'clipPath', 'markerEnd', 'markerStart', 'as', 'icon', 'tone', 'color', 'accent', 'zone', 'tab', 'group', 'mode', 'position', 'align', 'side', 'loading', 'decoding', 'crossOrigin', 'sizes', 'srcSet', 'media']);
+  'fontFamily', 'fontWeight', 'in', 'in2', 'result', 'operator', 'values', 'stdDeviation', 'clipPath', 'markerEnd', 'markerStart', 'as', 'icon', 'tone', 'color', 'accent', 'zone', 'tab', 'group', 'mode', 'position', 'align', 'side', 'loading', 'decoding', 'crossOrigin', 'sizes', 'srcSet', 'media']);
 const NON_UI_CALLS = /^(console\.\w+|localStorage\.\w+|sessionStorage\.\w+|fetch|document\.\w+|window\.\w+|\w+\.querySelector(All)?|new URL|URLSearchParams|setCurrentTab|intent|post|audit|require|import|t|RegExp|new RegExp|Symbol|\w+\.startsWith|\w+\.endsWith|\w+\.includes|\w+\.split|\w+\.replace|\w+\.indexOf|\w+\.match|\w+\.test|\w+\.setAttribute|\w+\.getItem|\w+\.setItem|\w+\.removeItem|\w+\.addEventListener|\w+\.removeEventListener|mintAddressFor|generate\w+|hash\w*|sha\w*|playSound|play\w*Sound)$/;
 
 // valores que la lógica usa como claves (tipos con valores fijos en español): nunca se envuelven; se traducen al mostrarlos
+for (const x of []) void x;
 const IGNORE = new Set(['Madre (Esquejes / Clones)', 'Padre (Donante de Polen)', 'Hembra Revertida (STS)', 'Principiante Botánico', 'Breeder Botánico',
   'Genetista Comercial', 'Inversionista Web3', 'Master Grower', 'Híbrido', 'Sativa', 'Indica', 'Autofloreciente', 'F2P Fácil', 'Intermedio', 'Maestro', 'Exótico',
   'Fácil', 'Avanzado', 'días', 'Orgánica 100%', 'Mineral Quelada', 'Sales Grado Comercial', 'Regular', 'Landrace', 'Enter', 'Escape']);
@@ -47,6 +50,8 @@ const KEEP = /^[\s\d.,:;%+\-–—·•/|()×x$#@*!?¡¿"'“”«»→←↑↓
 function natural(s, jsx = false) {
   if (IGNORE.has(s.trim())) return false;
   if (/^\/[\w{}\/.?=&-]*$/.test(s.trim())) return false;   // rutas de la API (/api/…/{x})
+  if (/^https?:\/\/\S*$/.test(s.trim())) return false;   // enlaces con marcadores
+  if (/^(\d{3}|bold|italic|normal)?\s*\d+(\.\d+)?px\s+[\w\s,'"-]+$/i.test(s.trim())) return false;   // fuente de canvas ("500 22px monospace")
   const v = s.replace(/\{\w+\}/g, ' ').trim();
   // una sola palabra: es texto solo si empieza con mayúscula seguida de minúsculas, o lleva acentos/¿¡ (no ids, métodos ni códigos);
   // en texto JSX también cuentan las palabras en MAYÚSCULAS (rótulos como NIVEL)
@@ -118,7 +123,7 @@ function blocked(node, sf) {
     const k = p.name.getText(sf).replace(/['"]/g, '');
     if (NEVER_PROPS.has(k)) return `prop:${k}`;
     // --all-props solo abre las tablas del módulo (datos que se marcan con k); dentro de funciones sigue la lista de interfaz
-    if (!UI_PROPS.has(k) && !(allProps && !insideFunction(node))) return `prop:${k}`;
+    if (!UI_PROPS.has(k) && !extraUi.includes(k) && !(allProps && !insideFunction(node))) return `prop:${k}`;
   }
   if (ts.isCallExpression(p) || ts.isNewExpression(p)) { const c = calleeText(p, sf); if (NON_UI_CALLS.test(c)) return `llamada:${c}`; }
   if (ts.isArrayLiteralExpression(p) && ts.isCallExpression(p.parent) && /\.(includes|indexOf)$/.test(p.parent.expression.getText(sf))) return 'lista-lógica';

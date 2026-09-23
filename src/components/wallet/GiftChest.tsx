@@ -4,6 +4,7 @@ import { Flame, X } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { playHarvestChime } from '../../utils/audio';
 import '../hud/hud.css';
+import { t } from '../../i18n';
 
 /** The treasure chest itself: body, iron bands, lock, and a lid that swings open over a pile of coins. */
 const ChestArt: React.FC<{ open?: boolean; shaking?: boolean; onClick?: () => void; small?: boolean }> = ({ open, shaking, onClick, small }) => {
@@ -29,7 +30,7 @@ const ChestArt: React.FC<{ open?: boolean; shaking?: boolean; onClick?: () => vo
     </svg>
   );
   if (small) return svg;
-  return <div className={`gc-chest ${shaking ? 'is-shaking' : ''} ${open ? 'is-open' : ''}`} onClick={onClick} role="button" aria-label="Abrir el cofre" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick?.(); }} data-gift-chest>{svg}</div>;
+  return <div className={`gc-chest ${shaking ? 'is-shaking' : ''} ${open ? 'is-open' : ''}`} onClick={onClick} role="button" aria-label={t('Abrir el cofre')} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick?.(); }} data-gift-chest>{svg}</div>;
 };
 
 /**
@@ -59,30 +60,30 @@ export const GiftChest: React.FC = () => {
   return (
     <>
       {first && !open && (
-        <button type="button" className="gc-fab" onClick={() => setOpen(true)} data-testid="gift-fab" aria-label="Tienes un cofre de regalo">
-          <ChestArt small /> <span>COFRE DE REGALO{gifts.length > 1 ? ` ×${gifts.length}` : ''}</span>
+        <button type="button" className="gc-fab" onClick={() => setOpen(true)} data-testid="gift-fab" aria-label={t('Tienes un cofre de regalo')}>
+          <ChestArt small /> <span>{t('COFRE DE REGALO{v0}', { v0: gifts.length > 1 ? ` ×${gifts.length}` : '' })}</span>
         </button>
       )}
       {open && (
-        <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm grid place-items-center p-4" role="dialog" aria-modal aria-label="Cofre de regalo" onClick={phase === 'idle' || phase === 'open' ? close : undefined} data-testid="gift-modal">
+        <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm grid place-items-center p-4" role="dialog" aria-modal aria-label={t('Cofre de regalo')} onClick={phase === 'idle' || phase === 'open' ? close : undefined} data-testid="gift-modal">
           <div className="fp-shell w-full max-w-sm p-5 text-center space-y-3" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-end -mb-2"><button type="button" className="fp-x" onClick={close} aria-label="Cerrar"><X className="w-4 h-4" /></button></div>
-            <h3 className="font-serif text-xl font-black text-white">{phase === 'open' ? '¡Regalo recibido!' : 'Un cofre para ti'}</h3>
+            <div className="flex justify-end -mb-2"><button type="button" className="fp-x" onClick={close} aria-label={t('Cerrar')}><X className="w-4 h-4" /></button></div>
+            <h3 className="font-serif text-xl font-black text-white">{phase === 'open' ? t('¡Regalo recibido!') : t('Un cofre para ti')}</h3>
             <div className="gc-stage">
               <span className="gc-glow" />
               <ChestArt open={phase === 'open'} shaking={phase === 'shaking'} onClick={doOpen} />
             </div>
             {phase !== 'open' && (
               <>
-                <p className="text-[12px] text-neutral-300 leading-snug">{first?.note || 'Regalo de la casa'}. Toca el cofre para abrirlo.</p>
-                <button type="button" className="fp-cta w-full justify-center" disabled={phase === 'shaking'} onClick={doOpen} data-gift-open>{phase === 'shaking' ? 'Abriendo…' : 'Abrir cofre'}</button>
+                <p className="text-[12px] text-neutral-300 leading-snug">{t('{v0}. Toca el cofre para abrirlo.', { v0: first?.note || t('Regalo de la casa') })}</p>
+                <button type="button" className="fp-cta w-full justify-center" disabled={phase === 'shaking'} onClick={doOpen} data-gift-open>{phase === 'shaking' ? t('Abriendo…') : t('Abrir cofre')}</button>
               </>
             )}
             {phase === 'open' && got && (
               <div className="gc-amount space-y-2">
                 <div className="text-3xl font-black font-mono text-amber-300 flex items-center justify-center gap-2" data-testid="gift-amount"><Flame className="w-6 h-6" />+{got.amount.toLocaleString()} $FLORA</div>
-                <p className="text-[12px] text-neutral-300">{got.note || 'Regalo de la casa'}. Ya está en tu cartera.</p>
-                <button type="button" className="fp-cta w-full justify-center" onClick={close}>¡Gracias!</button>
+                <p className="text-[12px] text-neutral-300">{t('{v0}. Ya está en tu cartera.', { v0: got.note || t('Regalo de la casa') })}</p>
+                <button type="button" className="fp-cta w-full justify-center" onClick={close}>{t('¡Gracias!')}</button>
               </div>
             )}
           </div>

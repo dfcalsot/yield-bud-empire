@@ -3,6 +3,7 @@ import { REGIONS, dayIndexOf, weatherOn } from '../../sim/terroir';
 import type { RegionId } from '../../types';
 import { MapDetail } from './mapDetail';
 import { MapTraffic, MapUfo } from './mapActors';
+import { t, k, localize } from '../../i18n';
 
 /** The 1587 planisphere of Urbano Monti resampled to this map's equirectangular grid (see scripts/maps/README.md). Public domain. */
 export const MONTI_URL = '/maps/monti-1587.webp';
@@ -11,7 +12,7 @@ export const MONTI_GAME_URL = '/maps/monti-game.webp';
 /** monti = Monti's geography in the game's style · parchment = the antique chart as painted · classic = the game's own stylised continents */
 export type MapSkin = 'monti' | 'parchment' | 'classic';
 export const NEXT_SKIN: Record<MapSkin, MapSkin> = { monti: 'parchment', parchment: 'classic', classic: 'monti' };
-export const SKIN_LABEL: Record<MapSkin, string> = { monti: '🗺️ Estilo Monti', parchment: '📜 Pergamino 1587', classic: '🧭 Mapa clásico' };
+export const SKIN_LABEL: Record<MapSkin, string> = localize<Record<MapSkin, string>>({ monti: k('🗺️ Estilo Monti'), parchment: k('📜 Pergamino 1587'), classic: k('🧭 Mapa clásico') }, ['monti', 'parchment', 'classic']);
 
 /** Stylised world map (equirectangular 1000×500) with the seven regions, a live day/night terminator and drifting clouds. */
 
@@ -61,7 +62,7 @@ export const WorldMap: React.FC<{
   const sunLon = -((utcH - 12) * 15);
   const [nx] = proj(sunLon + 90, 0);
   return (
-    <svg viewBox="0 0 1000 500" className="pl-map" role="img" aria-label="Mapa del planeta con las siete regiones de cultivo">
+    <svg viewBox="0 0 1000 500" className="pl-map" role="img" aria-label={t('Mapa del planeta con las siete regiones de cultivo')}>
       <defs>
         <linearGradient id="plOcean" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0b2a44" /><stop offset="1" stopColor="#061626" /></linearGradient>
         <linearGradient id="plLand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1e6b45" /><stop offset="1" stopColor="#0f3d2a" /></linearGradient>
@@ -146,9 +147,9 @@ export const WorldMap: React.FC<{
               <circle cx={x} cy={y} r={sel ? 15 : 12} fill="#04121c" stroke={r.color} strokeWidth={sel ? 3.2 : 2} className="pl-dot" />
               <text x={x} y={y + 5} textAnchor="middle" fontSize={sel ? 16 : 14}>{r.emoji}</text>
               {(() => { const L = LABEL[r.id] ?? { dx: 0, dy: 30, anchor: 'middle' as const }; return (
-                <text x={x + L.dx} y={y + L.dy} textAnchor={L.anchor} fontSize="12" fontWeight={sel ? 800 : 600} fill="#e2e8f0" stroke="#020617" strokeWidth="3" paintOrder="stroke" fontFamily="ui-monospace, monospace">{r.name}</text>
+                <text x={x + L.dx} y={y + L.dy} textAnchor={L.anchor} fontSize="12" fontWeight={sel ? 800 : 600} fill="#e2e8f0" stroke="#020617" strokeWidth="3" paintOrder="stroke" fontFamily="ui-monospace, monospace">{t(r.name)}</text>
               ); })()}
-              <text x={x - 17} y={y - 12} fontSize="11" textAnchor="middle" aria-label={wx.label}>{wx.emoji}</text>
+              <text x={x - 17} y={y - 12} fontSize="11" textAnchor="middle" aria-label={t(wx.label)}>{wx.emoji}</text>
               {rdy > 0 && <g transform={`translate(${x - 30} ${y + 12})`}><rect x="-2" y="-10" width="28" height="14" rx="7" fill="#fbbf24" stroke="#78350f" /><text x="12" y="0" textAnchor="middle" fontSize="9.5" fontWeight="800" fill="#1c1305">🌾{rdy}</text></g>}
               {n > 0 && (
                 <g transform={`translate(${x + 12} ${y - 18})`}>
@@ -160,7 +161,7 @@ export const WorldMap: React.FC<{
           );
         })}
         <MapUfo onUfoCaught={onUfoCaught} />
-        {antique && <text x="992" y="492" textAnchor="end" fontSize="9" fill="#e2e8f0" opacity=".7" fontFamily="ui-monospace, monospace" pointerEvents="none">Geografía: Urbano Monti, planisferio de 1587 · dominio público</text>}
+        {antique && <text x="992" y="492" textAnchor="end" fontSize="9" fill="#e2e8f0" opacity=".7" fontFamily="ui-monospace, monospace" pointerEvents="none">{t('Geografía: Urbano Monti, planisferio de 1587 · dominio público')}</text>}
       </g>
     </svg>
   );

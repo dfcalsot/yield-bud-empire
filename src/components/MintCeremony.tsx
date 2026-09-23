@@ -6,6 +6,7 @@ import { GeneticCard } from './GeneticCard';
 import { NeonButton, RARITY_STYLE } from './game/GameUI';
 import { DnaLeaf } from './icons/CannabisIcons';
 import { GeneticCardData, mintAddressFor, shortAddress } from '../utils/nft';
+import { t as tr, k, localize } from '../i18n';
 
 /** what the ceremony needs from any NFT: an id, a rarity and a colour; `render` draws the card itself (genetics by default) */
 type CeremonyCard = Pick<GeneticCardData, 'id' | 'rarity' | 'color'>;
@@ -24,10 +25,10 @@ interface MintCeremonyProps {
 
 const PHASE_MS = [1300, 1500, 1000]; // signing, confirming, minting → reveal
 
-const PHASES = {
-  onchain: ['Firmando transacción', 'Confirmando en Solana', 'Acuñando NFT'],
-  birth: ['Cruzando parentales', 'Secuenciando genoma', 'Naciendo la F1'],
-} as const;
+const PHASES = localize({
+  onchain: [k('Firmando transacción'), k('Confirmando en Solana'), k('Acuñando NFT')],
+  birth: [k('Cruzando parentales'), k('Secuenciando genoma'), k('Naciendo la F1')],
+} as const, ['onchain', 'birth']);
 
 const CopyRow: React.FC<{ label: string; value: string; shown: string }> = ({ label, value, shown }) => {
   const [ok, setOk] = useState(false);
@@ -36,7 +37,7 @@ const CopyRow: React.FC<{ label: string; value: string; shown: string }> = ({ la
       <span className="text-neutral-500">{label}</span>
       <span className="text-emerald-300 truncate">{shown}</span>
       <button
-        aria-label={`Copiar ${label}`}
+        aria-label={tr('Copiar {label}', { label })}
         className="text-neutral-400 hover:text-emerald-300 cursor-pointer"
         onClick={async () => {
           try {
@@ -52,7 +53,7 @@ const CopyRow: React.FC<{ label: string; value: string; shown: string }> = ({ la
   );
 };
 
-export const MintCeremony: React.FC<MintCeremonyProps> = ({ card, render, variant, feeText, signature, slot, onClose, closeLabel = 'Continuar' }) => {
+export const MintCeremony: React.FC<MintCeremonyProps> = ({ card, render, variant, feeText, signature, slot, onClose, closeLabel = tr('Continuar') }) => {
   const { walletAddress } = useGame();
   const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const [phase, setPhase] = useState<0 | 1 | 2 | 3>(reduced ? 3 : 0);
@@ -102,16 +103,16 @@ export const MintCeremony: React.FC<MintCeremonyProps> = ({ card, render, varian
   const sigShown = (signature ?? mint + mint.slice(0, 44)).slice(0, 88);
   const typed = sigShown.slice(0, Math.min(sigShown.length, tick * 4));
   const confirmations = phase === 0 ? 0 : phase === 1 ? Math.min(32, Math.round(((tick * 45 - PHASE_MS[0]) / PHASE_MS[1]) * 32)) : 32;
-  const wallet = walletAddress ? shortAddress(walletAddress, 4, 4) : 'billetera virtual';
+  const wallet = walletAddress ? shortAddress(walletAddress, 4, 4) : tr('billetera virtual');
   const bases = 'ATGC';
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Ceremonia de acuñación">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={tr('Ceremonia de acuñación')}>
       <div className="absolute inset-0 bg-[#020806]/97" style={{ backgroundImage: `radial-gradient(circle at 50% 45%, ${rc}33, transparent 60%)` }} />
 
       {phase < 3 && (
         <button onClick={() => setPhase(3)} className="absolute top-4 right-4 z-10 text-[11px] font-mono uppercase tracking-wider text-neutral-400 hover:text-white cursor-pointer px-3 py-1.5 rounded-lg border border-neutral-700">
-          Saltar
+          {tr('Saltar')}
         </button>
       )}
 
@@ -127,38 +128,38 @@ export const MintCeremony: React.FC<MintCeremonyProps> = ({ card, render, varian
               {variant === 'onchain' && phase === 0 && (
                 <div className="w-full space-y-3 text-left">
                   <div className="px-3 py-2 rounded-xl bg-neutral-950/80 border border-emerald-400/25 flex items-center justify-between text-xs font-mono">
-                    <span className="text-neutral-400">Firmante</span>
+                    <span className="text-neutral-400">{tr('Firmante')}</span>
                     <span className="text-emerald-300">{wallet}</span>
                   </div>
                   {feeText && (
                     <div className="px-3 py-2 rounded-xl bg-neutral-950/80 border border-amber-400/25 flex items-center justify-between text-xs font-mono">
-                      <span className="text-neutral-400">Coste</span>
+                      <span className="text-neutral-400">{tr('Coste')}</span>
                       <span className="text-amber-300">{feeText}</span>
                     </div>
                   )}
                   <div className="px-3 py-2 rounded-xl bg-black/60 border border-white/10 text-[11px] font-mono text-emerald-200/90 break-all min-h-[4.2rem]">
-                    <span className="text-neutral-500">firma › </span>{typed}<span className="animate-pulse">▍</span>
+                    <span className="text-neutral-500">{tr('firma ›')}{' '}</span>{typed}<span className="animate-pulse">▍</span>
                   </div>
                 </div>
               )}
 
               {variant === 'onchain' && phase === 1 && (
                 <div className="w-full space-y-4">
-                  <div className="text-xs font-mono text-neutral-400">Bloque de inclusión <span className="text-cyan-300">#{baseSlot.toLocaleString()}</span> · 392 ms</div>
+                  <div className="text-xs font-mono text-neutral-400">{tr('Bloque de inclusión')}{' '}<span className="text-cyan-300">#{baseSlot.toLocaleString()}</span> · 392 ms</div>
                   <div className="grid grid-cols-[repeat(32,minmax(0,1fr))] gap-[2px]">
                     {Array.from({ length: 32 }, (_, i) => (
                       <span key={i} className="h-5 rounded-[2px]" style={{ background: i < confirmations ? '#34d399' : '#10231c', boxShadow: i < confirmations ? '0 0 6px #34d399' : 'none', transition: 'background 0.15s' }} />
                     ))}
                   </div>
-                  <div className="text-xs font-mono text-emerald-300">Confirmaciones {confirmations}/32</div>
+                  <div className="text-xs font-mono text-emerald-300">{tr('Confirmaciones {confirmations}/32', { confirmations })}</div>
                 </div>
               )}
 
               {variant === 'birth' && phase === 0 && (
                 <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 rounded-full border border-fuchsia-300/50 flex items-center justify-center text-fuchsia-200 text-xs font-mono">♀ Madre</div>
+                  <div className="w-16 h-16 rounded-full border border-fuchsia-300/50 flex items-center justify-center text-fuchsia-200 text-xs font-mono">{tr('♀ Madre')}</div>
                   <DnaLeaf className="w-14 h-14 text-emerald-300 animate-pulse" />
-                  <div className="w-16 h-16 rounded-full border border-cyan-300/50 flex items-center justify-center text-cyan-200 text-xs font-mono">♂ Padre</div>
+                  <div className="w-16 h-16 rounded-full border border-cyan-300/50 flex items-center justify-center text-cyan-200 text-xs font-mono">{tr('♂ Padre')}</div>
                 </div>
               )}
 
@@ -197,8 +198,8 @@ export const MintCeremony: React.FC<MintCeremonyProps> = ({ card, render, varian
               {signature && <CopyRow label="FIRMA" value={signature} shown={shortAddress(signature, 6, 6)} />}
               <p className="text-[10px] font-mono text-neutral-500 leading-snug pt-1">
                 {variant === 'onchain'
-                  ? `Confirmado en la Devnet simulada del juego${slot ? ` · bloque #${slot.toLocaleString()}` : ''}. El identificador es simulado: no existe en la Solana real.`
-                  : 'Nace fuera de la cadena. Regístrala como patente para acuñarla on-chain y quemar $FLORA.'}
+                  ? tr('Confirmado en la Devnet simulada del juego{v0}. El identificador es simulado: no existe en la Solana real.', { v0: slot ? tr(' · bloque #{v0}', { v0: slot.toLocaleString() }) : '' })
+                  : tr('Nace fuera de la cadena. Regístrala como patente para acuñarla on-chain y quemar $FLORA.')}
               </p>
             </div>
             <NeonButton tone="emerald" onClick={onClose} className="px-8 py-3">{closeLabel}</NeonButton>

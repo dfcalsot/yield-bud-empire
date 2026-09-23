@@ -1,5 +1,6 @@
 import type { RegionId } from '../types';
 import { hash01 } from './hash';
+import { t, k, localize } from '../i18n/core';
 
 /**
  * The planet: seven growing regions (the HashKings map, re-imagined), their climate, the deterministic daily weather,
@@ -31,29 +32,29 @@ export interface Region {
   supply: number;
 }
 
-export const REGIONS: Region[] = [
-  { id: 'afghanistan', name: 'Afganistán', short: 'Afg', emoji: '⛰️', climate: 'Montaña árida', color: '#f59e0b', lon: 67, lat: 34, landrace: 'hindu_kush', price: 380, supply: 40,
+export const REGIONS: Region[] = localize<Region[]>([
+  { id: 'afghanistan', name: k('Afganistán'), short: k('Afg'), emoji: '⛰️', climate: k('Montaña árida'), color: '#f59e0b', lon: 67, lat: 34, landrace: 'hindu_kush', price: 380, supply: 40,
     temp: 22, swing: 12, rh: 35, rain: 0.08, base: { water: 55, sunlight: 98, soil: 86 },
-    blurb: 'Valles secos a gran altura, días cálidos y noches frías. Cuna de las indicas: resina densa, poca lluvia.' },
-  { id: 'mexico', name: 'México', short: 'Mex', emoji: '🌵', climate: 'Semiárido cálido', color: '#f97316', lon: -102, lat: 23, landrace: 'acapulco_gold', price: 350, supply: 40,
+    blurb: k('Valles secos a gran altura, días cálidos y noches frías. Cuna de las indicas: resina densa, poca lluvia.') },
+  { id: 'mexico', name: k('México'), short: k('Mex'), emoji: '🌵', climate: k('Semiárido cálido'), color: '#f97316', lon: -102, lat: 23, landrace: 'acapulco_gold', price: 350, supply: 40,
     temp: 27, swing: 8, rh: 45, rain: 0.18, base: { water: 60, sunlight: 96, soil: 82 },
-    blurb: 'Sierra soleada y seca. Aquí nació el Acapulco Gold; mucho sol, riego atento.' },
-  { id: 'jamaica', name: 'Jamaica', short: 'Jam', emoji: '🏝️', climate: 'Isla tropical', color: '#22c55e', lon: -77, lat: 18, landrace: 'lambs_bread', price: 520, supply: 40,
+    blurb: k('Sierra soleada y seca. Aquí nació el Acapulco Gold; mucho sol, riego atento.') },
+  { id: 'jamaica', name: k('Jamaica'), short: k('Jam'), emoji: '🏝️', climate: k('Isla tropical'), color: '#22c55e', lon: -77, lat: 18, landrace: 'lambs_bread', price: 520, supply: 40,
     temp: 28, swing: 4, rh: 78, rain: 0.4, base: { water: 92, sunlight: 82, soil: 90 },
-    blurb: 'Calor húmedo constante y suelos ricos. Lluvias frecuentes: cuidado con el moho.' },
-  { id: 'central_america', name: 'Centroamérica', short: 'Cam', emoji: '🌴', climate: 'Tropical húmedo', color: '#ef4444', lon: -85, lat: 12, landrace: 'panama_red', price: 420, supply: 40,
+    blurb: k('Calor húmedo constante y suelos ricos. Lluvias frecuentes: cuidado con el moho.') },
+  { id: 'central_america', name: k('Centroamérica'), short: k('Cam'), emoji: '🌴', climate: k('Tropical húmedo'), color: '#ef4444', lon: -85, lat: 12, landrace: 'panama_red', price: 420, supply: 40,
     temp: 27, swing: 5, rh: 75, rain: 0.5, base: { water: 95, sunlight: 72, soil: 86 },
-    blurb: 'Selva y aguaceros. Panama Red crece aquí como en casa; el sol es el recurso escaso.' },
-  { id: 'south_america', name: 'Sudamérica', short: 'Sam', emoji: '🦙', climate: 'Andino templado', color: '#eab308', lon: -74, lat: 4, landrace: 'colombian_gold_strain', price: 560, supply: 40,
+    blurb: k('Selva y aguaceros. Panama Red crece aquí como en casa; el sol es el recurso escaso.') },
+  { id: 'south_america', name: k('Sudamérica'), short: k('Sam'), emoji: '🦙', climate: k('Andino templado'), color: '#eab308', lon: -74, lat: 4, landrace: 'colombian_gold_strain', price: 560, supply: 40,
     temp: 22, swing: 9, rh: 60, rain: 0.3, base: { water: 82, sunlight: 88, soil: 94 },
-    blurb: 'Laderas templadas de suelo fértil, el clima más equilibrado. Colombian Gold, dulce y luminosa.' },
-  { id: 'africa', name: 'África', short: 'Afr', emoji: '🦁', climate: 'Sabana', color: '#a3e635', lon: 28, lat: -10, landrace: 'durban_poison', price: 340, supply: 40,
+    blurb: k('Laderas templadas de suelo fértil, el clima más equilibrado. Colombian Gold, dulce y luminosa.') },
+  { id: 'africa', name: k('África'), short: k('Afr'), emoji: '🦁', climate: k('Sabana'), color: '#a3e635', lon: 28, lat: -10, landrace: 'durban_poison', price: 340, supply: 40,
     temp: 29, swing: 9, rh: 50, rain: 0.2, base: { water: 58, sunlight: 97, soil: 78 },
-    blurb: 'Sabana abierta con sol a raudales y estaciones de lluvia. Durban Poison, sativa enérgica.' },
-  { id: 'asia', name: 'Asia', short: 'Asi', emoji: '🐘', climate: 'Monzón tropical', color: '#38bdf8', lon: 101, lat: 15, landrace: 'thai_stick', price: 450, supply: 40,
+    blurb: k('Sabana abierta con sol a raudales y estaciones de lluvia. Durban Poison, sativa enérgica.') },
+  { id: 'asia', name: k('Asia'), short: k('Asi'), emoji: '🐘', climate: k('Monzón tropical'), color: '#38bdf8', lon: 101, lat: 15, landrace: 'thai_stick', price: 450, supply: 40,
     temp: 28, swing: 5, rh: 80, rain: 0.45, base: { water: 90, sunlight: 76, soil: 84 },
-    blurb: 'Monzones y humedad. Thai Stick, sativa alta que agradece el calor pero teme al moho.' },
-];
+    blurb: k('Monzones y humedad. Thai Stick, sativa alta que agradece el calor pero teme al moho.') },
+], ['name', 'short', 'climate', 'blurb']);
 
 export const REGION_BY_ID: Record<RegionId, Region> = Object.fromEntries(REGIONS.map((r) => [r.id, r])) as Record<RegionId, Region>;
 
@@ -73,14 +74,14 @@ export interface Weather {
   storm: number;      // health lost per hour by the plants
 }
 
-const FX: Record<WeatherKind, Omit<Weather, 'kind'>> = {
-  sunny: { label: 'Soleado', emoji: '☀️', tempD: 1.5, rhD: -4, sunMul: 1, rain: 0, storm: 0 },
-  cloudy: { label: 'Nublado', emoji: '⛅', tempD: -1.5, rhD: 6, sunMul: 0.6, rain: 0, storm: 0 },
-  rain: { label: 'Lluvia', emoji: '🌧️', tempD: -3.5, rhD: 18, sunMul: 0.35, rain: 3.5, storm: 0 },
-  storm: { label: 'Tormenta', emoji: '⛈️', tempD: -4, rhD: 22, sunMul: 0.2, rain: 6, storm: 0.6 },
-  heat: { label: 'Ola de calor', emoji: '🔥', tempD: 7, rhD: -12, sunMul: 1.05, rain: 0, storm: 0 },
-  cold: { label: 'Frente frío', emoji: '🥶', tempD: -9, rhD: 4, sunMul: 0.75, rain: 0, storm: 0 },
-};
+const FX: Record<WeatherKind, Omit<Weather, 'kind'>> = localize<Record<WeatherKind, Omit<Weather, 'kind'>>>({
+  sunny: { label: k('Soleado'), emoji: '☀️', tempD: 1.5, rhD: -4, sunMul: 1, rain: 0, storm: 0 },
+  cloudy: { label: k('Nublado'), emoji: '⛅', tempD: -1.5, rhD: 6, sunMul: 0.6, rain: 0, storm: 0 },
+  rain: { label: k('Lluvia'), emoji: '🌧️', tempD: -3.5, rhD: 18, sunMul: 0.35, rain: 3.5, storm: 0 },
+  storm: { label: k('Tormenta'), emoji: '⛈️', tempD: -4, rhD: 22, sunMul: 0.2, rain: 6, storm: 0.6 },
+  heat: { label: k('Ola de calor'), emoji: '🔥', tempD: 7, rhD: -12, sunMul: 1.05, rain: 0, storm: 0 },
+  cold: { label: k('Frente frío'), emoji: '🥶', tempD: -9, rhD: 4, sunMul: 0.75, rain: 0, storm: 0 },
+}, ['label']);
 
 /** Weather of a region on a given day (UTC day index): the same for every player and every replay. */
 export function weatherOn(region: Region, dayIndex: number): Weather {
@@ -163,15 +164,15 @@ export function terroirOf(origin: RegionId | undefined, regionId: RegionId, rati
   const soilG = 0.88 + 0.12 * (ratings.soil / 100);
   const soilY = 0.85 + 0.15 * (ratings.soil / 100);
   const sunY = 0.9 + 0.1 * (ratings.sunlight / 100);
-  if (!origin) return { growth: 0.97 * soilG, yield: 1 * soilY * sunY, label: 'Híbrida adaptable', tone: 'neutral', detail: 'Se adapta a cualquier clima sin bonus ni castigo fuerte.' };
-  if (origin === regionId) return { growth: 1.12 * soilG, yield: 1.3 * soilY * sunY, label: '¡En su tierra!', tone: 'up', detail: 'Landrace en su región de origen: +12 % de crecimiento y +30 % de cosecha.' };
+  if (!origin) return { growth: 0.97 * soilG, yield: 1 * soilY * sunY, label: t('Híbrida adaptable'), tone: 'neutral', detail: t('Se adapta a cualquier clima sin bonus ni castigo fuerte.') };
+  if (origin === regionId) return { growth: 1.12 * soilG, yield: 1.3 * soilY * sunY, label: t('¡En su tierra!'), tone: 'up', detail: t('Landrace en su región de origen: +12 % de crecimiento y +30 % de cosecha.') };
   const d = regionDistance(origin, regionId);
   return {
     growth: (1 - 0.25 * d) * soilG,
     yield: (1 - 0.4 * d) * soilY * sunY,
-    label: d < 0.35 ? 'Clima compatible' : 'Clima ajeno',
+    label: d < 0.35 ? t('Clima compatible') : t('Clima ajeno'),
     tone: d < 0.35 ? 'neutral' : 'down',
-    detail: `Su clima de origen se parece ${Math.round((1 - d) * 100)} % a este: crece ${Math.round((1 - 0.25 * d) * 100)} % y rinde ${Math.round((1 - 0.4 * d) * 100)} %.`,
+    detail: t('Su clima de origen se parece {v0} % a este: crece {v1} % y rinde {v2} %.', { v0: Math.round((1 - d) * 100), v1: Math.round((1 - 0.25 * d) * 100), v2: Math.round((1 - 0.4 * d) * 100) }),
   };
 }
 
