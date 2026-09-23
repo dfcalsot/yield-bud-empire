@@ -4,6 +4,7 @@ import { BALANCE as B, LIGHT_FRACTION } from './balance';
 import { hash01 } from './hash';
 import { averageLight, REGION_BY_ID, terroirOf, type PlotRatings, type SiteConditions } from './terroir';
 import { phGrowthFactor } from './nutrition';
+import { t as tr, k, localize } from '../i18n/core';
 
 export { hash01 };
 
@@ -45,11 +46,11 @@ export interface Budget {
 /** What the hired gardener does (level 1: water + feed, level 2: also treats plagues). */
 export interface GardenerInput { water: boolean; feed: boolean; treat: boolean; feedBonus: number }
 
-export const PEST_INFO: Record<PestKind, { label: string; emoji: string; cause: string; cure: string }> = {
-  mites: { label: 'Ácaros', emoji: '🕷️', cause: 'calor, aire seco y sala sucia', cure: 'Aceite de Neem' },
-  mold: { label: 'Moho', emoji: '🍄', cause: 'humedad alta, sobre todo en floración', cure: 'Fungicida Bacillus' },
-  rot: { label: 'Pudrición de raíz', emoji: '🦠', cause: 'sustrato encharcado', cure: 'Trichoderma' },
-};
+export const PEST_INFO: Record<PestKind, { label: string; emoji: string; cause: string; cure: string }> = localize<Record<PestKind, { label: string; emoji: string; cause: string; cure: string }>>({
+  mites: { label: k('Ácaros'), emoji: '🕷️', cause: k('calor, aire seco y sala sucia'), cure: k('Aceite de Neem') },
+  mold: { label: k('Moho'), emoji: '🍄', cause: k('humedad alta, sobre todo en floración'), cure: k('Fungicida Bacillus') },
+  rot: { label: k('Pudrición de raíz'), emoji: '🦠', cause: k('sustrato encharcado'), cure: k('Trichoderma') },
+}, ['label', 'cause', 'cure']);
 
 export interface SimEnv {
   autoWater: boolean;
@@ -417,6 +418,6 @@ export function formatDuration(seconds: number): string {
   const h = Math.floor((m % 1440) / 60);
   const mm = m % 60;
   if (d > 0) return `${d} d ${h} h`;
-  if (h > 0) return `${h} h ${mm} min`;
+  if (h > 0) return tr('{h} h {mm} min', { h, mm });
   return `${mm} min`;
 }

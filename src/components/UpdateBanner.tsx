@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { t } from '../i18n';
 
 /** Polls dist/version.json; when a newer build is published, tells the player and offers a one-click reload. */
 export const UpdateBanner: React.FC = () => {
@@ -21,7 +22,7 @@ export const UpdateBanner: React.FC = () => {
   return (
     <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] animate-fade-in" role="status">
       <button onClick={() => window.location.reload()} className="flex items-center gap-2 rounded-full border border-emerald-300/60 bg-neutral-950/95 px-4 py-2 text-xs font-bold text-emerald-200 shadow-[0_0_30px_-6px_rgba(184,243,90,.8)] hover:bg-emerald-400/10 cursor-pointer">
-        <RefreshCw className="w-4 h-4" aria-hidden />Hay una versión nueva del juego · <u>Recargar</u>
+        <RefreshCw className="w-4 h-4" aria-hidden />{t('Hay una versión nueva del juego ·')}{' '}<u>{t('Recargar')}</u>
       </button>
     </div>
   );

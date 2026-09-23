@@ -5,7 +5,7 @@ import { YieldBudWordmark } from '../components/brand/YieldBudWordmark';
 import { Npc, useNpcSay } from '../components/npc/Npc';
 import { getStoredUserProfiles, saveUserProfile, setActiveUserId } from '../utils/auth';
 import type { UserProfile } from '../types';
-import { t, getLang, setLang, hasChosenLang, useLang } from '../i18n';
+import { t, getLang, setLang, hasChosenLang, useLang, t as tr } from '../i18n';
 import { LangSwitch } from '../i18n/LangSwitch';
 
 /** The service builds links with its configured public address; on screen they should open on the address you are playing from. */
@@ -166,7 +166,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
           <YieldBudWordmark variant="hero" className="mx-auto mt-3" />
           <p className="text-[10.5px] font-mono uppercase tracking-[0.2em] text-emerald-300/60 mt-1">{t('Acceso seguro · una cuenta por persona')}</p>
         </div>
-        <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="chrono" text={npc.say.text} mood={npc.say.mood} moodKey={npc.say.key} /></div>
+        <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="chrono" text={tr(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>
 
         <div className="hud-panel p-5 space-y-4" style={{ background: 'rgba(3, 14, 11, 0.96)' }}>
           {(mode === 'login' || mode === 'register') && (

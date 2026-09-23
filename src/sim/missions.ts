@@ -1,5 +1,6 @@
 import { hash01 } from './hash';
 import type { NpcKind } from '../components/npc/Npc';
+import { t, k, localize } from '../i18n/core';
 
 /**
  * NPC missions. Every character of the cast hands out a short story line (missions unlock in order) plus one daily
@@ -41,49 +42,49 @@ export interface MissionDef {
 
 /* ───────────────────────────── story lines (ordered per NPC) ───────────────────────────── */
 
-export const STORY: MissionDef[] = [
+export const STORY: MissionDef[] = localize<MissionDef[]>([
   // Flora · Grow Shop
-  { id: 'flora_1', npc: 'merchant', title: 'Primera compra', event: 'buy', goal: 1, reward: { lots: [{ id: 'water_50' }], xp: 30 },
-    ask: 'Mire, jefe, un cultivador que no compra no crece. Llévese cualquier cosa de la tienda y le regalo agua.', thanks: '¡Trato hecho! Agua limpia de la casa.' },
-  { id: 'flora_2', npc: 'merchant', title: 'Cliente de confianza', event: 'buy', goal: 3, reward: { lots: [{ id: 'nut_biobizz' }], xp: 50 },
-    ask: 'Tres compras más y le doy un fertilizante de cortesía. Los clientes fieles se cuidan.', thanks: 'Para usted, con cariño: nutrientes BioBizz.' },
-  { id: 'flora_3', npc: 'merchant', title: 'Mayorista', event: 'buy', goal: 6, reward: { lots: [{ id: 'energy_20' }, { id: 'pest_neem' }], xp: 90 },
-    ask: 'Seis compras y ya es mayorista. Le tengo un bono de energía y neem para las plagas.', thanks: '¡Mayorista oficial! Que no le falte luz ni le sobren bichos.' },
+  { id: 'flora_1', npc: 'merchant', title: k('Primera compra'), event: 'buy', goal: 1, reward: { lots: [{ id: 'water_50' }], xp: 30 },
+    ask: k('Mire, jefe, un cultivador que no compra no crece. Llévese cualquier cosa de la tienda y le regalo agua.'), thanks: k('¡Trato hecho! Agua limpia de la casa.') },
+  { id: 'flora_2', npc: 'merchant', title: k('Cliente de confianza'), event: 'buy', goal: 3, reward: { lots: [{ id: 'nut_biobizz' }], xp: 50 },
+    ask: k('Tres compras más y le doy un fertilizante de cortesía. Los clientes fieles se cuidan.'), thanks: k('Para usted, con cariño: nutrientes BioBizz.') },
+  { id: 'flora_3', npc: 'merchant', title: k('Mayorista'), event: 'buy', goal: 6, reward: { lots: [{ id: 'energy_20' }, { id: 'pest_neem' }], xp: 90 },
+    ask: k('Seis compras y ya es mayorista. Le tengo un bono de energía y neem para las plagas.'), thanks: k('¡Mayorista oficial! Que no le falte luz ni le sobren bichos.') },
 
   // Tomás · Cultivador
-  { id: 'tomas_1', npc: 'farmer', title: 'Manos a la tierra', event: 'water', goal: 3, reward: { lots: [{ id: 'water_50' }], xp: 30 },
-    ask: 'Una planta sedienta es una planta triste. Riegue tres veces y le paso agua de mi pozo.', thanks: '¡Así se hace! Aquí tiene su agua.' },
-  { id: 'tomas_2', npc: 'farmer', title: 'A sembrar', event: 'plant', goal: 2, reward: { seeds: { seed_gelato_auto: 1 }, xp: 50 },
-    ask: 'Siembre dos semillas, donde quiera, y le regalo una Gelato Auto de mi reserva.', thanks: 'Una Gelato Auto pa\' usted. Cuídela bien.' },
-  { id: 'tomas_3', npc: 'farmer', title: 'Dueño de tierra', event: 'plot', goal: 1, reward: { lots: [{ id: 'pest_neem' }, { id: 'water_200' }], xp: 120 },
-    ask: 'Un agricultor de verdad tiene su terreno. Compre una parcela en el Planeta y le ayudo con el arranque.', thanks: '¡Ya tiene tierra propia! Agua y neem, que arranca la faena.' },
-  { id: 'tomas_4', npc: 'farmer', title: 'Primera cosecha', event: 'harvest', goal: 1, reward: { seeds: { seed_chrono_og: 2 }, xp: 100 },
-    ask: 'Ahora lo más lindo: coseche una planta. Se lo ha ganado.', thanks: '¡Esa sí es cosecha! Dos semillas Yield OG de premio.' },
+  { id: 'tomas_1', npc: 'farmer', title: k('Manos a la tierra'), event: 'water', goal: 3, reward: { lots: [{ id: 'water_50' }], xp: 30 },
+    ask: k('Una planta sedienta es una planta triste. Riegue tres veces y le paso agua de mi pozo.'), thanks: k('¡Así se hace! Aquí tiene su agua.') },
+  { id: 'tomas_2', npc: 'farmer', title: k('A sembrar'), event: 'plant', goal: 2, reward: { seeds: { seed_gelato_auto: 1 }, xp: 50 },
+    ask: k('Siembre dos semillas, donde quiera, y le regalo una Gelato Auto de mi reserva.'), thanks: k('Una Gelato Auto pa\' usted. Cuídela bien.') },
+  { id: 'tomas_3', npc: 'farmer', title: k('Dueño de tierra'), event: 'plot', goal: 1, reward: { lots: [{ id: 'pest_neem' }, { id: 'water_200' }], xp: 120 },
+    ask: k('Un agricultor de verdad tiene su terreno. Compre una parcela en el Planeta y le ayudo con el arranque.'), thanks: k('¡Ya tiene tierra propia! Agua y neem, que arranca la faena.') },
+  { id: 'tomas_4', npc: 'farmer', title: k('Primera cosecha'), event: 'harvest', goal: 1, reward: { seeds: { seed_chrono_og: 2 }, xp: 100 },
+    ask: k('Ahora lo más lindo: coseche una planta. Se lo ha ganado.'), thanks: k('¡Esa sí es cosecha! Dos semillas Yield OG de premio.') },
 
   // Dra. Lucía · Científica
-  { id: 'lucia_1', npc: 'scientist', title: 'Receta a medida', event: 'fertigate', goal: 1, reward: { lots: [{ id: 'nut_biobizz' }], xp: 40 },
-    ask: 'Prepare una solución en el laboratorio de Nutrición y aplíquela a una planta. Le repongo los reactivos.', thanks: 'Química bien aplicada. Reactivos repuestos.' },
-  { id: 'lucia_2', npc: 'scientist', title: 'Planta Industrial', event: 'lab', goal: 2, reward: { lots: [{ id: 'energy_20' }], xp: 70 },
-    ask: 'Corra dos procesos en la Planta Industrial. Las máquinas comen kWh, le devuelvo parte.', thanks: 'Dos ciclos limpios. Aquí van unos kWh.' },
-  { id: 'lucia_3', npc: 'scientist', title: 'Sello de calidad', event: 'certify', goal: 1, reward: { lots: [{ id: 'pest_shield' }, { id: 'energy_20' }], xp: 120 },
-    ask: 'Un producto sin certificado de laboratorio no vale lo que debería. Certifique uno.', thanks: 'Certificado y todo. Bio-Shield y energía para la siguiente.' },
+  { id: 'lucia_1', npc: 'scientist', title: k('Receta a medida'), event: 'fertigate', goal: 1, reward: { lots: [{ id: 'nut_biobizz' }], xp: 40 },
+    ask: k('Prepare una solución en el laboratorio de Nutrición y aplíquela a una planta. Le repongo los reactivos.'), thanks: k('Química bien aplicada. Reactivos repuestos.') },
+  { id: 'lucia_2', npc: 'scientist', title: k('Planta Industrial'), event: 'lab', goal: 2, reward: { lots: [{ id: 'energy_20' }], xp: 70 },
+    ask: k('Corra dos procesos en la Planta Industrial. Las máquinas comen kWh, le devuelvo parte.'), thanks: k('Dos ciclos limpios. Aquí van unos kWh.') },
+  { id: 'lucia_3', npc: 'scientist', title: k('Sello de calidad'), event: 'certify', goal: 1, reward: { lots: [{ id: 'pest_shield' }, { id: 'energy_20' }], xp: 120 },
+    ask: k('Un producto sin certificado de laboratorio no vale lo que debería. Certifique uno.'), thanks: k('Certificado y todo. Bio-Shield y energía para la siguiente.') },
 
   // Prof. Rafa · Genetista
-  { id: 'rafa_1', npc: 'geneticist', title: 'Genética nueva', event: 'seedbuy', goal: 1, reward: { seeds: { seed_super_silver_haze: 1 }, xp: 40 },
-    ask: 'Compre una semilla del banco. Diversificar es la primera regla de un genetista.', thanks: 'Y de mi colección, una Super Silver Haze.' },
-  { id: 'rafa_2', npc: 'geneticist', title: 'Primer cruce', event: 'breed', goal: 1, reward: { seeds: { seed_neon_kush_rosin: 2 }, xp: 90 },
-    ask: 'Cruce dos genéticas. De ahí sale lo bueno.', thanks: '¡Un híbrido propio! Dos Neon Kush Rosin para seguir experimentando.' },
-  { id: 'rafa_3', npc: 'geneticist', title: 'Patente', event: 'patent', goal: 1, reward: { lots: [{ id: 'energy_100' }], xp: 200 },
-    ask: 'Registre una patente y su genética queda a su nombre para siempre.', thanks: 'Su nombre en el registro. Energía para el laboratorio.' },
+  { id: 'rafa_1', npc: 'geneticist', title: k('Genética nueva'), event: 'seedbuy', goal: 1, reward: { seeds: { seed_super_silver_haze: 1 }, xp: 40 },
+    ask: k('Compre una semilla del banco. Diversificar es la primera regla de un genetista.'), thanks: k('Y de mi colección, una Super Silver Haze.') },
+  { id: 'rafa_2', npc: 'geneticist', title: k('Primer cruce'), event: 'breed', goal: 1, reward: { seeds: { seed_neon_kush_rosin: 2 }, xp: 90 },
+    ask: k('Cruce dos genéticas. De ahí sale lo bueno.'), thanks: k('¡Un híbrido propio! Dos Neon Kush Rosin para seguir experimentando.') },
+  { id: 'rafa_3', npc: 'geneticist', title: k('Patente'), event: 'patent', goal: 1, reward: { lots: [{ id: 'energy_100' }], xp: 200 },
+    ask: k('Registre una patente y su genética queda a su nombre para siempre.'), thanks: k('Su nombre en el registro. Energía para el laboratorio.') },
 
   // Marta · Dispensaria
-  { id: 'marta_1', npc: 'budtender', title: 'Primera venta', event: 'sell', goal: 1, reward: { lots: [{ id: 'water_50' }], xp: 30 },
-    ask: 'Venda un lote en el dispensario y le regalo agua para la próxima ronda.', thanks: '¡Primera venta! Se corre la voz.' },
-  { id: 'marta_2', npc: 'budtender', title: 'Cartera de clientes', event: 'sell', goal: 3, reward: { lots: [{ id: 'nut_biobizz' }], xp: 60 },
-    ask: 'Tres ventas más y ya tiene clientela.', thanks: 'Clientela fiel. Nutrientes de mi parte.' },
-  { id: 'marta_3', npc: 'budtender', title: 'Proveedor estrella', event: 'sell', goal: 6, reward: { lots: [{ id: 'energy_20' }, { id: 'pest_neem' }], xp: 110 },
-    ask: 'Seis ventas y es mi proveedor estrella.', thanks: '¡Proveedor estrella! Un bono de energía y neem.' },
-];
+  { id: 'marta_1', npc: 'budtender', title: k('Primera venta'), event: 'sell', goal: 1, reward: { lots: [{ id: 'water_50' }], xp: 30 },
+    ask: k('Venda un lote en el dispensario y le regalo agua para la próxima ronda.'), thanks: k('¡Primera venta! Se corre la voz.') },
+  { id: 'marta_2', npc: 'budtender', title: k('Cartera de clientes'), event: 'sell', goal: 3, reward: { lots: [{ id: 'nut_biobizz' }], xp: 60 },
+    ask: k('Tres ventas más y ya tiene clientela.'), thanks: k('Clientela fiel. Nutrientes de mi parte.') },
+  { id: 'marta_3', npc: 'budtender', title: k('Proveedor estrella'), event: 'sell', goal: 6, reward: { lots: [{ id: 'energy_20' }, { id: 'pest_neem' }], xp: 110 },
+    ask: k('Seis ventas y es mi proveedor estrella.'), thanks: k('¡Proveedor estrella! Un bono de energía y neem.') },
+], ['title', 'ask', 'thanks']);
 
 /* ───────────────────────────── daily errands (one per NPC per day) ───────────────────────────── */
 
@@ -99,23 +100,23 @@ export interface ErrandDef {
 
 const SMALL = (id: string, xp = 15): MissionReward => ({ lots: [{ id }], xp });
 
-export const ERRANDS: ErrandDef[] = [
-  { id: 'e_flora_a', npc: 'merchant', title: 'Una compra del día', event: 'buy', goal: 1, reward: SMALL('water_50'), ask: 'Hoy tengo oferta: haga una compra y le doy agua.' },
-  { id: 'e_flora_b', npc: 'merchant', title: 'Reponer stock', event: 'buy', goal: 2, reward: SMALL('energy_20', 20), ask: 'Reponga dos cositas hoy y le sale un bono de energía.' },
+export const ERRANDS: ErrandDef[] = localize<ErrandDef[]>([
+  { id: 'e_flora_a', npc: 'merchant', title: k('Una compra del día'), event: 'buy', goal: 1, reward: SMALL('water_50'), ask: k('Hoy tengo oferta: haga una compra y le doy agua.') },
+  { id: 'e_flora_b', npc: 'merchant', title: k('Reponer stock'), event: 'buy', goal: 2, reward: SMALL('energy_20', 20), ask: k('Reponga dos cositas hoy y le sale un bono de energía.') },
 
-  { id: 'e_tomas_a', npc: 'farmer', title: 'Ronda de riego', event: 'water', goal: 4, reward: SMALL('water_50'), ask: 'Hoy toca ronda de riego: cuatro riegos.' },
-  { id: 'e_tomas_b', npc: 'farmer', title: 'Hora de abonar', event: 'feed', goal: 2, reward: SMALL('nut_biobizz'), ask: 'Alimente a las plantas dos veces hoy.' },
-  { id: 'e_tomas_c', npc: 'farmer', title: 'Sembrar hoy', event: 'plant', goal: 2, reward: SMALL('pest_neem'), ask: 'Siembre un par de plantas hoy.' },
+  { id: 'e_tomas_a', npc: 'farmer', title: k('Ronda de riego'), event: 'water', goal: 4, reward: SMALL('water_50'), ask: k('Hoy toca ronda de riego: cuatro riegos.') },
+  { id: 'e_tomas_b', npc: 'farmer', title: k('Hora de abonar'), event: 'feed', goal: 2, reward: SMALL('nut_biobizz'), ask: k('Alimente a las plantas dos veces hoy.') },
+  { id: 'e_tomas_c', npc: 'farmer', title: k('Sembrar hoy'), event: 'plant', goal: 2, reward: SMALL('pest_neem'), ask: k('Siembre un par de plantas hoy.') },
 
-  { id: 'e_lucia_a', npc: 'scientist', title: 'Ajuste del día', event: 'fertigate', goal: 1, reward: SMALL('nut_biobizz'), ask: 'Aplique una solución nutritiva hoy y anote qué pasó.' },
-  { id: 'e_lucia_b', npc: 'scientist', title: 'Turno de laboratorio', event: 'lab', goal: 1, reward: SMALL('energy_20', 20), ask: 'Corra un ciclo en la Planta Industrial.' },
+  { id: 'e_lucia_a', npc: 'scientist', title: k('Ajuste del día'), event: 'fertigate', goal: 1, reward: SMALL('nut_biobizz'), ask: k('Aplique una solución nutritiva hoy y anote qué pasó.') },
+  { id: 'e_lucia_b', npc: 'scientist', title: k('Turno de laboratorio'), event: 'lab', goal: 1, reward: SMALL('energy_20', 20), ask: k('Corra un ciclo en la Planta Industrial.') },
 
-  { id: 'e_rafa_a', npc: 'geneticist', title: 'Ojo al banco', event: 'seedbuy', goal: 1, reward: { seeds: { seed_gelato_auto: 1 }, xp: 20 }, ask: 'Compre una semilla hoy: el banco rota su catálogo.' },
-  { id: 'e_rafa_b', npc: 'geneticist', title: 'Experimento', event: 'breed', goal: 1, reward: SMALL('pest_neem', 25), ask: 'Un cruce hoy, aunque salga mal: se aprende igual.' },
+  { id: 'e_rafa_a', npc: 'geneticist', title: k('Ojo al banco'), event: 'seedbuy', goal: 1, reward: { seeds: { seed_gelato_auto: 1 }, xp: 20 }, ask: k('Compre una semilla hoy: el banco rota su catálogo.') },
+  { id: 'e_rafa_b', npc: 'geneticist', title: k('Experimento'), event: 'breed', goal: 1, reward: SMALL('pest_neem', 25), ask: k('Un cruce hoy, aunque salga mal: se aprende igual.') },
 
-  { id: 'e_marta_a', npc: 'budtender', title: 'Turno de mostrador', event: 'sell', goal: 1, reward: SMALL('water_50'), ask: 'Venda un lote hoy y le doy agua.' },
-  { id: 'e_marta_b', npc: 'budtender', title: 'Día de ventas', event: 'sell', goal: 2, reward: SMALL('energy_20', 20), ask: 'Dos ventas hoy y le toca un bono de energía.' },
-];
+  { id: 'e_marta_a', npc: 'budtender', title: k('Turno de mostrador'), event: 'sell', goal: 1, reward: SMALL('water_50'), ask: k('Venda un lote hoy y le doy agua.') },
+  { id: 'e_marta_b', npc: 'budtender', title: k('Día de ventas'), event: 'sell', goal: 2, reward: SMALL('energy_20', 20), ask: k('Dos ventas hoy y le toca un bono de energía.') },
+], ['title', 'ask']);
 
 /* ───────────────────────────── state ───────────────────────────── */
 
@@ -230,13 +231,13 @@ export function claimErrand(s: MissionState, npc: NpcKind, now = Date.now()): Cl
   return {
     state: { ...rolled, daily: { ...rolled.daily, [npc]: { ...d, claimed: true } } },
     reward: view.def.reward,
-    say: '¡Recado cumplido! Vuelva mañana, siempre hay algo que hacer.',
+    say: t('¡Recado cumplido! Vuelva mañana, siempre hay algo que hacer.'),
     title: view.def.title,
   };
 }
 
 export const rewardSummary = (r: MissionReward, nameOf: (catalogId: string) => string, seedName: (seedId: string) => string): string[] => [
   ...(r.lots ?? []).map((l) => `${l.qty && l.qty > 1 ? `${l.qty}× ` : ''}${nameOf(l.id)}`),
-  ...Object.entries(r.seeds ?? {}).map(([id, n]) => `${n}× semilla ${seedName(id)}`),
+  ...Object.entries(r.seeds ?? {}).map(([id, n]) => t('{n}× semilla {v1}', { n, v1: seedName(id) })),
   `+${r.xp} XP`,
 ];

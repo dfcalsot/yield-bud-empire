@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { t, k, localize } from '../../i18n';
 
 /** Glass HUD panel with cut corners and a neon edge (styles live in index.css). */
 export const HudPanel: React.FC<{
@@ -69,12 +70,12 @@ export const StatBar: React.FC<{
 
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 
-export const RARITY_STYLE: Record<Rarity, { label: string; color: string }> = {
-  common: { label: 'Común', color: '#9ca3af' },
-  rare: { label: 'Rara', color: '#38bdf8' },
-  epic: { label: 'Épica', color: '#c084fc' },
-  legendary: { label: 'Legendaria', color: '#fbbf24' },
-};
+export const RARITY_STYLE: Record<Rarity, { label: string; color: string }> = localize({
+  common: { label: k('Común'), color: '#9ca3af' },
+  rare: { label: k('Rara'), color: '#38bdf8' },
+  epic: { label: k('Épica'), color: '#c084fc' },
+  legendary: { label: k('Legendaria'), color: '#fbbf24' },
+}, ['label']);
 
 /** Collectible-card frame tinted by rarity. */
 export const RarityFrame: React.FC<{

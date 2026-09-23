@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Droplets, FlaskConical, Zap, Sun, Bug, ShieldCheck, Sprout } from 'lucide-react';
 import { useGame } from '../context/GameContext';
+import { t } from '../i18n';
 
 /** "∞" when solar covers the load, otherwise hours (<1 d) or days of electricity left. */
 export const fmtRunway = (days: number): string => {
@@ -34,7 +35,7 @@ export const ResourceBar: React.FC<{ onOpenMarket: (cat?: string) => void; /** v
     <button
       key={key}
       onClick={() => onOpenMarket(cat)}
-      title={`${label} — abrir el Grow Market`}
+      title={t('{label} — abrir el Grow Market', { label })}
       className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg border text-left transition cursor-pointer hover:bg-neutral-900/80 ${
         state === 'out' ? 'border-red-400/70 bg-red-500/10 animate-pulse' : state === 'low' ? 'border-amber-400/60 bg-amber-400/5' : 'border-neutral-700/60 bg-neutral-950/50'
       }`}
@@ -50,26 +51,26 @@ export const ResourceBar: React.FC<{ onOpenMarket: (cat?: string) => void; /** v
   );
 
   return (
-    <div className={stacked ? 'flex flex-col items-stretch gap-1.5 [&>button]:w-full' : 'flex flex-wrap items-center gap-2'} aria-label="Recursos de la sala">
+    <div className={stacked ? 'flex flex-col items-stretch gap-1.5 [&>button]:w-full' : 'flex flex-wrap items-center gap-2'} aria-label={t('Recursos de la sala')}>
       {!stacked && chip('energy', Zap, '#fbbf24', `${resources.energy.toFixed(1)} kWh`,
-        energyOut ? 'sin energía' : `autonomía ${fmtRunway(resources.energyDays)}`, energyOut ? 'out' : energyLow ? 'low' : 'ok', 'Electricidad', 'energy')}
+        energyOut ? t('sin energía') : t('autonomía {v0}', { v0: fmtRunway(resources.energyDays) }), energyOut ? 'out' : energyLow ? 'low' : 'ok', t('Electricidad'), 'energy')}
       {!stacked && chip('water', Droplets, '#38bdf8', `${resources.water.toFixed(resources.water < 100 ? 1 : 0)} L`,
-        resources.water <= 0 ? 'tanque vacío' : waterLow ? 'agua baja' : 'agua', resources.water <= 0 ? 'out' : waterLow ? 'low' : 'ok', 'Agua', 'water')}
+        resources.water <= 0 ? t('tanque vacío') : waterLow ? t('agua baja') : t('agua'), resources.water <= 0 ? 'out' : waterLow ? 'low' : 'ok', t('Agua'), 'water')}
       {!stacked && chip('nutrient', FlaskConical, '#a78bfa', `${Math.floor(resources.nutrient)} ml`,
-        resources.nutrient <= 0 ? 'sin abono' : nutrientLow ? 'abono bajo' : 'abono', resources.nutrient <= 0 ? 'out' : nutrientLow ? 'low' : 'ok', 'Nutrientes', 'nutrient')}
+        resources.nutrient <= 0 ? t('sin abono') : nutrientLow ? t('abono bajo') : t('abono'), resources.nutrient <= 0 ? 'out' : nutrientLow ? 'low' : 'ok', t('Nutrientes'), 'nutrient')}
       {chip('care', ShieldCheck, care.rating >= 75 ? '#34d399' : care.rating >= 45 ? '#fbbf24' : '#f87171', `${care.rating} %`,
-        care.rating >= 75 ? 'sala impecable' : care.rating >= 45 ? 'calificación' : 'sala sucia', care.rating < 30 ? 'out' : care.rating < 55 ? 'low' : 'ok', 'Calificación de jardinero', 'service')}
-      {care.pests > 0 && chip('pests', Bug, '#f472b6', `${care.pests} plaga${care.pests > 1 ? 's' : ''}`, 'tratar ya', 'out', 'Plagas activas', 'pest')}
-      {care.plotPests > 0 && chip('plotpests', Bug, '#fb7185', `${care.plotPests} en parcelas`, 'plagas al aire libre', 'out', 'Plagas en las parcelas', 'pest')}
+        care.rating >= 75 ? t('sala impecable') : care.rating >= 45 ? t('calificación') : t('sala sucia'), care.rating < 30 ? 'out' : care.rating < 55 ? 'low' : 'ok', t('Calificación de jardinero'), 'service')}
+      {care.pests > 0 && chip('pests', Bug, '#f472b6', t('{n} plaga{s}', { n: care.pests, s: care.pests > 1 ? 's' : '' }), t('tratar ya'), 'out', t('Plagas activas'), 'pest')}
+      {care.plotPests > 0 && chip('plotpests', Bug, '#fb7185', t('{plotPests} en parcelas', { plotPests: care.plotPests }), t('plagas al aire libre'), 'out', t('Plagas en las parcelas'), 'pest')}
       {care.gardenerLevel > 0 && chip('gardener', Sprout, '#86efac', `${care.gardenerDays.toFixed(1)} d`,
-        `jardinero ${care.gardenerLevel === 2 ? 'maestro' : 'aprendiz'}`, care.gardenerDays < 1 ? 'low' : 'ok', 'Jardinero contratado', 'service')}
+        care.gardenerLevel === 2 ? t('jardinero maestro') : t('jardinero aprendiz'), care.gardenerDays < 1 ? 'low' : 'ok', t('Jardinero contratado'), 'service')}
       {resources.solarKwhPerDay > 0 && (
         <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-yellow-300/30 bg-yellow-300/5 text-[10.5px] font-mono text-yellow-200">
-          <Sun className="w-3.5 h-3.5" /> +{resources.solarKwhPerDay.toFixed(1)} kWh/día solar
+          <Sun className="w-3.5 h-3.5" />{' '}{t('+{v0} kWh/día solar', { v0: resources.solarKwhPerDay.toFixed(1) })}
         </span>
       )}
       <span className={stacked ? 'text-[10px] font-mono text-neutral-500' : 'hidden md:block text-[10px] font-mono text-neutral-500 ml-auto'}>
-        consumo ≈ {resources.kwhPerDay.toFixed(1)} kWh/día
+        {t('consumo ≈ {v0} kWh/día', { v0: resources.kwhPerDay.toFixed(1) })}
       </span>
     </div>
   );

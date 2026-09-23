@@ -1,5 +1,6 @@
 import React, { useId, useMemo } from 'react';
 import type { GrowStage } from '../types';
+import { t as tr } from '../i18n';
 
 /**
  * Procedural, fully animated cannabis plant (SVG).
@@ -355,7 +356,7 @@ const CannabisPlantImpl: React.FC<CannabisPlantProps> = ({
   const soilColor = soilMoisture > 50 ? '#1d3a2a' : soilMoisture > 30 ? '#2a2216' : '#3a2412';
 
   return (
-    <svg viewBox="0 0 600 730" className={className} role="img" aria-label="Planta de cannabis">
+    <svg viewBox="0 0 600 730" className={className} role="img" aria-label={tr('Planta de cannabis')}>
       <defs>
         <linearGradient id={idOld} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor={oldA} />

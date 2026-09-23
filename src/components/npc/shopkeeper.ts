@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { t } from '../../i18n';
 
 /** Who runs the grow shop: Flora or Floro, chosen by the player (kept per device in localStorage). */
 export type Shopkeeper = 'flora' | 'floro';
@@ -14,7 +15,7 @@ export const setShopkeeper = (v: Shopkeeper) => {
   window.dispatchEvent(new Event(EVENT));
 };
 
-export const shopkeeperName = (v: Shopkeeper) => (v === 'floro' ? 'Floro' : 'Flora');
+export const shopkeeperName = (v: Shopkeeper) => (v === 'floro' ? t('Floro') : t('Flora'));
 
 export function useShopkeeper(): [Shopkeeper, (v: Shopkeeper) => void] {
   const [v, setV] = useState<Shopkeeper>(getShopkeeper);

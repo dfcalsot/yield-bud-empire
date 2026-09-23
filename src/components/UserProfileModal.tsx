@@ -17,6 +17,7 @@ import {
   Users
 } from 'lucide-react';
 import { SOLANA_NETWORKS } from '../utils/solana';
+import { t } from '../i18n';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -83,8 +84,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <User className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white font-serif tracking-wide">Perfil de Cultivador</h3>
-              <p className="text-[10px] text-neutral-400 font-mono">Datos y estado personal aislados</p>
+              <h3 className="text-sm font-bold text-white font-serif tracking-wide">{t('Perfil de Cultivador')}</h3>
+              <p className="text-[10px] text-neutral-400 font-mono">{t('Datos y estado personal aislados')}</p>
             </div>
           </div>
           <button
@@ -104,7 +105,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div className="flex items-center gap-2">
               <h4 className="text-sm font-bold text-white truncate">{currentUser.displayName}</h4>
               <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-semibold shrink-0">
-                {currentUser.role}
+                {t(currentUser.role)}
               </span>
             </div>
             <p className="text-xs text-neutral-400 truncate">@{currentUser.username}</p>
@@ -115,7 +116,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         {/* Progress & Stats */}
         <div className="grid grid-cols-2 gap-2.5 text-xs">
           <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800 space-y-1">
-            <span className="text-[10px] text-neutral-500 uppercase font-mono block">Rango & Nivel</span>
+            <span className="text-[10px] text-neutral-500 uppercase font-mono block">{t('Rango & Nivel')}</span>
             <div className="flex items-center gap-1.5 font-bold text-amber-300">
               <Award className="w-4 h-4 text-amber-400" />
               <span>Nv. {playerLevel} • {rankTitle}</span>
@@ -130,10 +131,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
 
           <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800 space-y-1">
-            <span className="text-[10px] text-neutral-500 uppercase font-mono block">Patentes & Quema</span>
+            <span className="text-[10px] text-neutral-500 uppercase font-mono block">{t('Patentes & Quema')}</span>
             <div className="flex items-center gap-1 text-emerald-400 font-bold">
               <Dna className="w-3.5 h-3.5" />
-              <span>{patents.length} Registradas</span>
+              <span>{t('{length} Registradas', { length: patents.length })}</span>
             </div>
             <div className="flex items-center gap-1 text-amber-400 font-mono text-[11px]">
               <Flame className="w-3.5 h-3.5 text-amber-500" />
@@ -146,7 +147,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         {isEditing ? (
           <form onSubmit={handleSave} className="space-y-3 p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800">
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-neutral-300">Nombre Visible</label>
+              <label className="text-[11px] font-semibold text-neutral-300">{t('Nombre Visible')}</label>
               <input
                 type="text"
                 value={displayName}
@@ -156,7 +157,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-neutral-300">Instalación de Cultivo</label>
+              <label className="text-[11px] font-semibold text-neutral-300">{t('Instalación de Cultivo')}</label>
               <input
                 type="text"
                 value={facilityName}
@@ -166,7 +167,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-neutral-300">Biografía</label>
+              <label className="text-[11px] font-semibold text-neutral-300">{t('Biografía')}</label>
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
@@ -180,30 +181,30 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 type="submit"
                 className="flex-1 py-1.5 bg-emerald-500 text-neutral-950 font-bold text-xs rounded-lg hover:bg-emerald-400 transition cursor-pointer shadow-[0_0_16px_-4px_rgba(52,211,153,0.6)]"
               >
-                Guardar Cambios
+                {t('Guardar Cambios')}
               </button>
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
                 className="px-3 py-1.5 bg-neutral-800 text-neutral-300 text-xs rounded-lg hover:bg-neutral-700 transition cursor-pointer"
               >
-                Cancelar
+                {t('Cancelar')}
               </button>
             </div>
           </form>
         ) : (
           <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-mono text-neutral-500">Biografía & Notas</span>
+              <span className="text-[10px] uppercase font-mono text-neutral-500">{t('Biografía & Notas')}</span>
               <button
                 onClick={() => setIsEditing(true)}
                 className="text-[10px] text-emerald-400 hover:text-emerald-300 transition cursor-pointer font-medium"
               >
-                Editar Perfil
+                {t('Editar Perfil')}
               </button>
             </div>
             <p className="text-xs text-neutral-300 italic leading-relaxed">
-              "{currentUser.bio || 'Sin biografía establecida.'}"
+              "{currentUser.bio || t('Sin biografía establecida.')}"
             </p>
           </div>
         )}
@@ -213,19 +214,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           <div className="flex items-center justify-between text-xs">
             <span className="text-[10px] uppercase font-mono text-neutral-500 flex items-center gap-1.5">
               <Wallet className="w-3.5 h-3.5 text-purple-400" />
-              Billetera Vinculada
+              {t('Billetera Vinculada')}
             </span>
             <button
               onClick={onOpenWalletModal}
               className="text-[10px] text-purple-400 hover:text-purple-300 font-mono underline cursor-pointer"
             >
-              Configurar Red & Wallets
+              {t('Configurar Red & Wallets')}
             </button>
           </div>
 
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-mono text-neutral-200 truncate">
-              {walletAddress ? `${walletAddress.slice(0, 8)}...${walletAddress.slice(-8)}` : 'No conectada'}
+              {walletAddress ? `${walletAddress.slice(0, 8)}...${walletAddress.slice(-8)}` : t('No conectada')}
             </span>
             <span className={`text-[10px] px-2 py-0.5 rounded font-mono text-white ${netConfig.badgeColor}`}>
               {netConfig.badgeLabel}
@@ -240,7 +241,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             className="flex-1 py-2 bg-neutral-800 hover:bg-neutral-750 text-neutral-200 hover:text-white font-medium text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
           >
             <Users className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Cambiar de Usuario</span>
+            <span>{t('Cambiar de Usuario')}</span>
           </button>
 
           <button
@@ -248,7 +249,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             className="px-3 py-2 bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-400 hover:text-red-300 font-medium text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Salir</span>
+            <span>{t('Salir')}</span>
           </button>
         </div>
 

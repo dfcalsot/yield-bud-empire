@@ -16,6 +16,7 @@ import {
   Zap,
   Gift
 } from 'lucide-react';
+import { t } from '../i18n';
 
 export const QuestProgressBar: React.FC = () => {
   const {
@@ -96,21 +97,21 @@ export const QuestProgressBar: React.FC = () => {
               className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 rounded-lg text-xs font-bold font-mono transition cursor-pointer shadow-sm animate-pulse"
             >
               <Gift className="w-3.5 h-3.5" />
-              <span>{completedUnclaimed.length} Recompensa{completedUnclaimed.length > 1 ? 's' : ''} Lista{completedUnclaimed.length > 1 ? 's' : ''}!</span>
+              <span>{t('{length} Recompensa{v1} Lista{v2}!', { length: completedUnclaimed.length, v1: completedUnclaimed.length > 1 ? 's' : '', v2: completedUnclaimed.length > 1 ? 's' : '' })}</span>
             </button>
           ) : (
             <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-mono bg-neutral-950/80 px-2.5 py-1 rounded-lg border border-neutral-800">
               <Trophy className="w-3.5 h-3.5 text-amber-400" />
-              <span>Misiones: {totalCompleted}/{quests.length}</span>
+              <span>{t('Misiones: {totalCompleted}/{length}', { totalCompleted, length: quests.length })}</span>
             </div>
           )}
 
           <button
             onClick={openDiary}
             className="flex items-center gap-1 text-xs text-neutral-400 hover:text-white bg-neutral-800/80 hover:bg-neutral-800 px-2.5 py-1.5 rounded-lg transition cursor-pointer font-mono"
-            aria-label="Abrir el diario (tecla D)"
+            aria-label={t('Abrir el diario (tecla D)')}
           >
-            <span className="hidden sm:inline">{isExpanded ? 'Ocultar' : 'Ver Misiones'}</span>
+            <span className="hidden sm:inline">{isExpanded ? t('Ocultar') : t('Ver Misiones')}</span>
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
@@ -121,10 +122,10 @@ export const QuestProgressBar: React.FC = () => {
         <div className="mt-4 pt-3 border-t border-neutral-800/80 space-y-2.5 animate-fadeIn">
           <div className="flex items-center justify-between text-xs text-neutral-400">
             <span className="font-mono font-semibold uppercase tracking-wider text-[11px] text-neutral-300">
-              Misiones Botánicas Activas & Objetivos de Juego
+              {t('Misiones Botánicas Activas & Objetivos de Juego')}
             </span>
             <span className="text-[10px] font-mono text-emerald-400">
-              Gana $FLORA y Experiencia al completar tareas
+              {t('Gana $FLORA y Experiencia al completar tareas')}
             </span>
           </div>
 
@@ -150,16 +151,16 @@ export const QuestProgressBar: React.FC = () => {
                         <div className="p-1 rounded bg-neutral-800 border border-neutral-700">
                           {getIcon(q.iconType)}
                         </div>
-                        <h4 className="text-xs font-bold text-white leading-tight">{q.title}</h4>
+                        <h4 className="text-xs font-bold text-white leading-tight">{t(q.title)}</h4>
                       </div>
 
                       {isClaimed ? (
                         <span className="text-[10px] font-mono text-neutral-500 flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3 text-neutral-600" /> Cobrado
+                          <CheckCircle className="w-3 h-3 text-neutral-600" />{' '}{t('Cobrado')}
                         </span>
                       ) : isDone ? (
                         <span className="text-[10px] font-mono text-amber-400 font-bold flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" /> ¡Completado!
+                          <Sparkles className="w-3 h-3" />{' '}{t('¡Completado!')}
                         </span>
                       ) : (
                         <span className="text-[10px] font-mono text-neutral-400">
@@ -169,7 +170,7 @@ export const QuestProgressBar: React.FC = () => {
                     </div>
 
                     <p className="text-[11px] text-neutral-400 leading-snug">
-                      {q.description}
+                      {t(q.description)}
                     </p>
                   </div>
 
@@ -185,7 +186,7 @@ export const QuestProgressBar: React.FC = () => {
                         onClick={() => claimQuestReward(q.id)}
                         className="px-2.5 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-bold rounded text-[11px] font-mono shadow transition cursor-pointer"
                       >
-                        Reclamar
+                        {t('Reclamar')}
                       </button>
                     )}
                   </div>

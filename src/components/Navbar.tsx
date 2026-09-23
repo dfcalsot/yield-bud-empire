@@ -18,7 +18,7 @@ import { YieldMark } from './brand/YieldLogo';
 import { YieldBudWordmark } from './brand/YieldBudWordmark';
 import { LangSwitch } from '../i18n/LangSwitch';
 import { ECON, claimStatus } from '../sim/economy';
-import { t } from '../i18n';
+import { t, t as tr } from '../i18n';
 
 interface NavbarProps {
   setCurrentTab: (tab: string) => void;
@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={t('Wallet del juego: tus $FLORA, NFT y billeteras vinculadas')}
           >
             <span className={`w-2 h-2 shrink-0 rounded-full ${netConfig.badgeColor} animate-pulse`}></span>
-            <span className="text-white font-semibold truncate">{netConfig.name}</span>
+            <span className="text-white font-semibold truncate">{tr(netConfig.name)}</span>
             <span className="hidden sm:inline text-[10px] px-1.5 rounded bg-neutral-800 text-neutral-300 font-mono">{netConfig.badgeLabel}</span>
           </button>
           <span className="hidden lg:flex items-center gap-1 text-neutral-500">
@@ -120,7 +120,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Barra principal */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-3">
         {/* Logo: el nombre completo solo cuando hay ancho de sobra */}
-        <div onClick={() => setCurrentTab('cultivo')} className="flex items-center cursor-pointer select-none shrink-0" title="Yield Bud Empire">
+        <div onClick={() => setCurrentTab('cultivo')} className="flex items-center cursor-pointer select-none shrink-0" title={tr('Yield Bud Empire')}>
           <YieldMark size={42} animated className="lg:hidden shrink-0" />
           <YieldBudWordmark className="hidden lg:flex shrink-0" />
         </div>

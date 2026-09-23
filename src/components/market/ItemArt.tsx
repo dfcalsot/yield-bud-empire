@@ -1,6 +1,7 @@
 import React, { useId } from 'react';
 import { RARITY_BY_TIER, type CatalogItem } from '../../economy/catalog';
 import { RARITY_STYLE } from '../game/GameUI';
+import { t as tr } from '../../i18n';
 
 /**
  * Hand-drawn SVG art for every catalogue item. Each category has its own little animation (LEDs twinkle, drops fall,

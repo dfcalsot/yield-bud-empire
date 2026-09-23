@@ -30,8 +30,8 @@ export const WelcomeSheet: React.FC = () => {
               <div key={c.title} className="rounded-xl border border-white/10 bg-black/25 p-3 flex gap-3 sm:block">
                 <div className="shrink-0 grid place-items-center w-9 h-9 rounded-lg bg-emerald-400/15 text-emerald-300 sm:mb-2">{c.icon}</div>
                 <div>
-                  <div className="text-sm font-bold text-white">{c.title}</div>
-                  <p className="mt-1 text-[12px] leading-snug text-neutral-300">{c.text}</p>
+                  <div className="text-sm font-bold text-white">{t(c.title)}</div>
+                  <p className="mt-1 text-[12px] leading-snug text-neutral-300">{t(c.text)}</p>
                 </div>
               </div>
             ))}

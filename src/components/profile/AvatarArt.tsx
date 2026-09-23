@@ -1,10 +1,11 @@
 import React, { useId } from 'react';
 import { DESIGN_BY_ID, type AvatarDesign, type AvatarRarity, type Motif } from '../../sim/avatars';
+import { t, k, localize } from '../../i18n';
 
 /** Hand-drawn SVG avatars (36 collectible designs) and the `Avatar` that shows whatever the profile uses. */
 
 export const RARITY_COLOR: Record<AvatarRarity, string> = { common: '#9ca3af', rare: '#38bdf8', epic: '#c084fc', legendary: '#fbbf24' };
-export const RARITY_LABEL: Record<AvatarRarity, string> = { common: 'Común', rare: 'Rara', epic: 'Épica', legendary: 'Legendaria' };
+export const RARITY_LABEL: Record<AvatarRarity, string> = localize({ common: k('Común'), rare: k('Rara'), epic: k('Épica'), legendary: k('Legendaria') }, ['common', 'rare', 'epic', 'legendary']);
 
 const M: Record<Motif, (a: string, b: string) => React.ReactNode> = {
   leaf: (a, b) => (<g><path d="M50 84 C20 64 24 30 50 14 C76 30 80 64 50 84Z" fill={a} stroke={b} strokeWidth="2.5" /><path d="M50 82 V24 M50 62 L36 50 M50 50 L64 38 M50 40 L38 30 M50 62 L64 50" stroke={b} strokeWidth="2" fill="none" strokeLinecap="round" /></g>),
@@ -38,7 +39,7 @@ export const AvatarArt: React.FC<{ design: AvatarDesign; className?: string }> =
   const rc = RARITY_COLOR[design.rarity];
   const epicPlus = design.rarity === 'epic' || design.rarity === 'legendary';
   return (
-    <svg viewBox="0 0 100 100" className={`av-art ${className}`} role="img" aria-label={design.name}>
+    <svg viewBox="0 0 100 100" className={`av-art ${className}`} role="img" aria-label={t(design.name)}>
       <defs>
         <radialGradient id={`bg${u}`} cx=".5" cy=".38" r=".75"><stop offset="0" stopColor={shade(a, 0.5)} /><stop offset="1" stopColor={shade(b, 0.18)} /></radialGradient>
         <clipPath id={`cl${u}`}><circle cx="50" cy="50" r="46" /></clipPath>
@@ -70,17 +71,17 @@ export const Avatar: React.FC<{
   const style = { width: size, height: size };
   if (design) return <span className={`inline-block shrink-0 ${className}`} style={style}><AvatarArt design={design} className="w-full h-full" /></span>;
   if (profile.avatarImage) {
-    return <img src={profile.avatarImage} alt={profile.displayName ?? 'Avatar'} className={`shrink-0 rounded-full object-cover border border-emerald-300/40 ${className}`} style={style} />;
+    return <img src={profile.avatarImage} alt={profile.displayName ?? t('Avatar')} className={`shrink-0 rounded-full object-cover border border-emerald-300/40 ${className}`} style={style} />;
   }
   return <span className={`shrink-0 rounded-full grid place-items-center border border-emerald-300/30 bg-emerald-950/60 ${className}`} style={{ ...style, fontSize: size * 0.55 }}>{profile.avatar || '🌱'}</span>;
 };
 
 /** Re-encode an uploaded picture as a 256×256 centre-cropped WebP/JPEG: strips metadata and neutralises hostile files. */
 export async function fileToAvatarDataUrl(file: File): Promise<string> {
-  if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type)) throw new Error('Formato no válido: usa PNG, JPG, WEBP o GIF.');
-  if (file.size > 4 * 1024 * 1024) throw new Error('La imagen pesa más de 4 MB.');
-  const bmp = await createImageBitmap(file).catch(() => { throw new Error('No se pudo leer la imagen.'); });
-  if (bmp.width < 32 || bmp.height < 32) throw new Error('La imagen es demasiado pequeña (mínimo 32×32).');
+  if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type)) throw new Error(t('Formato no válido: usa PNG, JPG, WEBP o GIF.'));
+  if (file.size > 4 * 1024 * 1024) throw new Error(t('La imagen pesa más de 4 MB.'));
+  const bmp = await createImageBitmap(file).catch(() => { throw new Error(t('No se pudo leer la imagen.')); });
+  if (bmp.width < 32 || bmp.height < 32) throw new Error(t('La imagen es demasiado pequeña (mínimo 32×32).'));
   const side = Math.min(bmp.width, bmp.height);
   const c = document.createElement('canvas');
   c.width = c.height = 256;

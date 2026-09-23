@@ -58,7 +58,7 @@ export const TxToast: React.FC = () => {
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-bold text-white truncate">{info.label}</span>
+              <span className="text-[11px] font-bold text-white truncate">{t(info.label)}</span>
               <span className="text-[11px] font-mono font-bold shrink-0" style={{ color: info.color }}>{amount}</span>
             </div>
             <div className="text-[10px] font-mono text-neutral-400 truncate">{t('{v0} · slot #{v1}', { v0: shortAddress(tx.signature, 6, 6), v1: tx.blockSlot.toLocaleString() })}</div>

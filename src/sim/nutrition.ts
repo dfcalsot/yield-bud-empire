@@ -1,4 +1,5 @@
-/**
+
+import { t, k, localize } from '../i18n/core';/**
  * Ciencia de la nutrición del cultivo, pura (sin React, sin globals) y testeada: lo que un grower real tiene que dominar.
  *
  *  - Ingredientes con su composición en mg/L de cada elemento por unidad de dosis (sales exactas por estequiometría; botellas
@@ -13,15 +14,15 @@ export const ELEMENT_IDS: ElementId[] = ['N', 'P', 'K', 'Ca', 'Mg', 'S', 'Fe'];
 export type Ppm = Record<ElementId, number>;
 const zero = (): Ppm => ({ N: 0, P: 0, K: 0, Ca: 0, Mg: 0, S: 0, Fe: 0 });
 
-export const ELEMENTS: Record<ElementId, { name: string; symbol: string; role: string; mobile: boolean; color: string }> = {
-  N: { name: 'Nitrógeno', symbol: 'N', role: 'Clorofila, proteínas y crecimiento vegetativo', mobile: true, color: '#34d399' },
-  P: { name: 'Fósforo', symbol: 'P', role: 'Energía (ATP), raíces y formación de flores', mobile: true, color: '#c084fc' },
-  K: { name: 'Potasio', symbol: 'K', role: 'Agua, resistencia y engorde de cogollos', mobile: true, color: '#fbbf24' },
-  Ca: { name: 'Calcio', symbol: 'Ca', role: 'Paredes celulares y raíces; no se mueve dentro de la planta', mobile: false, color: '#f472b6' },
-  Mg: { name: 'Magnesio', symbol: 'Mg', role: 'Centro de la clorofila (fotosíntesis)', mobile: true, color: '#4ade80' },
-  S: { name: 'Azufre', symbol: 'S', role: 'Aminoácidos, terpenos y aroma', mobile: false, color: '#fde047' },
-  Fe: { name: 'Hierro', symbol: 'Fe', role: 'Síntesis de clorofila; el primero en bloquearse con pH alto', mobile: false, color: '#fb923c' },
-};
+export const ELEMENTS: Record<ElementId, { name: string; symbol: string; role: string; mobile: boolean; color: string }> = localize<Record<ElementId, { name: string; symbol: string; role: string; mobile: boolean; color: string }>>({
+  N: { name: k('Nitrógeno'), symbol: 'N', role: k('Clorofila, proteínas y crecimiento vegetativo'), mobile: true, color: '#34d399' },
+  P: { name: k('Fósforo'), symbol: 'P', role: k('Energía (ATP), raíces y formación de flores'), mobile: true, color: '#c084fc' },
+  K: { name: k('Potasio'), symbol: 'K', role: k('Agua, resistencia y engorde de cogollos'), mobile: true, color: '#fbbf24' },
+  Ca: { name: k('Calcio'), symbol: 'Ca', role: k('Paredes celulares y raíces; no se mueve dentro de la planta'), mobile: false, color: '#f472b6' },
+  Mg: { name: k('Magnesio'), symbol: 'Mg', role: k('Centro de la clorofila (fotosíntesis)'), mobile: true, color: '#4ade80' },
+  S: { name: k('Azufre'), symbol: 'S', role: k('Aminoácidos, terpenos y aroma'), mobile: false, color: '#fde047' },
+  Fe: { name: k('Hierro'), symbol: 'Fe', role: k('Síntesis de clorofila; el primero en bloquearse con pH alto'), mobile: false, color: '#fb923c' },
+}, ['name', 'role']);
 
 /* ───────────────────────────── ingredientes ───────────────────────────── */
 
@@ -53,58 +54,58 @@ export interface Ingredient {
 const I = (x: Ingredient) => x;
 
 /** Sales y correctores: composición exacta por estequiometría. */
-export const SALTS: Ingredient[] = [
-  I({ id: 'cal_nitrate', name: 'Nitrato de calcio', kind: 'salt', unit: 'g', per: { N: 155, Ca: 190 }, max: 1.5, step: 0.05, color: '#f9a8d4',
-    blurb: 'Ca(NO₃)₂·4H₂O, 15,5-0-0 + 19 % Ca. La fuente clásica de calcio y nitrógeno nítrico: no se mezcla concentrado con sulfatos o fosfatos (precipita).' }),
-  I({ id: 'mkp', name: 'MKP (fosfato monopotásico)', kind: 'salt', unit: 'g', per: { P: 227, K: 282 }, max: 0.8, step: 0.05, color: '#d8b4fe',
-    blurb: 'KH₂PO₄, 0-52-34. Fósforo y potasio limpios para prefloración y floración.' }),
-  I({ id: 'k2so4', name: 'Sulfato de potasio', kind: 'salt', unit: 'g', per: { K: 415, S: 180 }, max: 1.0, step: 0.05, color: '#fde68a',
-    blurb: 'K₂SO₄, 0-0-50 + 18 % S. Potasio sin nitrógeno ni cloruros: engorde de flor.' }),
-  I({ id: 'epsom', name: 'Sal de Epsom (sulfato de magnesio)', kind: 'salt', unit: 'g', per: { Mg: 98, S: 130 }, max: 1.0, step: 0.05, color: '#bbf7d0',
-    blurb: 'MgSO₄·7H₂O, 9,8 % Mg + 13 % S. Corrige carencias de magnesio en minutos.' }),
-  I({ id: 'kno3', name: 'Nitrato de potasio', kind: 'salt', unit: 'g', per: { N: 130, K: 382 }, max: 1.0, step: 0.05, color: '#a7f3d0',
-    blurb: 'KNO₃, 13-0-46. Empuja N y K juntos; útil en transición.' }),
-  I({ id: 'fe_eddha', name: 'Hierro quelatado (Fe-EDDHA 6 %)', kind: 'salt', unit: 'g', per: { Fe: 60 }, max: 0.12, step: 0.005, color: '#fdba74',
-    blurb: 'El quelato EDDHA mantiene el hierro disponible incluso a pH alto (el EDTA se rompe por encima de 6,5).' }),
-  I({ id: 'calmag', name: 'Cal-Mag líquido', kind: 'liquid', unit: 'ml', per: { N: 8, Ca: 55, Mg: 16 }, max: 3, step: 0.1, color: '#f0abfc', approx: true,
-    blurb: 'Suplemento típico ≈ 5 % Ca + 1,5 % Mg. Imprescindible con agua de ósmosis y en coco, que atrapa calcio y magnesio.' }),
-  I({ id: 'ph_down', name: 'pH Down (ácido fosfórico)', kind: 'acid', unit: 'ml', per: { P: 74 }, alkMeq: -2.4, max: 3, step: 0.02, color: '#fca5a5', approx: true,
-    blurb: 'El "pH Down" comercial típico. Cada ml/L neutraliza ≈ 2,4 mEq/L de alcalinidad… y aporta fósforo: con agua dura acabas pasándote de P. Cuidado al pasarte: el pH cae en picada.' }),
-  I({ id: 'acid_nitric', name: 'Ácido nítrico diluido (≈3 %)', kind: 'acid', unit: 'ml', per: { N: 7.9 }, alkMeq: -0.56, max: 15, step: 0.05, color: '#fdba74', approx: true,
-    blurb: 'Ácido fuerte ya diluido (1:10) para poder dosificarlo con precisión: neutraliza 0,56 mEq/L por ml y aporta nitrógeno, que sí quieres en vegetativo. Nunca lo manejes concentrado: guantes, gafas y siempre ácido sobre agua.' }),
-  I({ id: 'acid_sulfuric', name: 'Ácido sulfúrico diluido (≈3 %)', kind: 'acid', unit: 'ml', per: { S: 11.9 }, alkMeq: -0.75, max: 10, step: 0.05, color: '#fde047', approx: true,
-    blurb: 'Ácido fuerte diluido (1:10): neutraliza 0,75 mEq/L por ml y aporta azufre. Es el más barato y limpio para agua dura; mide con precisión y añade siempre el ácido al agua.' }),
-  I({ id: 'ph_up', name: 'pH Up (hidróxido de potasio)', kind: 'base', unit: 'ml', per: { K: 176 }, alkMeq: 4.5, max: 2, step: 0.02, color: '#93c5fd', approx: true,
-    blurb: 'KOH: sube el pH aportando potasio. Con agua de ósmosis (sin colchón) basta una gota. Es mejor no necesitarlo.' }),
-];
+export const SALTS: Ingredient[] = localize<Ingredient[]>([
+  I({ id: 'cal_nitrate', name: k('Nitrato de calcio'), kind: 'salt', unit: 'g', per: { N: 155, Ca: 190 }, max: 1.5, step: 0.05, color: '#f9a8d4',
+    blurb: k('Ca(NO₃)₂·4H₂O, 15,5-0-0 + 19 % Ca. La fuente clásica de calcio y nitrógeno nítrico: no se mezcla concentrado con sulfatos o fosfatos (precipita).') }),
+  I({ id: 'mkp', name: k('MKP (fosfato monopotásico)'), kind: 'salt', unit: 'g', per: { P: 227, K: 282 }, max: 0.8, step: 0.05, color: '#d8b4fe',
+    blurb: k('KH₂PO₄, 0-52-34. Fósforo y potasio limpios para prefloración y floración.') }),
+  I({ id: 'k2so4', name: k('Sulfato de potasio'), kind: 'salt', unit: 'g', per: { K: 415, S: 180 }, max: 1.0, step: 0.05, color: '#fde68a',
+    blurb: k('K₂SO₄, 0-0-50 + 18 % S. Potasio sin nitrógeno ni cloruros: engorde de flor.') }),
+  I({ id: 'epsom', name: k('Sal de Epsom (sulfato de magnesio)'), kind: 'salt', unit: 'g', per: { Mg: 98, S: 130 }, max: 1.0, step: 0.05, color: '#bbf7d0',
+    blurb: k('MgSO₄·7H₂O, 9,8 % Mg + 13 % S. Corrige carencias de magnesio en minutos.') }),
+  I({ id: 'kno3', name: k('Nitrato de potasio'), kind: 'salt', unit: 'g', per: { N: 130, K: 382 }, max: 1.0, step: 0.05, color: '#a7f3d0',
+    blurb: k('KNO₃, 13-0-46. Empuja N y K juntos; útil en transición.') }),
+  I({ id: 'fe_eddha', name: k('Hierro quelatado (Fe-EDDHA 6 %)'), kind: 'salt', unit: 'g', per: { Fe: 60 }, max: 0.12, step: 0.005, color: '#fdba74',
+    blurb: k('El quelato EDDHA mantiene el hierro disponible incluso a pH alto (el EDTA se rompe por encima de 6,5).') }),
+  I({ id: 'calmag', name: k('Cal-Mag líquido'), kind: 'liquid', unit: 'ml', per: { N: 8, Ca: 55, Mg: 16 }, max: 3, step: 0.1, color: '#f0abfc', approx: true,
+    blurb: k('Suplemento típico ≈ 5 % Ca + 1,5 % Mg. Imprescindible con agua de ósmosis y en coco, que atrapa calcio y magnesio.') }),
+  I({ id: 'ph_down', name: k('pH Down (ácido fosfórico)'), kind: 'acid', unit: 'ml', per: { P: 74 }, alkMeq: -2.4, max: 3, step: 0.02, color: '#fca5a5', approx: true,
+    blurb: k('El "pH Down" comercial típico. Cada ml/L neutraliza ≈ 2,4 mEq/L de alcalinidad… y aporta fósforo: con agua dura acabas pasándote de P. Cuidado al pasarte: el pH cae en picada.') }),
+  I({ id: 'acid_nitric', name: k('Ácido nítrico diluido (≈3 %)'), kind: 'acid', unit: 'ml', per: { N: 7.9 }, alkMeq: -0.56, max: 15, step: 0.05, color: '#fdba74', approx: true,
+    blurb: k('Ácido fuerte ya diluido (1:10) para poder dosificarlo con precisión: neutraliza 0,56 mEq/L por ml y aporta nitrógeno, que sí quieres en vegetativo. Nunca lo manejes concentrado: guantes, gafas y siempre ácido sobre agua.') }),
+  I({ id: 'acid_sulfuric', name: k('Ácido sulfúrico diluido (≈3 %)'), kind: 'acid', unit: 'ml', per: { S: 11.9 }, alkMeq: -0.75, max: 10, step: 0.05, color: '#fde047', approx: true,
+    blurb: k('Ácido fuerte diluido (1:10): neutraliza 0,75 mEq/L por ml y aporta azufre. Es el más barato y limpio para agua dura; mide con precisión y añade siempre el ácido al agua.') }),
+  I({ id: 'ph_up', name: k('pH Up (hidróxido de potasio)'), kind: 'base', unit: 'ml', per: { K: 176 }, alkMeq: 4.5, max: 2, step: 0.02, color: '#93c5fd', approx: true,
+    blurb: k('KOH: sube el pH aportando potasio. Con agua de ósmosis (sin colchón) basta una gota. Es mejor no necesitarlo.') }),
+], ['name', 'blurb']);
 
 /**
  * Botellas comerciales del juego. Análisis *típico aproximado* por clase de producto (Grow, Micro, Bloom, PK, bioestimulante)
  * multiplicado por la potencia calibrada de cada marca (ver BRAND_POTENCY), de modo que sus tablas oficiales den la EC que anuncian.
  */
-export const BRAND_INGREDIENTS: Ingredient[] = [
+export const BRAND_INGREDIENTS: Ingredient[] = localize<Ingredient[]>([
   // Advanced Nutrients
-  I({ id: 'ph_perfect_grow', name: 'pH Perfect Grow', kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 38, P: 6, K: 55, Mg: 7, S: 5 }, max: 6, step: 0.25, color: '#5eead4', blurb: 'Base rica en N y K para el crecimiento.' }),
-  I({ id: 'ph_perfect_micro', name: 'pH Perfect Micro', kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 42, K: 6, Ca: 58, Mg: 5, Fe: 1.0 }, max: 6, step: 0.25, color: '#67e8f9', blurb: 'Base de calcio, nitrógeno y micronutrientes.' }),
-  I({ id: 'ph_perfect_bloom', name: 'pH Perfect Bloom', kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 46, K: 62, Mg: 11, S: 9, Fe: 0.4 }, max: 6, step: 0.25, color: '#c4b5fd', blurb: 'Base de fósforo y potasio para floración.' }),
-  I({ id: 'b52', name: 'B-52 Booster', kind: 'stimulant', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 1 }, bio: 1.0, max: 4, step: 0.25, color: '#fcd34d', blurb: 'Complejo de vitaminas B: ayuda a la planta a gestionar el estrés. No sustituye a la base.' }),
-  I({ id: 'big_bud', name: 'Big Bud (PK)', kind: 'booster', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 28, K: 40 }, bio: 0.4, max: 6, step: 0.25, color: '#e879f9', blurb: 'Refuerzo de fósforo-potasio para engordar cogollos.' }),
-  I({ id: 'overdrive', name: 'Overdrive (fin de floración)', kind: 'booster', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 24, K: 34 }, bio: 0.5, max: 6, step: 0.25, color: '#f0abfc', blurb: 'Impulso final de PK antes del lavado.' }),
-  I({ id: 'flawless_finish', name: 'Flawless Finish (quelante)', kind: 'flush', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: {}, flush: true, max: 8, step: 0.5, color: '#e2e8f0', blurb: 'Agente quelante para el lavado: arrastra sales acumuladas en el sustrato.' }),
+  I({ id: 'ph_perfect_grow', name: k('pH Perfect Grow'), kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 38, P: 6, K: 55, Mg: 7, S: 5 }, max: 6, step: 0.25, color: '#5eead4', blurb: k('Base rica en N y K para el crecimiento.') }),
+  I({ id: 'ph_perfect_micro', name: k('pH Perfect Micro'), kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 42, K: 6, Ca: 58, Mg: 5, Fe: 1.0 }, max: 6, step: 0.25, color: '#67e8f9', blurb: k('Base de calcio, nitrógeno y micronutrientes.') }),
+  I({ id: 'ph_perfect_bloom', name: k('pH Perfect Bloom'), kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 46, K: 62, Mg: 11, S: 9, Fe: 0.4 }, max: 6, step: 0.25, color: '#c4b5fd', blurb: k('Base de fósforo y potasio para floración.') }),
+  I({ id: 'b52', name: k('B-52 Booster'), kind: 'stimulant', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 1 }, bio: 1.0, max: 4, step: 0.25, color: '#fcd34d', blurb: k('Complejo de vitaminas B: ayuda a la planta a gestionar el estrés. No sustituye a la base.') }),
+  I({ id: 'big_bud', name: k('Big Bud (PK)'), kind: 'booster', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 28, K: 40 }, bio: 0.4, max: 6, step: 0.25, color: '#e879f9', blurb: k('Refuerzo de fósforo-potasio para engordar cogollos.') }),
+  I({ id: 'overdrive', name: k('Overdrive (fin de floración)'), kind: 'booster', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 24, K: 34 }, bio: 0.5, max: 6, step: 0.25, color: '#f0abfc', blurb: k('Impulso final de PK antes del lavado.') }),
+  I({ id: 'flawless_finish', name: k('Flawless Finish (quelante)'), kind: 'flush', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: {}, flush: true, max: 8, step: 0.5, color: '#e2e8f0', blurb: k('Agente quelante para el lavado: arrastra sales acumuladas en el sustrato.') }),
   // BioBizz (orgánico: el N-P-K solo está disponible cuando los microbios lo mineralizan)
-  I({ id: 'bio_grow', name: 'Bio-Grow', kind: 'liquid', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 30, P: 8, K: 40, Ca: 10, Mg: 6, S: 6 }, max: 8, step: 0.25, color: '#86efac', blurb: 'Fertilizante orgánico de crecimiento (humus y extracto de algas).' }),
-  I({ id: 'bio_bloom', name: 'Bio-Bloom', kind: 'liquid', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 5, P: 32, K: 50, Mg: 8, S: 12 }, max: 8, step: 0.25, color: '#fdba74', blurb: 'Orgánico de floración, rico en P y K.' }),
-  I({ id: 'top_max', name: 'Top-Max', kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { K: 4 }, bio: 0.8, max: 6, step: 0.25, color: '#fde047', blurb: 'Estimulador orgánico de floración.' }),
-  I({ id: 'alg_a_mic', name: 'Alg-A-Mic', kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { K: 10 }, bio: 1.0, max: 6, step: 0.25, color: '#5eead4', blurb: 'Extracto de algas: hormonas naturales y micronutrientes.' }),
-  I({ id: 'bio_heaven', name: 'Bio-Heaven', kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 6 }, bio: 0.9, max: 6, step: 0.25, color: '#a7f3d0', blurb: 'Aminoácidos y energía para raíces y microbioma.' }),
-  I({ id: 'root_juice', name: 'Root-Juice', kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: {}, bio: 0.9, max: 6, step: 0.25, color: '#fcd34d', blurb: 'Estimulador de raíces y de la vida del sustrato.' }),
+  I({ id: 'bio_grow', name: k('Bio-Grow'), kind: 'liquid', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 30, P: 8, K: 40, Ca: 10, Mg: 6, S: 6 }, max: 8, step: 0.25, color: '#86efac', blurb: k('Fertilizante orgánico de crecimiento (humus y extracto de algas).') }),
+  I({ id: 'bio_bloom', name: k('Bio-Bloom'), kind: 'liquid', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 5, P: 32, K: 50, Mg: 8, S: 12 }, max: 8, step: 0.25, color: '#fdba74', blurb: k('Orgánico de floración, rico en P y K.') }),
+  I({ id: 'top_max', name: k('Top-Max'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { K: 4 }, bio: 0.8, max: 6, step: 0.25, color: '#fde047', blurb: k('Estimulador orgánico de floración.') }),
+  I({ id: 'alg_a_mic', name: k('Alg-A-Mic'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { K: 10 }, bio: 1.0, max: 6, step: 0.25, color: '#5eead4', blurb: k('Extracto de algas: hormonas naturales y micronutrientes.') }),
+  I({ id: 'bio_heaven', name: k('Bio-Heaven'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 6 }, bio: 0.9, max: 6, step: 0.25, color: '#a7f3d0', blurb: k('Aminoácidos y energía para raíces y microbioma.') }),
+  I({ id: 'root_juice', name: k('Root-Juice'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: {}, bio: 0.9, max: 6, step: 0.25, color: '#fcd34d', blurb: k('Estimulador de raíces y de la vida del sustrato.') }),
   // Athena
-  I({ id: 'athena_core', name: 'Athena Core', kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { N: 60, Ca: 75, Mg: 22, Fe: 0.8 }, max: 6, step: 0.25, color: '#7dd3fc', blurb: 'Base N-Ca-Mg de la línea Blended.' }),
-  I({ id: 'athena_grow', name: 'Athena Grow', kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { N: 42, P: 9, K: 55, S: 6 }, max: 6, step: 0.25, color: '#6ee7b7', blurb: 'Fase de crecimiento (N-P-K-S).' }),
-  I({ id: 'athena_bloom', name: 'Athena Bloom', kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { P: 50, K: 70, S: 10 }, max: 6, step: 0.25, color: '#d8b4fe', blurb: 'Fase de floración (P-K-S).' }),
-  I({ id: 'bud_ignitor', name: 'Bud Ignitor', kind: 'booster', unit: 'ml', brand: 'athena_pro', approx: true, per: { P: 18, K: 22 }, bio: 0.6, max: 6, step: 0.25, color: '#f9a8d4', blurb: 'Activa la formación de flores al cambiar el fotoperíodo.' }),
-  I({ id: 'athena_cleanse', name: 'Athena Cleanse', kind: 'flush', unit: 'ml', brand: 'athena_pro', approx: true, per: {}, flush: true, max: 8, step: 0.5, color: '#e2e8f0', blurb: 'Limpiador de sales para las últimas semanas.' }),
-];
+  I({ id: 'athena_core', name: k('Athena Core'), kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { N: 60, Ca: 75, Mg: 22, Fe: 0.8 }, max: 6, step: 0.25, color: '#7dd3fc', blurb: k('Base N-Ca-Mg de la línea Blended.') }),
+  I({ id: 'athena_grow', name: k('Athena Grow'), kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { N: 42, P: 9, K: 55, S: 6 }, max: 6, step: 0.25, color: '#6ee7b7', blurb: k('Fase de crecimiento (N-P-K-S).') }),
+  I({ id: 'athena_bloom', name: k('Athena Bloom'), kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { P: 50, K: 70, S: 10 }, max: 6, step: 0.25, color: '#d8b4fe', blurb: k('Fase de floración (P-K-S).') }),
+  I({ id: 'bud_ignitor', name: k('Bud Ignitor'), kind: 'booster', unit: 'ml', brand: 'athena_pro', approx: true, per: { P: 18, K: 22 }, bio: 0.6, max: 6, step: 0.25, color: '#f9a8d4', blurb: k('Activa la formación de flores al cambiar el fotoperíodo.') }),
+  I({ id: 'athena_cleanse', name: k('Athena Cleanse'), kind: 'flush', unit: 'ml', brand: 'athena_pro', approx: true, per: {}, flush: true, max: 8, step: 0.5, color: '#e2e8f0', blurb: k('Limpiador de sales para las últimas semanas.') }),
+], ['name', 'blurb']);
 
 /** Nombre que usan las tablas de las marcas → ingrediente. */
 const PRODUCT_ALIAS: Record<string, string> = {
@@ -143,29 +144,29 @@ export interface WaterSource {
   alkMeq: number;
   per: Partial<Ppm>;
 }
-export const WATERS: WaterSource[] = [
-  { id: 'ro', name: 'Ósmosis inversa', emoji: '💧', ec: 0.02, alkMeq: 0.06, per: { Ca: 1 },
-    blurb: 'Casi agua destilada: control total, pero sin calcio ni magnesio (hay que añadirlos) y sin colchón: el pH se mueve con cualquier gota.' },
-  { id: 'rain', name: 'Agua de lluvia', emoji: '🌧️', ec: 0.03, alkMeq: 0.02, per: { N: 1 },
-    blurb: 'Muy blanda y ligeramente ácida. Gratis y excelente si tu techo está limpio; también sin Ca/Mg.' },
-  { id: 'soft', name: 'Grifo blando', emoji: '🚰', ec: 0.25, alkMeq: 1.2, per: { Ca: 25, Mg: 6, S: 8 },
-    blurb: 'Trae algo de Ca/Mg y una alcalinidad moderada (60 ppm CaCO₃). Un buen punto de partida.' },
-  { id: 'well', name: 'Pozo', emoji: '🪣', ec: 0.55, alkMeq: 2.6, per: { Ca: 55, Mg: 18, S: 12, Fe: 0.4 },
-    blurb: 'Mineralizada: Ca/Mg/Fe propios y bastante alcalinidad. Analízala: cambia con la estación.' },
-  { id: 'hard', name: 'Grifo duro', emoji: '🏙️', ec: 0.85, alkMeq: 4.0, per: { Ca: 80, Mg: 25, S: 45 },
-    blurb: 'Mucho calcio y magnesio (¡ya cuentan como nutrientes!) y 200 ppm de alcalinidad: hará falta bastante ácido para bajar el pH.' },
-];
+export const WATERS: WaterSource[] = localize<WaterSource[]>([
+  { id: 'ro', name: k('Ósmosis inversa'), emoji: '💧', ec: 0.02, alkMeq: 0.06, per: { Ca: 1 },
+    blurb: k('Casi agua destilada: control total, pero sin calcio ni magnesio (hay que añadirlos) y sin colchón: el pH se mueve con cualquier gota.') },
+  { id: 'rain', name: k('Agua de lluvia'), emoji: '🌧️', ec: 0.03, alkMeq: 0.02, per: { N: 1 },
+    blurb: k('Muy blanda y ligeramente ácida. Gratis y excelente si tu techo está limpio; también sin Ca/Mg.') },
+  { id: 'soft', name: k('Grifo blando'), emoji: '🚰', ec: 0.25, alkMeq: 1.2, per: { Ca: 25, Mg: 6, S: 8 },
+    blurb: k('Trae algo de Ca/Mg y una alcalinidad moderada (60 ppm CaCO₃). Un buen punto de partida.') },
+  { id: 'well', name: k('Pozo'), emoji: '🪣', ec: 0.55, alkMeq: 2.6, per: { Ca: 55, Mg: 18, S: 12, Fe: 0.4 },
+    blurb: k('Mineralizada: Ca/Mg/Fe propios y bastante alcalinidad. Analízala: cambia con la estación.') },
+  { id: 'hard', name: k('Grifo duro'), emoji: '🏙️', ec: 0.85, alkMeq: 4.0, per: { Ca: 80, Mg: 25, S: 45 },
+    blurb: k('Mucho calcio y magnesio (¡ya cuentan como nutrientes!) y 200 ppm de alcalinidad: hará falta bastante ácido para bajar el pH.') },
+], ['name', 'blurb']);
 export const WATER_BY_ID = Object.fromEntries(WATERS.map((w) => [w.id, w])) as Record<WaterId, WaterSource>;
 
 export type MediumId = 'soil' | 'coco' | 'hydro';
 export interface Medium {
   id: MediumId; name: string; emoji: string; ph: [number, number]; ecMul: number; demand: Partial<Ppm>; blurb: string;
 }
-export const MEDIA: Medium[] = [
-  { id: 'soil', name: 'Tierra', emoji: '🌱', ph: [6.0, 7.0], ecMul: 0.85, demand: {}, blurb: 'Amortigua errores y guarda nutrientes. Rango de pH más amplio (6,0–7,0) y EC algo menor.' },
-  { id: 'coco', name: 'Fibra de coco', emoji: '🥥', ph: [5.8, 6.2], ecMul: 0.95, demand: { Ca: 1.25, Mg: 1.3 }, blurb: 'La fibra atrapa calcio y magnesio: pide Cal-Mag constante y pH 5,8–6,2.' },
-  { id: 'hydro', name: 'Hidroponía', emoji: '🧪', ph: [5.5, 6.2], ecMul: 1, demand: {}, blurb: 'Sin colchón: todo lo que pones lo siente la raíz al instante. pH 5,5–6,2 y cero improvisación.' },
-];
+export const MEDIA: Medium[] = localize<Medium[]>([
+  { id: 'soil', name: k('Tierra'), emoji: '🌱', ph: [6.0, 7.0], ecMul: 0.85, demand: {}, blurb: k('Amortigua errores y guarda nutrientes. Rango de pH más amplio (6,0–7,0) y EC algo menor.') },
+  { id: 'coco', name: k('Fibra de coco'), emoji: '🥥', ph: [5.8, 6.2], ecMul: 0.95, demand: { Ca: 1.25, Mg: 1.3 }, blurb: k('La fibra atrapa calcio y magnesio: pide Cal-Mag constante y pH 5,8–6,2.') },
+  { id: 'hydro', name: k('Hidroponía'), emoji: '🧪', ph: [5.5, 6.2], ecMul: 1, demand: {}, blurb: k('Sin colchón: todo lo que pones lo siente la raíz al instante. pH 5,5–6,2 y cero improvisación.') },
+], ['name', 'blurb']);
 export const MEDIUM_BY_ID = Object.fromEntries(MEDIA.map((m) => [m.id, m])) as Record<MediumId, Medium>;
 
 /* ───────────────────────────── etapas y objetivos ───────────────────────────── */
@@ -179,26 +180,26 @@ export interface StageTarget {
   npk: string;
   note: string;
 }
-export const STAGES: StageTarget[] = [
-  { id: 'seedling', name: 'Plántula', weeks: 'Semana 1', from: 0, to: 15, npk: '1-1-1 suave', ec: [0.5, 0.9],
+export const STAGES: StageTarget[] = localize<StageTarget[]>([
+  { id: 'seedling', name: k('Plántula'), weeks: k('Semana 1'), from: 0, to: 15, npk: '1-1-1 suave', ec: [0.5, 0.9],
     ranges: { N: [50, 100], P: [20, 40], K: [60, 120], Ca: [50, 100], Mg: [20, 40], S: [20, 60], Fe: [0.5, 2] },
-    note: 'Raíces diminutas: la mitad de dosis. Casi todo el trabajo es no quemar.' },
-  { id: 'veg_early', name: 'Vegetativo temprano', weeks: 'Semanas 2-3', from: 15, to: 32, npk: '3-1-2', ec: [1.2, 1.6],
+    note: k('Raíces diminutas: la mitad de dosis. Casi todo el trabajo es no quemar.') },
+  { id: 'veg_early', name: k('Vegetativo temprano'), weeks: k('Semanas 2-3'), from: 15, to: 32, npk: '3-1-2', ec: [1.2, 1.6],
     ranges: { N: [120, 170], P: [30, 50], K: [130, 200], Ca: [100, 150], Mg: [35, 55], S: [40, 80], Fe: [1, 3] },
-    note: 'Nitrógeno alto para hojas y ramas; el calcio sostiene la expansión.' },
-  { id: 'veg_late', name: 'Vegetativo tardío', weeks: 'Semanas 4-5', from: 32, to: 50, npk: '3-1-3', ec: [1.6, 2.0],
+    note: k('Nitrógeno alto para hojas y ramas; el calcio sostiene la expansión.') },
+  { id: 'veg_late', name: k('Vegetativo tardío'), weeks: k('Semanas 4-5'), from: 32, to: 50, npk: '3-1-3', ec: [1.6, 2.0],
     ranges: { N: [150, 200], P: [40, 60], K: [180, 240], Ca: [120, 170], Mg: [40, 60], S: [50, 90], Fe: [1, 3] },
-    note: 'Máximo vigor antes de pasar a 12/12.' },
-  { id: 'transition', name: 'Prefloración', weeks: 'Semanas 6-7 (12/12)', from: 50, to: 62, npk: '1-3-2', ec: [1.6, 2.1],
+    note: k('Máximo vigor antes de pasar a 12/12.') },
+  { id: 'transition', name: k('Prefloración'), weeks: k('Semanas 6-7 (12/12)'), from: 50, to: 62, npk: '1-3-2', ec: [1.6, 2.1],
     ranges: { N: [100, 150], P: [50, 70], K: [200, 260], Ca: [120, 160], Mg: [45, 65], S: [60, 100], Fe: [1, 3] },
-    note: 'Baja el nitrógeno, sube P y K: la planta cambia de hojas a flores.' },
-  { id: 'bloom_peak', name: 'Floración plena', weeks: 'Semanas 8-9', from: 62, to: 92, npk: '0-3-3', ec: [1.8, 2.4],
+    note: k('Baja el nitrógeno, sube P y K: la planta cambia de hojas a flores.') },
+  { id: 'bloom_peak', name: k('Floración plena'), weeks: k('Semanas 8-9'), from: 62, to: 92, npk: '0-3-3', ec: [1.8, 2.4],
     ranges: { N: [70, 120], P: [60, 90], K: [250, 340], Ca: [110, 160], Mg: [50, 70], S: [80, 130], Fe: [1, 3] },
-    note: 'Potasio alto para engordar. Demasiado N ahora retrasa y ablanda los cogollos.' },
-  { id: 'flush', name: 'Lavado final', weeks: 'Últimos 7-10 días', from: 92, to: 100, npk: '0-0-0', ec: [0, 0.4],
+    note: k('Potasio alto para engordar. Demasiado N ahora retrasa y ablanda los cogollos.') },
+  { id: 'flush', name: k('Lavado final'), weeks: k('Últimos 7-10 días'), from: 92, to: 100, npk: '0-0-0', ec: [0, 0.4],
     ranges: { N: [0, 20], P: [0, 10], K: [0, 20], Ca: [0, 40], Mg: [0, 15], S: [0, 20], Fe: [0, 1] },
-    note: 'Agua limpia (y un quelante) para arrastrar sales acumuladas y mejorar sabor y ceniza.' },
-];
+    note: k('Agua limpia (y un quelante) para arrastrar sales acumuladas y mejorar sabor y ceniza.') },
+], ['name', 'weeks', 'note']);
 export const STAGE_BY_ID = Object.fromEntries(STAGES.map((s) => [s.id, s])) as Record<StageId, StageTarget>;
 
 /** Etapa de nutrición según el progreso de la planta (0–100). */
@@ -422,16 +423,16 @@ export function diagnose(sol: Solution, stageId: StageId, mediumId: MediumId): D
       const lock = rawOk && eff < lo && eff < sol.ppm[e] * 0.93;
       findings.push({
         id: `${e}-low`, element: e, level: s === 'deficient' ? 'bad' : 'warn',
-        title: lock ? `${ELEMENTS[e].name} bloqueado por el pH (hay ${sol.ppm[e]} ppm pero solo ${eff} son absorbibles)` : `${ELEMENTS[e].name} ${s === 'deficient' ? 'muy escaso' : 'bajo'} (${eff} ppm, ideal ${lo}–${hi})`,
-        detail: lock ? `A pH ${sol.ph} la raíz no puede tomar todo el ${ELEMENTS[e].name.toLowerCase()} disponible.` : `${ELEMENTS[e].role}.`,
-        fix: lock ? `Lleva el pH a ${medium.ph[0]}–${medium.ph[1]} antes de añadir más.` : fixFor(e, 'low'),
+        title: lock ? t('{name} bloqueado por el pH (hay {v1} ppm pero solo {eff} son absorbibles)', { name: ELEMENTS[e].name, v1: sol.ppm[e], eff }) : t('{name} {v1} ({eff} ppm, ideal {lo}–{hi})', { name: ELEMENTS[e].name, v1: s === 'deficient' ? t('muy escaso') : 'bajo', eff, lo, hi }),
+        detail: lock ? t('A pH {ph} la raíz no puede tomar todo el {v1} disponible.', { ph: sol.ph, v1: ELEMENTS[e].name.toLowerCase() }) : `${ELEMENTS[e].role}.`,
+        fix: lock ? t('Lleva el pH a {v0}–{v1} antes de añadir más.', { v0: medium.ph[0], v1: medium.ph[1] }) : fixFor(e, 'low'),
         symptomId: `${e.toLowerCase()}_def`,
       });
     } else if (s === 'high' || s === 'excess') {
       findings.push({
         id: `${e}-high`, element: e, level: s === 'excess' ? 'bad' : 'warn',
-        title: `${ELEMENTS[e].name} ${s === 'excess' ? 'en exceso' : 'alto'} (${eff} ppm, ideal ${lo}–${hi})`,
-        detail: s === 'excess' ? 'Riesgo de toxicidad y de bloquear a otros elementos.' : 'Por encima del rango de esta etapa.',
+        title: t('{name} {v1} ({eff} ppm, ideal {lo}–{hi})', { name: ELEMENTS[e].name, v1: s === 'excess' ? t('en exceso') : t('alto'), eff, lo, hi }),
+        detail: s === 'excess' ? t('Riesgo de toxicidad y de bloquear a otros elementos.') : t('Por encima del rango de esta etapa.'),
         fix: fixFor(e, 'high'), symptomId: e === 'N' ? 'n_exc' : e === 'K' ? 'k_exc' : undefined,
       });
     }
@@ -445,9 +446,9 @@ export function diagnose(sol: Solution, stageId: StageId, mediumId: MediumId): D
   if (phState !== 'ok') {
     findings.push({
       id: 'ph', element: 'pH', level: phDev > 0.6 ? 'bad' : 'warn',
-      title: `pH ${sol.ph} fuera del rango de ${medium.name.toLowerCase()} (${phLo}–${phHi})`,
-      detail: phState === 'high' ? 'Un pH alto precipita el hierro, el manganeso y el fósforo: la raíz no los puede tomar.' : 'Un pH bajo deja sin calcio, magnesio y fósforo a la planta.',
-      fix: phState === 'high' ? 'Añade pH Down poco a poco (o parte de agua con menos alcalinidad).' : 'Añade pH Up en dosis mínimas o reduce el ácido.',
+      title: t('pH {ph} fuera del rango de {v1} ({phLo}–{phHi})', { ph: sol.ph, v1: medium.name.toLowerCase(), phLo, phHi }),
+      detail: phState === 'high' ? t('Un pH alto precipita el hierro, el manganeso y el fósforo: la raíz no los puede tomar.') : t('Un pH bajo deja sin calcio, magnesio y fósforo a la planta.'),
+      fix: phState === 'high' ? t('Añade pH Down poco a poco (o parte de agua con menos alcalinidad).') : t('Añade pH Up en dosis mínimas o reduce el ácido.'),
       symptomId: phState === 'high' ? 'ph_high' : 'ph_low',
     });
   }
@@ -456,23 +457,23 @@ export function diagnose(sol: Solution, stageId: StageId, mediumId: MediumId): D
   const [ecLo, ecHi] = ecRange;
   const ecState = sol.ec > ecHi * 1.35 ? 'burn' : sol.ec > ecHi ? 'high' : sol.ec < ecLo ? 'low' : 'ok';
   const ecPart = sol.ec < ecLo ? Math.max(0, 1 - (ecLo - sol.ec) / Math.max(0.2, ecLo)) : sol.ec > ecHi ? Math.max(0, 1 - (sol.ec - ecHi) / (ecHi * 0.6 || 0.3)) : 1;
-  if (ecState === 'burn') { toxic = true; findings.push({ id: 'ec-burn', element: 'EC', level: 'bad', title: `EC ${sol.ec} mS/cm: riesgo de quemadura por sales (máx. ${ecHi})`, detail: 'Las puntas se queman y la planta deja de crecer.', fix: 'Diluye con agua o baja las dosis.', symptomId: 'ec_burn' }); }
-  else if (ecState === 'high') findings.push({ id: 'ec-high', element: 'EC', level: 'warn', title: `EC ${sol.ec} mS/cm algo alta (ideal ${ecLo}–${ecHi})`, detail: 'Cerca del límite: vigila las puntas.', fix: 'Baja un poco las dosis.' });
-  else if (ecState === 'low' && !flush) findings.push({ id: 'ec-low', element: 'EC', level: 'warn', title: `EC ${sol.ec} mS/cm baja (ideal ${ecLo}–${ecHi})`, detail: 'La planta pasa hambre: crece lento y se aclara.', fix: 'Sube las dosis de la base.', symptomId: 'ec_low' });
+  if (ecState === 'burn') { toxic = true; findings.push({ id: 'ec-burn', element: 'EC', level: 'bad', title: t('EC {ec} mS/cm: riesgo de quemadura por sales (máx. {ecHi})', { ec: sol.ec, ecHi }), detail: t('Las puntas se queman y la planta deja de crecer.'), fix: t('Diluye con agua o baja las dosis.'), symptomId: 'ec_burn' }); }
+  else if (ecState === 'high') findings.push({ id: 'ec-high', element: 'EC', level: 'warn', title: t('EC {ec} mS/cm algo alta (ideal {ecLo}–{ecHi})', { ec: sol.ec, ecLo, ecHi }), detail: t('Cerca del límite: vigila las puntas.'), fix: t('Baja un poco las dosis.') });
+  else if (ecState === 'low' && !flush) findings.push({ id: 'ec-low', element: 'EC', level: 'warn', title: t('EC {ec} mS/cm baja (ideal {ecLo}–{ecHi})', { ec: sol.ec, ecLo, ecHi }), detail: t('La planta pasa hambre: crece lento y se aclara.'), fix: t('Sube las dosis de la base.'), symptomId: 'ec_low' });
 
   // relaciones
   let penalty = 0;
   if (!flush && Ca > 0 && Mg > 0 && (caMg < 2 || caMg > 5)) {
     penalty += 4;
-    findings.push({ id: 'camg', element: 'Ca', level: 'warn', title: `Relación Ca:Mg ${caMg.toFixed(1)}:1 (ideal 2–4:1)`, detail: caMg > 5 ? 'Demasiado calcio frente al magnesio lo bloquea.' : 'Demasiado magnesio frente al calcio.', fix: caMg > 5 ? 'Añade Sal de Epsom o baja el Cal-Mag.' : 'Añade calcio.' });
+    findings.push({ id: 'camg', element: 'Ca', level: 'warn', title: t('Relación Ca:Mg {v0}:1 (ideal 2–4:1)', { v0: caMg.toFixed(1) }), detail: caMg > 5 ? t('Demasiado calcio frente al magnesio lo bloquea.') : t('Demasiado magnesio frente al calcio.'), fix: caMg > 5 ? t('Añade Sal de Epsom o baja el Cal-Mag.') : t('Añade calcio.') });
   }
   if (!flush && kToCaMg > 2.6) {
     penalty += 4;
-    findings.push({ id: 'k-ant', element: 'K', level: 'warn', title: `Demasiado potasio frente a Ca+Mg (${kToCaMg.toFixed(1)}:1)`, detail: 'El potasio compite con el calcio y el magnesio en la raíz.', fix: 'Sube Ca/Mg o baja los boosters de PK.' });
+    findings.push({ id: 'k-ant', element: 'K', level: 'warn', title: t('Demasiado potasio frente a Ca+Mg ({v0}:1)', { v0: kToCaMg.toFixed(1) }), detail: t('El potasio compite con el calcio y el magnesio en la raíz.'), fix: t('Sube Ca/Mg o baja los boosters de PK.') });
   }
   if (!flush && stageId === 'bloom_peak' && N > 0 && N > sol.ppm.K * 0.5) {
     penalty += 3;
-    findings.push({ id: 'nk', element: 'N', level: 'info', title: 'Relación N:K alta para floración', detail: 'En floración pleno el potasio debe superar con holgura al nitrógeno.' });
+    findings.push({ id: 'nk', element: 'N', level: 'info', title: t('Relación N:K alta para floración'), detail: t('En floración pleno el potasio debe superar con holgura al nitrógeno.') });
   }
   if (flush && sol.hasFlush) weighted += 0.5;
 
@@ -483,30 +484,30 @@ export function diagnose(sol: Solution, stageId: StageId, mediumId: MediumId): D
   if (findings.some((f) => f.level === 'bad')) score = Math.min(score, 84);
   score = Math.round(Math.max(0, Math.min(100, score)));
   const stars = (score >= 90 ? 3 : score >= 75 ? 2 : score >= 55 ? 1 : 0) as 0 | 1 | 2 | 3;
-  if (findings.length === 0) findings.push({ id: 'ok', level: 'ok', title: 'Solución equilibrada para esta etapa', detail: 'Todos los elementos, el pH y la EC están en rango.' });
+  if (findings.length === 0) findings.push({ id: 'ok', level: 'ok', title: t('Solución equilibrada para esta etapa'), detail: t('Todos los elementos, el pH y la EC están en rango.') });
   findings.sort((a, b) => ({ bad: 0, warn: 1, info: 2, ok: 3 }[a.level] - { bad: 0, warn: 1, info: 2, ok: 3 }[b.level]));
-  const headline = toxic ? 'Riesgo de toxicidad: no la apliques así' : score >= 90 ? 'Solución de campeonato' : score >= 75 ? 'Muy buena solución' : score >= 55 ? 'Aceptable, mejorable' : 'La planta sufrirá con esto';
+  const headline = toxic ? t('Riesgo de toxicidad: no la apliques así') : score >= 90 ? t('Solución de campeonato') : score >= 75 ? t('Muy buena solución') : score >= 55 ? t('Aceptable, mejorable') : t('La planta sufrirá con esto');
   return { score, stars, status, effective, ranges, ecRange, phRange: medium.ph, phState, ecState, ratios: { caMg: Number(caMg.toFixed(1)), kToCaMg: Number(kToCaMg.toFixed(1)), nToK: K > 0 ? Number((N / K).toFixed(2)) : 0 }, toxic, findings, headline };
 }
 
 function fixFor(e: ElementId, dir: 'low' | 'high'): string {
   const up: Record<ElementId, string> = {
-    N: 'Sube la base de crecimiento o añade nitrato de calcio / de potasio.',
-    P: 'Añade MKP o un booster PK (con moderación).',
-    K: 'Añade sulfato de potasio o sube la base de floración.',
-    Ca: 'Añade nitrato de calcio o Cal-Mag (imprescindible con agua de ósmosis o coco).',
-    Mg: 'Añade Sal de Epsom (o Cal-Mag).',
-    S: 'Sal de Epsom o sulfato de potasio aportan azufre.',
-    Fe: 'Añade un poco de hierro quelatado (EDDHA).',
+    N: t('Sube la base de crecimiento o añade nitrato de calcio / de potasio.'),
+    P: t('Añade MKP o un booster PK (con moderación).'),
+    K: t('Añade sulfato de potasio o sube la base de floración.'),
+    Ca: t('Añade nitrato de calcio o Cal-Mag (imprescindible con agua de ósmosis o coco).'),
+    Mg: t('Añade Sal de Epsom (o Cal-Mag).'),
+    S: t('Sal de Epsom o sulfato de potasio aportan azufre.'),
+    Fe: t('Añade un poco de hierro quelatado (EDDHA).'),
   };
   const down: Record<ElementId, string> = {
-    N: 'Reduce la base de crecimiento y los nitratos: en floración el exceso de N ablanda los cogollos.',
-    P: 'Baja el booster PK o el ácido fosfórico del pH Down.',
-    K: 'Baja los boosters de PK y las sales de potasio.',
-    Ca: 'Baja el nitrato de calcio / Cal-Mag: mucho calcio bloquea al magnesio.',
-    Mg: 'Baja Epsom o Cal-Mag.',
-    S: 'Baja sulfatos (Epsom, sulfato de potasio).',
-    Fe: 'Baja el quelato de hierro.',
+    N: t('Reduce la base de crecimiento y los nitratos: en floración el exceso de N ablanda los cogollos.'),
+    P: t('Baja el booster PK o el ácido fosfórico del pH Down.'),
+    K: t('Baja los boosters de PK y las sales de potasio.'),
+    Ca: t('Baja el nitrato de calcio / Cal-Mag: mucho calcio bloquea al magnesio.'),
+    Mg: t('Baja Epsom o Cal-Mag.'),
+    S: t('Baja sulfatos (Epsom, sulfato de potasio).'),
+    Fe: t('Baja el quelato de hierro.'),
   };
   return dir === 'low' ? up[e] : down[e];
 }
@@ -558,65 +559,65 @@ export interface Symptom {
   leaf: LeafSpec;
 }
 const GREEN = '#22803a';
-export const SYMPTOMS: Symptom[] = [
-  { id: 'n_def', title: 'Falta de nitrógeno', kind: 'deficiency', element: 'N', where: 'old',
-    look: 'Amarillea de abajo hacia arriba: primero las hojas viejas, que se caen. Crecimiento lento y pálido.',
-    cause: 'El N es móvil: la planta lo saca de las hojas viejas para las nuevas. Típico en vegetativo con pocas dosis o pH bajo.',
-    confirm: 'Las hojas más bajas amarillean uniformes (no solo entre nervios) y la planta entera se ve clara.', fix: 'Sube la base de crecimiento o añade nitrato de calcio/potasio; comprueba la EC.',
+export const SYMPTOMS: Symptom[] = localize<Symptom[]>([
+  { id: 'n_def', title: k('Falta de nitrógeno'), kind: 'deficiency', element: 'N', where: 'old',
+    look: k('Amarillea de abajo hacia arriba: primero las hojas viejas, que se caen. Crecimiento lento y pálido.'),
+    cause: k('El N es móvil: la planta lo saca de las hojas viejas para las nuevas. Típico en vegetativo con pocas dosis o pH bajo.'),
+    confirm: k('Las hojas más bajas amarillean uniformes (no solo entre nervios) y la planta entera se ve clara.'), fix: k('Sube la base de crecimiento o añade nitrato de calcio/potasio; comprueba la EC.'),
     leaf: { base: '#c9d33a', yellowFrom: 'all', veins: '#b7c42c' } },
-  { id: 'n_exc', title: 'Exceso de nitrógeno', kind: 'excess', element: 'N', where: 'all',
-    look: 'Verde muy oscuro, hojas brillantes con las puntas dobladas hacia abajo (“garra”), crecimiento blando.',
-    cause: 'Demasiada base de crecimiento, sobre todo al entrar en floración: retrasa las flores y las ablanda.',
-    confirm: 'La garra aparece sin manchas ni quemaduras; el resto de la planta crece exuberante.', fix: 'Baja N en prefloración y floración; lava con agua limpia si es severo.',
+  { id: 'n_exc', title: k('Exceso de nitrógeno'), kind: 'excess', element: 'N', where: 'all',
+    look: k('Verde muy oscuro, hojas brillantes con las puntas dobladas hacia abajo (“garra”), crecimiento blando.'),
+    cause: k('Demasiada base de crecimiento, sobre todo al entrar en floración: retrasa las flores y las ablanda.'),
+    confirm: k('La garra aparece sin manchas ni quemaduras; el resto de la planta crece exuberante.'), fix: k('Baja N en prefloración y floración; lava con agua limpia si es severo.'),
     leaf: { base: '#0f4d24', claw: true } },
-  { id: 'p_def', title: 'Falta de fósforo', kind: 'deficiency', element: 'P', where: 'old',
-    look: 'Hojas verde muy oscuro/azuladas con manchas bronce o moradas; tallos y pecíolos rojizos-morados; crecimiento lento.',
-    cause: 'Poco P, o pH fuera de 6–7, o raíces frías. El P es móvil: los síntomas empiezan abajo.',
-    confirm: 'El morado aparece en tallos y nervios; ojo: algunas cepas son moradas por genética (pero sin retraso).', fix: 'Añade MKP o booster PK, corrige el pH y calienta las raíces (>18 °C).',
+  { id: 'p_def', title: k('Falta de fósforo'), kind: 'deficiency', element: 'P', where: 'old',
+    look: k('Hojas verde muy oscuro/azuladas con manchas bronce o moradas; tallos y pecíolos rojizos-morados; crecimiento lento.'),
+    cause: k('Poco P, o pH fuera de 6–7, o raíces frías. El P es móvil: los síntomas empiezan abajo.'),
+    confirm: k('El morado aparece en tallos y nervios; ojo: algunas cepas son moradas por genética (pero sin retraso).'), fix: k('Añade MKP o booster PK, corrige el pH y calienta las raíces (>18 °C).'),
     leaf: { base: '#1c4a3e', purple: true, spots: '#7a4b3a' } },
-  { id: 'k_def', title: 'Falta de potasio', kind: 'deficiency', element: 'K', where: 'old',
-    look: 'Bordes y puntas de hojas viejas amarillos que se vuelven marrones y crujientes, con el centro aún verde.',
-    cause: 'Poco K en floración, o exceso de Ca/Mg/Na que compite con él. Cogollos poco densos.',
-    confirm: 'El daño sigue el borde de la hoja y avanza hacia dentro, sin manchas aisladas.', fix: 'Sulfato de potasio o base de floración; revisa la relación K:Ca+Mg.',
+  { id: 'k_def', title: k('Falta de potasio'), kind: 'deficiency', element: 'K', where: 'old',
+    look: k('Bordes y puntas de hojas viejas amarillos que se vuelven marrones y crujientes, con el centro aún verde.'),
+    cause: k('Poco K en floración, o exceso de Ca/Mg/Na que compite con él. Cogollos poco densos.'),
+    confirm: k('El daño sigue el borde de la hoja y avanza hacia dentro, sin manchas aisladas.'), fix: k('Sulfato de potasio o base de floración; revisa la relación K:Ca+Mg.'),
     leaf: { base: GREEN, edge: '#a86b1d', tipBurn: true } },
-  { id: 'k_exc', title: 'Exceso de potasio / sales', kind: 'excess', element: 'K', where: 'all',
-    look: 'Puntas quemadas y, a la vez, carencias de calcio y magnesio (manchas, clorosis) aunque las hayas añadido.',
-    cause: 'El K compite con Ca y Mg en la raíz: demasiado PK bloquea a los demás.', confirm: 'Aparece tras subir boosters PK; EC alta; carencias “sin razón”.',
-    fix: 'Baja el PK y sube Cal-Mag; lava el sustrato si la EC de drenaje es alta.', leaf: { base: '#1f6b30', edge: '#a86b1d', tipBurn: true, spots: '#b0651f' } },
-  { id: 'ca_def', title: 'Falta de calcio', kind: 'deficiency', element: 'Ca', where: 'new',
-    look: 'Hojas nuevas deformes, con manchas marrón-óxido pequeñas y puntas de crecimiento que se detienen; tallos frágiles.',
-    cause: 'El Ca no se mueve por la planta: la carencia aparece en lo nuevo. Común con agua de ósmosis y en coco (que lo atrapa).',
-    confirm: 'Manchas óxido dispersas sobre hojas jóvenes, no en los bordes de las viejas.', fix: 'Cal-Mag o nitrato de calcio; con coco, Cal-Mag desde el primer riego.',
+  { id: 'k_exc', title: k('Exceso de potasio / sales'), kind: 'excess', element: 'K', where: 'all',
+    look: k('Puntas quemadas y, a la vez, carencias de calcio y magnesio (manchas, clorosis) aunque las hayas añadido.'),
+    cause: k('El K compite con Ca y Mg en la raíz: demasiado PK bloquea a los demás.'), confirm: k('Aparece tras subir boosters PK; EC alta; carencias “sin razón”.'),
+    fix: k('Baja el PK y sube Cal-Mag; lava el sustrato si la EC de drenaje es alta.'), leaf: { base: '#1f6b30', edge: '#a86b1d', tipBurn: true, spots: '#b0651f' } },
+  { id: 'ca_def', title: k('Falta de calcio'), kind: 'deficiency', element: 'Ca', where: 'new',
+    look: k('Hojas nuevas deformes, con manchas marrón-óxido pequeñas y puntas de crecimiento que se detienen; tallos frágiles.'),
+    cause: k('El Ca no se mueve por la planta: la carencia aparece en lo nuevo. Común con agua de ósmosis y en coco (que lo atrapa).'),
+    confirm: k('Manchas óxido dispersas sobre hojas jóvenes, no en los bordes de las viejas.'), fix: k('Cal-Mag o nitrato de calcio; con coco, Cal-Mag desde el primer riego.'),
     leaf: { base: '#3f8a34', spots: '#9a5a25', curlUp: true } },
-  { id: 'mg_def', title: 'Falta de magnesio', kind: 'deficiency', element: 'Mg', where: 'old',
-    look: 'Clorosis intervenal: hojas medias y viejas amarillas entre los nervios, que siguen verdes; bordes que se enrollan hacia arriba.',
-    cause: 'Poco Mg o bloqueado por exceso de Ca/K o pH bajo. Muy común con RO y coco.', confirm: 'El patrón de “espina de pescado”: nervios verdes con amarillo entre ellos, en hojas viejas.',
-    fix: 'Sal de Epsom (0,3–0,5 g/L) o Cal-Mag; comprueba Ca:Mg entre 2 y 4.', leaf: { base: '#c8cf3e', veins: '#1f7a35', curlUp: true } },
-  { id: 's_def', title: 'Falta de azufre', kind: 'deficiency', element: 'S', where: 'new',
-    look: 'Las hojas nuevas amarillean casi uniformes (parecido al N, pero en lo joven). Menos aroma.',
-    cause: 'Poco sulfato: el S es poco móvil. Raro si usas sulfatos (Epsom, K₂SO₄).', confirm: 'Amarilleo en hojas jóvenes con nervios verdosos.', fix: 'Sal de Epsom o sulfato de potasio.',
+  { id: 'mg_def', title: k('Falta de magnesio'), kind: 'deficiency', element: 'Mg', where: 'old',
+    look: k('Clorosis intervenal: hojas medias y viejas amarillas entre los nervios, que siguen verdes; bordes que se enrollan hacia arriba.'),
+    cause: k('Poco Mg o bloqueado por exceso de Ca/K o pH bajo. Muy común con RO y coco.'), confirm: k('El patrón de “espina de pescado”: nervios verdes con amarillo entre ellos, en hojas viejas.'),
+    fix: k('Sal de Epsom (0,3–0,5 g/L) o Cal-Mag; comprueba Ca:Mg entre 2 y 4.'), leaf: { base: '#c8cf3e', veins: '#1f7a35', curlUp: true } },
+  { id: 's_def', title: k('Falta de azufre'), kind: 'deficiency', element: 'S', where: 'new',
+    look: k('Las hojas nuevas amarillean casi uniformes (parecido al N, pero en lo joven). Menos aroma.'),
+    cause: k('Poco sulfato: el S es poco móvil. Raro si usas sulfatos (Epsom, K₂SO₄).'), confirm: k('Amarilleo en hojas jóvenes con nervios verdosos.'), fix: k('Sal de Epsom o sulfato de potasio.'),
     leaf: { base: '#d6da45', yellowFrom: 'tip', veins: '#a9b83a' } },
-  { id: 'fe_def', title: 'Falta de hierro (o bloqueo)', kind: 'deficiency', element: 'Fe', where: 'new',
-    look: 'Hojas nuevas casi blancas-amarillo brillante con los nervios verdes; los brotes se aclaran.',
-    cause: 'Casi siempre es un pH alto (>6,5) que precipita el hierro, no falta real.', confirm: 'Mide el pH del sustrato: si es alto, es bloqueo.',
-    fix: 'Baja el pH a 5,8–6,3 y usa quelato EDDHA si persiste.', leaf: { base: '#eef07a', veins: '#2e8a3a' } },
-  { id: 'ph_high', title: 'pH alto: bloqueo de micronutrientes', kind: 'lockout', element: 'pH', where: 'new',
-    look: 'Amarilleo intervenal en hojas nuevas, manchas y crecimiento detenido aunque “tenga de todo”.',
-    cause: 'Por encima de 6,8 el Fe, Mn, Zn y P se vuelven insolubles.', confirm: 'Mide pH de la solución y del drenaje; la carencia mejora al bajarlo.',
-    fix: 'Riega con solución a pH 6,0–6,2 y lava el exceso; corrige la alcalinidad del agua.', leaf: { base: '#dfe26a', veins: '#2f8a3b', spots: '#8a5a2a' } },
-  { id: 'ph_low', title: 'pH bajo: bloqueo de Ca/Mg', kind: 'lockout', element: 'pH', where: 'old',
-    look: 'Manchas óxido y clorosis: carencias de Ca y Mg que no se corrigen añadiéndolos.',
-    cause: 'Por debajo de 5,5 el Ca, Mg y P quedan fuera de alcance de la raíz.', confirm: 'Drenaje ácido (<5,5).', fix: 'Sube el pH con pH Up en dosis mínimas y riega con solución a 6,0.',
+  { id: 'fe_def', title: k('Falta de hierro (o bloqueo)'), kind: 'deficiency', element: 'Fe', where: 'new',
+    look: k('Hojas nuevas casi blancas-amarillo brillante con los nervios verdes; los brotes se aclaran.'),
+    cause: k('Casi siempre es un pH alto (>6,5) que precipita el hierro, no falta real.'), confirm: k('Mide el pH del sustrato: si es alto, es bloqueo.'),
+    fix: k('Baja el pH a 5,8–6,3 y usa quelato EDDHA si persiste.'), leaf: { base: '#eef07a', veins: '#2e8a3a' } },
+  { id: 'ph_high', title: k('pH alto: bloqueo de micronutrientes'), kind: 'lockout', element: 'pH', where: 'new',
+    look: k('Amarilleo intervenal en hojas nuevas, manchas y crecimiento detenido aunque “tenga de todo”.'),
+    cause: k('Por encima de 6,8 el Fe, Mn, Zn y P se vuelven insolubles.'), confirm: k('Mide pH de la solución y del drenaje; la carencia mejora al bajarlo.'),
+    fix: k('Riega con solución a pH 6,0–6,2 y lava el exceso; corrige la alcalinidad del agua.'), leaf: { base: '#dfe26a', veins: '#2f8a3b', spots: '#8a5a2a' } },
+  { id: 'ph_low', title: k('pH bajo: bloqueo de Ca/Mg'), kind: 'lockout', element: 'pH', where: 'old',
+    look: k('Manchas óxido y clorosis: carencias de Ca y Mg que no se corrigen añadiéndolos.'),
+    cause: k('Por debajo de 5,5 el Ca, Mg y P quedan fuera de alcance de la raíz.'), confirm: k('Drenaje ácido (<5,5).'), fix: k('Sube el pH con pH Up en dosis mínimas y riega con solución a 6,0.'),
     leaf: { base: '#7fa53a', spots: '#9a5a25', veins: '#2f8a3b' } },
-  { id: 'ec_burn', title: 'Quemadura por sales (EC alta)', kind: 'burn', element: 'EC', where: 'all',
-    look: 'Puntas amarillas-marrones y crujientes en las hojas más altas, hojas oscuras y rígidas.',
-    cause: 'La EC de la solución o del sustrato supera lo que la planta tolera: las raíces pierden agua.', confirm: 'Las puntas mueren de fuera hacia dentro; el sustrato tiene costra blanca.',
-    fix: 'Baja la dosis, lava con agua limpia y comprueba la EC de drenaje.', leaf: { base: '#1d6b30', edge: '#8a5a1a', tipBurn: true } },
-  { id: 'ec_low', title: 'Poca comida (EC baja)', kind: 'deficiency', element: 'EC', where: 'all',
-    look: 'Toda la planta pálida y lenta, hojas más pequeñas, sin manchas concretas.',
-    cause: 'La solución no lleva suficientes nutrientes para la etapa.', confirm: 'EC por debajo del rango de la etapa, sin patrón por elementos.', fix: 'Sube las dosis de forma gradual (10–15 % por riego).',
+  { id: 'ec_burn', title: k('Quemadura por sales (EC alta)'), kind: 'burn', element: 'EC', where: 'all',
+    look: k('Puntas amarillas-marrones y crujientes en las hojas más altas, hojas oscuras y rígidas.'),
+    cause: k('La EC de la solución o del sustrato supera lo que la planta tolera: las raíces pierden agua.'), confirm: k('Las puntas mueren de fuera hacia dentro; el sustrato tiene costra blanca.'),
+    fix: k('Baja la dosis, lava con agua limpia y comprueba la EC de drenaje.'), leaf: { base: '#1d6b30', edge: '#8a5a1a', tipBurn: true } },
+  { id: 'ec_low', title: k('Poca comida (EC baja)'), kind: 'deficiency', element: 'EC', where: 'all',
+    look: k('Toda la planta pálida y lenta, hojas más pequeñas, sin manchas concretas.'),
+    cause: k('La solución no lleva suficientes nutrientes para la etapa.'), confirm: k('EC por debajo del rango de la etapa, sin patrón por elementos.'), fix: k('Sube las dosis de forma gradual (10–15 % por riego).'),
     leaf: { base: '#9cc45a', yellowFrom: 'all' } },
-];
+], ['title', 'look', 'cause', 'confirm', 'fix']);
 export const SYMPTOM_BY_ID = Object.fromEntries(SYMPTOMS.map((s) => [s.id, s])) as Record<string, Symptom>;
 
 /* ─────────────────────────────── retos del laboratorio ─────────────────────────────── */
@@ -628,22 +629,22 @@ export interface Challenge {
   preset?: Record<string, number>;
   goal: (sol: Solution, d: Diagnosis, mix: Mix) => { ok: boolean; hint: string };
 }
-export const CHALLENGES: Challenge[] = [
-  { id: 'tap_veg', title: 'Vegetativo con agua dura', xp: 50, stage: 'veg_early', medium: 'soil', water: 'hard',
-    brief: 'Tu grifo es duro: 200 ppm de alcalinidad (pH 7,8) y ya trae Ca y Mg. Deja el pH en 6,0–7,0 y consigue una puntuación ≥ 75.',
-    goal: (s, d) => ({ ok: s.ph >= 6.0 && s.ph <= 7.0 && d.score >= 75 && !d.toxic, hint: s.ph > 7.0 ? 'Hace falta ácido. Con el fosfórico te pasarás de P: prueba el nítrico (aporta N, que quieres).' : d.status.P === 'high' || d.status.P === 'excess' ? 'Demasiado fósforo: el ácido fosfórico lo aporta. Cambia de ácido.' : 'Ajusta N y K con la base de crecimiento sin pasarte de EC.' }) },
-  { id: 'ro_coco', title: 'Coco con agua de ósmosis', xp: 60, stage: 'veg_early', medium: 'coco', water: 'ro',
-    brief: 'Con agua de ósmosis en coco falta calcio y magnesio desde el primer riego. Consigue una puntuación ≥ 80 en vegetativo temprano.',
-    goal: (_s, d) => ({ ok: d.score >= 80, hint: d.status.Ca !== 'ok' || d.status.Mg !== 'ok' ? 'Añade Cal-Mag: el coco atrapa Ca y Mg.' : 'Ajusta pH (5,8–6,2) y la EC.' }) },
-  { id: 'salts_bloom', title: 'Floración solo con sales', xp: 90, stage: 'bloom_peak', medium: 'hydro', water: 'ro',
+export const CHALLENGES: Challenge[] = localize<Challenge[]>([
+  { id: 'tap_veg', title: k('Vegetativo con agua dura'), xp: 50, stage: 'veg_early', medium: 'soil', water: 'hard',
+    brief: k('Tu grifo es duro: 200 ppm de alcalinidad (pH 7,8) y ya trae Ca y Mg. Deja el pH en 6,0–7,0 y consigue una puntuación ≥ 75.'),
+    goal: (s, d) => ({ ok: s.ph >= 6.0 && s.ph <= 7.0 && d.score >= 75 && !d.toxic, hint: s.ph > 7.0 ? t('Hace falta ácido. Con el fosfórico te pasarás de P: prueba el nítrico (aporta N, que quieres).') : d.status.P === 'high' || d.status.P === 'excess' ? t('Demasiado fósforo: el ácido fosfórico lo aporta. Cambia de ácido.') : t('Ajusta N y K con la base de crecimiento sin pasarte de EC.') }) },
+  { id: 'ro_coco', title: k('Coco con agua de ósmosis'), xp: 60, stage: 'veg_early', medium: 'coco', water: 'ro',
+    brief: k('Con agua de ósmosis en coco falta calcio y magnesio desde el primer riego. Consigue una puntuación ≥ 80 en vegetativo temprano.'),
+    goal: (_s, d) => ({ ok: d.score >= 80, hint: d.status.Ca !== 'ok' || d.status.Mg !== 'ok' ? t('Añade Cal-Mag: el coco atrapa Ca y Mg.') : t('Ajusta pH (5,8–6,2) y la EC.') }) },
+  { id: 'salts_bloom', title: k('Floración solo con sales'), xp: 90, stage: 'bloom_peak', medium: 'hydro', water: 'ro',
     only: ['cal_nitrate', 'mkp', 'k2so4', 'epsom', 'kno3', 'fe_eddha', 'calmag', 'ph_down', 'ph_up'],
-    brief: 'Sin botellas comerciales: construye una solución de floración plena a partir de sales puras. Puntuación ≥ 85.',
-    goal: (_s, d) => ({ ok: d.score >= 85, hint: 'Necesitas K (sulfato/nitrato), P (MKP), Ca (nitrato de calcio) y Mg (Epsom); cuida la relación Ca:Mg.' }) },
-  { id: 'rescue', title: 'Rescata la solución quemada', xp: 50, stage: 'veg_late', medium: 'hydro', water: 'soft',
+    brief: k('Sin botellas comerciales: construye una solución de floración plena a partir de sales puras. Puntuación ≥ 85.'),
+    goal: (_s, d) => ({ ok: d.score >= 85, hint: t('Necesitas K (sulfato/nitrato), P (MKP), Ca (nitrato de calcio) y Mg (Epsom); cuida la relación Ca:Mg.') }) },
+  { id: 'rescue', title: k('Rescata la solución quemada'), xp: 50, stage: 'veg_late', medium: 'hydro', water: 'soft',
     preset: { ph_perfect_grow: 6, ph_perfect_micro: 6, ph_perfect_bloom: 4 },
-    brief: 'Alguien dosificó de más: la EC está por las nubes. Baja las dosis hasta una solución segura (puntuación ≥ 70, sin toxicidad).',
-    goal: (_s, d) => ({ ok: d.score >= 70 && !d.toxic, hint: 'Reduce las tres botellas a la mitad y vuelve a medir.' }) },
-  { id: 'flush', title: 'Lavado final', xp: 30, stage: 'flush', medium: 'hydro', water: 'ro',
-    brief: 'Últimos días: solución de lavado con EC ≤ 0,4 y pH 6,0–6,5.',
-    goal: (s, d) => ({ ok: s.ec <= 0.4 && s.ph >= 6.0 && s.ph <= 6.5 && !d.toxic, hint: s.ph > 6.5 ? 'Ajusta el pH un poco (con muy poco pH Down).' : s.ph < 6.0 ? 'Sube el pH con una gota de pH Up.' : 'Nada de nutrientes: solo agua y, si quieres, un quelante.' }) },
-];
+    brief: k('Alguien dosificó de más: la EC está por las nubes. Baja las dosis hasta una solución segura (puntuación ≥ 70, sin toxicidad).'),
+    goal: (_s, d) => ({ ok: d.score >= 70 && !d.toxic, hint: t('Reduce las tres botellas a la mitad y vuelve a medir.') }) },
+  { id: 'flush', title: k('Lavado final'), xp: 30, stage: 'flush', medium: 'hydro', water: 'ro',
+    brief: k('Últimos días: solución de lavado con EC ≤ 0,4 y pH 6,0–6,5.'),
+    goal: (s, d) => ({ ok: s.ec <= 0.4 && s.ph >= 6.0 && s.ph <= 6.5 && !d.toxic, hint: s.ph > 6.5 ? t('Ajusta el pH un poco (con muy poco pH Down).') : s.ph < 6.0 ? t('Sube el pH con una gota de pH Up.') : t('Nada de nutrientes: solo agua y, si quieres, un quelante.') }) },
+], ['title', 'brief']);

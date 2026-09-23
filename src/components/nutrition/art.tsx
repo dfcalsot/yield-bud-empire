@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import {
   ELEMENT_IDS, ELEMENTS, INGREDIENTS, type Diagnosis, type ElementId, type LeafSpec, type Solution, type Status,
 } from '../../sim/nutrition';
+import { t as tr } from '../../i18n';
 
 /* ───────────────────────────── colores ───────────────────────────── */
 
@@ -35,7 +36,7 @@ export const Beaker: React.FC<{ color: string; level?: number; ec: number; pulse
   const y = 232 - level * 170;
   const bubbles = useMemo(() => Array.from({ length: 9 }, (_, i) => ({ x: 62 + ((i * 37) % 96), d: 2.6 + (i % 4) * 0.7, s: 2 + (i % 3), delay: i * 0.45 })), []);
   return (
-    <svg viewBox="0 0 220 270" className="nu-beaker" role="img" aria-label="Vaso de laboratorio con la solución">
+    <svg viewBox="0 0 220 270" className="nu-beaker" role="img" aria-label={tr('Vaso de laboratorio con la solución')}>
       <defs>
         <clipPath id="nuGlass"><path d="M52 40 L52 226 Q52 240 66 240 L154 240 Q168 240 168 226 L168 40 Z" /></clipPath>
         <linearGradient id="nuLiq" x1="0" y1="0" x2="0" y2="1">
@@ -120,7 +121,7 @@ export const ElementBars: React.FC<{ sol: Solution; d: Diagnosis; compact?: bool
       const st: Status = d.status[e];
       const blocked = Math.abs(d.effective[e] - sol.ppm[e]) > Math.max(1, sol.ppm[e] * 0.08);
       return (
-        <div key={e} className="nu-el" title={`${ELEMENTS[e].name}: ${sol.ppm[e]} ppm en la solución, ${d.effective[e]} absorbibles. Ideal ${lo}–${hi}`}>
+        <div key={e} className="nu-el" title={tr('{name}: {v1} ppm en la solución, {v2} absorbibles. Ideal {lo}–{hi}', { name: ELEMENTS[e].name, v1: sol.ppm[e], v2: d.effective[e], lo, hi })}>
           <span className="nu-el__sym" style={{ color: ELEMENTS[e].color }}>{e}</span>
           <div className="nu-el__track">
             <i className="nu-el__ideal" style={{ left: `${p(lo)}%`, width: `${Math.max(2, p(hi) - p(lo))}%` }} />
@@ -139,7 +140,7 @@ export const ScoreRing: React.FC<{ score: number; stars: number; label: string }
   const R = 44, C = 2 * Math.PI * R;
   const col = score >= 90 ? '#34d399' : score >= 75 ? '#a3e635' : score >= 55 ? '#fbbf24' : '#f87171';
   return (
-    <div className="nu-ring" role="img" aria-label={`Calidad ${score} de 100`}>
+    <div className="nu-ring" role="img" aria-label={tr('Calidad {score} de 100', { score })}>
       <svg viewBox="0 0 110 110">
         <circle cx="55" cy="55" r={R} stroke="#1f2937" strokeWidth="9" fill="none" />
         <circle cx="55" cy="55" r={R} stroke={col} strokeWidth="9" fill="none" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - score / 100)} transform="rotate(-90 55 55)" className="nu-ring__arc" />
@@ -175,7 +176,7 @@ export const LeafArt: React.FC<{ spec: LeafSpec; size?: number; sway?: boolean; 
   const bold = !!spec.veins;
   const spots = useMemo(() => (spec.spots ? Array.from({ length: 14 }, (_, i) => ({ x: ((i * 53) % 120) - 60, y: -((i * 37) % 90) - 12, r: 1.6 + (i % 3) })) : []), [spec.spots]);
   return (
-    <svg viewBox="-110 -125 220 150" width={size} height={size * 0.68} className={sway ? 'nu-leaf' : ''} role="img" aria-label="Hoja de cannabis">
+    <svg viewBox="-110 -125 220 150" width={size} height={size * 0.68} className={sway ? 'nu-leaf' : ''} role="img" aria-label={tr('Hoja de cannabis')}>
       <defs>
         {LEAFLETS.map((_, i) => (
           <linearGradient key={i} id={`${id}-g${i}`} x1="0" y1="0" x2="0" y2="-1">

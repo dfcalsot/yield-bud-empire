@@ -1,6 +1,7 @@
 import React from 'react';
 import './hud.css';
 import type { EquipStats } from '../../economy/catalog';
+import { t } from '../../i18n';
 
 /**
  * The room behind the plant. Every facility tier is a different place with different machinery, and the machines drawn are the
@@ -123,7 +124,7 @@ const Hydro: React.FC<Props> = ({ lampColor, equip }) => (
     {[70, 340, 610].map((x) => <g key={x}><rect x={x} y="22" width="250" height="26" rx="8" fill="#20202c" stroke="#0a0716" strokeWidth="3" />{LEDS(11, x + 18, x + 232, 35, lampColor)}</g>)}
     <rect x="18" y="20" width="30" height="120" rx="8" fill="#a78bfa" opacity=".75" className="fb-pulse" /><rect x="952" y="20" width="30" height="120" rx="8" fill="#a78bfa" opacity=".75" className="fb-pulse" />
     {/* control screen with live graph */}
-    <g transform="translate(400 96)"><rect width="200" height="110" rx="10" fill="#0a1220" stroke="#5a7a92" strokeWidth="4" /><path d="M14 80 L48 56 L80 68 L114 34 L150 52 L184 28" fill="none" stroke="#5eead4" strokeWidth="3" strokeLinecap="round" className="fb-flow" /><path d="M14 92 L184 92" stroke="#2e4a5e" strokeWidth="2" /><text x="14" y="24" fontSize="11" fontWeight="800" fill="#b8f35a" fontFamily="monospace">PHARMA · GRADE</text></g>
+    <g transform="translate(400 96)"><rect width="200" height="110" rx="10" fill="#0a1220" stroke="#5a7a92" strokeWidth="4" /><path d="M14 80 L48 56 L80 68 L114 34 L150 52 L184 28" fill="none" stroke="#5eead4" strokeWidth="3" strokeLinecap="round" className="fb-flow" /><path d="M14 92 L184 92" stroke="#2e4a5e" strokeWidth="2" /><text x="14" y="24" fontSize="11" fontWeight="800" fill="#b8f35a" fontFamily="monospace">{t('PHARMA · GRADE')}</text></g>
     {/* nutrient tanks with level and pipes */}
     {[{ x: 70, g: 'fbTank' }, { x: 150, g: 'fbTank2' }].map((t) => <g key={t.x} transform={`translate(${t.x} 230)`}><rect width="62" height="190" rx="14" fill="#dbe7ee" stroke="#0a0716" strokeWidth="3" /><rect x="7" y="40" width="48" height="140" rx="9" fill={`url(#${t.g})`} className="fb-bob" opacity=".9" /><rect x="14" y="16" width="34" height="12" rx="4" fill="#8aa1b1" /></g>)}
     <path d="M150 230 V190 H300 V330" fill="none" stroke="#0a0716" strokeWidth="9" strokeLinecap="round" /><path d="M150 230 V190 H300 V330" fill="none" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" className="fb-flow" />

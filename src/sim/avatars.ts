@@ -1,4 +1,5 @@
-/**
+
+import { k } from '../i18n/core';/**
  * Profile avatars as collectible NFTs: seasonal designs, minted by opening chests. Pure module (no React): the season of a
  * date, the design catalogue, the chest odds and the roll with its "pity" guarantee.
  */
@@ -16,11 +17,11 @@ export interface Season {
 }
 
 export const SEASONS: Record<SeasonId, Season> = {
-  primavera: { id: 'primavera', name: 'Primavera · Floración Rosa', emoji: '🌸', tagline: 'Brotes, rocío y cerezos: el jardín despierta.', colors: ['#f472b6', '#86efac'] },
-  verano: { id: 'verano', name: 'Verano · Sol de Plata', emoji: '☀️', tagline: 'Luz a raudales, farolillos de playa y frascos dorados.', colors: ['#fbbf24', '#fb923c'] },
-  otono: { id: 'otono', name: 'Otoño · Cosecha Dorada', emoji: '🍂', tagline: 'Calabazas chrono, hojas ámbar y lunas de cosecha.', colors: ['#f97316', '#a16207'] },
-  invierno: { id: 'invierno', name: 'Invierno · Escarcha Neón', emoji: '❄️', tagline: 'Copos de neón, hielo cristalino y auroras boreales.', colors: ['#7dd3fc', '#c4b5fd'] },
-  classic: { id: 'classic', name: 'Clásicos de Yield', emoji: '🧬', tagline: 'Diseños atemporales: salen de cualquier cofre.', colors: ['#34d399', '#a78bfa'] },
+  primavera: { id: 'primavera', name: k('Primavera · Floración Rosa'), emoji: '🌸', tagline: k('Brotes, rocío y cerezos: el jardín despierta.'), colors: ['#f472b6', '#86efac'] },
+  verano: { id: 'verano', name: k('Verano · Sol de Plata'), emoji: '☀️', tagline: k('Luz a raudales, farolillos de playa y frascos dorados.'), colors: ['#fbbf24', '#fb923c'] },
+  otono: { id: 'otono', name: k('Otoño · Cosecha Dorada'), emoji: '🍂', tagline: k('Calabazas chrono, hojas ámbar y lunas de cosecha.'), colors: ['#f97316', '#a16207'] },
+  invierno: { id: 'invierno', name: k('Invierno · Escarcha Neón'), emoji: '❄️', tagline: k('Copos de neón, hielo cristalino y auroras boreales.'), colors: ['#7dd3fc', '#c4b5fd'] },
+  classic: { id: 'classic', name: k('Clásicos de Yield'), emoji: '🧬', tagline: k('Diseños atemporales: salen de cualquier cofre.'), colors: ['#34d399', '#a78bfa'] },
 };
 
 /** Season by calendar month (Dec–Feb winter, Mar–May spring, Jun–Aug summer, Sep–Nov autumn). */
@@ -54,11 +55,11 @@ export interface AvatarDesign {
 
 type Row = [string, Motif, AvatarRarity];
 const TABLE: Record<SeasonId, Row[]> = {
-  primavera: [['Brote Tierno', 'seed', 'common'], ['Gota de Rocío', 'drop', 'common'], ['Abeja Curiosa', 'bee', 'common'], ['Flor de Cerezo', 'flower', 'rare'], ['Hoja Fresca', 'leaf', 'rare'], ['Cogollo Rosa', 'bud', 'epic'], ['Luna de Mayo', 'moon', 'epic'], ['Reina de la Floración', 'crown', 'legendary']],
-  verano: [['Rayo de Sol', 'sun', 'common'], ['Gota Fresca', 'drop', 'common'], ['Farol de Playa', 'lantern', 'common'], ['Hoja Tropical', 'leaf', 'rare'], ['Frasco de Verano', 'jar', 'rare'], ['Cogollo Dorado', 'bud', 'epic'], ['Planeta Ardiente', 'planet', 'epic'], ['Rey del Sol', 'crown', 'legendary']],
-  otono: [['Semilla de Cosecha', 'seed', 'common'], ['Calabaza Yield', 'pumpkin', 'common'], ['Farol de Otoño', 'lantern', 'common'], ['Hoja Ámbar', 'leaf', 'rare'], ['Matraz de Sidra', 'flask', 'rare'], ['Cogollo Cobrizo', 'bud', 'epic'], ['Luna de Cosecha', 'moon', 'epic'], ['Rey Cosechador', 'crown', 'legendary']],
-  invierno: [['Copo Neón', 'snow', 'common'], ['Gota Helada', 'drop', 'common'], ['Farol de Escarcha', 'lantern', 'common'], ['Hoja de Hielo', 'leaf', 'rare'], ['Frasco de Nieve', 'jar', 'rare'], ['Cogollo Cristal', 'bud', 'epic'], ['Luna Boreal', 'moon', 'epic'], ['Reina de la Escarcha', 'crown', 'legendary']],
-  classic: [['Botánico Original', 'leaf', 'common'], ['Guardián de ADN', 'dna', 'rare'], ['Alquimista', 'flask', 'epic'], ['Yield Fundador', 'planet', 'legendary']],
+  primavera: [[k('Brote Tierno'), 'seed', 'common'], [k('Gota de Rocío'), 'drop', 'common'], [k('Abeja Curiosa'), 'bee', 'common'], [k('Flor de Cerezo'), 'flower', 'rare'], [k('Hoja Fresca'), 'leaf', 'rare'], [k('Cogollo Rosa'), 'bud', 'epic'], [k('Luna de Mayo'), 'moon', 'epic'], [k('Reina de la Floración'), 'crown', 'legendary']],
+  verano: [[k('Rayo de Sol'), 'sun', 'common'], [k('Gota Fresca'), 'drop', 'common'], [k('Farol de Playa'), 'lantern', 'common'], [k('Hoja Tropical'), 'leaf', 'rare'], [k('Frasco de Verano'), 'jar', 'rare'], [k('Cogollo Dorado'), 'bud', 'epic'], [k('Planeta Ardiente'), 'planet', 'epic'], [k('Rey del Sol'), 'crown', 'legendary']],
+  otono: [[k('Semilla de Cosecha'), 'seed', 'common'], [k('Calabaza Yield'), 'pumpkin', 'common'], [k('Farol de Otoño'), 'lantern', 'common'], [k('Hoja Ámbar'), 'leaf', 'rare'], [k('Matraz de Sidra'), 'flask', 'rare'], [k('Cogollo Cobrizo'), 'bud', 'epic'], [k('Luna de Cosecha'), 'moon', 'epic'], [k('Rey Cosechador'), 'crown', 'legendary']],
+  invierno: [[k('Copo Neón'), 'snow', 'common'], [k('Gota Helada'), 'drop', 'common'], [k('Farol de Escarcha'), 'lantern', 'common'], [k('Hoja de Hielo'), 'leaf', 'rare'], [k('Frasco de Nieve'), 'jar', 'rare'], [k('Cogollo Cristal'), 'bud', 'epic'], [k('Luna Boreal'), 'moon', 'epic'], [k('Reina de la Escarcha'), 'crown', 'legendary']],
+  classic: [[k('Botánico Original'), 'leaf', 'common'], [k('Guardián de ADN'), 'dna', 'rare'], [k('Alquimista'), 'flask', 'epic'], [k('Yield Fundador'), 'planet', 'legendary']],
 };
 
 export const DESIGNS: AvatarDesign[] = (Object.keys(TABLE) as SeasonId[]).flatMap((season) =>
@@ -84,8 +85,8 @@ export interface ChestDef {
 }
 
 export const CHESTS: Record<ChestId, ChestDef> = {
-  season: { id: 'season', name: 'Cofre de Temporada', blurb: 'Diseños de la temporada actual y algún clásico.', priceFlora: 90, priceSol: 0.09, odds: { common: 60, rare: 28, epic: 10, legendary: 2 }, epicEvery: 8, legendEvery: 40, colors: ['#22c55e', '#166534'] },
-  premium: { id: 'premium', name: 'Cofre Premium', blurb: 'Sin comunes: raros o mejores, con más legendarios.', priceFlora: 260, priceSol: 0.26, odds: { common: 0, rare: 55, epic: 33, legendary: 12 }, epicEvery: 1, legendEvery: 12, colors: ['#fbbf24', '#92400e'] },
+  season: { id: 'season', name: k('Cofre de Temporada'), blurb: k('Diseños de la temporada actual y algún clásico.'), priceFlora: 90, priceSol: 0.09, odds: { common: 60, rare: 28, epic: 10, legendary: 2 }, epicEvery: 8, legendEvery: 40, colors: ['#22c55e', '#166534'] },
+  premium: { id: 'premium', name: k('Cofre Premium'), blurb: k('Sin comunes: raros o mejores, con más legendarios.'), priceFlora: 260, priceSol: 0.26, odds: { common: 0, rare: 55, epic: 33, legendary: 12 }, epicEvery: 1, legendEvery: 12, colors: ['#fbbf24', '#92400e'] },
 };
 
 export interface PityState { sinceEpic: number; sinceLegend: number }

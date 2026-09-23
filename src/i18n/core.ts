@@ -67,7 +67,8 @@ export async function setLang(l: Lang, remember = true): Promise<void> {
 export const getLang = (): Lang => current;
 
 /** el texto en el idioma actual; `{nombre}` se reemplaza con `vars.nombre` */
-export function t(es: string, vars?: Record<string, string | number | null | undefined>): string {
+export function t(es: string | null | undefined, vars?: Record<string, string | number | null | undefined>): string {
+  if (es == null) return '';
   const s = current === 'en' ? EN[es] ?? es : es;
   return vars ? s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k] ?? '') : m)) : s;
 }

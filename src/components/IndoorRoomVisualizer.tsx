@@ -8,13 +8,14 @@ import { Npc, useNpc } from './npc/Npc';
 import { isHungry, isMale, isThirsty, PEST_INFO, sexRevealed } from '../sim/engine';
 import { MAX_ROOM_PLANTS } from '../sim/facilities';
 import './hud/hud.css';
+import { t, t as tr, k, localize } from '../i18n';
 
 /**
  * The grow room as a game board. The room is exactly as big as the installation (the rest of the benches are locked slots that
  * show what the next upgrade gives), every plant is a card with status pips (thirst, hunger, pests, ready), the big action bar
  * does the room-wide chores with keys 1–6, and Nico the foreman talks about what actually needs doing.
  */
-const STAGE: Record<string, string> = { seed: 'Semilla', seedling: 'Plántula', vegetative: 'Vegetativo', flowering: 'Floración', maturation: 'Maduración', ready_harvest: 'Lista' };
+const STAGE: Record<string, string> = localize({ seed: k('Semilla'), seedling: k('Plántula'), vegetative: k('Vegetativo'), flowering: k('Floración'), maturation: k('Maduración'), ready_harvest: k('Lista') }, ['seed', 'seedling', 'vegetative', 'flowering', 'maturation', 'ready_harvest']);
 const isReady = (p: PlantInGrow) => p.stage === 'ready_harvest';
 
 /** the plant in its pot, drawn per growth stage */
@@ -79,7 +80,7 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
   } = useGame();
   const [lens, setLens] = useState(false);
   const [co2Burst, setCo2Burst] = useState(false);
-  const { say, speak, tips } = useNpc('Sala en orden, jefe. Toca una planta para ver su ficha; las teclas 1–6 hacen las tareas de toda la sala.');
+  const { say, speak, tips } = useNpc(tr('Sala en orden, jefe. Toca una planta para ver su ficha; las teclas 1–6 hacen las tareas de toda la sala.'));
 
   const plants = indoorPlants;
   const cap = plants.length;
@@ -97,25 +98,25 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
   // Nico advises about what is really going on in the room
   tips.current = () => {
     const t: string[] = [];
-    if (ready) t.push(`Tengo ${ready} ${ready === 1 ? 'planta lista' : 'plantas listas'} para cortar. Revisa los tricomas y a cosechar.`);
-    if (thirsty) t.push(`${thirsty} ${thirsty === 1 ? 'maceta tiene' : 'macetas tienen'} sed. Tecla 1 y listo.`);
-    if (pests) t.push(`Hay plaga en ${pests} ${pests === 1 ? 'planta' : 'plantas'}. Trátalas ya (tecla 3) o se riega el problema a las vecinas.`);
-    if (hungry && !thirsty) t.push('Las plantas piden abono. Tecla 2 para fertirrigar la sala.');
-    if (!t.length) t.push('Todo tranquilo. Un cuarto limpio y parejo rinde más que uno apurado.');
-    if (next && !construction) t.push(`Con ${next.name.split(' (')[0]} tendríamos ${next.capacityPlants} plazas. Eso sí que es crecer.`);
+    if (ready) t.push(tr('Tengo {ready} {v1} para cortar. Revisa los tricomas y a cosechar.', { ready, v1: ready === 1 ? tr('planta lista') : tr('plantas listas') }));
+    if (thirsty) t.push(tr('{thirsty} {v1} sed. Tecla 1 y listo.', { thirsty, v1: thirsty === 1 ? tr('maceta tiene') : tr('macetas tienen') }));
+    if (pests) t.push(tr('Hay plaga en {pests} {v1}. Trátalas ya (tecla 3) o se riega el problema a las vecinas.', { pests, v1: pests === 1 ? tr('planta') : tr('plantas') }));
+    if (hungry && !thirsty) t.push(tr('Las plantas piden abono. Tecla 2 para fertirrigar la sala.'));
+    if (!t.length) t.push(tr('Todo tranquilo. Un cuarto limpio y parejo rinde más que uno apurado.'));
+    if (next && !construction) t.push(tr('Con {v0} tendríamos {capacityPlants} plazas. Eso sí que es crecer.', { v0: tr(next.name).split(' (')[0], capacityPlants: next.capacityPlants }));
     return t;
   };
 
   const chore = (fn: () => void, line: string, mood: 'happy' | 'idle' = 'happy') => { fn(); speak(line, mood); };
-  const co2Pulse = () => { setCo2Burst(true); setCo2Ppm(Math.min(1800, co2Ppm + 250)); speak('Pulso de CO₂ abierto: más fotosíntesis por unos minutos.', 'happy'); window.setTimeout(() => setCo2Burst(false), 3500); };
+  const co2Pulse = () => { setCo2Burst(true); setCo2Ppm(Math.min(1800, co2Ppm + 250)); speak(tr('Pulso de CO₂ abierto: más fotosíntesis por unos minutos.'), 'happy'); window.setTimeout(() => setCo2Burst(false), 3500); };
 
   const slots: SlotSpec[] = [
-    { key: 'water', label: 'Regar', sub: thirsty ? `${thirsty} con sed` : 'sala', tone: 'cyan', icon: <Droplet className="w-5 h-5" />, hot: thirsty > 0, onClick: () => chore(waterAllPlants, thirsty ? '¡Regando! Que se hidraten todas.' : 'Riego de mantenimiento hecho.') },
-    { key: 'feed', label: 'Abonar', sub: hungry ? `${hungry} con hambre` : 'sala', tone: 'lime', icon: <FlaskConical className="w-5 h-5" />, hot: hungry > 0 && thirsty === 0, onClick: () => chore(feedAllPlants, 'Fertirriego aplicado a toda la sala.') },
-    { key: 'treat', label: 'Tratar', sub: pests ? `${pests} plaga${pests > 1 ? 's' : ''}` : 'sin plagas', tone: 'pink', icon: <Bug className="w-5 h-5" />, hot: pests > 0, onClick: () => { treatPests('all'); speak(pests ? 'Tratamiento aplicado. Vigila unos días.' : 'No hay plagas, pero me gusta que preguntes.', pests ? 'happy' : 'idle'); } },
+    { key: 'water', label: tr('Regar'), sub: thirsty ? tr('{thirsty} con sed', { thirsty }) : 'sala', tone: 'cyan', icon: <Droplet className="w-5 h-5" />, hot: thirsty > 0, onClick: () => chore(waterAllPlants, thirsty ? tr('¡Regando! Que se hidraten todas.') : tr('Riego de mantenimiento hecho.')) },
+    { key: 'feed', label: tr('Abonar'), sub: hungry ? tr('{hungry} con hambre', { hungry }) : 'sala', tone: 'lime', icon: <FlaskConical className="w-5 h-5" />, hot: hungry > 0 && thirsty === 0, onClick: () => chore(feedAllPlants, tr('Fertirriego aplicado a toda la sala.')) },
+    { key: 'treat', label: tr('Tratar'), sub: pests ? `${pests} plaga${pests > 1 ? 's' : ''}` : tr('sin plagas'), tone: 'pink', icon: <Bug className="w-5 h-5" />, hot: pests > 0, onClick: () => { treatPests('all'); speak(pests ? tr('Tratamiento aplicado. Vigila unos días.') : tr('No hay plagas, pero me gusta que preguntes.'), pests ? 'happy' : 'idle'); } },
     { key: 'co2', label: 'CO₂', sub: `${co2Ppm} ppm`, tone: 'violet', icon: <Wind className="w-5 h-5" />, onClick: co2Pulse },
-    { key: 'harvest', label: 'Cosechar', sub: ready ? `${ready} lista${ready > 1 ? 's' : ''}` : 'nada aún', tone: 'amber', icon: <Scissors className="w-5 h-5" />, hot: ready > 0, onClick: () => { harvestAllReadyPlants(); if (ready) speak('¡Buen corte! Esa flor va directa al secado.', 'happy'); else speak('Todavía no hay nada listo, paciencia.', 'idle'); } },
-    { key: 'lens', label: 'Lupa', sub: 'tricomas', tone: 'neutral', icon: <Eye className="w-5 h-5" />, onClick: () => setLens((v) => !v) },
+    { key: 'harvest', label: tr('Cosechar'), sub: ready ? `${ready} lista${ready > 1 ? 's' : ''}` : tr('nada aún'), tone: 'amber', icon: <Scissors className="w-5 h-5" />, hot: ready > 0, onClick: () => { harvestAllReadyPlants(); if (ready) speak(tr('¡Buen corte! Esa flor va directa al secado.'), 'happy'); else speak(tr('Todavía no hay nada listo, paciencia.'), 'idle'); } },
+    { key: 'lens', label: tr('Lupa'), sub: 'tricomas', tone: 'neutral', icon: <Eye className="w-5 h-5" />, onClick: () => setLens((v) => !v) },
   ];
 
   // keys 1–6 do the room chores (ignored while typing)
@@ -143,21 +144,21 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
     <div className="sr-root" data-testid="sala">
       {/* banner: foreman + the state of the room */}
       <header className="sr-banner">
-        <div className="sr-npc"><Npc kind="foreman" text={say.text} mood={say.mood} moodKey={say.key} /></div>
+        <div className="sr-npc"><Npc kind="foreman" text={tr(say.text)} mood={say.mood} moodKey={say.key} /></div>
         <div className="sr-stats">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-serif text-lg sm:text-xl font-black text-white tracking-wide">Sala de cultivo</h3>
-            <span className="sr-cap"><Sprout className="w-3.5 h-3.5" />{cap} {cap === 1 ? 'planta' : 'plantas'} · {currentFacility.name.split(' (')[0]}</span>
+            <h3 className="font-serif text-lg sm:text-xl font-black text-white tracking-wide">{t('Sala de cultivo')}</h3>
+            <span className="sr-cap"><Sprout className="w-3.5 h-3.5" />{cap} {cap === 1 ? t('planta') : t('plantas')} · {t(currentFacility.name).split(' (')[0]}</span>
           </div>
           <div className="grid grid-cols-3 gap-2 mt-2">
-            <div className="sr-vital"><Bar label="Salud" value={avgHealth} tone="linear-gradient(90deg,#34d399,#b8f35a)" /></div>
-            <div className="sr-vital"><Bar label="Humedad" value={avgMoist} tone="linear-gradient(90deg,#38bdf8,#22d3ee)" /></div>
-            <div className="sr-vital sr-vital--num"><b className={ready ? 'text-amber-300' : 'text-neutral-200'}>{ready}</b><span>listas</span></div>
+            <div className="sr-vital"><Bar label={tr('Salud')} value={avgHealth} tone="linear-gradient(90deg,#34d399,#b8f35a)" /></div>
+            <div className="sr-vital"><Bar label={tr('Humedad')} value={avgMoist} tone="linear-gradient(90deg,#38bdf8,#22d3ee)" /></div>
+            <div className="sr-vital sr-vital--num"><b className={ready ? 'text-amber-300' : 'text-neutral-200'}>{ready}</b><span>{tr('listas')}</span></div>
           </div>
           {next && (
             <button type="button" onClick={onOpenFacility} className="sr-upsell">
               <Hammer className="w-3.5 h-3.5" />
-              {construction ? 'Obra en marcha · ver progreso' : `Ampliar a ${next.name.split(' (')[0]}: ${next.capacityPlants} plazas`}
+              {construction ? tr('Obra en marcha · ver progreso') : tr('Ampliar a {v0}: {capacityPlants} plazas', { v0: t(next.name).split(' (')[0], capacityPlants: next.capacityPlants })}
             </button>
           )}
         </div>
@@ -172,15 +173,15 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
         {!lens ? (
           <div className="relative z-10 space-y-3 p-3 sm:p-4">
             {benches.map((idx, b) => (
-              <section key={b} className="sr-bench" aria-label={`Bancada ${b + 1}`}>
+              <section key={b} className="sr-bench" aria-label={tr('Bancada {v0}', { v0: b + 1 })}>
                 <div className="sr-drip" aria-hidden />
-                <div className="sr-bench-title">Bancada {b + 1}<span>{idx.filter((i) => i < cap).length} en cultivo{idx.some((i) => i >= cap) ? ` · ${idx.filter((i) => i >= cap).length} bloqueadas` : ''}</span></div>
+                <div className="sr-bench-title">{t('Bancada {v0}', { v0: b + 1 })}<span>{idx.filter((i) => i < cap).length}{' '}{t('en cultivo')}{idx.some((i) => i >= cap) ? tr(' · {length} bloqueadas', { length: idx.filter((i) => i >= cap).length }) : ''}</span></div>
                 <div className="sr-grid">
                   {idx.map((i) => {
                     const p = plants[i];
                     if (!p) {
                       return (
-                        <button key={i} type="button" className="sr-slot sr-slot--locked" onClick={onOpenFacility} title={next ? `Se desbloquea con ${next.name}` : 'Plaza bloqueada'}>
+                        <button key={i} type="button" className="sr-slot sr-slot--locked" onClick={onOpenFacility} title={next ? tr('Se desbloquea con {name}', { name: next.name }) : tr('Plaza bloqueada')}>
                           <Lock className="w-5 h-5" />
                           <span>Nv. {currentFacility.tier + 1}</span>
                         </button>
@@ -193,19 +194,19 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
                         className={`sr-slot ${i === selectedPlantIndex ? 'is-selected' : ''} ${rdy ? 'is-ready' : ''}`}>
                         <span className="sr-num">#{i + 1}</span>
                         <div className="sr-pips">
-                          {rdy && <Pip tone="amber" title="Lista para cosechar"><Check className="w-3 h-3" /></Pip>}
-                          {dry && <Pip tone="cyan" title="Tiene sed"><Droplet className="w-3 h-3" /></Pip>}
-                          {hun && !rdy && <Pip tone="lime" title="Necesita abono"><FlaskConical className="w-3 h-3" /></Pip>}
-                          {p.pest && <Pip tone="rose" title={PEST_INFO[p.pest.kind].label}><Bug className="w-3 h-3" /></Pip>}
-                          {male && <Pip tone="violet" title="Macho">♂</Pip>}
+                          {rdy && <Pip tone="amber" title={tr('Lista para cosechar')}><Check className="w-3 h-3" /></Pip>}
+                          {dry && <Pip tone="cyan" title={tr('Tiene sed')}><Droplet className="w-3 h-3" /></Pip>}
+                          {hun && !rdy && <Pip tone="lime" title={tr('Necesita abono')}><FlaskConical className="w-3 h-3" /></Pip>}
+                          {p.pest && <Pip tone="rose" title={tr(PEST_INFO[p.pest.kind].label)}><Bug className="w-3 h-3" /></Pip>}
+                          {male && <Pip tone="violet" title={tr('Macho')}>♂</Pip>}
                         </div>
                         <div className="sr-sprite"><PlantSprite p={p} /></div>
                         <div className="sr-meter"><i style={{ width: `${p.progressPercent}%` }} className={rdy ? 'is-ready' : ''} /></div>
                         <span className="sr-stage-lbl">{STAGE[p.stage] ?? p.stage} · {Math.round(p.progressPercent)}%</span>
                         <span className="sr-tip" role="tooltip">
-                          <b>{p.strain.name}</b>
-                          <em>Salud {Math.round(p.health)}% · Humedad {Math.round(p.soilMoisture)}%</em>
-                          <em>≈ {p.estimatedDryYieldGrams} g de flor seca</em>
+                          <b>{tr(p.strain.name)}</b>
+                          <em>{t('Salud {v0}% · Humedad {v1}%', { v0: Math.round(p.health), v1: Math.round(p.soilMoisture) })}</em>
+                          <em>{t('≈ {estimatedDryYieldGrams} g de flor seca', { estimatedDryYieldGrams: p.estimatedDryYieldGrams })}</em>
                         </span>
                       </button>
                     );
@@ -213,20 +214,20 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
                 </div>
               </section>
             ))}
-            {lockedSlots > 0 && next && <p className="text-center text-[11px] font-mono text-neutral-400">Las plazas con candado se abren al construir <b className="text-amber-300">{next.name.split(' (')[0]}</b>.</p>}
+            {lockedSlots > 0 && next && <p className="text-center text-[11px] font-mono text-neutral-400">{t('Las plazas con candado se abren al construir')}{' '}<b className="text-amber-300">{t(next.name).split(' (')[0]}</b>.</p>}
           </div>
         ) : sel && (
           <div className="relative z-10 grid gap-4 p-4 sm:grid-cols-2 items-center">
             <div className="relative h-64 sm:h-80"><div className="absolute inset-0 grid place-items-center scale-[1.7] origin-center"><div className="w-28 h-32"><PlantSprite p={sel} /></div></div></div>
             <div className="space-y-3">
-              <h4 className="font-serif text-xl font-black text-white">{sel.strain.name} <span className="text-sm font-mono text-neutral-400">#{selectedPlantIndex + 1}</span></h4>
-              <p className="text-[12px] text-neutral-300">Mira el color de los tricomas: <b className="text-white">transparentes</b> = aún crudo, <b className="text-white">lechosos</b> = punto máximo, <b className="text-amber-300">ámbar</b> = más sedante.</p>
+              <h4 className="font-serif text-xl font-black text-white">{tr(sel.strain.name)} <span className="text-sm font-mono text-neutral-400">#{selectedPlantIndex + 1}</span></h4>
+              <p className="text-[12px] text-neutral-300">{t('Mira el color de los tricomas:')}{' '}<b className="text-white">{tr('transparentes')}</b>{' '}{t('= aún crudo,')}{' '}<b className="text-white">{tr('lechosos')}</b>{' '}{t('= punto máximo,')}{' '}<b className="text-amber-300">{t('ámbar')}</b>{' '}{t('= más sedante.')}</p>
               <div className="space-y-2">
-                <Bar label="Transparentes" value={sel.trichomeMaturity.clear} tone="linear-gradient(90deg,#e0f2fe,#7dd3fc)" />
-                <Bar label="Lechosos" value={sel.trichomeMaturity.milky} tone="linear-gradient(90deg,#f5f5f4,#d6d3d1)" />
-                <Bar label="Ámbar" value={sel.trichomeMaturity.amber} tone="linear-gradient(90deg,#fbbf24,#d97706)" />
+                <Bar label={tr('Transparentes')} value={sel.trichomeMaturity.clear} tone="linear-gradient(90deg,#e0f2fe,#7dd3fc)" />
+                <Bar label={tr('Lechosos')} value={sel.trichomeMaturity.milky} tone="linear-gradient(90deg,#f5f5f4,#d6d3d1)" />
+                <Bar label={tr('Ámbar')} value={sel.trichomeMaturity.amber} tone="linear-gradient(90deg,#fbbf24,#d97706)" />
               </div>
-              <button type="button" className="sr-btn" onClick={() => setLens(false)}><Minimize2 className="w-4 h-4" />Volver a la sala</button>
+              <button type="button" className="sr-btn" onClick={() => setLens(false)}><Minimize2 className="w-4 h-4" />{t('Volver a la sala')}</button>
             </div>
           </div>
         )}
@@ -239,18 +240,18 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
             <div className="flex items-center gap-3 min-w-0">
               <div className="sr-sheet-sprite"><PlantSprite p={sel} /></div>
               <div className="min-w-0">
-                <div className="text-[13px] font-extrabold text-white truncate">#{selectedPlantIndex + 1} · {sel.strain.name}</div>
-                <div className="text-[11px] font-mono text-neutral-400">{STAGE[sel.stage] ?? sel.stage} · ≈{sel.estimatedDryYieldGrams} g · THC {sel.strain.thcPercentage}%</div>
+                <div className="text-[13px] font-extrabold text-white truncate">#{selectedPlantIndex + 1} · {tr(sel.strain.name)}</div>
+                <div className="text-[11px] font-mono text-neutral-400">{t('{v0} · ≈{estimatedDryYieldGrams} g · THC {thcPercentage}%', { v0: STAGE[sel.stage] ?? sel.stage, estimatedDryYieldGrams: sel.estimatedDryYieldGrams, thcPercentage: sel.strain.thcPercentage })}</div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 min-w-[9rem] flex-1 max-w-[16rem]">
-              <Bar label="Salud" value={sel.health} tone="linear-gradient(90deg,#34d399,#b8f35a)" />
-              <Bar label="Humedad" value={sel.soilMoisture} tone="linear-gradient(90deg,#38bdf8,#22d3ee)" />
+              <Bar label={tr('Salud')} value={sel.health} tone="linear-gradient(90deg,#34d399,#b8f35a)" />
+              <Bar label={tr('Humedad')} value={sel.soilMoisture} tone="linear-gradient(90deg,#38bdf8,#22d3ee)" />
             </div>
             <div className="flex flex-wrap gap-1.5">
-              <button type="button" className="sr-btn sr-btn--cyan" onClick={() => { waterPlant(); speak(`Riego la #${selectedPlantIndex + 1}.`, 'happy'); }}><Droplet className="w-3.5 h-3.5" />Regar</button>
-              <button type="button" className="sr-btn sr-btn--lime" onClick={() => { feedNutrients(); speak(`Abono para la #${selectedPlantIndex + 1}.`, 'happy'); }}><FlaskConical className="w-3.5 h-3.5" />Abonar</button>
-              {isReady(sel) && <button type="button" className="sr-btn sr-btn--amber" onClick={() => { harvestPlant(); speak('¡Corte limpio!', 'happy'); }}><Scissors className="w-3.5 h-3.5" />Cosechar</button>}
+              <button type="button" className="sr-btn sr-btn--cyan" onClick={() => { waterPlant(); speak(tr('Riego la #{v0}.', { v0: selectedPlantIndex + 1 }), 'happy'); }}><Droplet className="w-3.5 h-3.5" />{t('Regar')}</button>
+              <button type="button" className="sr-btn sr-btn--lime" onClick={() => { feedNutrients(); speak(tr('Abono para la #{v0}.', { v0: selectedPlantIndex + 1 }), 'happy'); }}><FlaskConical className="w-3.5 h-3.5" />{t('Abonar')}</button>
+              {isReady(sel) && <button type="button" className="sr-btn sr-btn--amber" onClick={() => { harvestPlant(); speak(tr('¡Corte limpio!'), 'happy'); }}><Scissors className="w-3.5 h-3.5" />{t('Cosechar')}</button>}
             </div>
           </div>
         )}

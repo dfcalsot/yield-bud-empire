@@ -2,6 +2,7 @@ import React, { Component, Suspense, lazy, useState } from 'react';
 import { Box, Layers } from 'lucide-react';
 import { CannabisPlant, type CannabisPlantProps } from './CannabisPlant';
 import type { PestKind } from '../types';
+import { t } from '../i18n';
 
 /**
  * The plant on the Cultivation stage: the 3D model when WebGL works, the animated SVG otherwise.
@@ -70,7 +71,7 @@ export const PlantView: React.FC<CannabisPlantProps & { pest?: PestKind }> = ({ 
       {webglOk() && (
         <button
           onClick={toggle}
-          title={canvasMode ? 'Ver la planta en 2D' : 'Ver la planta en 3D'}
+          title={canvasMode ? t('Ver la planta en 2D') : t('Ver la planta en 3D')}
           className="pointer-events-auto absolute bottom-1 right-1 z-10 flex items-center gap-1 px-2 py-1 rounded-md border border-emerald-300/30 bg-neutral-950/70 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-200 hover:bg-neutral-900 cursor-pointer transition"
         >
           {canvasMode ? <Layers className="w-3 h-3" /> : <Box className="w-3 h-3" />} {canvasMode ? '2D' : '3D'}

@@ -33,6 +33,7 @@ import { CultivationScene } from './CultivationScene';
 import { LeftRail, RightRail } from './cultivo/CultivoRails';
 import { FacilityPanel } from './hud/FacilityPanel';
 import { X as CloseIcon } from 'lucide-react';
+import { t } from '../i18n';
 
 export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; onOpenPlanet?: () => void }> = ({ onOpenMarket, onOpenPlanet }) => {
   const {
@@ -100,11 +101,11 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                 <div className="flex items-center gap-2">
                   <Gauge className="w-4 h-4 text-cyan-400" />
                   <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-200 font-mono">
-                    Instrumental Científico en Vivo
+                    {t('Instrumental Científico en Vivo')}
                   </h3>
                 </div>
                 <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                  Calibrado Digital
+                  {t('Calibrado Digital')}
                 </span>
               </div>
 
@@ -112,13 +113,13 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                 {/* pH Meter */}
                 <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1.5">
                   <div className="flex justify-between items-center text-neutral-400 text-[11px]">
-                    <span>Sonda de pH</span>
+                    <span>{t('Sonda de pH')}</span>
                     <span className={`text-[10px] px-1.5 py-0.2 rounded ${
                       activePlant.phLevel >= 5.8 && activePlant.phLevel <= 6.5
                         ? 'bg-emerald-500/20 text-emerald-300'
                         : 'bg-amber-500/20 text-amber-300'
                     }`}>
-                      {activePlant.phLevel >= 5.8 && activePlant.phLevel <= 6.5 ? 'Óptimo' : 'Desviado'}
+                      {activePlant.phLevel >= 5.8 && activePlant.phLevel <= 6.5 ? t('Óptimo') : t('Desviado')}
                     </span>
                   </div>
                   <div className="text-xl font-bold text-emerald-400">
@@ -128,15 +129,15 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                     onClick={() => calibrateMeter('ph')}
                     className="w-full text-[10px] py-1 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded border border-neutral-800 transition cursor-pointer"
                   >
-                    Calibrar pH 4.01/7.01
+                    {t('Calibrar pH 4.01/7.01')}
                   </button>
                 </div>
 
                 {/* EC / PPM Meter */}
                 <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1.5">
                   <div className="flex justify-between items-center text-neutral-400 text-[11px]">
-                    <span>Electroconductividad</span>
-                    <span className="text-cyan-400 text-[10px]">PPM ~{Math.round(activePlant.ecLevel * 500)}</span>
+                    <span>{t('Electroconductividad')}</span>
+                    <span className="text-cyan-400 text-[10px]">{t('PPM ~{v0}', { v0: Math.round(activePlant.ecLevel * 500) })}</span>
                   </div>
                   <div className="text-xl font-bold text-cyan-400">
                     {activePlant.ecLevel.toFixed(1)} <span className="text-xs font-normal text-neutral-500">mS/cm</span>
@@ -145,21 +146,21 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                     onClick={() => calibrateMeter('ec')}
                     className="w-full text-[10px] py-1 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded border border-neutral-800 transition cursor-pointer"
                   >
-                    Calibrar 1413 μS
+                    {t('Calibrar 1413 μS')}
                   </button>
                 </div>
 
                 {/* Lux & PAR Meter */}
                 <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1.5">
                   <div className="flex justify-between items-center text-neutral-400 text-[11px]">
-                    <span>Sensor Cuántico PAR</span>
-                    <span className="text-amber-400 text-[10px]">Apogee ePAR</span>
+                    <span>{t('Sensor Cuántico PAR')}</span>
+                    <span className="text-amber-400 text-[10px]">{t('Apogee ePAR')}</span>
                   </div>
                   <div className="text-xl font-bold text-amber-400">
                     {activePlant.ppfdLightIntensity} <span className="text-xs font-normal text-neutral-500">μmol/m²s</span>
                   </div>
                   <div className="text-[10px] text-neutral-400 flex justify-between">
-                    <span>Lúmenes Lux:</span>
+                    <span>{t('Lúmenes Lux:')}</span>
                     <strong className="text-neutral-200">{(activePlant.luxLumens || Math.round(activePlant.ppfdLightIntensity * 54)).toLocaleString()} lx</strong>
                   </div>
                 </div>
@@ -167,11 +168,11 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                 {/* CO2 NDIR Sensor */}
                 <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1.5">
                   <div className="flex justify-between items-center text-neutral-400 text-[11px]">
-                    <span>Inyección de CO2</span>
+                    <span>{t('Inyección de CO2')}</span>
                     <span className={`text-[10px] px-1.5 py-0.2 rounded ${
                       (activePlant.co2Ppm || co2Ppm) >= 1100 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-neutral-800 text-neutral-400'
                     }`}>
-                      {(activePlant.co2Ppm || co2Ppm) >= 1100 ? '+35% Boost' : 'Base'}
+                      {(activePlant.co2Ppm || co2Ppm) >= 1100 ? t('+35% Boost') : t('Base')}
                     </span>
                   </div>
                   <div className="text-xl font-bold text-emerald-300">
@@ -200,7 +201,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   }`}
                 >
                   <Droplet className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Riego: {autoWaterActive ? 'AUTOPOT ON' : 'MANUAL'}</span>
+                  <span>{t('Riego: {v0}', { v0: autoWaterActive ? t('AUTOPOT ON') : 'MANUAL' })}</span>
                 </button>
 
                 <button
@@ -212,7 +213,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   }`}
                 >
                   <Sliders className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Clima: {autoClimateActive ? 'PID AUTO' : 'MANUAL'}</span>
+                  <span>{t('Clima: {v0}', { v0: autoClimateActive ? t('PID AUTO') : 'MANUAL' })}</span>
                 </button>
               </div>
             </div>
@@ -224,11 +225,11 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
               <div className="flex items-center gap-2">
                 <Activity className="w-4 h-4 text-emerald-400" />
                 <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                  Control Climático & VPD
+                  {t('Control Climático & VPD')}
                 </h3>
               </div>
               <span className="text-[11px] font-mono text-neutral-400">
-                Sala: {currentRoom}
+                {t('Sala: {currentRoom}', { currentRoom })}
               </span>
             </div>
 
@@ -239,7 +240,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   <div className="flex justify-between text-xs">
                     <span className="text-neutral-400 flex items-center gap-1.5">
                       <Thermometer className="w-3.5 h-3.5 text-amber-400" />
-                      Temperatura Ambiente
+                      {t('Temperatura Ambiente')}
                     </span>
                     <span className="font-mono text-amber-300 font-bold">{activePlant.temperatureC}°C</span>
                   </div>
@@ -253,9 +254,9 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                     className="w-full accent-amber-500 cursor-pointer h-1.5 bg-neutral-800 rounded-lg"
                   />
                   <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
-                    <span>18°C (Frío)</span>
-                    <span>Óptimo: 23-26°C</span>
-                    <span>32°C (Estrés Térmico)</span>
+                    <span>{t('18°C (Frío)')}</span>
+                    <span>{t('Óptimo: 23-26°C')}</span>
+                    <span>{t('32°C (Estrés Térmico)')}</span>
                   </div>
                 </div>
 
@@ -264,7 +265,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   <div className="flex justify-between text-xs">
                     <span className="text-neutral-400 flex items-center gap-1.5">
                       <Wind className="w-3.5 h-3.5 text-cyan-400" />
-                      Humedad Relativa (RH)
+                      {t('Humedad Relativa (RH)')}
                     </span>
                     <span className="font-mono text-cyan-300 font-bold">{activePlant.relativeHumidity}%</span>
                   </div>
@@ -278,9 +279,9 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                     className="w-full accent-cyan-500 cursor-pointer h-1.5 bg-neutral-800 rounded-lg"
                   />
                   <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
-                    <span>35% (Seco)</span>
-                    <span>Óptimo: 50-60%</span>
-                    <span>80% (Riesgo Moho)</span>
+                    <span>{t('35% (Seco)')}</span>
+                    <span>{t('Óptimo: 50-60%')}</span>
+                    <span>{t('80% (Riesgo Moho)')}</span>
                   </div>
                 </div>
 
@@ -289,7 +290,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-neutral-300 font-semibold flex items-center gap-1">
                       <Info className="w-3.5 h-3.5 text-emerald-400" />
-                      Déficit de Presión de Vapor (VPD)
+                      {t('Déficit de Presión de Vapor (VPD)')}
                     </span>
                     <span className={`font-mono font-bold ${
                       activePlant.vpdKpa >= 0.8 && activePlant.vpdKpa <= 1.4 ? 'text-emerald-400' : 'text-amber-400'
@@ -299,10 +300,10 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   </div>
                   <p className="text-[11px] text-neutral-400 leading-relaxed">
                     {activePlant.vpdKpa >= 0.8 && activePlant.vpdKpa <= 1.4
-                      ? 'Zona de confort transpiratorio perfecta. Las estomas absorben CO2 y transpiran a tasa óptima.'
+                      ? t('Zona de confort transpiratorio perfecta. Las estomas absorben CO2 y transpiran a tasa óptima.')
                       : activePlant.vpdKpa < 0.8
-                      ? 'VPD bajo: Transpiración lenta. Aumenta la temperatura o reduce la humedad ambiental.'
-                      : 'VPD alto: La planta transpira en exceso para no marchitarse. Aumenta la humedad.'}
+                      ? t('VPD bajo: Transpiración lenta. Aumenta la temperatura o reduce la humedad ambiental.')
+                      : t('VPD alto: La planta transpira en exceso para no marchitarse. Aumenta la humedad.')}
                   </p>
                 </div>
 
@@ -311,7 +312,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   <div className="flex justify-between text-xs">
                     <span className="text-neutral-400 flex items-center gap-1.5">
                       <Sun className="w-3.5 h-3.5 text-amber-400" />
-                      Intensidad Cuántica (PPFD)
+                      {t('Intensidad Cuántica (PPFD)')}
                     </span>
                     <span className="font-mono text-amber-300 font-bold">{activePlant.ppfdLightIntensity} μmol/m²s</span>
                   </div>
@@ -325,15 +326,15 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                     className="w-full accent-amber-400 cursor-pointer h-1.5 bg-neutral-800 rounded-lg"
                   />
                   <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
-                    <span>300 (Plántula)</span>
-                    <span>700 (Vegetativo)</span>
-                    <span>1000+ (Floración Máxima)</span>
+                    <span>{t('300 (Plántula)')}</span>
+                    <span>{t('700 (Vegetativo)')}</span>
+                    <span>{t('1000+ (Floración Máxima)')}</span>
                   </div>
                 </div>
 
                 {/* Photoperiod Schedule Selection */}
                 <div className="space-y-1.5 pt-1">
-                  <span className="text-xs text-neutral-400 block">Fotoperiodo (Horas Luz / Oscuridad)</span>
+                  <span className="text-xs text-neutral-400 block">{t('Fotoperiodo (Horas Luz / Oscuridad)')}</span>
                   <div className="grid grid-cols-3 gap-2">
                     {(['18/6', '12/12', '24/0'] as const).map((sched) => (
                       <button
@@ -353,7 +354,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
               </div>
             ) : (
               <div className="py-12 text-center text-neutral-500 text-xs">
-                Inicia un ciclo de cultivo para controlar los parámetros de clima.
+                {t('Inicia un ciclo de cultivo para controlar los parámetros de clima.')}
               </div>
             )}
           </div>
@@ -363,7 +364,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
             <div className="hud-panel p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-neutral-300 font-mono uppercase">
-                  Perfil de Terpenos Activo
+                  {t('Perfil de Terpenos Activo')}
                 </span>
                 <span className="text-[11px] font-mono text-emerald-400 font-bold">
                   THC: {activePlant.strain.thcPercentage}% | CBD: {activePlant.strain.cbdPercentage}%
@@ -373,7 +374,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
               <div className="space-y-2 text-xs">
                 <div>
                   <div className="flex justify-between text-[11px] mb-0.5">
-                    <span className="text-neutral-400">Mirceno (Efecto sedante / herbal)</span>
+                    <span className="text-neutral-400">{t('Mirceno (Efecto sedante / herbal)')}</span>
                     <span className="font-mono text-emerald-400">{activePlant.strain.terpenes.myrcene}%</span>
                   </div>
                   <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
@@ -383,7 +384,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
 
                 <div>
                   <div className="flex justify-between text-[11px] mb-0.5">
-                    <span className="text-neutral-400">Limoneno (Cítrico / elevador)</span>
+                    <span className="text-neutral-400">{t('Limoneno (Cítrico / elevador)')}</span>
                     <span className="font-mono text-amber-400">{activePlant.strain.terpenes.limonene}%</span>
                   </div>
                   <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
@@ -393,7 +394,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
 
                 <div>
                   <div className="flex justify-between text-[11px] mb-0.5">
-                    <span className="text-neutral-400">Cariofileno (Especiado / receptor CB2)</span>
+                    <span className="text-neutral-400">{t('Cariofileno (Especiado / receptor CB2)')}</span>
                     <span className="font-mono text-purple-400">{activePlant.strain.terpenes.caryophyllene}%</span>
                   </div>
                   <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
@@ -413,8 +414,8 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
       <div className="cv-shell">
       <LeftRail onOpenFacility={() => setShowFacilityModal(true)} onOpenMarket={onOpenMarket} onOpenSeedModal={() => setShowSeedModal(true)} />
       <div className="cv-main space-y-3">
-      <div className="gh-frame cv-modebar" role="tablist" aria-label="Modo de vista">
-        {([['scene', 'Escena', '', Eye], ['indoor_room', 'Sala', ` · ${indoorPlants.length} ${indoorPlants.length === 1 ? 'planta' : 'plantas'}`, Grid3X3], ['single_detail', 'Lupa', ` · planta #${selectedPlantIndex + 1}`, FlaskConical]] as const).map(([id, label, extra, Icon]) => (
+      <div className="gh-frame cv-modebar" role="tablist" aria-label={t('Modo de vista')}>
+        {([['scene', t('Escena'), '', Eye], ['indoor_room', t('Sala'), ` · ${indoorPlants.length} ${indoorPlants.length === 1 ? t('planta') : t('plantas')}`, Grid3X3], ['single_detail', t('Lupa'), t(' · planta #{v0}', { v0: selectedPlantIndex + 1 }), FlaskConical]] as const).map(([id, label, extra, Icon]) => (
           <button key={id} type="button" role="tab" aria-selected={displayMode === id} onClick={() => setDisplayMode(id)} className={`cv-mode ${displayMode === id ? 'is-on' : ''}`} data-mode={id}><Icon className="w-4 h-4" />{label}<span className="hidden sm:inline">{extra}</span></button>
         ))}
       </div>
@@ -440,10 +441,10 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
             <div className="hud-panel p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-neutral-300 uppercase tracking-wider font-mono">
-                  Intervenciones de Cultivo
+                  {t('Intervenciones de Cultivo')}
                 </span>
                 <span className="text-[11px] text-neutral-400">
-                  {activePlant.stage === 'ready_harvest' ? '¡Lista para corte!' : 'Ciclo en curso'}
+                  {activePlant.stage === 'ready_harvest' ? t('¡Lista para corte!') : t('Ciclo en curso')}
                 </span>
               </div>
 
@@ -454,8 +455,8 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   className="flex flex-col items-center justify-center p-3 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-cyan-500/40 hover:bg-cyan-950/10 transition group cursor-pointer"
                 >
                   <Droplet className="w-5 h-5 text-cyan-400 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-neutral-200">Regar Sustrato</span>
-                  <span className="text-[10px] text-neutral-400 font-mono">Hum: {activePlant.soilMoisture}%</span>
+                  <span className="text-xs font-medium text-neutral-200">{t('Regar Sustrato')}</span>
+                  <span className="text-[10px] text-neutral-400 font-mono">{t('Hum: {soilMoisture}%', { soilMoisture: activePlant.soilMoisture })}</span>
                 </button>
 
                 {/* Nutrientes EC */}
@@ -464,7 +465,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   className="flex flex-col items-center justify-center p-3 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-emerald-500/40 hover:bg-emerald-950/10 transition group cursor-pointer"
                 >
                   <Activity className="w-5 h-5 text-emerald-400 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-neutral-200">Abonar N-P-K</span>
+                  <span className="text-xs font-medium text-neutral-200">{t('Abonar N-P-K')}</span>
                   <span className="text-[10px] text-neutral-400 font-mono">EC: {activePlant.ecLevel} mS</span>
                 </button>
 
@@ -474,8 +475,8 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   className="flex flex-col items-center justify-center p-3 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-purple-500/40 hover:bg-purple-950/10 transition group cursor-pointer"
                 >
                   <Scissors className="w-5 h-5 text-purple-400 mb-1 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-neutral-200">Técnicas de entrenamiento</span>
-                  <span className="text-[10px] text-purple-400 font-mono">según la fase</span>
+                  <span className="text-xs font-medium text-neutral-200">{t('Técnicas de entrenamiento')}</span>
+                  <span className="text-[10px] text-purple-400 font-mono">{t('según la fase')}</span>
                 </button>
 
                 {/* Acelerar Quemando $FLORA */}
@@ -487,8 +488,8 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                     <Flame className="w-5 h-5 text-amber-400 mb-1 group-hover:scale-110 transition-transform" />
                     <Zap className="w-3.5 h-3.5 text-amber-300 mb-1" />
                   </div>
-                  <span className="text-xs font-bold text-amber-200">Acelerar Ciclo</span>
-                  <span className="text-[10px] font-mono text-amber-400 font-semibold">Quema 25 $FLORA</span>
+                  <span className="text-xs font-bold text-amber-200">{t('Acelerar Ciclo')}</span>
+                  <span className="text-[10px] font-mono text-amber-400 font-semibold">{t('Quema 25 $FLORA')}</span>
                 </button>
               </div>
 
@@ -499,7 +500,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   className="py-2 px-3 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-emerald-500/40 text-neutral-300 text-xs font-mono transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <FlaskConical className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Tablas de Nutrición ({activePlant.nutrientBrand || selectedNutrientBrand})</span>
+                  <span>{t('Tablas de Nutrición ({v0})', { v0: activePlant.nutrientBrand || selectedNutrientBrand })}</span>
                 </button>
 
                 <button
@@ -507,7 +508,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   className="py-2 px-3 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-purple-500/40 text-neutral-300 text-xs font-mono transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Crown className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Guardar como Madre Donante</span>
+                  <span>{t('Guardar como Madre Donante')}</span>
                 </button>
               </div>
 
@@ -519,7 +520,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>
-                    {`Cosechar Flores y Tricomas (~${activePlant.estimatedDryYieldGrams}g)`}
+                    {t('Cosechar Flores y Tricomas (~{estimatedDryYieldGrams}g)', { estimatedDryYieldGrams: activePlant.estimatedDryYieldGrams })}
                   </span>
                 </button>
               )}
@@ -527,16 +528,16 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
           ) : (
             <div className="hud-panel p-6 text-center space-y-4">
               <div className="max-w-md mx-auto">
-                <h3 className="text-base font-bold text-white mb-1">Comenzar Nuevo Cultivo</h3>
+                <h3 className="text-base font-bold text-white mb-1">{t('Comenzar Nuevo Cultivo')}</h3>
                 <p className="text-xs text-neutral-400 mb-4">
-                  Elige una genética de tu banco de semillas para iniciar el proceso de germinación y control microclimático.
+                  {t('Elige una genética de tu banco de semillas para iniciar el proceso de germinación y control microclimático.')}
                 </p>
                 <button
                   onClick={() => setShowSeedModal(true)}
                   className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs shadow-md transition cursor-pointer inline-flex items-center gap-2"
                 >
                   <Sprout className="w-4 h-4" />
-                  <span>Seleccionar Semilla ({strains.length} disponibles)</span>
+                  <span>{t('Seleccionar Semilla ({length} disponibles)', { length: strains.length })}</span>
                 </button>
               </div>
             </div>
@@ -558,12 +559,12 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
 
       {/* Slide-over with the full climate / instrument panel (scene mode) */}
       {showPanel && (
-        <div className="fixed inset-0 z-[70] flex justify-end" role="dialog" aria-label="Panel de control">
+        <div className="fixed inset-0 z-[70] flex justify-end" role="dialog" aria-label={t('Panel de control')}>
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowPanel(false)} />
           <aside className="relative w-full sm:w-[540px] h-full overflow-y-auto bg-neutral-950/95 border-l border-emerald-400/30 p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-serif text-sm font-bold tracking-[0.14em] uppercase text-emerald-200">Panel de control</h3>
-              <button onClick={() => setShowPanel(false)} aria-label="Cerrar panel" className="p-2 rounded-lg border border-neutral-700 text-neutral-300 hover:text-white cursor-pointer"><CloseIcon className="w-4 h-4" /></button>
+              <h3 className="font-serif text-sm font-bold tracking-[0.14em] uppercase text-emerald-200">{t('Panel de control')}</h3>
+              <button onClick={() => setShowPanel(false)} aria-label={t('Cerrar panel')} className="p-2 rounded-lg border border-neutral-700 text-neutral-300 hover:text-white cursor-pointer"><CloseIcon className="w-4 h-4" /></button>
             </div>
             {renderControls(true)}
           </aside>
@@ -576,8 +577,8 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
           <div className="hud-panel max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div>
-                <h3 className="text-lg font-bold text-white">Banco de Semillas Genéticas</h3>
-                <p className="text-xs text-neutral-400">Elige la variedad que deseas germinar en la carpa de cultivo.</p>
+                <h3 className="text-lg font-bold text-white">{t('Banco de Semillas Genéticas')}</h3>
+                <p className="text-xs text-neutral-400">{t('Elige la variedad que deseas germinar en la carpa de cultivo.')}</p>
               </div>
               <button
                 onClick={() => setShowSeedModal(false)}
@@ -601,19 +602,19 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: strain.colorTheme }}></span>
-                      <h4 className="text-sm font-bold text-white">{strain.name}</h4>
+                      <h4 className="text-sm font-bold text-white">{t(strain.name)}</h4>
                       <span className="text-[10px] font-mono px-1.5 py-0.2 bg-neutral-800 text-neutral-300 rounded">
-                        {strain.type}
+                        {t(strain.type)}
                       </span>
                       <span className="text-[10px] font-mono px-1.5 py-0.2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded">
-                        {strain.difficulty}
+                        {t(strain.difficulty)}
                       </span>
                     </div>
-                    <p className="text-xs text-neutral-400 max-w-md">{strain.description}</p>
+                    <p className="text-xs text-neutral-400 max-w-md">{t(strain.description)}</p>
                     <div className="text-[11px] font-mono text-neutral-400 flex gap-3">
                       <span>THC: <strong className="text-emerald-400">{strain.thcPercentage}%</strong></span>
                       <span>CBD: <strong className="text-cyan-400">{strain.cbdPercentage}%</strong></span>
-                      <span>Resina Rosin: <strong className="text-amber-400">x{strain.resinYieldMultiplier}</strong></span>
+                      <span>{t('Resina Rosin:')}{' '}<strong className="text-amber-400">x{strain.resinYieldMultiplier}</strong></span>
                     </div>
                   </div>
 
@@ -624,7 +625,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                     }}
                     className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs rounded-lg transition whitespace-nowrap cursor-pointer shadow"
                   >
-                    Plantar Semilla
+                    {t('Plantar Semilla')}
                   </button>
                 </div>
               ))}
@@ -645,8 +646,8 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
               <div className="flex items-center gap-2.5">
                 <FlaskConical className="w-5 h-5 text-emerald-400" />
                 <div>
-                  <h3 className="text-lg font-bold text-white">Tablas y Marcas de Nutrición</h3>
-                  <p className="text-xs text-neutral-400">Dosificación científica para cada fase desde plántula hasta lavado de raíces.</p>
+                  <h3 className="text-lg font-bold text-white">{t('Tablas y Marcas de Nutrición')}</h3>
+                  <p className="text-xs text-neutral-400">{t('Dosificación científica para cada fase desde plántula hasta lavado de raíces.')}</p>
                 </div>
               </div>
               <button
@@ -669,7 +670,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                       : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-white'
                   }`}
                 >
-                  {brand.name} ({brand.category})
+                  {t(brand.name)} ({t(brand.category)})
                 </button>
               ))}
             </div>
@@ -683,11 +684,11 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                 <div className="space-y-3">
                   <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 flex justify-between items-center text-xs">
                     <div>
-                      <span className="text-white font-bold">{activeBrandObj.name}</span>
-                      <span className="text-neutral-400 ml-2">Línea: {activeBrandObj.line}</span>
+                      <span className="text-white font-bold">{t(activeBrandObj.name)}</span>
+                      <span className="text-neutral-400 ml-2">{t('Línea: {line}', { line: activeBrandObj.line })}</span>
                     </div>
                     <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                      pH Recomendado: {typeof activeBrandObj.recommendedPhRange === 'string' ? activeBrandObj.recommendedPhRange : '5.8 - 6.4'}
+                      {t('pH Recomendado: {v0}', { v0: typeof activeBrandObj.recommendedPhRange === 'string' ? activeBrandObj.recommendedPhRange : '5.8 - 6.4' })}
                     </span>
                   </div>
 
@@ -699,7 +700,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                       >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white font-mono">{stg.stageName}</span>
+                            <span className="text-xs font-bold text-white font-mono">{t(stg.stageName)}</span>
                             {stg.phaseCode && <span className="text-[10px] text-neutral-400 font-mono">({stg.phaseCode})</span>}
                             <span className="text-[10px] font-mono bg-cyan-950/40 text-cyan-400 border border-cyan-800/40 px-1.5 py-0.2 rounded">
                               EC: {stg.targetEc} mS
@@ -708,7 +709,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                           <div className="text-[11px] text-neutral-400 font-mono flex flex-wrap gap-x-3 gap-y-0.5">
                             {(stg.dosageMlPerLiter || []).map((dose, dIdx) => (
                               <span key={dIdx}>
-                                {dose.productName}: <strong className="text-emerald-400">{dose.mlPerL} ml/L</strong>
+                                {t(dose.productName)}: <strong className="text-emerald-400">{dose.mlPerL} ml/L</strong>
                               </span>
                             ))}
                           </div>
@@ -722,7 +723,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                           disabled={!activePlant}
                           className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs rounded-lg transition whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow"
                         >
-                          Aplicar Dosis
+                          {t('Aplicar Dosis')}
                         </button>
                       </div>
                     ))}

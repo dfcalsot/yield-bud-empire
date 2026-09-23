@@ -1,5 +1,6 @@
 import React from 'react';
 import { ExternalLink, Leaf, MapPin } from 'lucide-react';
+import { t as tr } from '../../i18n';
 
 const SITE = 'https://www.wolicbd.com';
 
@@ -11,19 +12,19 @@ export const WoliCbdCard: React.FC = () => (
   <section className="relative overflow-hidden rounded-2xl border p-4 sm:p-5" data-testid="woli-card"
     style={{ borderColor: 'rgba(132,175,40,.55)', background: 'radial-gradient(120% 140% at 85% 60%, rgba(74,110,20,.42), rgba(10,18,8,.96) 62%), #070c06', boxShadow: '0 0 0 3px #0a0716, 0 12px 34px -14px rgba(132,175,40,.45)' }}>
     <div className="flex items-center justify-between gap-2">
-      <img src="/partners/woli/logo.webp" alt="WOLI CBD" className="h-9 w-auto" loading="lazy" />
+      <img src="/partners/woli/logo.webp" alt={tr('WOLI CBD')} className="h-9 w-auto" loading="lazy" />
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border" style={{ color: '#c4e26a', borderColor: 'rgba(132,175,40,.6)', background: 'rgba(132,175,40,.12)' }}>
-        <Leaf className="w-3 h-3" />Marca aliada
+        <Leaf className="w-3 h-3" />{tr('Marca aliada')}
       </span>
     </div>
 
     <div className="grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] gap-2 items-center mt-1">
       <div className="space-y-2 relative z-10">
-        <h4 className="font-serif text-xl font-black text-white leading-tight">Ungüento WOLI CBD</h4>
-        <p className="text-[11px] font-mono uppercase tracking-[0.16em]" style={{ color: '#a7cc45' }}>Armonía natural para tu piel</p>
-        <p className="text-xs text-neutral-300 leading-relaxed">Ungüento cosmético con CBD y aceites esenciales, hecho a mano en Costa Rica. Un producto real, de la vida fuera del juego.</p>
+        <h4 className="font-serif text-xl font-black text-white leading-tight">{tr('Ungüento WOLI CBD')}</h4>
+        <p className="text-[11px] font-mono uppercase tracking-[0.16em]" style={{ color: '#a7cc45' }}>{tr('Armonía natural para tu piel')}</p>
+        <p className="text-xs text-neutral-300 leading-relaxed">{tr('Ungüento cosmético con CBD y aceites esenciales, hecho a mano en Costa Rica. Un producto real, de la vida fuera del juego.')}</p>
         <div className="flex flex-wrap gap-1.5">
-          {['400 mg CBD', 'Lata 50 ml', 'Cera de abeja', 'Hecho a mano'].map((t) => (
+          {[tr('400 mg CBD'), tr('Lata 50 ml'), tr('Cera de abeja'), tr('Hecho a mano')].map((t) => (
             <span key={t} className="px-2 py-0.5 rounded-full text-[10.5px] font-mono border border-white/15 bg-black/30 text-neutral-200">{t}</span>
           ))}
         </div>
@@ -32,10 +33,10 @@ export const WoliCbdCard: React.FC = () => (
           style={{ background: 'linear-gradient(180deg,#b9dc55,#84af28)', boxShadow: '0 3px 0 #3d5a0c, 0 8px 18px -8px rgba(132,175,40,.7)' }}>
           <ExternalLink className="w-3.5 h-3.5" />www.wolicbd.com
         </a>
-        <p className="flex items-center gap-1 text-[10.5px] text-neutral-500"><MapPin className="w-3 h-3" />Costa Rica · producto cosmético: detalles y compra en su tienda.</p>
+        <p className="flex items-center gap-1 text-[10.5px] text-neutral-500"><MapPin className="w-3 h-3" />{tr('Costa Rica · producto cosmético: detalles y compra en su tienda.')}</p>
       </div>
-      <a href={SITE} target="_blank" rel="noopener noreferrer" aria-label="Ver el ungüento en www.wolicbd.com" tabIndex={-1} className="block">
-        <img src="/partners/woli/hero.webp" alt="Lata del ungüento WOLI CBD con lavanda, incienso y tomillo" className="w-full h-auto drop-shadow-[0_10px_22px_rgba(0,0,0,.55)]" loading="lazy" />
+      <a href={SITE} target="_blank" rel="noopener noreferrer" aria-label={tr('Ver el ungüento en www.wolicbd.com')} tabIndex={-1} className="block">
+        <img src="/partners/woli/hero.webp" alt={tr('Lata del ungüento WOLI CBD con lavanda, incienso y tomillo')} className="w-full h-auto drop-shadow-[0_10px_22px_rgba(0,0,0,.55)]" loading="lazy" />
       </a>
     </div>
   </section>

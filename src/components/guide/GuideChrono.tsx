@@ -49,7 +49,7 @@ export const GuideChrono: React.FC<{ currentTab: string }> = ({ currentTab }) =>
 
   if (isFinished(tutorial)) {
     if (!flash) return null;
-    return <FloatingChrono text={flash.text} mood="happy" moodKey={moodKey} onClose={() => setFlash(null)} />;
+    return <FloatingChrono text={t(flash.text)} mood="happy" moodKey={moodKey} onClose={() => setFlash(null)} />;
   }
   if (!prog) return null;
 
@@ -81,7 +81,7 @@ export const GuideChrono: React.FC<{ currentTab: string }> = ({ currentTab }) =>
             <button onClick={() => patchTutorial({ minimized: true })} aria-label={t('Minimizar la guía')} className="ml-auto p-0.5 hover:opacity-100 opacity-70 cursor-pointer"><ChevronDown className="w-3.5 h-3.5" /></button>
             <button onClick={() => patchTutorial({ dismissed: true })} aria-label={t('Cerrar la guía')} className="p-0.5 hover:opacity-100 opacity-70 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
           </div>
-          {flash ? <p className="mt-1 text-[12.5px]">{flash.text}</p> : (
+          {flash ? <p className="mt-1 text-[12.5px]">{t(flash.text)}</p> : (
             <>
               <div className="mt-0.5 text-[13px] font-bold text-white">{t(step.title)}</div>
               <p className="mt-0.5 opacity-90">{prog.ready ? t('¡Lo lograste! Reclama tu recompensa.') : t(step.say)}</p>

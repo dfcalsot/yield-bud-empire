@@ -6,6 +6,7 @@
  * The bonuses are small and capped on purpose: no roster, however rare, can push a stat past its cap, and a wage is always paid.
  */
 import { rollRarity, type AvatarRarity, type PityState } from './avatars';
+import { k, localize } from '../i18n/core';
 
 export type StaffRole = 'foreman' | 'farmer' | 'merchant' | 'scientist' | 'geneticist' | 'budtender';
 export const STAFF_ROLES: StaffRole[] = ['foreman', 'farmer', 'merchant', 'scientist', 'geneticist', 'budtender'];
@@ -15,31 +16,31 @@ export const MAX_RANK = 5;
 
 export type StatId = 'roomYield' | 'plotYield' | 'shopDiscount' | 'labYield' | 'sellBonus' | 'seedBonus' | 'missionBonus' | 'growth';
 
-export const ROLE_INFO: Record<StaffRole, { label: string; place: string; stat: StatId; effect: string }> = {
-  foreman: { label: 'Capataz', place: 'Sala de cultivo', stat: 'roomYield', effect: 'Cosecha de la Sala' },
-  farmer: { label: 'Cultivador', place: 'Parcelas (Planeta)', stat: 'plotYield', effect: 'Cosecha de las parcelas' },
-  merchant: { label: 'Tendero', place: 'Mercado', stat: 'shopDiscount', effect: 'Descuento en el Mercado' },
-  scientist: { label: 'Científico', place: 'Laboratorio', stat: 'labYield', effect: 'Rendimiento de extracción' },
-  geneticist: { label: 'Genetista', place: 'Genética', stat: 'seedBonus', effect: 'Semillas extra por cruce' },
-  budtender: { label: 'Dispensaria', place: 'Dispensario', stat: 'sellBonus', effect: 'Precio de venta' },
-};
+export const ROLE_INFO: Record<StaffRole, { label: string; place: string; stat: StatId; effect: string }> = localize<Record<StaffRole, { label: string; place: string; stat: StatId; effect: string }>>({
+  foreman: { label: k('Capataz'), place: k('Sala de cultivo'), stat: 'roomYield', effect: k('Cosecha de la Sala') },
+  farmer: { label: k('Cultivador'), place: k('Parcelas (Planeta)'), stat: 'plotYield', effect: k('Cosecha de las parcelas') },
+  merchant: { label: k('Tendero'), place: k('Mercado'), stat: 'shopDiscount', effect: k('Descuento en el Mercado') },
+  scientist: { label: k('Científico'), place: k('Laboratorio'), stat: 'labYield', effect: k('Rendimiento de extracción') },
+  geneticist: { label: k('Genetista'), place: k('Genética'), stat: 'seedBonus', effect: k('Semillas extra por cruce') },
+  budtender: { label: k('Dispensaria'), place: k('Dispensario'), stat: 'sellBonus', effect: k('Precio de venta') },
+}, ['label', 'place', 'effect']);
 
 /** the ceiling of every stat, whatever the roster: a legendary at rank 5 alone reaches its role's cap, never more */
 export const CAPS: Record<StatId, number> = { roomYield: 0.18, plotYield: 0.18, shopDiscount: 0.1, labYield: 0.15, sellBonus: 0.12, seedBonus: 3, missionBonus: 0.3, growth: 0.1 };
-export const STAT_LABEL: Record<StatId, string> = {
-  roomYield: 'Cosecha de la Sala', plotYield: 'Cosecha de parcelas', shopDiscount: 'Descuento del Mercado', labYield: 'Extracción', sellBonus: 'Precio de venta',
-  seedBonus: 'Semillas extra por cruce', missionBonus: 'Recompensas de misiones', growth: 'Ritmo de crecimiento',
-};
+export const STAT_LABEL: Record<StatId, string> = localize<Record<StatId, string>>({
+  roomYield: k('Cosecha de la Sala'), plotYield: k('Cosecha de parcelas'), shopDiscount: k('Descuento del Mercado'), labYield: k('Extracción'), sellBonus: k('Precio de venta'),
+  seedBonus: k('Semillas extra por cruce'), missionBonus: k('Recompensas de misiones'), growth: k('Ritmo de crecimiento'),
+}, ['roomYield', 'plotYield', 'shopDiscount', 'labYield', 'sellBonus', 'seedBonus', 'missionBonus', 'growth']);
 
 const RARITY_POWER: Record<StaffRarity, number> = { common: 0.35, rare: 0.55, epic: 0.8, legendary: 1 };
 const RANK_MUL = [0, 0.6, 0.72, 0.84, 0.93, 1];
 
 export interface Trait { id: 'mentor' | 'veloz' | 'especialista'; name: string; blurb: string }
-export const TRAITS: Record<Trait['id'], Trait> = {
-  mentor: { id: 'mentor', name: 'Mentor', blurb: 'Enseña: más recompensa en las misiones.' },
-  veloz: { id: 'veloz', name: 'Veloz', blurb: 'Trabajo ágil: el cultivo va un poco más rápido.' },
-  especialista: { id: 'especialista', name: 'Especialista', blurb: 'Refuerza lo que mejor sabe hacer.' },
-};
+export const TRAITS: Record<Trait['id'], Trait> = localize<Record<Trait['id'], Trait>>({
+  mentor: { id: 'mentor', name: k('Mentor'), blurb: k('Enseña: más recompensa en las misiones.') },
+  veloz: { id: 'veloz', name: k('Veloz'), blurb: k('Trabajo ágil: el cultivo va un poco más rápido.') },
+  especialista: { id: 'especialista', name: k('Especialista'), blurb: k('Refuerza lo que mejor sabe hacer.') },
+}, ['name', 'blurb']);
 const TRAIT_ORDER: Trait['id'][] = ['especialista', 'mentor', 'veloz'];
 /** how many traits a hire has, by rarity (the first `n` of a per-hire shuffle) */
 const TRAIT_COUNT: Record<StaffRarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
@@ -186,10 +187,10 @@ export const hireFromBoard = (c: Candidate, now: number): StaffNft => makeStaff(
 /* ── recruitment chests with the same "pity" guarantee as the avatar chests ── */
 export type StaffChestId = 'recruit' | 'headhunter';
 export interface StaffChestDef { id: StaffChestId; name: string; blurb: string; priceFlora: number; odds: Record<StaffRarity, number>; epicEvery: number; legendEvery: number; colors: [string, string] }
-export const STAFF_CHESTS: Record<StaffChestId, StaffChestDef> = {
-  recruit: { id: 'recruit', name: 'Convocatoria abierta', blurb: 'Candidatos de cualquier oficio. Casi siempre comunes, a veces una sorpresa.', priceFlora: 220, odds: { common: 55, rare: 32, epic: 11, legendary: 2 }, epicEvery: 10, legendEvery: 50, colors: ['#38bdf8', '#075985'] },
-  headhunter: { id: 'headhunter', name: 'Cazatalentos', blurb: 'Sin comunes: perfiles raros o mejores, con más opciones de estrella.', priceFlora: 600, odds: { common: 0, rare: 55, epic: 33, legendary: 12 }, epicEvery: 3, legendEvery: 20, colors: ['#fbbf24', '#92400e'] },
-};
+export const STAFF_CHESTS: Record<StaffChestId, StaffChestDef> = localize<Record<StaffChestId, StaffChestDef>>({
+  recruit: { id: 'recruit', name: k('Convocatoria abierta'), blurb: k('Candidatos de cualquier oficio. Casi siempre comunes, a veces una sorpresa.'), priceFlora: 220, odds: { common: 55, rare: 32, epic: 11, legendary: 2 }, epicEvery: 10, legendEvery: 50, colors: ['#38bdf8', '#075985'] },
+  headhunter: { id: 'headhunter', name: k('Cazatalentos'), blurb: k('Sin comunes: perfiles raros o mejores, con más opciones de estrella.'), priceFlora: 600, odds: { common: 0, rare: 55, epic: 33, legendary: 12 }, epicEvery: 3, legendEvery: 20, colors: ['#fbbf24', '#92400e'] },
+}, ['name', 'blurb']);
 export type StaffPity = Record<StaffChestId, PityState>;
 export const EMPTY_STAFF_PITY: StaffPity = { recruit: { sinceEpic: 0, sinceLegend: 0 }, headhunter: { sinceEpic: 0, sinceLegend: 0 } };
 

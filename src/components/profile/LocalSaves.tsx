@@ -2,8 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { DatabaseBackup } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { listLocalSaves, type LocalSaveSummary } from '../../utils/auth';
+import { t } from '../../i18n';
 
-const when = (ms: number) => (ms ? new Date(ms).toLocaleString('es', { dateStyle: 'medium', timeStyle: 'short' }) : 'sin fecha');
+const when = (ms: number) => (ms ? new Date(ms).toLocaleString('es', { dateStyle: 'medium', timeStyle: 'short' }) : t('sin fecha'));
 
 const useLocalSaves = () => {
   const { currentUser } = useGame();
@@ -15,16 +16,16 @@ const useLocalSaves = () => {
 const Row: React.FC<{ s: LocalSaveSummary; onPick: () => void }> = ({ s, onPick }) => (
   <div className="mk-panel flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5">
     <div className="min-w-[10rem] flex-1">
-      <div className="font-serif text-white text-sm font-bold">{s.name}</div>
-      <div className="text-[10px] font-mono text-neutral-500">guardada {when(s.savedAt)}</div>
+      <div className="font-serif text-white text-sm font-bold">{t(s.name)}</div>
+      <div className="text-[10px] font-mono text-neutral-500">{t('guardada {v0}', { v0: when(s.savedAt) })}</div>
     </div>
     <div className="flex flex-wrap gap-2 text-[11px] font-mono text-neutral-300">
-      <span>🗺️ <b className="text-amber-300">{s.plots}</b> parcelas</span>
-      <span>🌱 <b className="text-emerald-300">{s.plants}</b> plantas</span>
+      <span>🗺️ <b className="text-amber-300">{s.plots}</b>{' '}{t('parcelas')}</span>
+      <span>🌱 <b className="text-emerald-300">{s.plants}</b>{' '}{t('plantas')}</span>
       <span>🪙 <b className="text-amber-200">{s.flora.toLocaleString('es')}</b> $FLORA</span>
-      <span>⭐ nivel <b className="text-sky-300">{s.level}</b></span>
+      <span>{t('⭐ nivel')}{' '}<b className="text-sky-300">{s.level}</b></span>
     </div>
-    <button className="care-btn care-btn--gold" onClick={onPick}>Traer a esta cuenta</button>
+    <button className="care-btn care-btn--gold" onClick={onPick}>{t('Traer a esta cuenta')}</button>
   </div>
 );
 
@@ -39,11 +40,10 @@ export const LocalSavesPanel: React.FC = () => {
     if (importLocalSave(s.id)) refresh();
   };
   return (
-    <section className="hud-panel p-4 sm:p-5 space-y-3" aria-label="Partidas guardadas en este navegador">
-      <div className="flex items-center gap-2 text-white font-serif font-bold"><DatabaseBackup className="w-4 h-4 text-amber-300" /> Partidas guardadas en este navegador</div>
+    <section className="hud-panel p-4 sm:p-5 space-y-3" aria-label={t('Partidas guardadas en este navegador')}>
+      <div className="flex items-center gap-2 text-white font-serif font-bold"><DatabaseBackup className="w-4 h-4 text-amber-300" />{' '}{t('Partidas guardadas en este navegador')}</div>
       <p className="text-[11.5px] text-neutral-400 leading-relaxed">
-        El juego guarda tu progreso en este navegador, separado por perfil. Estas partidas no pertenecen a la cuenta con la que entraste; puedes traer una aquí
-        (la original queda como respaldo).
+        {t('El juego guarda tu progreso en este navegador, separado por perfil. Estas partidas no pertenecen a la cuenta con la que entraste; puedes traer una aquí (la original queda como respaldo).')}
       </p>
       <div className="space-y-2">{saves.map((s) => <Row key={s.id} s={s} onPick={() => pick(s)} />)}</div>
     </section>
@@ -63,12 +63,12 @@ export const LocalSavesBanner: React.FC<{ onOpenProfile: () => void }> = ({ onOp
     <div role="status" className="mk-panel flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 border border-amber-400/40">
       <DatabaseBackup className="w-5 h-5 text-amber-300 shrink-0" />
       <div className="flex-1 min-w-[14rem] text-[12px] text-neutral-200 leading-snug">
-        Encontramos una partida guardada en este navegador: <b className="text-white">{best.name}</b> — {best.plots} parcela(s), {best.plants} planta(s), {best.flora.toLocaleString('es')} $FLORA, nivel {best.level}.
-        {saves.length > 1 && <span className="text-neutral-400"> (y {saves.length - 1} más en tu Perfil)</span>}
+        {t('Encontramos una partida guardada en este navegador:')}{' '}<b className="text-white">{t(best.name)}</b>{' '}{t('— {plots} parcela(s), {plants} planta(s), {v2} $FLORA, nivel {level}.', { plots: best.plots, plants: best.plants, v2: best.flora.toLocaleString('es'), level: best.level })}
+        {saves.length > 1 && <span className="text-neutral-400">{' '}{t('(y {v0} más en tu Perfil)', { v0: saves.length - 1 })}</span>}
       </div>
-      <button className="care-btn care-btn--gold" onClick={() => { if (importLocalSave(best.id)) refresh(); }}>Recuperarla</button>
-      {saves.length > 1 && <button className="care-btn" onClick={onOpenProfile}>Ver todas</button>}
-      <button className="care-btn" onClick={() => { try { localStorage.setItem(key, '1'); } catch { /* ignore */ } setGone(true); }}>Ahora no</button>
+      <button className="care-btn care-btn--gold" onClick={() => { if (importLocalSave(best.id)) refresh(); }}>{t('Recuperarla')}</button>
+      {saves.length > 1 && <button className="care-btn" onClick={onOpenProfile}>{t('Ver todas')}</button>}
+      <button className="care-btn" onClick={() => { try { localStorage.setItem(key, '1'); } catch { /* ignore */ } setGone(true); }}>{t('Ahora no')}</button>
     </div>
   );
 };

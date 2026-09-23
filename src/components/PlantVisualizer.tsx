@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { PlantInGrow, TerpeneProfile } from '../types';
 import { Eye, Sun, Sparkles, AlertCircle, Droplet, Wind, Flame, Gauge, Zap } from 'lucide-react';
+import { t, k, localize } from '../i18n';
 
-const TERPENE_LABELS: Record<string, string> = {
-  myrcene: 'Mirceno',
-  limonene: 'Limoneno',
-  caryophyllene: 'Cariofileno',
-  pinene: 'Pineno',
-  linalool: 'Linalool',
-};
+const TERPENE_LABELS: Record<string, string> = localize({
+  myrcene: k('Mirceno'),
+  limonene: k('Limoneno'),
+  caryophyllene: k('Cariofileno'),
+  pinene: k('Pineno'),
+  linalool: k('Linalool'),
+}, ['myrcene', 'limonene', 'caryophyllene', 'pinene', 'linalool']);
 
 const topTerpenes = (terpenes: TerpeneProfile): string =>
   Object.entries(terpenes)
@@ -32,9 +33,9 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
         <div className="w-20 h-20 rounded-full bg-neutral-950 border border-dashed border-neutral-700 flex items-center justify-center mb-4">
           <Sparkles className="w-8 h-8 text-neutral-600" />
         </div>
-        <h3 className="text-lg font-bold text-neutral-300">Sala de Cultivo Sanitizada</h3>
+        <h3 className="text-lg font-bold text-neutral-300">{t('Sala de Cultivo Sanitizada')}</h3>
         <p className="text-sm text-neutral-500 max-w-sm mt-1">
-          La carpa de cultivo con paredes Mylar Diamond está calibrada. Selecciona una semilla o esqueje de tu banco de genéticas para iniciar el ciclo botánico.
+          {t('La carpa de cultivo con paredes Mylar Diamond está calibrada. Selecciona una semilla o esqueje de tu banco de genéticas para iniciar el ciclo botánico.')}
         </p>
       </div>
     );
@@ -72,15 +73,15 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
         <div className="h-8 rounded-b-xl bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 border-x border-b border-neutral-600 shadow-xl flex items-center justify-between px-3">
           <div className="flex items-center gap-1.5 text-[10px] font-mono text-neutral-300">
             <Sun className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-            <span className="font-bold">SAMSUNG LM301H EVO & OSRAM 660nm</span>
+            <span className="font-bold">{t('SAMSUNG LM301H EVO & OSRAM 660nm')}</span>
           </div>
 
           {/* LED Multi-Spectrum Diodes */}
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-300 shadow-[0_0_6px_rgba(252,211,77,0.9)] animate-pulse" title="3000K Cálido" />
-            <span className="w-2 h-2 rounded-full bg-cyan-200 shadow-[0_0_6px_rgba(165,243,252,0.9)]" title="5000K Blanco Frío" />
-            <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]" title="660nm Rojo Profundo" />
-            <span className="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.8)]" title="730nm Infrarrojo Lejano" />
+            <span className="w-2 h-2 rounded-full bg-amber-300 shadow-[0_0_6px_rgba(252,211,77,0.9)] animate-pulse" title={t('3000K Cálido')} />
+            <span className="w-2 h-2 rounded-full bg-cyan-200 shadow-[0_0_6px_rgba(165,243,252,0.9)]" title={t('5000K Blanco Frío')} />
+            <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]" title={t('660nm Rojo Profundo')} />
+            <span className="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.8)]" title={t('730nm Infrarrojo Lejano')} />
             <span className="text-[10px] font-mono text-amber-300 font-bold ml-1">{plant.ppfdLightIntensity} μmol</span>
           </div>
         </div>
@@ -119,22 +120,22 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
             <span className="text-xs font-mono uppercase px-2.5 py-0.5 rounded-lg bg-neutral-900/90 border border-emerald-500/40 text-emerald-400 font-bold shadow-sm flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               {
-                plant.stage === 'seed' ? 'Germinación de Semilla' :
-                plant.stage === 'seedling' ? 'Plántula Cannabis' :
-                plant.stage === 'vegetative' ? 'Vegetativo / Hojas Fan' :
-                plant.stage === 'flowering' ? 'Floración / Cogollos Resinosos' : plant.stage === 'maturation' ? 'Maduración / Tricomas afinándose' : 'Lista para cosecha'
+                plant.stage === 'seed' ? t('Germinación de Semilla') :
+                plant.stage === 'seedling' ? t('Plántula Cannabis') :
+                plant.stage === 'vegetative' ? t('Vegetativo / Hojas Fan') :
+                plant.stage === 'flowering' ? t('Floración / Cogollos Resinosos') : plant.stage === 'maturation' ? t('Maduración / Tricomas afinándose') : t('Lista para cosecha')
               }
             </span>
             <span className="text-xs font-mono px-2 py-0.5 rounded-lg bg-neutral-900/90 border border-neutral-800 text-neutral-300">
-              Salud: <strong className="text-emerald-300">{plant.health}%</strong>
+              {t('Salud:')}{' '}<strong className="text-emerald-300">{plant.health}%</strong>
             </span>
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <h3 className="text-base sm:text-lg font-extrabold text-white tracking-wide">
-              {plant.strain.name}
+              {t(plant.strain.name)}
             </h3>
             <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-neutral-800 text-neutral-400">
-              THC: ~{plant.strain.thcPercentage}%
+              {t('THC: ~{thcPercentage}%', { thcPercentage: plant.strain.thcPercentage })}
             </span>
           </div>
         </div>
@@ -159,7 +160,7 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
             className="flex items-center gap-1 text-[11px] font-mono bg-neutral-900/90 hover:bg-neutral-800 border border-emerald-500/40 text-emerald-300 px-2.5 py-1 rounded-lg transition cursor-pointer shadow-md"
           >
             <Eye className="w-3.5 h-3.5 text-emerald-400" />
-            <span>{showTrichomeLens ? 'Ocultar Lente' : 'Inspección Tricomas (100x)'}</span>
+            <span>{showTrichomeLens ? t('Ocultar Lente') : t('Inspección Tricomas (100x)')}</span>
           </button>
         </div>
       </div>
@@ -516,9 +517,9 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
             <div className="flex items-center justify-between border-b border-neutral-800 pb-2 mb-2.5">
               <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 font-mono">
                 <Sparkles className="w-4 h-4 text-emerald-300" />
-                Lente Macro 100x
+                {t('Lente Macro 100x')}
               </span>
-              <span className="text-[10px] text-neutral-400 font-mono">Resina & THC</span>
+              <span className="text-[10px] text-neutral-400 font-mono">{t('Resina & THC')}</span>
             </div>
 
             {/* Trichome Simulation visual heads */}
@@ -531,7 +532,7 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
                 </div>
                 <div className="w-1 h-3 bg-neutral-600 rounded-b" />
                 <span className="text-[10px] text-cyan-300 font-mono font-bold mt-0.5">{plant.trichomeMaturity.clear}%</span>
-                <span className="text-[8px] text-neutral-400">Claros (CBG)</span>
+                <span className="text-[8px] text-neutral-400">{t('Claros (CBG)')}</span>
               </div>
 
               {/* Capitate-Stalked Milky Trichome (Peak THC) */}
@@ -541,7 +542,7 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
                 </div>
                 <div className="w-1.5 h-3 bg-neutral-500 rounded-b" />
                 <span className="text-[11px] text-white font-mono font-bold mt-0.5">{plant.trichomeMaturity.milky}%</span>
-                <span className="text-[8px] text-emerald-400 font-bold">Lechosos (THC)</span>
+                <span className="text-[8px] text-emerald-400 font-bold">{t('Lechosos (THC)')}</span>
               </div>
 
               {/* Capitate-Stalked Amber Trichome (CBN Sedative) */}
@@ -551,20 +552,20 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
                 </div>
                 <div className="w-1 h-3 bg-neutral-600 rounded-b" />
                 <span className="text-[10px] text-amber-400 font-mono font-bold mt-0.5">{plant.trichomeMaturity.amber}%</span>
-                <span className="text-[8px] text-amber-400">Ámbar (CBN)</span>
+                <span className="text-[8px] text-amber-400">{t('Ámbar (CBN)')}</span>
               </div>
             </div>
 
             <div className="text-[10px] text-neutral-300 leading-tight space-y-1">
               <p className="font-mono text-emerald-400 font-semibold">
                 {plant.trichomeMaturity.milky > 60 
-                  ? '✓ Maduración Pico: Ratio ideal de THC psicoactivo y terpenos aromáticos para extracción Rosin.'
+                  ? t('✓ Maduración Pico: Ratio ideal de THC psicoactivo y terpenos aromáticos para extracción Rosin.')
                   : plant.trichomeMaturity.amber > 35
-                  ? '⚡ Efecto Sedativo / Corporal: Degradación a CBN aumentada.'
-                  : '⏳ Glándulas en expansión: Aumentar PPFD y mantener CO2 alto para engorde de cálices.'}
+                  ? t('⚡ Efecto Sedativo / Corporal: Degradación a CBN aumentada.')
+                  : t('⏳ Glándulas en expansión: Aumentar PPFD y mantener CO2 alto para engorde de cálices.')}
               </p>
               <div className="flex items-center justify-between text-[9px] text-neutral-400 border-t border-neutral-800 pt-1">
-                <span>Terpenos: {topTerpenes(plant.strain.terpenes)}</span>
+                <span>{t('Terpenos: {v0}', { v0: topTerpenes(plant.strain.terpenes) })}</span>
               </div>
             </div>
           </div>
@@ -578,16 +579,16 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
           <div className="flex items-center gap-1.5 text-xs font-mono">
             <Droplet className="w-4 h-4 text-cyan-400 animate-bounce" />
             <div>
-              <span className="text-[9px] text-neutral-500 uppercase block leading-none">Riego Goteo</span>
-              <span className="text-cyan-300 font-bold">{plant.soilMoisture}% Sustrato</span>
+              <span className="text-[9px] text-neutral-500 uppercase block leading-none">{t('Riego Goteo')}</span>
+              <span className="text-cyan-300 font-bold">{t('{soilMoisture}% Sustrato', { soilMoisture: plant.soilMoisture })}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5 text-xs font-mono border-l border-neutral-800 pl-3">
             <Wind className="w-4 h-4 text-purple-400 animate-spin" style={{ animationDuration: '6s' }} />
             <div>
-              <span className="text-[9px] text-neutral-500 uppercase block leading-none">Inyección CO2</span>
-              <span className="text-purple-300 font-bold">1200 PPM Activo</span>
+              <span className="text-[9px] text-neutral-500 uppercase block leading-none">{t('Inyección CO2')}</span>
+              <span className="text-purple-300 font-bold">{t('1200 PPM Activo')}</span>
             </div>
           </div>
         </div>
@@ -596,7 +597,7 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
         <div className="flex items-center gap-4">
           <div className="w-28 sm:w-36">
             <div className="flex justify-between text-[11px] mb-1 font-mono">
-              <span className="text-neutral-400">Maduración</span>
+              <span className="text-neutral-400">{t('Maduración')}</span>
               <span className="text-emerald-400 font-bold">{plant.progressPercent}%</span>
             </div>
             <div className="w-full h-2 bg-neutral-800 rounded-full overflow-hidden">
@@ -608,8 +609,8 @@ export const PlantVisualizer: React.FC<PlantVisualizerProps> = ({ plant, facilit
           </div>
 
           <div className="border-l border-neutral-800 pl-3 text-right">
-            <span className="text-[9px] text-neutral-500 uppercase block font-mono">Rendimiento Estimado</span>
-            <span className="text-xs sm:text-sm font-extrabold text-amber-300 font-mono">~{plant.estimatedDryYieldGrams}g Flor</span>
+            <span className="text-[9px] text-neutral-500 uppercase block font-mono">{t('Rendimiento Estimado')}</span>
+            <span className="text-xs sm:text-sm font-extrabold text-amber-300 font-mono">{t('~{estimatedDryYieldGrams}g Flor', { estimatedDryYieldGrams: plant.estimatedDryYieldGrams })}</span>
           </div>
         </div>
       </div>

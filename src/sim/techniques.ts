@@ -1,5 +1,6 @@
 import type { GrowStage, PlantInGrow, TechniqueId } from '../types';
 import { STAGE_ORDER } from './phases';
+import { t as tr, k, localize } from '../i18n/core';
 
 /**
  * Training techniques. Each one belongs to the phase(s) of the plant where it makes sense, and a plant takes it once:
@@ -19,31 +20,31 @@ export interface Technique {
   how: string;
 }
 
-export const TECHNIQUES: readonly Technique[] = [
-  { id: 'lst', label: 'LST · atado suave', stages: ['vegetative'], yieldBonus: 0.04, healthCost: 3, xp: 30, how: 'Doblas y atas las ramas para abrir la copa: más luz llega a todos los brotes.' },
-  { id: 'topping', label: 'Despunte (topping)', stages: ['vegetative'], yieldBonus: 0.04, healthCost: 4, xp: 30, how: 'Cortas la punta principal: la planta hace dos cimas en lugar de una.' },
-  { id: 'supercrop', label: 'Supercropping', stages: ['vegetative'], yieldBonus: 0.02, healthCost: 5, xp: 25, how: 'Aplastas con cuidado los tallos altos para igualar la altura de la copa.' },
-  { id: 'scrog', label: 'SCROG · malla', stages: ['vegetative'], yieldBonus: 0.04, healthCost: 3, xp: 40, how: 'Instalas una malla y guías las ramas por debajo: una canopia pareja y aprovechada.' },
-  { id: 'defoliation', label: 'Defoliación', stages: ['vegetative', 'flowering'], yieldBonus: 0.03, healthCost: 4, xp: 25, how: 'Quitas hojas grandes que tapan la luz y el aire a los brotes de abajo.' },
-  { id: 'lollipop', label: 'Poda de bajos (lollipop)', stages: ['flowering'], yieldBonus: 0.03, healthCost: 3, xp: 25, how: 'Limpias las ramas bajas que no llegan a la luz: la energía sube a las cimas.' },
-] as const;
+export const TECHNIQUES: readonly Technique[] = localize<readonly Technique[]>([
+  { id: 'lst', label: k('LST · atado suave'), stages: ['vegetative'], yieldBonus: 0.04, healthCost: 3, xp: 30, how: k('Doblas y atas las ramas para abrir la copa: más luz llega a todos los brotes.') },
+  { id: 'topping', label: k('Despunte (topping)'), stages: ['vegetative'], yieldBonus: 0.04, healthCost: 4, xp: 30, how: k('Cortas la punta principal: la planta hace dos cimas en lugar de una.') },
+  { id: 'supercrop', label: k('Supercropping'), stages: ['vegetative'], yieldBonus: 0.02, healthCost: 5, xp: 25, how: k('Aplastas con cuidado los tallos altos para igualar la altura de la copa.') },
+  { id: 'scrog', label: k('SCROG · malla'), stages: ['vegetative'], yieldBonus: 0.04, healthCost: 3, xp: 40, how: k('Instalas una malla y guías las ramas por debajo: una canopia pareja y aprovechada.') },
+  { id: 'defoliation', label: k('Defoliación'), stages: ['vegetative', 'flowering'], yieldBonus: 0.03, healthCost: 4, xp: 25, how: k('Quitas hojas grandes que tapan la luz y el aire a los brotes de abajo.') },
+  { id: 'lollipop', label: k('Poda de bajos (lollipop)'), stages: ['flowering'], yieldBonus: 0.03, healthCost: 3, xp: 25, how: k('Limpias las ramas bajas que no llegan a la luz: la energía sube a las cimas.') },
+] as const, ['label', 'how']);
 
 export const TECHNIQUE_BY_ID: Record<TechniqueId, Technique> = Object.fromEntries(TECHNIQUES.map((t) => [t.id, t])) as Record<TechniqueId, Technique>;
 
 /** the phase names of a technique, in growth order, for the label */
 export const whenLabel = (t: Technique, names: Record<string, string>): string =>
-  [...t.stages].sort((a, b) => STAGE_ORDER.indexOf(a) - STAGE_ORDER.indexOf(b)).map((s) => names[s] ?? s).join(' y ');
+  [...t.stages].sort((a, b) => STAGE_ORDER.indexOf(a) - STAGE_ORDER.indexOf(b)).map((s) => tr(names[s] ?? s)).join(tr(' y '));
 
 export type TrainCheck = { ok: true } | { ok: false; reason: 'stage' | 'done' | 'ready'; message: string };
 
 /** can this plant take this technique right now? */
 export function canTrain(plant: Pick<PlantInGrow, 'stage' | 'techniques'>, id: TechniqueId, names: Record<string, string>): TrainCheck {
   const t = TECHNIQUE_BY_ID[id];
-  if (!t) return { ok: false, reason: 'stage', message: 'Técnica desconocida.' };
-  if ((plant.techniques ?? []).includes(id)) return { ok: false, reason: 'done', message: `${t.label}: esta planta ya la recibió (solo una vez por planta).` };
-  if (plant.stage === 'ready_harvest') return { ok: false, reason: 'ready', message: 'La planta ya terminó de crecer: solo falta cortarla.' };
+  if (!t) return { ok: false, reason: 'stage', message: tr('Técnica desconocida.') };
+  if ((plant.techniques ?? []).includes(id)) return { ok: false, reason: 'done', message: tr('{label}: esta planta ya la recibió (solo una vez por planta).', { label: t.label }) };
+  if (plant.stage === 'ready_harvest') return { ok: false, reason: 'ready', message: tr('La planta ya terminó de crecer: solo falta cortarla.') };
   if (!t.stages.includes(plant.stage)) {
-    return { ok: false, reason: 'stage', message: `${t.label} solo se aplica en ${whenLabel(t, names)}. Esta planta está en ${names[plant.stage] ?? plant.stage}.` };
+    return { ok: false, reason: 'stage', message: tr('{label} solo se aplica en {v1}. Esta planta está en {v2}.', { label: t.label, v1: whenLabel(t, names), v2: tr(names[plant.stage] ?? plant.stage) }) };
   }
   return { ok: true };
 }

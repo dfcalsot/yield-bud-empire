@@ -1,4 +1,5 @@
 import type { GrowStage } from '../types';
+import { k } from '../i18n/core';
 
 /**
  * The growth phases of a plant. They come in this order, always, and a plant can be cut only after the last one:
@@ -8,11 +9,11 @@ import type { GrowStage } from '../types';
 export interface Phase { id: Exclude<GrowStage, 'ready_harvest'>; label: string; from: number; to: number; blurb: string }
 
 export const PHASES: readonly Phase[] = [
-  { id: 'seed', label: 'Germinación', from: 0, to: 3, blurb: 'La semilla abre y saca la raicilla: humedad constante y calor suave.' },
-  { id: 'seedling', label: 'Plántula', from: 3, to: 15, blurb: 'Primeras hojas verdaderas: luz suave, riego ligero y nada de sales fuertes.' },
-  { id: 'vegetative', label: 'Vegetativo', from: 15, to: 50, blurb: 'Crece en tallo y hojas: mucha luz, nitrógeno y espacio para entrenarla.' },
-  { id: 'flowering', label: 'Floración', from: 50, to: 85, blurb: 'Forma las flores: fósforo y potasio, humedad baja y cero estrés.' },
-  { id: 'maturation', label: 'Maduración', from: 85, to: 100, blurb: 'Los tricomas maduran y la planta se afina: menos sales y paciencia.' },
+  { id: 'seed', label: k('Germinación'), from: 0, to: 3, blurb: k('La semilla abre y saca la raicilla: humedad constante y calor suave.') },
+  { id: 'seedling', label: k('Plántula'), from: 3, to: 15, blurb: k('Primeras hojas verdaderas: luz suave, riego ligero y nada de sales fuertes.') },
+  { id: 'vegetative', label: k('Vegetativo'), from: 15, to: 50, blurb: k('Crece en tallo y hojas: mucha luz, nitrógeno y espacio para entrenarla.') },
+  { id: 'flowering', label: k('Floración'), from: 50, to: 85, blurb: k('Forma las flores: fósforo y potasio, humedad baja y cero estrés.') },
+  { id: 'maturation', label: k('Maduración'), from: 85, to: 100, blurb: k('Los tricomas maduran y la planta se afina: menos sales y paciencia.') },
 ] as const;
 
 /** every state a plant goes through, in order; the last one is the only one that can be harvested */

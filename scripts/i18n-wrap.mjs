@@ -17,6 +17,12 @@ const dry = args.includes('--dry');
 // --mark: los textos del nivel del módulo (tablas de datos) se marcan con k('…') (no cambia nada; se traducen con t() al mostrarlos)
 // --all-props: en tablas de mensajes, cualquier propiedad con texto cuenta como interfaz (no solo title/text/label…)
 const mark = args.includes('--mark');
+// --data: además envuelve en t() los campos de texto de los datos que se muestran en JSX ({strain.description}, title={x.name}…);
+// los datos guardan siempre el español y se traducen al mostrarlos (si el texto no está en el diccionario, queda igual)
+const dataMode = args.includes('--data');
+const DATA_FIELDS = new Set(['name', 'description', 'label', 'title', 'blurb', 'desc', 'short', 'subtitle', 'tagline', 'role', 'effect', 'place', 'cause', 'cure',
+  'look', 'confirm', 'fix', 'brief', 'note', 'weeks', 'spec', 'categoryLabel', 'stageName', 'instructions', 'productName', 'line', 'ask', 'thanks', 'hint', 'say', 'how',
+  'strainDesc', 'terp', 'text', 'detail', 'headline', 'message', 'unit', 'potency', 'lineageLabel', 'type', 'difficulty', 'category', 'seedType', 'origin']);
 const allProps = args.includes('--all-props');
 const files = args.filter((a) => !a.startsWith('--'));
 
@@ -28,24 +34,31 @@ const NEVER_PROPS = new Set(['brand', 'element', 'symbol', 'id', 'key', 'type', 
 const NON_UI_ATTRS = new Set(['className', 'class', 'id', 'key', 'href', 'src', 'type', 'name', 'role', 'style', 'variant', 'kind', 'mood', 'size', 'd', 'fill', 'stroke',
   'viewBox', 'transform', 'points', 'rel', 'target', 'method', 'autoComplete', 'inputMode', 'pattern', 'lang', 'dir', 'htmlFor', 'value', 'defaultValue', 'data-testid',
   'strokeLinecap', 'strokeLinejoin', 'fillRule', 'clipRule', 'mask', 'filter', 'preserveAspectRatio', 'xmlns', 'gradientUnits', 'maskUnits', 'textAnchor', 'dominantBaseline',
-  'fontFamily', 'fontWeight', 'as', 'icon', 'tone', 'color', 'accent', 'zone', 'tab', 'group', 'mode', 'position', 'align', 'side', 'loading', 'decoding', 'crossOrigin', 'sizes', 'srcSet', 'media']);
+  'fontFamily', 'fontWeight', 'clipPath', 'markerEnd', 'markerStart', 'as', 'icon', 'tone', 'color', 'accent', 'zone', 'tab', 'group', 'mode', 'position', 'align', 'side', 'loading', 'decoding', 'crossOrigin', 'sizes', 'srcSet', 'media']);
 const NON_UI_CALLS = /^(console\.\w+|localStorage\.\w+|sessionStorage\.\w+|fetch|document\.\w+|window\.\w+|\w+\.querySelector(All)?|new URL|URLSearchParams|setCurrentTab|intent|post|audit|require|import|t|RegExp|new RegExp|Symbol|\w+\.startsWith|\w+\.endsWith|\w+\.includes|\w+\.split|\w+\.replace|\w+\.indexOf|\w+\.match|\w+\.test|\w+\.setAttribute|\w+\.getItem|\w+\.setItem|\w+\.removeItem|\w+\.addEventListener|\w+\.removeEventListener|mintAddressFor|generate\w+|hash\w*|sha\w*|playSound|play\w*Sound)$/;
 
+// valores que la lógica usa como claves (tipos con valores fijos en español): nunca se envuelven; se traducen al mostrarlos
+const IGNORE = new Set(['Madre (Esquejes / Clones)', 'Padre (Donante de Polen)', 'Hembra Revertida (STS)', 'Principiante Botánico', 'Breeder Botánico',
+  'Genetista Comercial', 'Inversionista Web3', 'Master Grower', 'Híbrido', 'Sativa', 'Indica', 'Autofloreciente', 'F2P Fácil', 'Intermedio', 'Maestro', 'Exótico',
+  'Fácil', 'Avanzado', 'días', 'Orgánica 100%', 'Mineral Quelada', 'Sales Grado Comercial', 'Regular', 'Landrace', 'Enter', 'Escape']);
 const hasWordChars = (s) => /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{2,}/.test(s);
 const KEEP = /^[\s\d.,:;%+\-–—·•/|()×x$#@*!?¡¿"'“”«»→←↑↓⚡✓✗…]*(\$?FLORA|SOL|NFTs?|XP|LVL|VPD|PPFD|EC|pH|CO₂|CO2|ppm|kPa|THC|CBD|DLI|PAR|RH|LED|HPS|UV|IR|N|P|K|g|kg|ml|mL|L|h|min|s|d|ms|°C|lx|lux|W|kW|kWh|Lv|Nv|Nv\.|ID|USD|CR|ES|EN|OK|v\d+|[A-Z]\d*)?[\s\d.,:;%+\-–—·•/|()×x$#@*!?¡¿"'“”«»→←↑↓⚡✓✗…]*$/;
 /** un texto que alguien va a leer (no una clase CSS, un id ni una ruta) */
 function natural(s, jsx = false) {
+  if (IGNORE.has(s.trim())) return false;
+  if (/^\/[\w{}\/.?=&-]*$/.test(s.trim())) return false;   // rutas de la API (/api/…/{x})
   const v = s.replace(/\{\w+\}/g, ' ').trim();
   // una sola palabra: es texto solo si empieza con mayúscula seguida de minúsculas, o lleva acentos/¿¡ (no ids, métodos ni códigos);
   // en texto JSX también cuentan las palabras en MAYÚSCULAS (rótulos como NIVEL)
-  if (!/\s/.test(v) && !/^[A-ZÁÉÍÓÚÑ¿¡][a-záéíóúüñ]/.test(v) && !/[áéíóúüñ¿¡]/i.test(v) && !(jsx && /^[A-ZÁÉÍÓÚÑ]{3,}$/.test(v))) return false;
+  if (!/\s/.test(v) && !/^[A-ZÁÉÍÓÚÑ¿¡][a-záéíóúüñ]/.test(v) && !/[áéíóúüñ¿¡]/i.test(v) && !(jsx && /^[A-Za-zÁÉÍÓÚÑáéíóúüñ]{3,}[.:,;!?)]*$/.test(v))) return false;
   if (!v || !hasWordChars(v) || KEEP.test(v)) return false;
-  if (/^(https?:|mailto:|\/|\.\/|#[\w-]+$|data:)/.test(v)) return false;
+  if (/^(https?:|mailto:|\/\S|\.\/|#[\w-]+$|data:)/.test(v) && !/\s/.test(v)) return false;   // rutas y enlaces (una sola palabra)
+  if (/^(hsla?|rgba?|url|var|calc|translate\w*|rotate\w*|scale\w*|matrix|cubic-bezier|linear-gradient|radial-gradient|drop-shadow|blur)\(/i.test(v)) return false;   // CSS
   if (/^[\w.-]+@[\w.-]+$/.test(v)) return false;
   const tokens = v.split(/\s+/);
   const classy = tokens.every((tk) => /^[!a-z0-9:_\-[\]/.#%()&>,'"=]+$/.test(tk)) && tokens.some((tk) => /[-:[\]]/.test(tk));
   if (classy) return false;
-  if (/^[a-z][a-zA-Z0-9]*$/.test(v)) return false;                       // camelCase / clave suelta
+  if (!jsx && /^[a-z][a-zA-Z0-9]*$/.test(v)) return false;                       // camelCase / clave suelta
   if (/^[a-z0-9_]+(\.[a-z0-9_]+)+$/i.test(v)) return false;             // a.b.c
   if (/^[A-Z0-9_]+$/.test(v) && v.length <= 3) return false;
   if (/^[a-z]+(_[a-z0-9]+)+$/.test(v)) return false;                    // snake_case
@@ -123,6 +136,7 @@ function processFile(file) {
     const edits = [];
     const cands = new Set();
     const markCands = new Set();
+    const dataCands = new Set();
     const skipped = [];
 
     const literalCandidate = (node) => {
@@ -143,6 +157,11 @@ function processFile(file) {
       if (ts.isJsxAttribute(node) && node.initializer && ts.isStringLiteral(node.initializer)) {
         const n = node.name.getText(sf);
         if (!NON_UI_ATTRS.has(n) && !n.startsWith('data-') && natural(node.initializer.text) && !(n.startsWith('aria-') && !/^aria-(label|description|valuetext|roledescription)$/.test(n))) cands.add(node);
+      }
+      if (dataMode && ts.isJsxExpression(node) && node.expression && dataField(node.expression) && !isTCall(node.expression)) {
+        const par = node.parent;
+        const okAttr = ts.isJsxAttribute(par) && /^(title|alt|aria-label|label|text|placeholder|hint|subtitle|description)$/.test(par.name.getText(sf));
+        if (okAttr || ts.isJsxElement(par) || ts.isJsxFragment(par)) dataCands.add(node.expression);
       }
       if (ts.isJsxElement(node) || ts.isJsxFragment(node)) {
         const tag = ts.isJsxElement(node) ? node.openingElement.tagName.getText(sf) : '';
@@ -172,6 +191,7 @@ function processFile(file) {
     const inner = list.filter((c) => { const [a, b] = span(c); return !list.some((o) => o !== c && (() => { const [x, y] = span(o); return x >= a && y <= b && (x > a || y < b); })()); });
 
     for (const c of markCands) edits.push([c.getStart(sf), c.end, `k(${quote(c.text)})`]);
+    for (const c of dataCands) edits.push([c.getStart(sf), c.end, `${FN}(${c.getText(sf)})`]);
     for (const c of inner) {
       if (Array.isArray(c)) {
         // JSX run → {t('texto {a} texto', { a })}
@@ -192,7 +212,7 @@ function processFile(file) {
         const startWs = ts.isJsxText(c[0]) ? (firstRaw.match(/^\s*/)[0].includes('\n') ? firstRaw.match(/^\s*/)[0] : '') : '';
         const endWs = ts.isJsxText(c[c.length - 1]) ? (lastRaw.match(/\s*$/)[0].includes('\n') ? lastRaw.match(/\s*$/)[0] : '') : '';
         const a2 = ts.isJsxText(c[0]) ? c[0].pos : a;
-        edits.push([a2, b, `${startWs}${pre}{t(${quote(k)}${varsObj(pairs, sf)})}${post}${endWs}`]);
+        edits.push([a2, b, `${startWs}${pre}{${FN}(${quote(k)}${varsObj(pairs, sf)})}${post}${endWs}`]);
       } else if (ts.isJsxAttribute(c)) {
         edits.push([c.initializer.getStart(sf), c.initializer.end, `{${FN}(${quote(c.initializer.text)})}`]);
       } else if (ts.isTemplateExpression(c)) {
@@ -232,6 +252,13 @@ function processFile(file) {
     fs.writeFileSync(file, code);
   }
   return { wrapped, report };
+}
+
+/** x.name, a?.b.description, T[k].label, x.name! … (acaba en un campo de texto de los datos) */
+function dataField(e) {
+  let x = e;
+  while (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression;
+  return ts.isPropertyAccessExpression(x) && DATA_FIELDS.has(x.name.text);
 }
 
 function containsJsx(node) {

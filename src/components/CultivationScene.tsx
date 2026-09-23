@@ -12,6 +12,7 @@ import { FacilityBackdrop } from './hud/FacilityBackdrop';
 import { TechniqueMenu } from './cultivo/TechniqueMenu';
 import { PHASES, phaseFraction, phaseIndex, stageOf } from '../sim/phases';
 import { canTrain, TECHNIQUES } from '../sim/techniques';
+import { t, t as tr, k } from '../i18n';
 
 /**
  * The stage of the Cultivo panel: the installation, the plant and its pot BIG in the middle, the skill hotbar (keys 1–6), the
@@ -30,7 +31,7 @@ interface CultivationSceneProps {
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 
 // one milestone per phase, in order, and the cut at the end: germination · seedling · vegetative · flowering · maturation · harvest
-const MILESTONES = [...PHASES.map((p) => p.label), 'Cosecha'];
+const MILESTONES = [...PHASES.map((p) => p.label), k('Cosecha')];
 const STEP = 100 / PHASES.length;
 const NAMES: Record<string, string> = Object.fromEntries(PHASES.map((p) => [p.id, p.label]));
 
@@ -76,7 +77,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const canHarvest = !!activePlant && activePlant.stage === 'ready_harvest';
   const maleWarn = !!activePlant && activePlant.sex === 'male' && activePlant.progressPercent >= 30;
 
-  const doWater = () => { waterPlant(); pop('+ Riego', '#22d3ee'); };
+  const doWater = () => { waterPlant(); pop(tr('+ Riego'), '#22d3ee'); };
   const doFeed = () => { feedNutrients(); pop('+ N-P-K', '#34d399'); };
   const doTrain = () => setTechOpen(true);
   const techNow = activePlant ? TECHNIQUES.filter((t) => canTrain(activePlant, t.id, NAMES).ok).length : 0;
@@ -86,12 +87,12 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
     maleWarn, thirstyOthers: Math.max(0, thirstyCount - (thirsty ? 1 : 0)), etaText: '',
   }).kind;
   const slots: SlotSpec[] = activePlant ? [
-    { key: 'water', label: 'Regar', sub: `Hum ${activePlant.soilMoisture}%`, tone: 'cyan', icon: <Droplet className="w-6 h-6" />, hot: nextKind === 'water', tour: 'water', onClick: doWater },
-    { key: 'feed', label: 'Abonar', sub: `EC ${activePlant.ecLevel}`, tone: 'lime', icon: <NutrientBottle className="w-6 h-6" />, hot: nextKind === 'feed', tour: 'feed', onClick: doFeed },
-    { key: 'train', label: 'Técnicas', sub: `${techNow} ahora`, tone: 'pink', icon: <Scissors className="w-6 h-6" />, onClick: doTrain },
-    { key: 'speed', label: 'Acelerar', sub: 'ciclo', tone: 'amber', cost: '25', icon: <span className="flex items-center"><Flame className="w-6 h-6" /><Zap className="w-3.5 h-3.5 -ml-1" /></span>, onClick: () => { if (speedUpGrowth()) pop('- 25 $FLORA', '#fbbf24'); } },
-    { key: 'nutri', label: 'Nutrición', sub: 'tablas', tone: 'violet', icon: <FlaskLeaf className="w-6 h-6" />, onClick: onOpenNutrients },
-    { key: 'mother', label: 'Madre', sub: 'clones', tone: 'neutral', icon: <Crown className="w-6 h-6" />, onClick: () => { saveCurrentPlantAsMotherOrFather('Madre (Esquejes / Clones)'); pop('Madre guardada', '#c084fc'); } },
+    { key: 'water', label: tr('Regar'), sub: tr('Hum {soilMoisture}%', { soilMoisture: activePlant.soilMoisture }), tone: 'cyan', icon: <Droplet className="w-6 h-6" />, hot: nextKind === 'water', tour: 'water', onClick: doWater },
+    { key: 'feed', label: tr('Abonar'), sub: `EC ${activePlant.ecLevel}`, tone: 'lime', icon: <NutrientBottle className="w-6 h-6" />, hot: nextKind === 'feed', tour: 'feed', onClick: doFeed },
+    { key: 'train', label: tr('Técnicas'), sub: `${techNow} ahora`, tone: 'pink', icon: <Scissors className="w-6 h-6" />, onClick: doTrain },
+    { key: 'speed', label: tr('Acelerar'), sub: 'ciclo', tone: 'amber', cost: '25', icon: <span className="flex items-center"><Flame className="w-6 h-6" /><Zap className="w-3.5 h-3.5 -ml-1" /></span>, onClick: () => { if (speedUpGrowth()) pop('- 25 $FLORA', '#fbbf24'); } },
+    { key: 'nutri', label: tr('Nutrición'), sub: 'tablas', tone: 'violet', icon: <FlaskLeaf className="w-6 h-6" />, onClick: onOpenNutrients },
+    { key: 'mother', label: tr('Madre'), sub: 'clones', tone: 'neutral', icon: <Crown className="w-6 h-6" />, onClick: () => { saveCurrentPlantAsMotherOrFather('Madre (Esquejes / Clones)'); pop(tr('Madre guardada'), '#c084fc'); } },
   ] : [];
   // keys 1–6 press the hotbar (ignored while typing)
   useEffect(() => {
@@ -133,18 +134,18 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
       <div className="absolute z-30 inset-x-0 top-3 flex justify-center px-4 pointer-events-none" data-tour="next-action">
         {canHarvest && activePlant ? (
           <button
-            onClick={() => { const g = activePlant.estimatedDryYieldGrams; harvestPlant(); pop(`+ ${g}g flor`, '#fbbf24'); }}
+            onClick={() => { const g = activePlant.estimatedDryYieldGrams; harvestPlant(); pop(tr('+ {g}g flor', { g }), '#fbbf24'); }}
             className="pointer-events-auto cf-ring px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-emerald-400 to-amber-500 text-neutral-950 font-black text-sm tracking-wide uppercase shadow-[0_0_30px_rgba(251,191,36,0.55)] cursor-pointer active:scale-95 transition flex items-center gap-2"
           >
             <CannabisLeaf className="w-5 h-5" />
-            {`Cosechar · ~${activePlant.estimatedDryYieldGrams}g`}
+            {tr('Cosechar · ~{estimatedDryYieldGrams}g', { estimatedDryYieldGrams: activePlant.estimatedDryYieldGrams })}
           </button>
         ) : (
-          <button onClick={runNext} disabled={!next.actionable} title={next.hint}
+          <button onClick={runNext} disabled={!next.actionable} title={tr(next.hint)}
             className={`pointer-events-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-bold transition ${next.actionable ? 'bg-emerald-300 text-neutral-950 shadow-[0_0_24px_-4px_rgba(190,242,100,.9)] hover:bg-emerald-200 cf-ring cursor-pointer' : 'bg-neutral-950/80 text-neutral-300 border border-white/10 cursor-default'}`}>
             {next.actionable ? <Hand className="w-4 h-4" aria-hidden /> : <Sprout className="w-4 h-4 text-emerald-300" aria-hidden />}
-            <span className="text-[9px] font-mono uppercase tracking-[0.18em] opacity-70">{next.actionable ? 'Siguiente' : 'Estado'}</span>
-            {next.label}
+            <span className="text-[9px] font-mono uppercase tracking-[0.18em] opacity-70">{next.actionable ? tr('Siguiente') : tr('Estado')}</span>
+            {tr(next.label)}
           </button>
         )}
       </div>
@@ -167,17 +168,17 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
             />
             {/* touch the plant: crown → train, leaves → feed, pot → water */}
             <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[62%] grid grid-rows-[34fr_38fr_28fr] gap-1 pointer-events-none [&>button]:pointer-events-auto" data-testid="plant-hotspots">
-              <button type="button" onClick={doTrain} className="cs-hot cs-hot--pink" aria-label="Técnicas de entrenamiento"><span className="cs-hot-lbl"><Scissors className="w-3.5 h-3.5" />Técnicas <kbd>3</kbd></span></button>
-              <button type="button" onClick={doFeed} className="cs-hot cs-hot--lime" aria-label="Abonar la planta"><span className="cs-hot-lbl"><NutrientBottle className="w-3.5 h-3.5" />Abonar <kbd>2</kbd></span></button>
-              <button type="button" onClick={doWater} className="cs-hot cs-hot--cyan" aria-label="Regar la maceta"><span className="cs-hot-lbl"><Droplet className="w-3.5 h-3.5" />Regar <kbd>1</kbd></span></button>
+              <button type="button" onClick={doTrain} className="cs-hot cs-hot--pink" aria-label={tr('Técnicas de entrenamiento')}><span className="cs-hot-lbl"><Scissors className="w-3.5 h-3.5" />{t('Técnicas')}{' '}<kbd>3</kbd></span></button>
+              <button type="button" onClick={doFeed} className="cs-hot cs-hot--lime" aria-label={tr('Abonar la planta')}><span className="cs-hot-lbl"><NutrientBottle className="w-3.5 h-3.5" />{t('Abonar')}{' '}<kbd>2</kbd></span></button>
+              <button type="button" onClick={doWater} className="cs-hot cs-hot--cyan" aria-label={tr('Regar la maceta')}><span className="cs-hot-lbl"><Droplet className="w-3.5 h-3.5" />{t('Regar')}{' '}<kbd>1</kbd></span></button>
             </div>
           </div>
         ) : (
           <div className="pointer-events-auto self-center text-center max-w-sm space-y-3 px-6">
             <div className="mx-auto w-16 h-16 rounded-full border border-dashed border-emerald-300/40 flex items-center justify-center"><Sprout className="w-7 h-7 text-emerald-300" /></div>
-            <h3 className="font-serif text-lg font-bold text-white">Sala lista para sembrar</h3>
-            <p className="text-xs text-neutral-400">Elige una genética de tu banco de semillas para iniciar el ciclo.</p>
-            <button onClick={onOpenSeedModal} className="px-5 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-neutral-950 font-bold text-xs cursor-pointer inline-flex items-center gap-2"><CannabisLeaf className="w-4 h-4" /> Seleccionar semilla</button>
+            <h3 className="font-serif text-lg font-bold text-white">{t('Sala lista para sembrar')}</h3>
+            <p className="text-xs text-neutral-400">{t('Elige una genética de tu banco de semillas para iniciar el ciclo.')}</p>
+            <button onClick={onOpenSeedModal} className="px-5 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-neutral-950 font-bold text-xs cursor-pointer inline-flex items-center gap-2"><CannabisLeaf className="w-4 h-4" />{' '}{t('Seleccionar semilla')}</button>
           </div>
         )}
       </div>
@@ -185,7 +186,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
       {/* floating feedback text */}
       <div className="absolute left-1/2 bottom-[36%] pointer-events-none z-20">
         {floaters.map((f) => (
-          <span key={f.id} className="cf-float-up absolute whitespace-nowrap font-serif font-black text-lg" style={{ color: f.color, marginLeft: f.dx, textShadow: `0 0 12px ${f.color}` }}>{f.text}</span>
+          <span key={f.id} className="cf-float-up absolute whitespace-nowrap font-serif font-black text-lg" style={{ color: f.color, marginLeft: f.dx, textShadow: `0 0 12px ${f.color}` }}>{tr(f.text)}</span>
         ))}
       </div>
 
@@ -212,11 +213,11 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
                 {MILESTONES.map((m, i) => {
                   const reached = timelinePct(activePlant.progressPercent) >= i * STEP;
                   const current = reached && (i === MILESTONES.length - 1 || timelinePct(activePlant.progressPercent) < (i + 1) * STEP);
-                  return <span key={m} className={`${reached ? 'text-emerald-300' : 'text-neutral-600'} ${current ? '' : 'max-sm:hidden'}`}>{m}</span>;
+                  return <span key={m} className={`${reached ? 'text-emerald-300' : 'text-neutral-600'} ${current ? '' : 'max-sm:hidden'}`}>{t(m)}</span>;
                 })}
               </div>
             </>
-          ) : <div className="text-xs font-mono text-neutral-500 text-center py-1">Sin cultivo activo</div>}
+          ) : <div className="text-xs font-mono text-neutral-500 text-center py-1">{t('Sin cultivo activo')}</div>}
         </div>
       </div>
     </div>

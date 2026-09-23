@@ -1,5 +1,6 @@
 import React from 'react';
 import './hud.css';
+import { t as tr } from '../../i18n';
 
 /** Reusable pieces of the game HUD (Cultivo scene, Sala...). Presentation only: the caller passes data and handlers. */
 
@@ -42,7 +43,7 @@ export const Nameplate: React.FC<{ name: string; stage: string; stageColor: stri
         <div className="gh-title truncate">{name}</div>
         <div className="gh-sub">{stage} · THC {thc}%</div>
         <SegBar label="SALUD" value={health} c={hc[0]} hi={hc[1]} />
-        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] font-mono">{clocks.map((r) => <span key={r.icon} className={r.warn ? 'text-amber-300' : 'text-neutral-300'}>{r.icon} {r.text}</span>)}</div>
+        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] font-mono">{clocks.map((r) => <span key={r.icon} className={r.warn ? 'text-amber-300' : 'text-neutral-300'}>{r.icon} {tr(r.text)}</span>)}</div>
       </div>
     </div>
   );
@@ -55,15 +56,15 @@ export const HudToolbar: React.FC<{ tools: ToolSpec[]; flower: number; trim: num
     <div className="gh-frame gh-toolbar">
       {tools.map((t) => (
         <button key={t.key} type="button" onClick={t.onClick} title={t.title ?? t.label} data-tour={t.tour} className="gh-tool" style={{ ['--tc' as string]: t.color }}>
-          {t.icon}<span>{t.label}</span>
+          {t.icon}<span>{tr(t.label)}</span>
           {!!t.badge && <b className="gh-tool-badge" style={{ ['--bc' as string]: t.badgeColor }}>{t.badge}</b>}
         </button>
       ))}
     </div>
     <div className="gh-frame gh-loot">
-      <div><small>FLOR</small><b className="text-lime-300">{flower} g</b></div>
+      <div><small>{tr('FLOR')}</small><b className="text-lime-300">{flower} g</b></div>
       <span className="w-px bg-white/15" />
-      <div><small>TRIM</small><b className="text-amber-300">{trim} g</b></div>
+      <div><small>{tr('TRIM')}</small><b className="text-amber-300">{trim} g</b></div>
     </div>
   </div>
 );
@@ -72,13 +73,13 @@ export interface SlotSpec { key: string; label: string; sub?: string; tone: 'cya
 
 /** RPG-style skill bar: big keys 1–6, cost badge, and a glow + "SIGUIENTE" tag on the recommended action. */
 export const Hotbar: React.FC<{ slots: SlotSpec[] }> = ({ slots }) => (
-  <div className="gh-frame gh-hotbar" role="toolbar" aria-label="Habilidades del cultivo" data-tour="hotbar">
+  <div className="gh-frame gh-hotbar" role="toolbar" aria-label={tr('Habilidades del cultivo')} data-tour="hotbar">
     {slots.map((s, i) => (
-      <button key={s.key} type="button" onClick={s.onClick} data-tour={s.tour} aria-label={`${s.label} (tecla ${i + 1})`} title={`${s.label} · tecla ${i + 1}`} className={`gh-slot gh-slot--${s.tone} ${s.hot ? 'is-hot' : ''}`}>
+      <button key={s.key} type="button" onClick={s.onClick} data-tour={s.tour} aria-label={tr('{label} (tecla {v1})', { label: s.label, v1: i + 1 })} title={tr('{label} · tecla {v1}', { label: s.label, v1: i + 1 })} className={`gh-slot gh-slot--${s.tone} ${s.hot ? 'is-hot' : ''}`}>
         <kbd className="gh-key">{i + 1}</kbd>
         {s.cost && <b className="gh-cost">{s.cost}</b>}
         {s.icon}
-        <span className="gh-slot-lbl">{s.label}</span>
+        <span className="gh-slot-lbl">{tr(s.label)}</span>
         {s.sub && <span className="gh-slot-sub">{s.sub}</span>}
       </button>
     ))}
