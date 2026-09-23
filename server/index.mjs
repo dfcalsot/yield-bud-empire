@@ -448,7 +448,9 @@ export const wallet = installWallet({ db, route, HttpError, sessionAccount, audi
 const globalHits = new Limiter();
 function clientIp(req) {
   const remote = req.socket.remoteAddress ?? '';
-  const loop = remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1';
+  const v4 = remote.replace(/^::ffff:/, '');
+  // detrás de un proxy propio: el mismo equipo, la red de Docker (10/8, 172.16/12, 192.168/16) o Tailscale (100.64/10)
+  const loop = remote === '::1' || /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/.test(v4);
   if (cfg.trustProxy && loop) { const x = String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim(); if (x) return x; }
   return remote;
 }
