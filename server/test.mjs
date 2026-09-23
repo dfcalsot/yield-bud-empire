@@ -12,7 +12,7 @@ Object.assign(process.env, {
   GOOGLE_CLIENT_ID: 'gid', GOOGLE_CLIENT_SECRET: 'gsec', GOOGLE_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, GOOGLE_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, GOOGLE_USER_URL: `http://127.0.0.1:${MOCK}/user/google`,
   X_CLIENT_ID: 'xid', X_CLIENT_SECRET: 'xsec', X_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, X_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, X_USER_URL: `http://127.0.0.1:${MOCK}/user/x`,
 });
-const { createServer, cfg, db, limiter, originAllowed, isPrivateHost } = await import('./index.mjs');
+const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg } = await import('./index.mjs');
 
 // mock identity provider (NOT Google or X: it only proves that our OAuth code paths behave)
 const profiles = { google: {}, x: {} };
@@ -517,6 +517,53 @@ gi = await oauthInvite({ sub: 'g-bound-x', email: 'alguien.mas@gmail.com', email
 ok('invitación personal: Google con otro correo no sirve', /#auth_error=invite_email_mismatch$/.test(gi.loc ?? ''));
 gi = await oauthInvite({ sub: 'g-bound-1', email: 'boundperson@gmail.com', email_verified: true, name: 'Bound Person' }, 'YBE-GMAI-2345');
 ok('invitación personal: Google con el mismo Gmail (aunque cambien los puntos) sirve', /#auth=ok$/.test(gi.loc ?? '') && db.prepare("SELECT uses FROM invites WHERE code = 'YBE-GMAI-2345'").get().uses === 1);
+// ── pre-registro con código automático (N cupos, lista de espera) y CORS del sitio
+const SITE = 'https://yieldbudempire.com';
+const pre = async (body, o = {}) => {
+  const ip = o.ip ?? newIp();
+  const sol = o.noCaptcha ? undefined : solve((await call('GET', '/api/public/challenge', { ip })).json);
+  return call('POST', '/api/public/prereg', { ip, headers: { origin: o.origin ?? SITE }, body: { alias: '', lang: 'es', consent: true, t: Date.now() - 4000, hp: '', captcha: sol, ...body } });
+};
+const outbox = () => { try { return fs.readFileSync(path.join(cfg.dataDir, 'outbox.log'), 'utf8'); } catch { return ''; } };
+prereg.setSeats(2);
+let pr = await pre({ email: 'pre1@example.com' }, { noCaptcha: true });
+ok('pre-registro: sin verificación anti-bots se rechaza', pr.status === 400 && /captcha/.test(pr.json.error));
+pr = await pre({ email: 'bot@example.com', hp: 'http://spam' });
+ok('pre-registro: el campo trampa responde bien pero no guarda nada', pr.status === 200 && !db.prepare("SELECT 1 FROM prereg WHERE email_key = 'bot@example.com'").get());
+pr = await pre({ email: 'pre0@example.com', consent: false });
+ok('pre-registro: sin aceptar el aviso de privacidad se rechaza', pr.status === 400 && pr.json.error === 'consent_required');
+const p1 = await pre({ email: 'pre1@example.com', alias: 'Primera' });
+const p2 = await pre({ email: 'pre2@example.com', lang: 'en' });
+const p3 = await pre({ email: 'pre3@example.com' });
+ok('pre-registro: los primeros N reciben código al instante', p1.json.status === 'invited' && p2.json.status === 'invited');
+ok('pre-registro: después del cupo quedan en espera con su puesto', p3.json.status === 'waiting' && p3.json.position === 1);
+const c1 = db.prepare("SELECT invite_code FROM prereg WHERE email_key = 'pre1@example.com'").get().invite_code;
+ok('pre-registro: el código queda atado a su correo y llega por correo', /^YBE-/.test(c1) && db.prepare('SELECT email_key FROM invites WHERE code = ?').get(c1).email_key === 'pre1@example.com' && outbox().includes(c1) && outbox().includes('Hola Primera'));
+ok('pre-registro: el correo sale en el idioma elegido', /Your personal code: YBE-/.test(outbox()));
+const again = await pre({ email: 'pre1@example.com' });
+ok('pre-registro: anotarse dos veces no gasta otro cupo', again.json.status === 'invited' && prereg.stats().invited === 2);
+const again3 = await pre({ email: 'PRE3@example.com' });
+ok('pre-registro: el que espera sigue en su mismo puesto', again3.json.status === 'waiting' && again3.json.position === 1);
+prereg.setSeats(3); const filled = await prereg.fillSeats();
+ok('pre-registro: al subir el cupo, el siguiente en espera recibe su código', filled.invited.includes('pre3@example.com') && db.prepare("SELECT status FROM prereg WHERE email_key = 'pre3@example.com'").get().status === 'invited');
+prereg.setSeats(10);
+const pg = await pre({ email: 'gina@gmail.com' });
+ok('pre-registro: si ya tiene cuenta no gasta código', pg.json.status === 'invited' && db.prepare("SELECT status FROM prereg WHERE email_key = 'gina@gmail.com'").get().status === 'has_account' && !db.prepare("SELECT 1 FROM invites WHERE email_key = 'gina@gmail.com'").get());
+const cc = db.prepare("SELECT invite_code FROM prereg WHERE email_key = 'pre2@example.com'").get().invite_code;
+ir = await reg({ body: { email: 'pre2@example.com', username: 'Pre Dos', invite: cc } });
+ok('pre-registro: con el código del correo se crea la cuenta en el juego', ir.status === 200);
+// CORS: solo el sitio y solo /api/public/*
+let rr = await fetch(base + '/api/public/prereg', { method: 'OPTIONS', headers: { origin: SITE, 'access-control-request-method': 'POST', 'access-control-request-headers': 'content-type,x-cf-csrf' } });
+ok('CORS: el sitio puede preguntar (preflight)', rr.status === 204 && rr.headers.get('access-control-allow-origin') === SITE && /x-cf-csrf/.test(rr.headers.get('access-control-allow-headers') ?? ''));
+rr = await fetch(base + '/api/public/prereg', { method: 'OPTIONS', headers: { origin: 'https://sitio-malo.example' } });
+ok('CORS: otro dominio no', rr.status === 403 && !rr.headers.get('access-control-allow-origin'));
+rr = await fetch(base + '/api/public/stats', { headers: { origin: SITE } });
+const sj = await rr.json();
+ok('CORS: el sitio lee el contador y el mercado', rr.status === 200 && rr.headers.get('access-control-allow-origin') === SITE && sj.prereg.seats === 10 && typeof sj.market.totals.active === 'number');
+pr = await pre({ email: 'pre9@example.com' }, { origin: 'https://sitio-malo.example' });
+ok('CORS: un formulario de otro dominio no puede anotar gente', pr.status === 403 && pr.json.error === 'bad_origin');
+rr = await fetch(base + '/api/auth/config', { headers: { origin: SITE } });
+ok('CORS: el resto de la API no se abre al sitio', !rr.headers.get('access-control-allow-origin'));
 cfg.inviteOnly = false;
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 server.close(); mock.close();

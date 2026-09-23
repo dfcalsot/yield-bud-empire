@@ -11,6 +11,7 @@ import {
   makeChallenge, parseCookies, passwordProblem, pkcePair, rand, readJson, reservedUsername, safeEqual, usernameKey, validEmail, validUsername, verifyPasswordAsync,
 } from './lib.mjs';
 import { installEconomy } from './economy.mjs';
+import { createPrereg } from './prereg.mjs';
 import { installWallet } from './wallet.mjs';
 
 const env = process.env;
@@ -27,6 +28,12 @@ export const cfg = {
   devLinks: env.DEV_EXPOSE_LINKS === '1',
   /** alfa cerrada: crear una cuenta nueva (correo o proveedor) exige un código de invitación; las cuentas existentes entran igual */
   inviteOnly: env.INVITE_ONLY === '1',
+  /** cupos de la alfa que se reparten solos al pre-registrarse (después se suben con admin.mjs seats) */
+  alphaSeats: Math.max(0, Number(env.ALPHA_SEATS ?? 30) || 0),
+  /** el sitio de promoción (otro dominio) puede llamar a /api/public/* */
+  siteOrigins: new Set(String(env.SITE_ORIGINS ?? 'https://yieldbudempire.com,https://www.yieldbudempire.com').split(',').map((x) => x.trim().replace(/\/$/, '')).filter(Boolean)),
+  /** base vieja del pre-registro del sitio, para migrarla una vez */
+  preregDb: env.PREREG_DB ?? '',
   xMinAgeDays: Number(env.X_MIN_AGE_DAYS ?? 60),
   xMinFollowers: Number(env.X_MIN_FOLLOWERS ?? 0),
   smtpUrl: env.SMTP_URL ?? '',
@@ -158,6 +165,10 @@ async function sendMail(to, subject, text) {
 }
 const linkFor = (kind, token) => `${cfg.publicUrl}/#${kind}=${token}`;
 
+// pre-registro de la alfa: cola por orden de llegada, N cupos, código personal por correo
+export const prereg = createPrereg({ db, sendMail, mustDeliver: !!cfg.smtpUrl, publicUrl: cfg.publicUrl, defaultSeats: cfg.alphaSeats });
+{ const moved = prereg.migrateFrom(cfg.preregDb, emailKey); if (moved) console.log(`pre-registro: ${moved} persona(s) migradas desde ${cfg.preregDb}`); }
+
 /* ───────────────────────────── helpers ───────────────────────────── */
 
 class HttpError extends Error { constructor(status, code, extra = {}) { super(code); this.status = status; this.code = code; this.extra = extra; } }
@@ -240,6 +251,42 @@ route('GET', '/api/auth/challenge', (ctx) => {
   const purpose = String(ctx.url.searchParams.get('purpose') ?? 'register').replace(/[^a-z]/g, '').slice(0, 12) || 'register';
   limit(ctx, `chal:${ctx.ip}`, 40, 60_000);
   return makeChallenge(SECRET, requiredBits(ctx, purpose));
+});
+
+/* ───────────── rutas públicas que usa el sitio de promoción (yieldbudempire.com, otro dominio) ───────────── */
+
+route('GET', '/api/public/challenge', (ctx) => {
+  limit(ctx, `chal:${ctx.ip}`, 40, 60_000);
+  return makeChallenge(SECRET, requiredBits(ctx, 'prereg'));
+});
+
+route('POST', '/api/public/prereg', async (ctx) => {
+  const b = await readJson(ctx.req);
+  // bots: campo trampa o envío instantáneo → se contesta como si hubiera funcionado, pero no se guarda nada
+  const elapsed = Date.now() - Number(b.t);
+  if (b.hp || !(elapsed >= 2500 && elapsed < 6 * 3600_000)) { audit('prereg_bot', null, ctx.ipHash, b.hp ? 'honeypot' : `timing:${elapsed}`); return { ok: true, status: 'waiting', position: 0 }; }
+  limit(ctx, `prereg:${ctx.ip}`, 5, 3600_000);
+  limit(ctx, 'prereg:global', 60, 60_000, 'busy');
+  requireCaptcha(ctx, 'prereg', b.captcha);
+  if (b.consent !== true) throw new HttpError(400, 'consent_required');
+  const email = String(b.email ?? '').normalize('NFKC').trim();
+  if (!validEmail(email)) throw new HttpError(400, 'email_invalid');
+  const eKey = emailKey(email);
+  if (!eKey) throw new HttpError(400, 'email_invalid');
+  if (isDisposable(eKey)) { audit('prereg_disposable', null, ctx.ipHash, eKey.split('@')[1]); throw new HttpError(400, 'email_disposable'); }
+  if (!(await domainReceivesMail(eKey, cfg.skipMx))) throw new HttpError(400, 'email_domain');
+  const alias = String(b.alias ?? '').normalize('NFKC').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 30);
+  const r = await prereg.signUp({ email, eKey, alias, lang: b.lang, ipHash: ctx.ipHash });
+  audit('prereg', null, ctx.ipHash, r.status);
+  return { ok: true, ...r };
+});
+
+route('GET', '/api/public/stats', () => {
+  const st = prereg.stats();
+  const pick = (r) => { let d = {}; try { d = JSON.parse(r.data); } catch { /* sin datos */ } return { kind: r.kind, rarity: r.rarity, price: r.price, name: typeof d.name === 'string' ? d.name.slice(0, 40) : null, nftId: r.nft_id }; };
+  const active = db.prepare("SELECT kind, rarity, price, data, nft_id FROM listings WHERE status = 'active' ORDER BY id DESC LIMIT 12").all().map(pick);
+  const t = db.prepare("SELECT SUM(status = 'active') AS active, SUM(status = 'sold') AS sold, COALESCE(SUM(CASE WHEN status = 'sold' THEN fee END), 0) AS burned FROM listings").get();
+  return { prereg: { total: st.total, seats: st.seats, invited: st.invited, waiting: st.waiting }, market: { active, totals: { active: t.active ?? 0, sold: t.sold ?? 0, burned: t.burned ?? 0 }, feeRate: 0.05 } };
 });
 
 route('GET', '/api/auth/me', (ctx) => {
@@ -497,6 +544,7 @@ function clientIp(req) {
 function send(res, status, body, ctx) {
   const headers = { ...SECURITY_HEADERS, ...(secure ? { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' } : {}) };
   if (ctx?.setCookies?.length) headers['Set-Cookie'] = ctx.setCookies;
+  if (ctx?.cors) Object.assign(headers, { 'Access-Control-Allow-Origin': ctx.cors, Vary: 'Origin', 'Cross-Origin-Resource-Policy': 'cross-origin' });
   if (body?.redirect) { res.writeHead(302, { ...headers, Location: body.redirect }); return res.end(); }
   headers['Content-Type'] = 'application/json; charset=utf-8';
   if (body?.retryAfter) headers['Retry-After'] = String(body.retryAfter);
@@ -511,11 +559,20 @@ export function createServer() {
     ctx.uaHash = crypto.createHash('sha256').update(`${req.headers['user-agent'] ?? ''}|${req.headers['accept-language'] ?? ''}`).digest('hex').slice(0, 16);
     try {
       if (globalHits.hit(`g:${ctx.ip}`, 300, 60_000)) throw new HttpError(429, 'rate_limited', { retryAfter: 30 });
+      // el sitio de promoción vive en otro dominio: CORS solo para /api/public/* y solo para ese dominio
+      const isPublic = ctx.url.pathname.startsWith('/api/public/');
+      const siteOrigin = isPublic && cfg.siteOrigins.has(String(req.headers.origin ?? '')) ? String(req.headers.origin) : null;
+      if (siteOrigin) ctx.cors = siteOrigin;
+      if (req.method === 'OPTIONS' && isPublic) {
+        if (!siteOrigin) throw new HttpError(403, 'bad_origin');
+        res.writeHead(204, { 'Access-Control-Allow-Origin': siteOrigin, 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Allow-Headers': 'content-type, x-cf-csrf', 'Access-Control-Max-Age': '600', Vary: 'Origin' });
+        return res.end();
+      }
       const handler = routes.get(`${req.method} ${ctx.url.pathname}`);
       if (!handler) throw new HttpError(404, 'not_found');
       if (req.method === 'POST') {
         const origin = req.headers.origin;
-        if (origin && !originAllowed(origin)) throw new HttpError(403, 'bad_origin');
+        if (origin && !originAllowed(origin) && !siteOrigin) throw new HttpError(403, 'bad_origin');
         if (req.headers['x-cf-csrf'] !== '1') throw new HttpError(403, 'csrf');
       }
       const out = await handler(ctx);
