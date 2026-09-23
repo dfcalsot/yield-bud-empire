@@ -168,6 +168,11 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
                 <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-3 top-8 text-neutral-500 hover:text-white cursor-pointer" aria-label="Mostrar contraseña">{show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button></div>
               <button type="submit" disabled={busy} className="mk-buy !text-[12px]"><span className="mk-buy-shine" />{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}<span>Iniciar sesión</span></button>
               <button type="button" className="block mx-auto text-[11px] font-mono text-emerald-300/80 hover:text-emerald-200 cursor-pointer" onClick={() => { setMode('forgot'); setErr(''); }}>Olvidé mi contraseña</button>
+              {config.inviteOnly && (
+                <button type="button" onClick={() => { setMode('register'); setErr(''); }} className="w-full text-left rounded-xl border border-amber-300/30 bg-amber-400/[0.06] px-3 py-2.5 text-[11.5px] text-amber-100 hover:bg-amber-400/10 cursor-pointer">
+                  <b>¿Te llegó un código de invitación?</b> Tocá acá (o «Soy nuevo») para crear tu cuenta con él.
+                </button>
+              )}
             </form>
           )}
 
