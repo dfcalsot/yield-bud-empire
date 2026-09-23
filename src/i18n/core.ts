@@ -77,3 +77,34 @@ export const fmtNum = (n: number, digits = 0) => n.toLocaleString(current === 'e
 
 /** marca un texto de una tabla del módulo como traducible sin cambiarlo (se traduce con t() donde se muestra) */
 export const k = (es: string): string => es;
+
+/**
+ * Una tabla de datos (objeto por id, lista u objeto suelto) cuyos campos de texto se leen ya traducidos: `localize(PEST_INFO,
+ * ['label', 'cause'])`. Solo cambia lo que se LEE de esos campos (en el idioma del momento); ids, números y el resto quedan igual,
+ * así que la lógica que compara ids no se entera. Los objetos envueltos se cachean: el mismo dato da siempre el mismo objeto.
+ */
+export function localize<T extends object>(table: T, fields: readonly string[]): T {
+  const set = new Set(fields);
+  const cache = new WeakMap<object, object>();
+  const tr = (v: unknown): unknown => (typeof v === 'string' ? t(v) : Array.isArray(v) && v.every((x) => typeof x === 'string') ? v.map((x) => t(x)) : v);
+  const wrap = (o: unknown): unknown => {
+    if (!o || typeof o !== 'object') return o;
+    const hit = cache.get(o as object);
+    if (hit) return hit;
+    const p = new Proxy(o as object, {
+      get(target, key, recv) {
+        const v = Reflect.get(target, key, recv);
+        if (typeof key === 'string' && set.has(key)) return tr(v);
+        return v && typeof v === 'object' ? wrap(v) : v;
+      },
+      getOwnPropertyDescriptor(target, key) {
+        const d = Reflect.getOwnPropertyDescriptor(target, key);
+        if (d && 'value' in d && typeof key === 'string' && set.has(key)) return { ...d, value: tr(d.value) };
+        return d;
+      },
+    });
+    cache.set(o as object, p);
+    return p;
+  };
+  return wrap(table) as T;
+}

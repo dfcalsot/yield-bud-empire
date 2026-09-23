@@ -22,7 +22,9 @@ const files = args.filter((a) => !a.startsWith('--'));
 
 const UI_PROPS = new Set(['title', 'text', 'label', 'desc', 'description', 'hint', 'message', 'msg', 'body', 'subtitle', 'sub', 'tip', 'tips', 'note', 'say', 'cta',
   'placeholder', 'tooltip', 'detail', 'details', 'reason', 'summary', 'help', 'caption', 'heading', 'button', 'action', 'lead', 'intro', 'goal', 'hintText', 'short',
-  'long', 'blurb', 'info', 'warning', 'error', 'success', 'empty', 'question', 'answer', 'line', 'lines', 'tagline', 'headline', 'effect', 'why', 'how', 'what', 'unit', 'verb', 'status', 'statusText', 'badge', 'name', 'cause', 'cure', 'role']);
+  'long', 'blurb', 'info', 'warning', 'error', 'success', 'empty', 'question', 'answer', 'line', 'lines', 'tagline', 'headline', 'effect', 'why', 'how', 'what', 'unit', 'verb', 'statusText', 'badge', 'name', 'cause', 'cure', 'role', 'fix', 'ask', 'look', 'confirm', 'brief', 'thanks', 'place', 'headline', 'advice', 'tipText', 'feedback', 'warn', 'alert', 'notice', 'caption', 'subtitle', 'eyebrow', 'kicker', 'footnote', 'explain', 'explanation', 'story', 'quote']);
+// valores que nunca se traducen (nombres propios de marcas, símbolos químicos, claves de lógica)
+const NEVER_PROPS = new Set(['brand', 'element', 'symbol', 'id', 'key', 'type', 'kind', 'rarity', 'tier', 'category', 'slug', 'icon', 'emoji', 'color', 'region', 'room', 'stage', 'status', 'difficulty', 'lineage', 'strain', 'strainName', 'origin', 'breeder', 'seedType', 'shop', 'npc', 'tab', 'tour', 'event', 'mood']);
 const NON_UI_ATTRS = new Set(['className', 'class', 'id', 'key', 'href', 'src', 'type', 'name', 'role', 'style', 'variant', 'kind', 'mood', 'size', 'd', 'fill', 'stroke',
   'viewBox', 'transform', 'points', 'rel', 'target', 'method', 'autoComplete', 'inputMode', 'pattern', 'lang', 'dir', 'htmlFor', 'value', 'defaultValue', 'data-testid',
   'strokeLinecap', 'strokeLinejoin', 'fillRule', 'clipRule', 'mask', 'filter', 'preserveAspectRatio', 'xmlns', 'gradientUnits', 'maskUnits', 'textAnchor', 'dominantBaseline',
@@ -99,7 +101,12 @@ function blocked(node, sf) {
     if (ts.isTypeNode(a)) return 'tipo';
     if (ts.isFunctionLike(a) || ts.isJsxElement(a) || ts.isJsxSelfClosingElement(a)) break;
   }
-  if (ts.isPropertyAssignment(p) && !allProps) { const k = p.name.getText(sf).replace(/['"]/g, ''); if (!UI_PROPS.has(k)) return `prop:${k}`; }
+  if (ts.isPropertyAssignment(p)) {
+    const k = p.name.getText(sf).replace(/['"]/g, '');
+    if (NEVER_PROPS.has(k)) return `prop:${k}`;
+    // --all-props solo abre las tablas del módulo (datos que se marcan con k); dentro de funciones sigue la lista de interfaz
+    if (!UI_PROPS.has(k) && !(allProps && !insideFunction(node))) return `prop:${k}`;
+  }
   if (ts.isCallExpression(p) || ts.isNewExpression(p)) { const c = calleeText(p, sf); if (NON_UI_CALLS.test(c)) return `llamada:${c}`; }
   if (ts.isArrayLiteralExpression(p) && ts.isCallExpression(p.parent) && /\.(includes|indexOf)$/.test(p.parent.expression.getText(sf))) return 'lista-lógica';
   return null;
