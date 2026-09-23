@@ -36,6 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller_id, status);
 CREATE TABLE IF NOT EXISTS gifts (id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, amount INTEGER NOT NULL, note TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, opened_at INTEGER);
 CREATE INDEX IF NOT EXISTS idx_gifts_acc ON gifts(account_id, opened_at);
 CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT NULL, response TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (account_id, idem));
+CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE, data TEXT NOT NULL, saved_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
 `);
   const q = {
     wallet: db.prepare('SELECT * FROM wallets WHERE account_id = ?'),
@@ -69,6 +70,8 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
     activeCount: db.prepare("SELECT COUNT(*) n FROM listings WHERE seller_id = ? AND status = 'active'"),
     recentSales: db.prepare("SELECT l.id, l.kind, l.rarity, l.price, l.closed_at, l.data FROM listings l WHERE l.status = 'sold' ORDER BY l.closed_at DESC LIMIT 20"),
     userName: db.prepare('SELECT username FROM accounts WHERE id = ?'),
+    save: db.prepare('SELECT data, saved_at FROM saves WHERE account_id = ?'),
+    putSave: db.prepare('INSERT INTO saves (account_id, data, saved_at, updated_at) VALUES (?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET data = excluded.data, saved_at = excluded.saved_at, updated_at = excluded.updated_at'),
   };
   setInterval(() => { try { q.sweepIdem.run(Date.now() - 2 * DAY); } catch { /* */ } }, 3600_000).unref();
 
@@ -156,6 +159,8 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
       staff: free(id, 'staff'), staffAssign: st.staffAssign, staffPity: st.staffPity,
       plots, avatars, avatarPity: st.avatarPity, offers,
       imported: !!w.imported, minted: w.minted, burned: w.burned,
+      // el nivel más alto que el servidor ya pagó: el juego nunca muestra menos (antes se perdía al cambiar de navegador)
+      level: Math.max(1, ...(st.levelsClaimed ?? [1]).filter(Number.isFinite)),
       gifts: q.giftsOf.all(id).map((g) => ({ id: g.id, amount: g.amount, note: g.note, createdAt: g.created_at })),
       listings: q.activeOf.all(id).map(listingView), p2p: { feeRate: P2P.feeRate, minPrice: P2P.minPrice, maxPrice: P2P.maxPrice, maxListings: P2P.maxListings },
     };
@@ -435,6 +440,30 @@ CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT
     };
   });
   route('POST', '/api/econ/import-local', async (ctx) => { const a = who(ctx); return importLocal(a, await readJson(ctx.req, 96 * 1024)); });
+
+  /* ───────────── guardado en la nube ─────────────
+   * La partida (plantas, semillas, XP, misiones…) la juega el navegador; acá se guarda una copia para que no se pierda al cambiar
+   * de navegador, de celular o de dirección del juego. Lo que vale dinero (saldo, NFTs, instalaciones) no sale de acá: al
+   * cargar, el juego vuelve a pedir el estado del servidor y eso manda. */
+  const SAVE_MAX = 1024 * 1024;
+  route('GET', '/api/save', (ctx) => {
+    const a = who(ctx); const r = q.save.get(a.id);
+    return r ? { savedAt: r.saved_at, data: JSON.parse(r.data) } : { savedAt: 0, data: null };
+  });
+  route('POST', '/api/save', async (ctx) => {
+    const a = who(ctx); limit(ctx, `save:${a.id}`, 30, 60_000);
+    const b = await readJson(ctx.req, SAVE_MAX + 4096);
+    const data = b.data, savedAt = Number(b.savedAt);
+    if (!data || typeof data !== 'object' || Array.isArray(data) || !Number.isFinite(savedAt) || savedAt <= 0) throw new HttpError(400, 'bad_params');
+    const now = Date.now();
+    const at = Math.min(savedAt, now + 60_000);   // un reloj adelantado no puede ganarle a todo lo que venga después
+    const prev = q.save.get(a.id);
+    if (prev && prev.saved_at > at) return { ok: false, stale: true, savedAt: prev.saved_at };   // otro dispositivo guardó algo más nuevo
+    const json = JSON.stringify(data);
+    if (json.length > SAVE_MAX) throw new HttpError(413, 'too_large');
+    q.putSave.run(a.id, json, at, now);
+    return { ok: true, savedAt: at };
+  });
 
   return { run, snapshot, walletOf, importLocal, INTENTS };
 }

@@ -583,6 +583,32 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   const cb2 = await call('GET', `/api/auth/google/callback?code=abc&state=${new URL(st2.loc).searchParams.get('state')}`, { ip, jar: j });
   ok('términos: una cuenta que ya existe entra con Google sin volver a aceptar', /#auth=ok$/.test(cb2.loc ?? ''));
 }
+// ── guardado en la nube: la partida no se pierde al cambiar de navegador, celular o dirección del juego
+{
+  const sv = (P, body) => call('POST', '/api/save', { jar: P.jar, ip: P.ip, body });
+  ok('nube: sin sesión no hay partida (401)', (await call('GET', '/api/save', { ip: newIp() })).status === 401);
+  let g = await call('GET', '/api/save', { jar: E1.jar, ip: E1.ip });
+  ok('nube: cuenta sin copia devuelve vacío', g.status === 200 && g.json.data === null && g.json.savedAt === 0);
+  const t0 = Date.now();
+  let p = await sv(E1, { data: { playerLevel: 7, playerXp: 120 }, savedAt: t0 });
+  g = await call('GET', '/api/save', { jar: E1.jar, ip: E1.ip });
+  ok('nube: guarda y devuelve la partida', p.json.ok === true && g.json.data.playerLevel === 7 && g.json.savedAt === t0);
+  p = await sv(E1, { data: { playerLevel: 2 }, savedAt: t0 - 5000 });
+  g = await call('GET', '/api/save', { jar: E1.jar, ip: E1.ip });
+  ok('nube: una copia más vieja (otro dispositivo) no pisa la nueva', p.json.stale === true && g.json.data.playerLevel === 7);
+  p = await sv(E1, { data: { x: 'a'.repeat(1100 * 1024) }, savedAt: t0 + 1 });
+  ok('nube: una partida gigante se rechaza', p.status === 413);
+  p = await sv(E1, { data: [1, 2], savedAt: t0 + 1 });
+  ok('nube: datos que no son una partida se rechazan', p.status === 400);
+  p = await sv(E1, { data: { playerLevel: 8 }, savedAt: t0 + 10 * 86400_000 });
+  const at = (await call('GET', '/api/save', { jar: E1.jar, ip: E1.ip })).json.savedAt;
+  ok('nube: un reloj adelantado no gana para siempre', p.json.ok === true && at <= Date.now() + 60_000);
+  const EN = G1;
+  ok('nube: cada cuenta ve solo su partida', (await call('GET', '/api/save', { jar: EN.jar, ip: EN.ip })).json.data === null);
+  const r = stateRow(E1); r.levelsClaimed = [1, 2, 3, 4];
+  db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(r), E1.id);
+  ok('nivel: el estado del servidor informa el nivel más alto ya pagado', (await state(E1)).snapshot.level === 4 && (await state(EN)).snapshot.level === 1);
+}
 cfg.inviteOnly = true;
 cfg.inviteOnly = false;
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');

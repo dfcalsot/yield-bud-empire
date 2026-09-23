@@ -78,7 +78,7 @@ import { PRODUCT_PRICE } from '../sim/products';
 import { boostWithinPhase, isHarvestable, phaseOf, PHASES, stageOf as stageFromProgress } from '../sim/phases';
 import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
 import { landOffers } from '../sim/lands';
-import { fetchState, importLocal, intent, REASON, type ListingView, type Snapshot } from '../economy/ledger';
+import { fetchState, importLocal, intent, fetchCloudSave, pushCloudSave, REASON, type ListingView, type Snapshot } from '../economy/ledger';
 import { mintAddressFor } from '../utils/nft';
 import { siteConditions, plotOffer, terroirOf, REGION_BY_ID, PLOT_SIZE, type PlotOffer } from '../sim/terroir';
 import { CHESTS, DUPLICATE_REFUND, EMPTY_PITY, DESIGN_BY_ID, rollChest, seasonOf, type AvatarDesign, type ChestId, type OwnedAvatar, type PityMap } from '../sim/avatars';
@@ -738,6 +738,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [srvOffers, setSrvOffers] = useState<Snapshot['offers'] | null>(null);
   const ledgerRef = useRef(false); ledgerRef.current = ledgerOn;
   const hadLocalSaveRef = useRef(false);
+  const localSavedAtRef = useRef(0);          // cuándo se guardó la partida de este navegador que se cargó (0 = no había)
+  const cloudReadyRef = useRef(false);        // no se sube nada a la nube hasta haber comparado con lo que ya hay allá
+  const currentUserIdRef = useRef<string | undefined>(undefined);
+  const loadUserDataRef = useRef<(id: string, seed?: boolean) => void>(() => {});
+  const runTickRef = useRef<(s?: number) => void>(() => {});
+  const showNotificationRef = useRef<(m: string, t: 'success' | 'info' | 'burn') => void>(() => {});
   const localSrcRef = useRef<Record<string, unknown>>({});
   // what a local save would bring to the server the first time (it caps and validates all of it)
   localSrcRef.current = {
@@ -763,11 +769,27 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setMyListings(snap.listings ?? []);
     setGifts(snap.gifts ?? []);
     if (snap.p2p) setP2pInfo(snap.p2p);
+    // el nivel que el servidor ya pagó es el piso: una partida perdida en el navegador no te baja de nivel
+    if (typeof snap.level === 'number' && snap.level > 1) setPlayerLevel(prev => Math.max(prev, snap.level!));
   }, []);
 
   /** take the server's word for everything (login, and every minute after); the first time, a local save is imported with caps */
   // (see the effects right below the function)
   const syncFromServer = useCallback(async (): Promise<boolean> => {
+    // guardado en la nube: si el servidor tiene una partida más nueva que la de este navegador (otro celular, otro navegador,
+    // o la dirección del juego cambió), se usa esa; lo que vale dinero lo vuelve a poner el estado del servidor justo después
+    const uid = currentUserIdRef.current;
+    const cloud = await fetchCloudSave();
+    if (cloud && uid) {
+      if (cloud.data && cloud.savedAt > localSavedAtRef.current) {
+        saveUserData(uid, { ...(cloud.data as Partial<UserAccountData>), savedAt: cloud.savedAt });
+        loadUserDataRef.current(uid, false);
+        runTickRef.current();
+        localSavedAtRef.current = cloud.savedAt;
+        showNotificationRef.current(`Partida recuperada de la nube: nivel ${(cloud.data as { playerLevel?: number }).playerLevel ?? 1}`, 'success');
+      }
+      cloudReadyRef.current = true;
+    }
     const snap = await fetchState();
     if (!snap) return false;
     let use = snap;
@@ -949,6 +971,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
     const saved = loadUserData(userId);
     hadLocalSaveRef.current = !!saved;
+    localSavedAtRef.current = saved?.savedAt ?? 0;
     applyMissions(normalizeMissions(saved?.missions));
     applyTutorial(normalizeTutorial(saved?.tutorial));
     {
@@ -1453,17 +1476,34 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Autosave: every 20 s, when the tab is hidden and when it closes
   const saveNowRef = useRef<() => void>(() => {});
+  const cloudPushedAtRef = useRef(0);
   saveNowRef.current = () => { if (currentUser?.id) saveCurrentUserDataForUser(currentUser.id); };
+  currentUserIdRef.current = currentUser?.id;
+  loadUserDataRef.current = loadUserDataForUser;
+  runTickRef.current = runTick;
+  showNotificationRef.current = showNotification;
+  /** copia a la nube: cada minuto como mucho, y siempre al esconder o cerrar la pestaña */
+  const pushCloud = (force: boolean) => {
+    const uid = currentUserIdRef.current;
+    if (!uid || !cloudReadyRef.current || (!force && Date.now() - cloudPushedAtRef.current < 60_000)) return;
+    const data = loadUserData(uid);
+    if (!data?.savedAt) return;
+    cloudPushedAtRef.current = Date.now();
+    void pushCloudSave(data as Record<string, unknown>, data.savedAt).then(r => {
+      if (r?.stale) { cloudReadyRef.current = false; showNotificationRef.current('Hay una partida más nueva guardada desde otro dispositivo: recarga la página para traerla.', 'info'); }
+    });
+  };
   useEffect(() => {
-    const save = () => saveNowRef.current();
-    const id = window.setInterval(save, 20000);
-    const onHide = () => { if (document.hidden) save(); };
+    const save = (force = false) => { saveNowRef.current(); pushCloud(force); };
+    const id = window.setInterval(() => save(false), 20000);
+    const onHide = () => { if (document.hidden) save(true); };
     document.addEventListener('visibilitychange', onHide);
-    window.addEventListener('pagehide', save);
+    const onPageHide = () => save(true);
+    window.addEventListener('pagehide', onPageHide);
     return () => {
       window.clearInterval(id);
       document.removeEventListener('visibilitychange', onHide);
-      window.removeEventListener('pagehide', save);
+      window.removeEventListener('pagehide', onPageHide);
     };
   }, []);
 

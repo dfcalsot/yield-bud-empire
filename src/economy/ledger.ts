@@ -16,7 +16,7 @@ export interface Snapshot {
   staff: StaffNft[]; staffAssign: Partial<Record<StaffRole, string>>; staffPity: StaffPity;
   plots: ServerPlot[]; avatars: ServerAvatar[]; avatarPity: PityMap;
   offers: Record<string, { ids: string[]; left: number }>;
-  imported: boolean; minted: number; burned: number;
+  imported: boolean; minted: number; burned: number; level?: number;
   gifts: Array<{ id: number; amount: number; note: string; createdAt: number }>;
   listings: ListingView[]; p2p: { feeRate: number; minPrice: number; maxPrice: number; maxListings: number };
 }
@@ -71,6 +71,23 @@ export async function importLocal(body: Record<string, unknown>): Promise<Snapsh
   const r = await post('/api/econ/import-local', body);
   if (!r || !r.ok) return null;
   return ((await r.json()) as { snapshot: Snapshot }).snapshot;
+}
+
+/** la copia de la partida guardada en el servidor (null si no hay servicio o sesión; data null si todavía no hay copia) */
+export async function fetchCloudSave(): Promise<{ savedAt: number; data: Record<string, unknown> | null } | null> {
+  try {
+    const r = await fetch('/api/save', { credentials: 'same-origin' });
+    return r.ok ? ((await r.json()) as { savedAt: number; data: Record<string, unknown> | null }) : null;
+  } catch { return null; }
+}
+
+/** sube la partida; `keepalive` para cuando se cierra la pestaña (el navegador solo lo permite con cuerpos chicos) */
+export async function pushCloudSave(data: Record<string, unknown>, savedAt: number): Promise<{ ok: boolean; stale?: boolean } | null> {
+  try {
+    const body = JSON.stringify({ data, savedAt });
+    const r = await fetch('/api/save', { method: 'POST', credentials: 'same-origin', keepalive: body.length < 60_000, headers: { 'content-type': 'application/json', 'x-cf-csrf': '1' }, body });
+    return r.ok ? ((await r.json()) as { ok: boolean; stale?: boolean }) : null;
+  } catch { return null; }
 }
 
 /** short Spanish text for the reasons an intent can be refused */
