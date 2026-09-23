@@ -18,21 +18,26 @@ export const WelcomeSheet: React.FC = () => {
   return (
     <div className="fixed inset-0 z-[90] grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Bienvenida">
       <div className="absolute inset-0 bg-black/70 animate-fade-in" />
-      <div className="hud-panel relative w-full max-w-2xl p-5 sm:p-6 animate-fade-in">
-        <div className="flex items-end gap-1">
-          <NpcV2 kind="chrono" text="¡Bienvenido a Yield Bud Empire! Soy Chrono y te enseño lo básico en un minuto." mood="wave" moodKey={1} />
+      {/* alto máximo = pantalla: en celulares (o con letra grande) el contenido hace scroll y los botones quedan siempre a la vista */}
+      <div className="hud-panel relative w-full max-w-2xl max-h-[calc(100dvh-2rem)] flex flex-col animate-fade-in">
+        <div className="min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 pb-2 sm:pb-2">
+          <div className="flex items-end gap-1">
+            <NpcV2 kind="chrono" text="¡Bienvenido a Yield Bud Empire! Soy Chrono y te enseño lo básico en un minuto." mood="wave" moodKey={1} />
+          </div>
+          <div className="mt-4 grid gap-2 sm:gap-3 sm:grid-cols-3">
+            {cards.map((c) => (
+              <div key={c.title} className="rounded-xl border border-white/10 bg-black/25 p-3 flex gap-3 sm:block">
+                <div className="shrink-0 grid place-items-center w-9 h-9 rounded-lg bg-emerald-400/15 text-emerald-300 sm:mb-2">{c.icon}</div>
+                <div>
+                  <div className="text-sm font-bold text-white">{c.title}</div>
+                  <p className="mt-1 text-[12px] leading-snug text-neutral-300">{c.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {cards.map((c) => (
-            <div key={c.title} className="rounded-xl border border-white/10 bg-black/25 p-3">
-              <div className="grid place-items-center w-9 h-9 rounded-lg bg-emerald-400/15 text-emerald-300 mb-2">{c.icon}</div>
-              <div className="text-sm font-bold text-white">{c.title}</div>
-              <p className="mt-1 text-[12px] leading-snug text-neutral-300">{c.text}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
-          <button onClick={() => patchTutorial({ dismissed: true })} className="text-xs text-neutral-400 hover:text-white underline underline-offset-2 cursor-pointer">Ya sé jugar, gracias</button>
+        <div className="shrink-0 border-t border-white/10 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-end gap-3">
+          <button onClick={() => patchTutorial({ dismissed: true })} className="text-xs text-neutral-400 hover:text-white underline underline-offset-2 cursor-pointer py-2">Ya sé jugar, gracias</button>
           <button onClick={startTutorial} className="mk-buy !w-auto !px-6 !text-[12px]"><span className="mk-buy-shine" /><span>¡Empezar la guía!</span></button>
         </div>
       </div>
