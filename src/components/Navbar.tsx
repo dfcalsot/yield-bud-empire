@@ -13,7 +13,8 @@ import {
 import { CannabisLeaf, LeafCoin } from './icons/CannabisIcons';
 import { Avatar } from './profile/AvatarArt';
 import { SOLANA_NETWORKS } from '../utils/solana';
-import { YieldHeader, YieldMark } from './brand/YieldLogo';
+import { YieldMark } from './brand/YieldLogo';
+import { YieldBudWordmark } from './brand/YieldBudWordmark';
 import { ECON, claimStatus } from '../sim/economy';
 
 interface NavbarProps {
@@ -106,7 +107,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <YieldMark size={42} animated className="sm:hidden shrink-0" />
           <div className="hidden sm:flex items-center gap-2.5">
-            <YieldHeader height={44} animated className="shrink-0 group-hover:scale-[1.03] transition-transform" />
+            <YieldBudWordmark className="shrink-0" />
             <div className="hidden 2xl:block">
               <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 text-neutral-300 rounded">
                 Solana

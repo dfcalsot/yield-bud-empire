@@ -33,3 +33,18 @@
   .ybe-anim .ybe-spark { opacity: 0.9; transform: scale(0.8); }
   .ybe-anim .ybe-wshine { display: none; }
 }
+
+/* ── the promo site's logo in the game (YieldBudWordmark): shimmering words + a crown on the last E ── */
+.ybl-text { font-family: 'Syne Variable', 'Syne', sans-serif; font-weight: 800; letter-spacing: 0.1em; }
+.ybl-word { background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: yblShimmer 6s ease-in-out infinite; }
+.ybl-green { background-image: linear-gradient(100deg, #ffffff 0%, #e2f5b0 35%, #ffffff 45%, #b9dc55 55%, #ffffff 70%, #b9dc55 100%); }
+.ybl-gold { background-image: linear-gradient(100deg, #fbbf24 0%, #fde68a 35%, #fffbeb 45%, #f59e0b 55%, #fde68a 70%, #d97706 100%); filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.35)); animation-delay: 0.6s; }
+@keyframes yblShimmer { 0%, 55% { background-position: 100% 0; } 100% { background-position: -120% 0; } }
+.ybl-crown { position: absolute; left: 50%; top: -0.78em; width: 1.05em; height: auto; overflow: visible; transform-origin: 50% 100%; animation: yblCrown 3.2s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.6)); }
+@keyframes yblCrown { 0%, 100% { transform: translate(-50%, 0) rotate(-6deg); } 50% { transform: translate(-50%, -3px) rotate(4deg); } }
+.ybl-gem { animation: yblGem 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes yblGem { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.ybl-mark { transition: transform 0.3s; }
+.ybl:hover .ybl-mark { transform: scale(1.1) rotate(6deg); }
+.ybl:hover .ybl-crown { animation-duration: 1.2s; }
+@media (prefers-reduced-motion: reduce) { .ybl-word, .ybl-crown, .ybl-gem { animation: none; } }
