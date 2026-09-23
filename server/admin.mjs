@@ -1,4 +1,5 @@
 // Operator tool: node server/admin.mjs stats | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
+//                | invite [cantidad] [usos] [nota] | invites | revoke <código>
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -8,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 const dir = process.env.DATA_DIR ?? path.join(path.dirname(fileURLToPath(import.meta.url)), 'data');
 const db = new DatabaseSync(path.join(dir, 'accounts.db'));
 const [cmd = 'stats', arg, extra] = process.argv.slice(2);
+// la tabla la crea el servicio al arrancar; acá también, por si se generan códigos antes
+db.exec("CREATE TABLE IF NOT EXISTS invites (code TEXT PRIMARY KEY, note TEXT NOT NULL DEFAULT '', max_uses INTEGER NOT NULL DEFAULT 1, uses INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, expires_at INTEGER, revoked INTEGER NOT NULL DEFAULT 0); CREATE TABLE IF NOT EXISTS invite_uses (code TEXT NOT NULL, account_id INTEGER NOT NULL, used_at INTEGER NOT NULL);");
 const day = Date.now() - 86400_000;
 if (cmd === 'stats') {
   const n = (sql, ...a) => db.prepare(sql).get(...a).n;
@@ -47,4 +50,24 @@ if (cmd === 'stats') {
   const r = db.prepare('INSERT INTO gifts (account_id, amount, note, created_at) VALUES (?,?,?,?)').run(a.id, amount, note, Date.now());
   db.prepare('INSERT INTO audit (ts, event, account_id, ip_hash, detail) VALUES (?,?,?,?,?)').run(Date.now(), 'admin_gift', a.id, null, String(amount));
   console.log(`cofre #${r.lastInsertRowid} enviado a la cuenta #${a.id} (${a.username}): ${amount} $FLORA · «${note}»`);
-} else console.log('uso: node server/admin.mjs stats | flagged | audit [n] | ban <usuario> | unban <usuario> | setpass <correo> | gift <correo> <monto> [nota]');
+} else if (cmd === 'invite') {
+  // códigos de invitación para la alfa: YBE-XXXX-XXXX, sin letras que se confunden (0/O, 1/I/L)
+  const count = Math.max(1, Math.min(200, Math.floor(Number(arg ?? 1)) || 1));
+  const uses = Math.max(1, Math.min(1000, Math.floor(Number(extra ?? 1)) || 1));
+  const note = process.argv.slice(5).join(' ').slice(0, 80);
+  const ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const pick = () => Array.from(crypto.randomBytes(8), (b) => ABC[b % ABC.length]).join('');
+  const ins = db.prepare('INSERT OR IGNORE INTO invites (code, note, max_uses, created_at) VALUES (?,?,?,?)');
+  const made = [];
+  while (made.length < count) { const b = pick(); const code = `YBE-${b.slice(0, 4)}-${b.slice(4)}`; if (ins.run(code, note, uses, Date.now()).changes) made.push(code); }
+  const base = (process.env.PUBLIC_URL ?? 'https://play.yieldbudempire.com').replace(/\/$/, '');
+  for (const c of made) console.log(`${c}   ${base}/?invite=${c}`);
+  console.error(`${made.length} código(s) · ${uses} uso(s) cada uno${note ? ` · «${note}»` : ''}`);
+} else if (cmd === 'invites') {
+  console.table(db.prepare("SELECT code AS codigo, uses || '/' || max_uses AS usos, CASE WHEN revoked THEN 'anulado' WHEN uses >= max_uses THEN 'agotado' ELSE 'libre' END AS estado, note AS nota, date(created_at/1000,'unixepoch') AS creado FROM invites ORDER BY created_at DESC LIMIT 200").all());
+  const used = db.prepare('SELECT u.code AS codigo, a.username AS usuario, datetime(u.used_at/1000,\'unixepoch\') AS cuando FROM invite_uses u LEFT JOIN accounts a ON a.id = u.account_id ORDER BY u.used_at DESC LIMIT 50').all();
+  if (used.length) console.table(used);
+} else if (cmd === 'revoke') {
+  const r = db.prepare('UPDATE invites SET revoked = 1 WHERE code = ?').run(String(arg ?? '').toUpperCase().trim());
+  console.log(r.changes ? 'código anulado' : 'no existe ese código');
+} else console.log('uso: node server/admin.mjs stats | flagged | audit [n] | ban <usuario> | unban <usuario> | setpass <correo> | gift <correo> <monto> [nota] | invite [cantidad] [usos] [nota] | invites | revoke <código>');

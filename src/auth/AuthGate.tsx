@@ -10,7 +10,7 @@ import type { UserProfile } from '../types';
 const here = (u?: string): string => (u ? u.replace(/^https?:\/\/[^/]+/, window.location.origin) : '');
 
 export interface ServerAccount { id: number; username: string; email: string | null; verified: boolean; providers: string[]; source: string; createdAt: number }
-interface AuthConfig { google: boolean; x: boolean; emailDelivery: boolean; devLinks: boolean; captcha: { bits: number } }
+interface AuthConfig { google: boolean; x: boolean; emailDelivery: boolean; devLinks: boolean; inviteOnly?: boolean; captcha: { bits: number } }
 
 /** Make the account service's user the active local profile (game data stays per user in this browser). */
 function prepareProfile(a: ServerAccount) {
@@ -43,9 +43,10 @@ const Field: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: str
   </label>
 );
 
-const Social: React.FC<{ href: string; enabled: boolean; label: string; icon: React.ReactNode }> = ({ href, enabled, label, icon }) => (
+const Social: React.FC<{ href: string; enabled: boolean; label: string; icon: React.ReactNode; onBlocked?: () => void }> = ({ href, enabled, label, icon, onBlocked }) => (
   <a
     href={enabled ? href : undefined}
+    onClick={(e) => { if (enabled && onBlocked) { e.preventDefault(); onBlocked(); } }}
     aria-disabled={!enabled}
     title={enabled ? label : 'Aún no está activado en este servidor (falta la clave del proveedor)'}
     className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${enabled ? 'border-neutral-600 bg-neutral-900 hover:bg-neutral-800 text-white cursor-pointer' : 'border-neutral-800 bg-neutral-950 text-neutral-600 cursor-not-allowed'}`}
@@ -60,7 +61,9 @@ const XMark = () => (<svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentC
 type Mode = 'login' | 'register' | 'pending' | 'forgot' | 'forgot_sent' | 'reset';
 
 const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken?: string; onAccount: (a: ServerAccount) => void }> = ({ config, initialMsg, resetToken, onAccount }) => {
-  const [mode, setMode] = useState<Mode>(resetToken ? 'reset' : 'login');
+  const inviteFromUrl = useMemo(() => { try { return new URLSearchParams(window.location.search).get('invite') ?? ''; } catch { return ''; } }, []);
+  const [mode, setMode] = useState<Mode>(resetToken ? 'reset' : inviteFromUrl ? 'register' : 'login');
+  const [invite, setInvite] = useState(inviteFromUrl);
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -91,7 +94,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
 
   const doRegister = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
     const sol = await captcha('register');
-    const r = await api('POST', '/api/auth/register', { email, username, password, hp, t: openedAt.current, captcha: sol });
+    const r = await api('POST', '/api/auth/register', { email, username, password, hp, t: openedAt.current, captcha: sol, invite });
     if (r.status !== 200) { setErr(errText(r.data)); npc.speak(errText(r.data), 'sad'); return; }
     setDevLink(here(r.data.devLink));
     npc.speak('¡Cuenta creada! Te enviamos un correo: confírmalo para empezar a jugar.', 'happy');
@@ -128,8 +131,11 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
     if (r.status !== 200) setErr(errText(r.data)); else { setDevLink(here(r.data.devLink) || devLink); npc.speak('Te envié otro correo.', 'happy'); }
   });
 
+  // alfa cerrada: para crear una cuenta nueva (también con Google/X) hace falta el código
+  const needInvite = !!config.inviteOnly && mode === 'register' && !invite.trim();
+  const socialHref = (p: string) => `/api/auth/${p}/start${config.inviteOnly && mode === 'register' && invite.trim() ? `?invite=${encodeURIComponent(invite.trim())}` : ''}`;
   const tabBtn = (m: Mode, label: string) => (
-    <button type="button" onClick={() => { setMode(m); setErr(''); }} className={`flex-1 py-2 text-xs font-bold uppercase tracking-[0.14em] rounded-lg transition cursor-pointer ${mode === m ? 'bg-emerald-400/15 text-emerald-200 border border-emerald-300/40' : 'text-neutral-400 hover:text-white border border-transparent'}`}>{label}</button>
+    <button type="button" role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setErr(''); }} className={`flex-1 py-2 text-[11px] font-semibold tracking-wide rounded-md transition cursor-pointer ${mode === m ? 'bg-neutral-800 text-white shadow-inner' : 'text-neutral-500 hover:text-neutral-200'}`}>{label}</button>
   );
 
   return (
@@ -146,10 +152,10 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
         <div className="hud-panel p-5 space-y-4" style={{ background: 'rgba(3, 14, 11, 0.96)' }}>
           {(mode === 'login' || mode === 'register') && (
             <>
-              <div className="flex gap-2">{tabBtn('login', 'Entrar')}{tabBtn('register', 'Crear cuenta')}</div>
+              <div className="flex gap-1 p-1 rounded-lg bg-neutral-950 border border-neutral-800" role="tablist">{tabBtn('login', 'Ya tengo cuenta')}{tabBtn('register', 'Soy nuevo')}</div>
               <div className="grid grid-cols-2 gap-2.5">
-                <Social href="/api/auth/google/start" enabled={config.google} label="Google" icon={<GoogleG />} />
-                <Social href="/api/auth/x/start" enabled={config.x} label="X" icon={<XMark />} />
+                <Social href={socialHref('google')} enabled={config.google} label="Google" icon={<GoogleG />} onBlocked={needInvite ? () => setErr('Primero escribí tu código de invitación abajo; después tocá Google.') : undefined} />
+                <Social href={socialHref('x')} enabled={config.x} label="X" icon={<XMark />} onBlocked={needInvite ? () => setErr('Primero escribí tu código de invitación abajo; después tocá X.') : undefined} />
               </div>
               <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-wider text-neutral-600"><span className="flex-1 h-px bg-neutral-800" />o con tu correo<span className="flex-1 h-px bg-neutral-800" /></div>
             </>
@@ -160,13 +166,17 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
               <Field label="Correo o usuario" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required maxLength={254} />
               <div className="relative"><Field label="Contraseña" type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required maxLength={128} />
                 <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-3 top-8 text-neutral-500 hover:text-white cursor-pointer" aria-label="Mostrar contraseña">{show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button></div>
-              <button type="submit" disabled={busy} className="mk-buy !text-[12px]"><span className="mk-buy-shine" />{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}<span>Entrar</span></button>
+              <button type="submit" disabled={busy} className="mk-buy !text-[12px]"><span className="mk-buy-shine" />{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}<span>Iniciar sesión</span></button>
               <button type="button" className="block mx-auto text-[11px] font-mono text-emerald-300/80 hover:text-emerald-200 cursor-pointer" onClick={() => { setMode('forgot'); setErr(''); }}>Olvidé mi contraseña</button>
             </form>
           )}
 
           {mode === 'register' && (
             <form onSubmit={doRegister} className="space-y-3.5" autoComplete="on">
+              {config.inviteOnly && (
+                <Field label="Código de invitación" value={invite} onChange={(e) => setInvite(e.target.value.toUpperCase())} required maxLength={20} autoComplete="off" spellCheck={false} placeholder="YBE-XXXX-XXXX"
+                  hint="La alfa es con invitación. ¿No tenés código? Anotate en yieldbudempire.com y te avisamos." />
+              )}
               <Field label="Correo" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required maxLength={254} hint="Debe ser un correo real: te enviaremos un enlace para confirmarlo." />
               <Field label="Nombre de usuario" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required minLength={3} maxLength={20} hint="3–20 caracteres. Se puede cambiar de apodo después en tu perfil." />
               <div className="relative"><Field label="Contraseña" type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required minLength={10} maxLength={128} />
@@ -177,7 +187,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
               <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
                 <label>No rellenar<input tabIndex={-1} autoComplete="off" name="website" value={hp} onChange={(e) => setHp(e.target.value)} /></label>
               </div>
-              <button type="submit" disabled={busy} className="mk-buy !text-[12px]"><span className="mk-buy-shine" />{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}<span>Crear cuenta</span></button>
+              <button type="submit" disabled={busy} className="mk-buy !text-[12px]"><span className="mk-buy-shine" />{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}<span>Registrarme</span></button>
               <p className="text-[10px] font-mono text-neutral-600 text-center">Una cuenta por persona. Las cuentas duplicadas o de bots se bloquean.</p>
             </form>
           )}

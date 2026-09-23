@@ -25,6 +25,8 @@ export const cfg = {
   maxAccountsPerIp: Number(env.MAX_ACCOUNTS_PER_IP ?? 3),
   skipMx: env.SKIP_MX === '1',
   devLinks: env.DEV_EXPOSE_LINKS === '1',
+  /** alfa cerrada: crear una cuenta nueva (correo o proveedor) exige un código de invitación; las cuentas existentes entran igual */
+  inviteOnly: env.INVITE_ONLY === '1',
   xMinAgeDays: Number(env.X_MIN_AGE_DAYS ?? 60),
   xMinFollowers: Number(env.X_MIN_FOLLOWERS ?? 0),
   smtpUrl: env.SMTP_URL ?? '',
@@ -73,6 +75,8 @@ CREATE TABLE IF NOT EXISTS sessions (id_hash TEXT PRIMARY KEY, account_id INTEGE
 CREATE TABLE IF NOT EXISTS tokens (id_hash TEXT PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, kind TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS pow_used (id TEXT PRIMARY KEY, exp INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS audit (ts INTEGER NOT NULL, event TEXT NOT NULL, account_id INTEGER, ip_hash TEXT, detail TEXT);
+CREATE TABLE IF NOT EXISTS invites (code TEXT PRIMARY KEY, note TEXT NOT NULL DEFAULT '', max_uses INTEGER NOT NULL DEFAULT 1, uses INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, expires_at INTEGER, revoked INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS invite_uses (code TEXT NOT NULL, account_id INTEGER NOT NULL, used_at INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_accounts_ip ON accounts(ip_hash, created_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_acc ON sessions(account_id);
 `);
@@ -106,6 +110,24 @@ const q = {
   setPass: db.prepare('UPDATE accounts SET pass_hash = ?, failed = 0, locked_until = 0 WHERE id = ?'),
   flag: db.prepare("UPDATE accounts SET flags = CASE WHEN instr(flags, ?) THEN flags ELSE flags || ? || ',' END WHERE id = ?"),
   hijackGuard: db.prepare('UPDATE accounts SET pass_hash = NULL, email_verified = 1 WHERE id = ?'),
+  // códigos de invitación: reservar es atómico (dos personas no pueden gastar el mismo uso a la vez)
+  reserveInvite: db.prepare('UPDATE invites SET uses = uses + 1 WHERE code = ? AND revoked = 0 AND uses < max_uses AND (expires_at IS NULL OR expires_at > ?)'),
+  refundInvite: db.prepare('UPDATE invites SET uses = uses - 1 WHERE code = ? AND uses > 0'),
+  logInviteUse: db.prepare('INSERT INTO invite_uses (code, account_id, used_at) VALUES (?,?,?)'),
+};
+
+/** YBE-ABCD-2345: mayúsculas, sin espacios; acepta que el jugador lo pegue en minúsculas o sin guiones */
+const normInvite = (raw) => {
+  const c = String(raw ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!c) return '';
+  const body = c.startsWith('YBE') ? c.slice(3) : c;
+  return body.length === 8 ? `YBE-${body.slice(0, 4)}-${body.slice(4)}` : c.slice(0, 20);
+};
+/** reserva un uso del código o devuelve el motivo del rechazo */
+const reserveInvite = (code) => {
+  if (!cfg.inviteOnly) return null;
+  if (!code) return 'invite_required';
+  return q.reserveInvite.run(code, Date.now()).changes === 1 ? null : 'invite_invalid';
 };
 setInterval(() => { const now = Date.now(); try { q.sweepPow.run(now); q.sweepSessions.run(now); q.sweepTokens.run(now); } catch { /* */ } }, 10 * 60_000).unref();
 
@@ -203,6 +225,7 @@ route('GET', '/api/auth/config', () => ({
   google: !!(providers.google.id && providers.google.secret),
   x: !!(providers.x.id && providers.x.secret),
   emailDelivery: !!cfg.smtpUrl,
+  inviteOnly: cfg.inviteOnly,
   devLinks: cfg.devLinks,
   captcha: { type: 'pow', bits: cfg.powBits },
 }));
@@ -250,10 +273,15 @@ route('POST', '/api/auth/register', async (ctx) => {
     audit('signup_existing_email', existing.id, ctx.ipHash);
     return { ok: true, pending: true };
   }
+  const invite = normInvite(b.invite);
+  if (cfg.inviteOnly && !invite) throw new HttpError(403, 'invite_required');
   const hash = await hashPasswordAsync(password, PEPPER);
+  const inviteErr = reserveInvite(invite);
+  if (inviteErr) { audit('invite_rejected', null, ctx.ipHash, invite.slice(0, 20)); throw new HttpError(403, inviteErr); }
   let id;
   try { id = q.insertAccount.run(email, eKey, username, usernameKey(username), hash, 0, Date.now(), ctx.ipHash, ctx.uaHash, 'email').lastInsertRowid; }
-  catch { throw new HttpError(409, 'username_taken'); }   // lost a race on the unique keys
+  catch { if (cfg.inviteOnly) q.refundInvite.run(invite); throw new HttpError(409, 'username_taken'); }   // lost a race on the unique keys
+  if (cfg.inviteOnly) q.logInviteUse.run(invite, id, Date.now());
   suspicious(ctx, id);
   const token = rand(32);
   q.addToken.run(hashToken(token), id, 'verify', Date.now() + 24 * 3600_000);
@@ -361,7 +389,8 @@ for (const name of Object.keys(providers)) {
     if (!p.id || !p.secret) throw new HttpError(503, 'provider_not_configured');
     limit(ctx, `oauth:${ctx.ip}`, 20, 900_000);
     const state = rand(24), { verifier, challenge } = pkcePair();
-    const blob = Buffer.from(JSON.stringify({ state, verifier, name, ts: Date.now() })).toString('base64url');
+    const invite = normInvite(ctx.url.searchParams.get('invite'));
+    const blob = Buffer.from(JSON.stringify({ state, verifier, name, ts: Date.now(), invite })).toString('base64url');
     ctx.setCookies.push(cookie('cf_oauth', `${blob}.${hmac(SECRET, blob)}`, { maxAge: 600, secure }));
     const u = new URL(p.authUrl);
     const params = { response_type: 'code', client_id: p.id, redirect_uri: redirectUri(name), scope: p.scope, state, code_challenge: challenge, code_challenge_method: 'S256', ...p.extra };
@@ -392,12 +421,12 @@ for (const name of Object.keys(providers)) {
       const ur = await fetch(p.userUrl, { headers: { Authorization: `Bearer ${tok.access_token}`, Accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
       const raw2 = await ur.json();
       if (!ur.ok) return fail('profile');
-      return finishOAuth(ctx, name, raw2, fail);
+      return finishOAuth(ctx, name, raw2, fail, st.invite);
     } catch (e) { console.error('oauth error:', e.message); return fail('provider_error'); }
   });
 }
 
-function finishOAuth(ctx, name, data, fail) {
+function finishOAuth(ctx, name, data, fail, rawInvite) {
   let subject, email = null, display = '', verifiedEmail = false;
   if (name === 'google') {
     subject = String(data.sub ?? ''); email = data.email ? String(data.email) : null; verifiedEmail = data.email_verified === true; display = data.name ?? data.given_name ?? '';
@@ -426,9 +455,13 @@ function finishOAuth(ctx, name, data, fail) {
   if (!accountId) {
     if (accountCapReached(ctx)) return fail('ip_account_limit');
     limit(ctx, `reg:${ctx.ip}`, 5, 3600_000);
+    const invite = normInvite(rawInvite);
+    const inviteErr = reserveInvite(invite);
+    if (inviteErr) { audit('invite_rejected', null, ctx.ipHash, `${name}:${invite.slice(0, 20)}`); return fail(inviteErr); }
     const uname = uniqueUsername(display || (email ? email.split('@')[0] : 'Grower'));
     try { accountId = q.insertAccount.run(email, eKey, uname, usernameKey(uname), null, name === 'google' ? 1 : 0, Date.now(), ctx.ipHash, ctx.uaHash, name).lastInsertRowid; }
-    catch { return fail('signup_race'); }
+    catch { if (cfg.inviteOnly) q.refundInvite.run(invite); return fail('signup_race'); }
+    if (cfg.inviteOnly) q.logInviteUse.run(invite, accountId, Date.now());
     q.addIdentity.run(name, subject, accountId, Date.now());
     suspicious(ctx, accountId);
     audit(`signup_${name}`, accountId, ctx.ipHash);

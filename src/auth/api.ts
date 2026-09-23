@@ -89,6 +89,7 @@ export const logoutServer = async () => { try { await api('POST', '/api/auth/log
 export const ERR: Record<string, string> = {
   captcha_missing: 'Falta la verificación anti-bots.', captcha_invalid: 'La verificación no es válida. Inténtalo de nuevo.', captcha_expired: 'La verificación caducó. Inténtalo de nuevo.',
   captcha_replayed: 'La verificación ya se usó. Inténtalo de nuevo.', captcha_wrong: 'La verificación falló. Inténtalo de nuevo.', captcha_weak: 'La verificación no es suficiente. Recarga la página.',
+  invite_required: 'Para crear una cuenta nueva en la alfa (también con Google o X) hace falta un código de invitación: tocá «Soy nuevo» y escribilo.', invite_invalid: 'Ese código de invitación no existe, ya se usó o está vencido.',
   email_invalid: 'Ese correo no parece válido.', email_disposable: 'No aceptamos correos temporales o desechables.', email_domain: 'Ese dominio de correo no puede recibir mensajes.',
   username_invalid: 'Usuario de 3 a 20 caracteres: letras, números, espacios y . _ -', username_reserved: 'Ese nombre está reservado.', username_taken: 'Ese usuario ya existe (o se parece demasiado a uno existente).',
   ip_account_limit: 'Ya se crearon varias cuentas desde tu red. Inténtalo más tarde o entra con la que ya tienes.', rate_limited: 'Demasiados intentos. Espera un momento y vuelve a probar.',

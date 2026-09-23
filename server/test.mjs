@@ -465,6 +465,48 @@ ok('venta: el merch V2P y un producto inventado se rechazan', (await intent(SP, 
 const gDiamonds = (await intent(SP, 'sell', { type: 'terpene_sauce', recipe: 'diamonds', grams: 4 })).json.result.gross;
 const gSauce = (await intent(SP2, 'sell', { type: 'terpene_sauce', grams: 4 })).json.result.gross;
 ok('venta: la receta fija el precio (diamantes 95 > sopa 52)', gDiamonds > gSauce, `(${gDiamonds} vs ${gSauce})`);
+
+// ── alfa cerrada: códigos de invitación
+cfg.inviteOnly = true;
+db.prepare("INSERT INTO invites (code, note, max_uses, created_at) VALUES ('YBE-TEST-2345', 'prueba', 1, ?), ('YBE-DOBL-2345', 'dos usos', 2, ?), ('YBE-VIEJ-2345', 'vencido', 5, ?)").run(Date.now(), Date.now(), Date.now());
+db.prepare("UPDATE invites SET expires_at = ? WHERE code = 'YBE-VIEJ-2345'").run(Date.now() - 1000);
+ok('invitación: la config avisa que es alfa cerrada', (await call('GET', '/api/auth/config')).json.inviteOnly === true);
+const nAcc0 = count();
+let ir = await reg({ body: { email: 'inv1@example.com', username: 'Invitado Uno' } });
+ok('invitación: sin código no se crea cuenta', ir.status === 403 && ir.json.error === 'invite_required' && count() === nAcc0);
+ir = await reg({ body: { email: 'inv1@example.com', username: 'Invitado Uno', invite: 'YBE-NADA-2345' } });
+ok('invitación: código inexistente se rechaza', ir.status === 403 && ir.json.error === 'invite_invalid' && count() === nAcc0);
+ir = await reg({ body: { email: 'inv1@example.com', username: 'Invitado Uno', invite: 'ybe test2345' } });
+ok('invitación: código válido crea la cuenta (acepta minúsculas y sin guión)', ir.status === 200 && count() === nAcc0 + 1 && db.prepare("SELECT uses FROM invites WHERE code = 'YBE-TEST-2345'").get().uses === 1);
+ok('invitación: queda registrado quién lo usó', db.prepare("SELECT COUNT(*) n FROM invite_uses u JOIN accounts a ON a.id = u.account_id WHERE u.code = 'YBE-TEST-2345' AND a.email_key = 'inv1@example.com'").get().n === 1);
+ir = await reg({ body: { email: 'inv2@example.com', username: 'Invitado Dos', invite: 'YBE-TEST-2345' } });
+ok('invitación: un código de un uso no sirve dos veces', ir.status === 403 && ir.json.error === 'invite_invalid' && count() === nAcc0 + 1);
+ir = await reg({ body: { email: 'inv3@example.com', username: 'Invitado Tres', invite: 'YBE-VIEJ-2345' } });
+ok('invitación: un código vencido se rechaza', ir.status === 403 && ir.json.error === 'invite_invalid');
+ir = await reg({ body: { email: 'inv4@example.com', username: 'Invitado Cuatro', invite: 'YBE-DOBL-2345' } });
+const ir2 = await reg({ body: { email: 'inv5@example.com', username: 'Invitado Cinco', invite: 'YBE-DOBL-2345' } });
+const ir3 = await reg({ body: { email: 'inv6@example.com', username: 'Invitado Seis', invite: 'YBE-DOBL-2345' } });
+ok('invitación: código de dos usos sirve exactamente dos veces', ir.status === 200 && ir2.status === 200 && ir3.status === 403 && db.prepare("SELECT uses FROM invites WHERE code = 'YBE-DOBL-2345'").get().uses === 2);
+db.prepare("INSERT INTO invites (code, note, max_uses, created_at) VALUES ('YBE-MAIL-2345', '', 1, ?)").run(Date.now());
+ir = await reg({ body: { email: 'inv1@example.com', username: 'Otro Nombre', invite: 'YBE-MAIL-2345' } });
+ok('invitación: correo ya registrado no gasta código (y responde igual que un alta)', ir.status === 200 && ir.json.pending === true && db.prepare("SELECT uses FROM invites WHERE code = 'YBE-MAIL-2345'").get().uses === 0);
+db.prepare("INSERT INTO invites (code, note, max_uses, created_at) VALUES ('YBE-TAKN-2345', '', 1, ?)").run(Date.now());
+ir = await reg({ body: { email: 'inv7@example.com', username: 'Invitado Uno', invite: 'YBE-TAKN-2345' } });
+ok('invitación: si el usuario ya existe, el código no se gasta', ir.status === 409 && db.prepare("SELECT uses FROM invites WHERE code = 'YBE-TAKN-2345'").get().uses === 0);
+// Google en alfa cerrada
+async function oauthInvite(profile, invite) {
+  profiles.google = profile; const ip = newIp(), j = {};
+  const st = await call('GET', `/api/auth/google/start${invite ? `?invite=${encodeURIComponent(invite)}` : ''}`, { ip, jar: j });
+  const loc = new URL(st.loc ?? 'http://x/');
+  return call('GET', `/api/auth/google/callback?code=abc&state=${loc.searchParams.get('state')}`, { ip, jar: j });
+}
+let gi = await oauthInvite({ sub: 'g-inv-1', email: 'nuevo.google@gmail.com', email_verified: true, name: 'Nuevo Google' });
+ok('invitación: Google sin código no crea cuenta nueva', /#auth_error=invite_required$/.test(gi.loc ?? '') && !db.prepare("SELECT 1 FROM identities WHERE provider = 'google' AND subject = 'g-inv-1'").get());
+gi = await oauthInvite({ sub: 'g-inv-1', email: 'nuevo.google@gmail.com', email_verified: true, name: 'Nuevo Google' }, 'YBE-TAKN-2345');
+ok('invitación: Google con código crea la cuenta y gasta el código', /#auth=ok$/.test(gi.loc ?? '') && !!db.prepare("SELECT 1 FROM identities WHERE provider = 'google' AND subject = 'g-inv-1'").get() && db.prepare("SELECT uses FROM invites WHERE code = 'YBE-TAKN-2345'").get().uses === 1);
+gi = await oauthInvite({ sub: 'g-1', email: 'gina@gmail.com', email_verified: true, name: 'Gina Verde' });
+ok('invitación: una cuenta que ya existe entra con Google sin código', /#auth=ok$/.test(gi.loc ?? ''));
+cfg.inviteOnly = false;
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 server.close(); mock.close();
 fs.rmSync(dir, { recursive: true, force: true });
