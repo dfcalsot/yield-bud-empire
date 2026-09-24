@@ -7,8 +7,12 @@
 //   level        once per level, capped by the account's age   quest       once per quest id, amount from a server table
 //   refund       duplicate avatar, a fraction of the chest price
 // Everything else burns: builds, speed-ups, wages, hires, chests, ranks, lands, the sale fee and licence, and generic spends.
+//
+// Goods (flower, trim, forge materials, lab products) live in the `inventory` table. A sale needs the product there; products come
+// only from `process`/`forge` (bounded by the recipe's yield), inputs only from `harvest`, which is capped by what the account's
+// facility and plots can physically grow (sim/harvestCap.ts). The grow simulation stays in the browser; its output can't exceed that.
 import crypto from 'node:crypto';
-import { economy as E, products as PR, facilities as F, staff as S, avatars as A, terroir as T, lands as L, INITIAL_FACILITIES, INITIAL_QUESTS } from './gen/sim.mjs';
+import { economy as E, products as PR, facilities as F, staff as S, avatars as A, terroir as T, lands as L, harvestCap as HC, forge as FG, INITIAL_FACILITIES, INITIAL_QUESTS } from './gen/sim.mjs';
 
 const DAY = 86400_000;
 // per product gram, before ECON.priceScale: the same table the client and the lab stations use (sim/products.ts), by recipe id then by type
@@ -16,6 +20,9 @@ const QUEST_FLORA = Object.fromEntries(INITIAL_QUESTS.map((q) => [q.id, q.reward
 const FACILITY_BY_ID = Object.fromEntries(INITIAL_FACILITIES.map((f) => [f.id, f]));
 const MAX_SPEND = 30000;
 const CAPS = { staff: 24, avatars: 60, plots: 12, floraOnImport: 1500 };
+// one-time import of the goods a browser already had before the server kept them (capped)
+const INV_IMPORT = { flower: 3000, trim: 1500, material: 200, productFlora: 20000 };
+const MATERIAL_IDS = new Set(FG.MATERIALS.map((m) => m.id));
 // Player-to-player market: what is listed sits in escrow, the sale is one transaction, and a slice of every sale is burned.
 const P2P = { feeRate: 0.05, minPrice: 1, maxPrice: 100000, maxListings: 20, pageSize: 24, kinds: ['staff', 'land', 'avatar'] };
 const rng = () => crypto.randomInt(0, 2 ** 32) / 2 ** 32;
@@ -36,6 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller_id, status);
 CREATE TABLE IF NOT EXISTS gifts (id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, amount INTEGER NOT NULL, note TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, opened_at INTEGER);
 CREATE INDEX IF NOT EXISTS idx_gifts_acc ON gifts(account_id, opened_at);
 CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT NULL, response TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (account_id, idem));
+CREATE TABLE IF NOT EXISTS inventory (account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, item TEXT NOT NULL, grams REAL NOT NULL, PRIMARY KEY (account_id, item));
 CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE, data TEXT NOT NULL, saved_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
 `);
   const q = {
@@ -70,6 +78,9 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     activeCount: db.prepare("SELECT COUNT(*) n FROM listings WHERE seller_id = ? AND status = 'active'"),
     recentSales: db.prepare("SELECT l.id, l.kind, l.rarity, l.price, l.closed_at, l.data FROM listings l WHERE l.status = 'sold' ORDER BY l.closed_at DESC LIMIT 20"),
     userName: db.prepare('SELECT username FROM accounts WHERE id = ?'),
+    inv: db.prepare('SELECT item, grams FROM inventory WHERE account_id = ? AND grams > 0.0001'),
+    invItem: db.prepare('SELECT grams FROM inventory WHERE account_id = ? AND item = ?'),
+    putInv: db.prepare('INSERT INTO inventory (account_id, item, grams) VALUES (?,?,?) ON CONFLICT(account_id, item) DO UPDATE SET grams = excluded.grams'),
     save: db.prepare('SELECT data, saved_at FROM saves WHERE account_id = ?'),
     putSave: db.prepare('INSERT INTO saves (account_id, data, saved_at, updated_at) VALUES (?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET data = excluded.data, saved_at = excluded.saved_at, updated_at = excluded.updated_at'),
   };
@@ -88,6 +99,32 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
   const roster = (id) => nftRows(id, 'staff').map((r) => r.data);                       // includes listed ones (they still count toward the cap)
   const free = (id, kind) => nftRows(id, kind).filter((r) => !r.escrow).map((r) => r.data);   // what the player can actually use
   const saveStaff = (s) => q.setNft.run(JSON.stringify(s), s.id);
+
+  /* ───────────── goods: flower, trim, materials, products ───────────── */
+  const r2 = (n) => Math.round(n * 100) / 100;
+  const invHave = (id, item) => q.invItem.get(id, item)?.grams ?? 0;
+  /** add (or with a negative delta, take) goods; taking more than there is fails the whole intent */
+  const invAdd = (id, item, delta) => {
+    if (!delta) return;
+    const next = r2(invHave(id, item) + delta);
+    need(next >= -0.005, 'insufficient_stock', { item, have: r2(invHave(id, item)), need: r2(-delta) });
+    q.putInv.run(id, item, Math.max(0, next));
+  };
+  const inventoryOf = (id) => {
+    const out = { flower: 0, trim: 0, materials: {}, products: {} };
+    for (const r of q.inv.all(id)) {
+      if (r.item === 'flower' || r.item === 'trim') out[r.item] = r2(r.grams);
+      else if (r.item.startsWith('mat:')) out.materials[r.item.slice(4)] = Math.floor(r.grams + 1e-6);
+      else if (r.item.startsWith('prod:')) out.products[r.item.slice(5)] = r2(r.grams);
+    }
+    return out;
+  };
+  /** what the server knows about the account's growing capacity (facility in use, plots, staff at work) */
+  const capInput = (id, st, now) => {
+    const f = INITIAL_FACILITIES.filter((x) => x.tier <= st.tier).sort((a, b) => b.tier - a.tier)[0] ?? INITIAL_FACILITIES[0];
+    const m = activeMods(id, st, now);
+    return { roomSlots: f.capacityPlants, envBonus: f.environmentBonus, plots: free(id, 'land').length, mods: { roomYield: m.roomYield ?? 0, plotYield: m.plotYield ?? 0, growth: m.growth ?? 0 } };
+  };
 
   const listingView = (r) => ({ id: r.id, nftId: r.nft_id, kind: r.kind, rarity: r.rarity, price: r.price, createdAt: r.created_at, data: JSON.parse(r.data), sellerId: r.seller_id });
 
@@ -159,6 +196,10 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       staff: free(id, 'staff'), staffAssign: st.staffAssign, staffPity: st.staffPity,
       plots, avatars, avatarPity: st.avatarPity, offers,
       imported: !!w.imported, minted: w.minted, burned: w.burned,
+      // goods the server keeps (the browser mirrors them) and how much more the account can harvest right now
+      inventory: inventoryOf(id), invImported: !!st.invImported,
+      harvest: (() => { const cap = capInput(id, st, now); const al = HC.accrue(st.harvestAllowance, cap, now); return { allowance: Math.round(al.grams), cap: Math.round(HC.allowanceCap(cap)), perHour: Math.round(HC.allowancePerSecond(cap) * 3600) }; })(),
+      forgeJobs: Array.isArray(st.forgeJobs) ? st.forgeJobs : [],
       // el nivel más alto que el servidor ya pagó: el juego nunca muestra menos (antes se perdía al cambiar de navegador)
       level: Math.max(1, ...(st.levelsClaimed ?? [1]).filter(Number.isFinite)),
       gifts: q.giftsOf.all(id).map((g) => ({ id: g.id, amount: g.amount, note: g.note, createdAt: g.created_at })),
@@ -190,8 +231,11 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
 
     sell({ id, now, p }) {
       const type = str(p.type, 30);
-      const base = PR.priceOf(type, typeof p.recipe === 'string' ? p.recipe.slice(0, 40) : undefined); need(base, 'bad_params');
+      const recipe = typeof p.recipe === 'string' ? p.recipe.slice(0, 40) : undefined;
+      const base = PR.priceOf(type, recipe); need(base, 'bad_params');
       const grams = num(p.grams, 0.05, 2000);
+      // only what the account really has: products come from `process` / `forge`, never from the browser's word
+      invAdd(id, `prod:${PR.productKey(type, recipe)}`, -grams);
       const w = q.wallet.get(id), st = stateOf(id);
       const price = base * E.ECON.priceScale;
       const sale = E.saleRevenue(price, grams, { sold: w.depth_sold, at: w.depth_at }, now);
@@ -357,6 +401,97 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     },
 
     // burns that are not modelled yet (market items, seeds, repairs, patents…): the server only debits, it never credits
+    /* ── goods ── */
+    /** the browser harvested: flower (and its trim and stem fibre) enter the inventory, up to what the account can grow */
+    harvest({ id, now, p }) {
+      const flower = num(p.flower, 0, 100000), trim = num(p.trim ?? 0, 0, 100000);
+      const st = stateOf(id); const cap = capInput(id, st, now);
+      const a = HC.accrue(st.harvestAllowance, cap, now);
+      const gFlower = r2(Math.min(flower, a.grams));
+      const gTrim = r2(Math.min(trim, gFlower * HC.TRIM_PER_FLOWER + 0.5));
+      const fibre = Math.round(gFlower * FG.FIBRE_PER_FLOWER_GRAM);
+      a.grams = Math.max(0, a.grams - gFlower); st.harvestAllowance = a; saveState(id, st);
+      invAdd(id, 'flower', gFlower); invAdd(id, 'trim', gTrim); invAdd(id, 'mat:fibra_cruda', fibre);
+      return { flower: gFlower, trim: gTrim, fibre, clipped: gFlower < flower - 0.01 };
+    },
+    /** burn $FLORA to push plants forward: the harvest allowance grows by what the pushed plants can give */
+    grow_speedup({ id, now, p }) {
+      const room = p.scope === 'room';
+      const st = stateOf(id); const cap = capInput(id, st, now);
+      debit(id, room ? HC.GROW_SPEEDUP.roomFlora : HC.GROW_SPEEDUP.plantFlora, 'speedup', room ? 'aceleración de la sala' : 'aceleración de planta', now);
+      const a = HC.accrue(st.harvestAllowance, cap, now);
+      a.grams = Math.min(HC.allowanceCap(cap), a.grams + HC.speedupGrams(cap, room ? cap.roomSlots : 1));
+      st.harvestAllowance = a; saveState(id, st);
+      return { allowance: Math.round(a.grams) };
+    },
+    /** a lab / extraction batch: takes flower or trim, gives at most the recipe's yield of product */
+    process({ id, p }) {
+      const key = str(p.product, 40); const y = PR.PROCESS_YIELD[key]; const max = PR.maxYieldOf(key);
+      need(y && max, 'bad_params');
+      const grams = num(p.grams, 0.1, 5000), out = num(p.out, 0, 5000);
+      need(out <= grams * max + 0.01, 'bad_params');
+      invAdd(id, y.input, -grams); invAdd(id, `prod:${key}`, r2(out));
+      return { product: key, grams: r2(out) };
+    },
+    /** start a forge job: its inputs, materials and fee leave now; it delivers when its timer ends (forge_collect) */
+    forge_start({ id, now, p }) {
+      const r = FG.FORGE_RECIPE_BY_ID[str(p.recipe, 40)]; need(r, 'bad_params');
+      const qty = Math.floor(num(p.qty, 1, FG.FORGE_LIMITS.maxQty));
+      const st = stateOf(id); const jobs = Array.isArray(st.forgeJobs) ? st.forgeJobs : [];
+      const inv = inventoryOf(id);
+      const check = FG.canCraft({ flower: inv.flower, trim: inv.trim, materials: inv.materials, flora: q.wallet.get(id).flora, tier: st.tier, hasForge: true, jobs: jobs.length }, r, qty);
+      need(check.ok, `forge_${check.reason ?? 'bad'}`);
+      const t = FG.craftTotals(r, qty);
+      debit(id, t.fee, 'forge', `${r.id} ×${qty}`, now);
+      invAdd(id, 'flower', -t.flower); invAdd(id, 'trim', -t.trim);
+      for (const [m, n] of Object.entries(t.materials)) invAdd(id, `mat:${m}`, -n);
+      const job = { id: `fj-${now}-${crypto.randomInt(0, 1e6)}`, recipeId: r.id, qty, startedAt: now, endsAt: now + t.minutes * 60_000 };
+      st.forgeJobs = [...jobs, job]; saveState(id, st);
+      return { job };
+    },
+    /** deliver the forge jobs whose timer ended */
+    forge_collect({ id, now }) {
+      const st = stateOf(id); const jobs = Array.isArray(st.forgeJobs) ? st.forgeJobs : [];
+      const done = jobs.filter((j) => j.endsAt <= now), left = jobs.filter((j) => j.endsAt > now);
+      for (const j of done) {
+        const r = FG.FORGE_RECIPE_BY_ID[j.recipeId]; if (!r) continue;
+        const t = FG.craftTotals(r, j.qty);
+        for (const [m, n] of Object.entries(t.outMaterials)) invAdd(id, `mat:${m}`, n);
+        if (r.out.product) invAdd(id, `prod:${PR.productKey(r.out.product.type, r.id)}`, t.outProductGrams);
+      }
+      if (done.length) { st.forgeJobs = left; saveState(id, st); }
+      return { delivered: done };
+    },
+    /** goods used up by something that makes nothing sellable (breeding kits…): only ever takes */
+    consume({ id, p }) {
+      const items = p.items && typeof p.items === 'object' ? Object.entries(p.items).slice(0, 20) : [];
+      need(items.length > 0, 'bad_params');
+      for (const [item, n] of items) {
+        const grams = num(n, 0, 100000);
+        need(item === 'flower' || item === 'trim' || (item.startsWith('mat:') && MATERIAL_IDS.has(item.slice(4))), 'bad_params');
+        invAdd(id, item, -grams);
+      }
+      return { ok: true };
+    },
+    /** once per account: the goods the browser already had before the server kept them, with caps */
+    import_inventory({ id, p }) {
+      const st = stateOf(id); need(!st.invImported, 'already_imported');
+      const clamp = (v, max) => Math.max(0, Math.min(max, Number(v) || 0));
+      invAdd(id, 'flower', r2(clamp(p.flower, INV_IMPORT.flower)));
+      invAdd(id, 'trim', r2(clamp(p.trim, INV_IMPORT.trim)));
+      for (const [m, n] of Object.entries(p.materials && typeof p.materials === 'object' ? p.materials : {}).slice(0, 40)) if (MATERIAL_IDS.has(m)) invAdd(id, `mat:${m}`, Math.floor(clamp(n, INV_IMPORT.material)));
+      let budget = INV_IMPORT.productFlora;
+      for (const [key, g] of Object.entries(p.products && typeof p.products === 'object' ? p.products : {}).slice(0, 60)) {
+        const price = PR.priceOf(key) ; if (!price) continue;
+        const perGram = price * E.ECON.priceScale;
+        const grams = r2(Math.min(clamp(g, 5000), budget / perGram));
+        if (grams <= 0) continue;
+        invAdd(id, `prod:${key}`, grams); budget -= grams * perGram;
+      }
+      st.invImported = true; saveState(id, st);
+      return { inventory: inventoryOf(id) };
+    },
+
     spend({ id, now, p }) {
       const amount = num(p.amount, 1, MAX_SPEND); debit(id, amount, 'spend', String(p.memo ?? '').slice(0, 120), now);
       return { amount };

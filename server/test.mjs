@@ -249,6 +249,8 @@ const state = async (P) => (await call('GET', '/api/econ/state', { jar: P.jar, i
 const setFlora = (P, n) => db.prepare('UPDATE wallets SET flora = ? WHERE account_id = ?').run(n, P.id);
 const wallet = (P) => db.prepare('SELECT * FROM wallets WHERE account_id = ?').get(P.id);
 const stateRow = (P) => JSON.parse(db.prepare('SELECT json FROM econ_state WHERE account_id = ?').get(P.id).json);
+// pone mercadería en el inventario del servidor (para las pruebas de venta, que no pasan por cosechar y procesar)
+const stock = (P, item, g) => db.prepare('INSERT INTO inventory (account_id, item, grams) VALUES (?,?,?) ON CONFLICT(account_id, item) DO UPDATE SET grams = grams + excluded.grams').run(P.id, item, g);
 
 const E1 = await mkPlayer(1);
 ok('economía: sin sesión no hay cartera (401)', (await call('GET', '/api/econ/state', { ip: newIp() })).status === 401);
@@ -281,11 +283,13 @@ ok('la obra termina sola con el tiempo del servidor', es.snapshot.tier === 2 && 
 // sales: bounded by the market depth, fee and licence burned
 const E3 = await mkPlayer(3); await state(E3);
 ok('venta: producto o gramos inventados se rechazan', (await intent(E3, 'sell', { type: 'oro', grams: 10 })).status === 400 && (await intent(E3, 'sell', { type: 'live_rosin', grams: -5 })).status === 400 && (await intent(E3, 'sell', { type: 'live_rosin', grams: 1e9 })).status === 400);
+stock(E3, 'prod:live_rosin', 20);
 const s10 = await intent(E3, 'sell', { type: 'live_rosin', grams: 10 });
 ok('venta: paga, quema comisión y devuelve el porcentaje de mercado', s10.status === 200 && s10.json.result.gross > 0 && s10.json.result.fee >= 1 && s10.json.result.net === s10.json.result.gross - s10.json.result.fee && s10.json.result.ratio < 1);
 const s10b = await intent(E3, 'sell', { type: 'live_rosin', grams: 10 });
 ok('venta: el mercado se satura (la misma venta paga menos la segunda vez)', s10b.json.result.gross < s10.json.result.gross);
 const E4 = await mkPlayer(4); await state(E4);
+stock(E4, 'prod:pure_terpenes', 24000);
 let tot = 0; for (let i = 0; i < 12; i++) { const r = await intent(E4, 'sell', { type: 'pure_terpenes', grams: 2000 }); tot += r.json.result.gross; }
 ok('un guardado adulterado no imprime dinero: 24 000 g de terpenos pagan una cantidad acotada', tot < 12 * ECON.depthGrams * 85 * ECON.priceScale * 1.5, `(${tot} $FLORA)`);
 const wE4 = wallet(E4);
@@ -459,9 +463,10 @@ ok('regalo: un id inventado se rechaza', (await intent(G1, 'open_gift', { giftId
 
 // ── every lab product can be sold, priced by its recipe (before, only 4 product types were known to the server)
 const SP = await mkPlayer(40), SP2 = await mkPlayer(41); await state(SP); await state(SP2);
-const sellOk = await Promise.all(['bubble_hash', 'kief', 'preroll', 'cigar', 'rso', 'gummies', 'terpene_sauce', 'balm', 'candle', 'tincture'].map(async (t, i) => (await intent(await mkPlayer(50 + i), 'sell', { type: t, grams: 3 })).status === 200));
+const sellOk = await Promise.all(['bubble_hash', 'kief', 'preroll', 'cigar', 'rso', 'gummies', 'terpene_sauce', 'balm', 'candle', 'tincture'].map(async (t, i) => { const P = await mkPlayer(50 + i); stock(P, `prod:${t}`, 3); return (await intent(P, 'sell', { type: t, grams: 3 })).status === 200; }));
 ok('venta: los productos del laboratorio y de la forja (hash, kief, puros, RSO, gomitas, sopa, bálsamo, vela, tintura) se pueden vender en el servidor', sellOk.every(Boolean));
 ok('venta: el merch V2P y un producto inventado se rechazan', (await intent(SP, 'sell', { type: 'v2p_merch', grams: 1 })).json.error === 'bad_params' && (await intent(SP, 'sell', { type: 'inventado', grams: 1 })).json.error === 'bad_params');
+stock(SP, 'prod:diamonds', 4); stock(SP2, 'prod:terpene_sauce', 4);
 const gDiamonds = (await intent(SP, 'sell', { type: 'terpene_sauce', recipe: 'diamonds', grams: 4 })).json.result.gross;
 const gSauce = (await intent(SP2, 'sell', { type: 'terpene_sauce', grams: 4 })).json.result.gross;
 ok('venta: la receta fija el precio (diamantes 95 > sopa 52)', gDiamonds > gSauce, `(${gDiamonds} vs ${gSauce})`);
@@ -582,6 +587,61 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   const st2 = await call('GET', '/api/auth/google/start', { ip, jar: j });
   const cb2 = await call('GET', `/api/auth/google/callback?code=abc&state=${new URL(st2.loc).searchParams.get('state')}`, { ip, jar: j });
   ok('términos: una cuenta que ya existe entra con Google sin volver a aceptar', /#auth=ok$/.test(cb2.loc ?? ''));
+}
+// ── mercadería en el servidor: la venta exige producto real y la cosecha tiene techo físico
+{
+  const GP = await mkPlayer(70); await state(GP);
+  const flora0 = wallet(GP).flora;
+  let r = await intent(GP, 'sell', { type: 'rso', grams: 5 });
+  ok('mercadería: vender sin producto se rechaza', r.status === 400 && r.json.error === 'insufficient_stock');
+  // el ataque de la consola: vender una y otra vez lo que no se tiene
+  let blocked = 0; for (let i = 0; i < 5; i++) if ((await intent(GP, 'sell', { type: 'rso', grams: 2000 })).status === 400) blocked++;
+  ok('mercadería: repetir ventas inventadas no crea $FLORA', blocked === 5 && wallet(GP).flora === flora0);
+  // cosecha: armario (1 plaza, bono 1.0), sin parcelas → techo = 75 × 2.5 × 1.2 × 1.1 = 247.5 g por planta, cupo inicial 1.25 × eso
+  r = await intent(GP, 'harvest', { flower: 100000, trim: 100000, source: 'room' });
+  const cap1 = 75 * 2.5 * 1.2 * 1.1 * 1.25;
+  ok('cosecha: lo que pasa del cupo se recorta (no se rechaza)', r.status === 200 && r.json.result.clipped === true && Math.abs(r.json.result.flower - cap1) < 0.5 && r.json.result.trim <= r.json.result.flower * 0.45 + 0.6);
+  ok('cosecha: también da la fibra del tallo', r.json.result.fibre === Math.round(r.json.result.flower * 0.5) && r.json.snapshot.inventory.materials.fibra_cruda === r.json.result.fibre);
+  r = await intent(GP, 'harvest', { flower: 200, trim: 0 });
+  ok('cosecha: con el cupo gastado, cosechar de nuevo al instante casi no da nada', r.json.result.flower < 1);
+  const st = stateRow(GP); st.harvestAllowance.at -= 86400_000; db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(st), GP.id);
+  r = await intent(GP, 'harvest', { flower: 1000, trim: 0 });
+  ok('cosecha: el cupo se recarga con el tiempo (un día ≈ 123,75 g en el armario)', Math.abs(r.json.result.flower - 123.75) < 1);
+  const floraS = wallet(GP).flora;
+  r = await intent(GP, 'grow_speedup', { scope: 'plant' });
+  const after = await intent(GP, 'harvest', { flower: 1000, trim: 0 });
+  ok('aceleración: cobra 25 $FLORA y suma cupo (35 % de una planta)', r.status === 200 && wallet(GP).flora === floraS - 25 && Math.abs(after.json.result.flower - 247.5 * 0.35) < 1);
+  // procesar: nunca más producto que el rendimiento de la receta
+  const flowerHave = after.json.snapshot.inventory.flower;
+  r = await intent(GP, 'process', { product: 'rso', grams: 100, out: 20 });
+  ok('proceso: sacar más producto que el rendimiento máximo se rechaza', r.status === 400 && r.json.error === 'bad_params');
+  r = await intent(GP, 'process', { product: 'rso', grams: 100, out: 12 });
+  ok('proceso: descuenta la flor y guarda el producto', r.status === 200 && Math.abs(r.json.snapshot.inventory.flower - (flowerHave - 100)) < 0.02 && r.json.snapshot.inventory.products.rso === 12);
+  r = await intent(GP, 'process', { product: 'rso', grams: 4000, out: 1 });
+  ok('proceso: sin flor suficiente no se puede', r.status === 400 && r.json.error === 'insufficient_stock');
+  r = await intent(GP, 'sell', { type: 'rso', grams: 12 });
+  const r2 = await intent(GP, 'sell', { type: 'rso', grams: 12 });
+  ok('venta: con producto real se vende una vez, no dos', r.status === 200 && r.json.result.gross > 0 && r2.status === 400);
+  // forja: los insumos salen al empezar y el producto llega al terminar
+  stock(GP, 'trim', 20);
+  r = await intent(GP, 'forge_start', { recipe: 'render_wax', qty: 1 });
+  ok('forja: empieza, cobra y descuenta el trim', r.status === 200 && r.json.snapshot.forgeJobs.length === 1);
+  const st2 = stateRow(GP); st2.forgeJobs[0].endsAt = Date.now() - 1; db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(st2), GP.id);
+  r = await intent(GP, 'forge_collect', {});
+  ok('forja: al terminar entrega el material', r.status === 200 && r.json.snapshot.inventory.materials.cera === 5 && r.json.snapshot.forgeJobs.length === 0);
+  const NP = await mkPlayer(72); await state(NP);
+  r = await intent(NP, 'forge_start', { recipe: 'render_wax', qty: 1 });
+  ok('forja: sin insumos no arranca', r.status === 400 && /^forge_/.test(r.json.error));
+  r = await intent(GP, 'consume', { items: { 'mat:cera': 2 } });
+  const rc = await intent(GP, 'consume', { items: { 'mat:cera': 99 } });
+  const rx = await intent(GP, 'consume', { items: { 'prod:rso': 1 } });
+  ok('consumo: solo quita, y solo lo que hay', r.status === 200 && r.json.snapshot.inventory.materials.cera === 3 && rc.json.error === 'insufficient_stock' && rx.json.error === 'bad_params');
+  // importación única de lo que el navegador ya tenía
+  const IP = await mkPlayer(71); await state(IP);
+  r = await intent(IP, 'import_inventory', { flower: 999999, trim: 5, materials: { cera: 9999, inventado: 5 }, products: { diamonds: 5000, inventado: 3 } });
+  const inv = r.json.snapshot.inventory;
+  ok('importación: respeta los topes', r.status === 200 && inv.flower === 3000 && inv.trim === 5 && inv.materials.cera === 200 && !('inventado' in inv.materials) && inv.products.diamonds > 0 && inv.products.diamonds < 5000 && !('inventado' in inv.products));
+  ok('importación: solo una vez', (await intent(IP, 'import_inventory', { flower: 10 })).json.error === 'already_imported');
 }
 // ── guardado en la nube: la partida no se pierde al cambiar de navegador, celular o dirección del juego
 {

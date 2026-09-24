@@ -18,6 +18,12 @@ export interface Snapshot {
   plots: ServerPlot[]; avatars: ServerAvatar[]; avatarPity: PityMap;
   offers: Record<string, { ids: string[]; left: number }>;
   imported: boolean; minted: number; burned: number; level?: number;
+  /** goods the server keeps (flower/trim in grams, forge materials in units, products in grams by product key) */
+  inventory?: { flower: number; trim: number; materials: Record<string, number>; products: Record<string, number> };
+  invImported?: boolean;
+  /** how much more flower the account can harvest right now (grams), its ceiling and how fast it refills */
+  harvest?: { allowance: number; cap: number; perHour: number };
+  forgeJobs?: Array<{ id: string; recipeId: string; qty: number; startedAt: number; endsAt: number }>;
   gifts: Array<{ id: number; amount: number; note: string; createdAt: number }>;
   listings: ListingView[]; p2p: { feeRate: number; minPrice: number; maxPrice: number; maxListings: number };
 }
@@ -97,6 +103,9 @@ export const REASON: Record<string, string> = {
   speedup_limit: k('Ya usaste las aceleraciones de hoy'), not_on_board: k('Ese candidato ya no está en la bolsa'), already_hired: k('Ese candidato ya es tuyo'), roster_full: k('Tu plantilla está llena'),
   not_yours: k('Eso no es tuyo'), wrong_role: k('Ese personaje no sirve para ese puesto'), plot_taken: k('Esa tierra ya tiene dueño'), too_many_lands: k('Ya tienes el máximo de tierras'),
   max_rank: k('Ya está en el rango máximo'), already_claimed: k('Ya lo reclamaste'), too_fast: k('Ese nivel aún no se puede cobrar'), offline: k('Sin conexión con el servidor'), listing_gone: k('Esa oferta ya no está disponible'), own_listing: k('Esa oferta es tuya'), too_many_listings: k('Ya tienes el máximo de ofertas activas'), bad_params: k('Precio o dato no válido'), rate_limited: k('Demasiado rápido, espera un momento'),
+  insufficient_stock: k('No tienes suficiente en el inventario'), forge_flower: k('Te falta flor seca para esa receta'), forge_trim: k('Te falta trim para esa receta'),
+  forge_material: k('Te faltan materiales para esa receta'), forge_tier: k('Esa receta pide una instalación de más nivel'), forge_jobs: k('La forja ya tiene el máximo de trabajos en marcha'),
+  forge_flora: k('Saldo insuficiente para la forja'), forge_qty: k('Cantidad no válida'),
 };
 /** el motivo de un rechazo del servidor, en el idioma del jugador (undefined si no hay texto para ese código) */
 export const reasonText = (code: string): string | undefined => (REASON[code] ? t(REASON[code]) : undefined);

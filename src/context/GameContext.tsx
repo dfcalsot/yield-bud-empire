@@ -74,7 +74,7 @@ import {
   BREEDING_LIMITS, breedingCost, canBreed, capGeneration, CHAMBER_FEE, CROSS_MINUTES, GEN_LABEL, inheritTraits, lineageLabel, mulberry32, seedBatchSize,
   type Generation,
 } from '../sim/breeding';
-import { PRODUCT_PRICE } from '../sim/products';
+import { PRODUCT_PRICE, productKey, TYPE_OF_KEY } from '../sim/products';
 import { boostWithinPhase, isHarvestable, phaseOf, PHASES, stageOf as stageFromProgress } from '../sim/phases';
 import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
 import { landOffers } from '../sim/lands';
@@ -410,6 +410,37 @@ export const createInitialIndoorRoom = (baseStrain: Strain): PlantInGrow[] => {
   return plants;
 };
 
+/**
+ * The batches this browser shows, made to match the grams the server holds per product key: batches beyond the server's stock go
+ * away (sold elsewhere, or never really existed), a partly covered one is trimmed, and grams the server has but no batch shows
+ * (made on another device, or imported) appear as one batch per product.
+ */
+function reconcileBatches(batches: ProcessedProduct[], server: Record<string, number>, pending: ReadonlySet<string>): ProcessedProduct[] {
+  const left: Record<string, number> = { ...server };
+  const out: ProcessedProduct[] = [];
+  for (const b of batches) {
+    // v2p merch is not a warehouse good; a batch the server hasn't confirmed yet is kept as is (it isn't in its grams yet)
+    if (b.type === 'v2p_merch' || pending.has(b.id)) { out.push(b); continue; }
+    const key = productKey(b.type, b.recipeId);
+    const have = left[key] ?? 0;
+    if (have <= 0.009) continue;
+    const grams = Math.min(b.quantityGrams, have);
+    left[key] = have - grams;
+    out.push(grams < b.quantityGrams - 0.009 ? { ...b, quantityGrams: Number(grams.toFixed(2)), marketValueFlora: Math.round(b.marketValueFlora * (grams / b.quantityGrams)) } : b);
+  }
+  for (const [key, grams] of Object.entries(left)) {
+    if (grams <= 0.009) continue;
+    const type = (TYPE_OF_KEY[key] ?? key) as ProcessedProduct['type'];
+    const price = PRODUCT_PRICE[key] ?? PRODUCT_PRICE[type] ?? 0;
+    out.push({
+      id: `srv-${key}`, name: tr('Lote guardado · {key}', { key }), type, recipeId: key !== type ? key : undefined, strainOrigin: 'Yield Bud Empire',
+      quantityGrams: Number(grams.toFixed(2)), potency: '', qualityScore: 90, marketValueFlora: Math.round(grams * price * ECON.priceScale),
+      createdAt: Date.now(), batchHash: `srv-${key}`,
+    });
+  }
+  return out;
+}
+
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // --- USER AUTH & MULTI-ACCOUNT STATE ---
   const [allUserProfiles, setAllUserProfiles] = useState<UserProfile[]>(() => getStoredUserProfiles());
@@ -567,6 +598,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [rawFlowerGrams, setRawFlowerGrams] = useState<number>(8);
   const [materials, setMaterials] = useState<Materials>({});
   const [forgeJobs, setForgeJobs] = useState<ForgeJob[]>([]);
+  // how much more flower the server lets this account harvest right now (see sim/harvestCap.ts)
+  const [harvestInfo, setHarvestInfo] = useState<{ allowance: number; cap: number; perHour: number } | null>(null);
   const [breedingJobs, setBreedingJobs] = useState<BreedingJob[]>([]);
   const [breedingLog, setBreedingLog] = useState<BreedingLogEntry[]>([]);
   const [trimGrams, setTrimGrams] = useState<number>(5);
@@ -738,6 +771,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [p2pInfo, setP2pInfo] = useState<Snapshot['p2p']>({ feeRate: 0.05, minPrice: 1, maxPrice: 100000, maxListings: 20 });
   const [srvOffers, setSrvOffers] = useState<Snapshot['offers'] | null>(null);
   const ledgerRef = useRef(false); ledgerRef.current = ledgerOn;
+  const pendingBatchesRef = useRef<Set<string>>(new Set());
   const hadLocalSaveRef = useRef(false);
   const localSavedAtRef = useRef(0);          // cuándo se guardó la partida de este navegador que se cargó (0 = no había)
   const cloudReadyRef = useRef(false);        // no se sube nada a la nube hasta haber comparado con lo que ya hay allá
@@ -747,6 +781,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const showNotificationRef = useRef<(m: string, t: 'success' | 'info' | 'burn') => void>(() => {});
   const localSrcRef = useRef<Record<string, unknown>>({});
   // what a local save would bring to the server the first time (it caps and validates all of it)
+  // the goods this browser had before the server kept them: imported once (with caps) on the first sync
+  const localGoodsRef = useRef<Record<string, unknown>>({});
+  localGoodsRef.current = {
+    flower: rawFlowerGrams, trim: trimGrams, materials,
+    products: processedProducts.reduce<Record<string, number>>((acc, p) => { if (p.type !== 'v2p_merch') { const key = productKey(p.type, p.recipeId); acc[key] = (acc[key] ?? 0) + p.quantityGrams; } return acc; }, {}),
+  };
   localSrcRef.current = {
     flora: floraBalance, tier: currentFacility.tier, staff, staffAssign,
     avatars: avatars.map(a => ({ designId: a.designId, count: a.count, firstAt: a.firstAt, serial: a.serial })),
@@ -772,6 +812,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (snap.p2p) setP2pInfo(snap.p2p);
     // el nivel que el servidor ya pagó es el piso: una partida perdida en el navegador no te baja de nivel
     if (typeof snap.level === 'number' && snap.level > 1) setPlayerLevel(prev => Math.max(prev, snap.level!));
+    // goods: the server keeps flower, trim, materials and forge jobs; the browser shows exactly that
+    if (snap.inventory) {
+      const inv = snap.inventory;
+      setRawFlowerGrams(inv.flower);
+      setTrimGrams(inv.trim);
+      setMaterials(inv.materials as Materials);
+      setProcessedProducts(prev => reconcileBatches(prev, inv.products, pendingBatchesRef.current));
+    }
+    if (snap.forgeJobs) setForgeJobs(snap.forgeJobs as ForgeJob[]);
+    if (snap.harvest) setHarvestInfo(snap.harvest);
   }, []);
 
   /** take the server's word for everything (login, and every minute after); the first time, a local save is imported with caps */
@@ -798,6 +848,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // first time on the server: bring the local save (capped), or close the window with an empty one so a save made later can never be imported over live progress
       const imp = await importLocal(hadLocalSaveRef.current ? localSrcRef.current : { flora: 0, tier: 1 });
       if (imp) use = imp;
+    }
+    if (use.inventory && !use.invImported) {
+      // first time the server keeps goods: bring what this browser already had (capped), or nothing if it had no save
+      const r = await intent('import_inventory', hadLocalSaveRef.current ? localGoodsRef.current : {});
+      if (r.ok) use = r.snapshot;
     }
     setLedgerOn(true);
     applySnapshot(use);
@@ -1686,7 +1741,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
 
-    recordBurnTransaction('BURN_SPEEDUP', 25, tr('Yield Bud Empire: Aceleración Fotónica Planta Individual (Quema de 25 $FLORA)'));
+    recordBurnTransaction('BURN_SPEEDUP', 25, tr('Yield Bud Empire: Aceleración Fotónica Planta Individual (Quema de 25 $FLORA)'), ledgerRef.current);
+    growSpeedup('plant');
     
     setIndoorPlants(prev => prev.map((p, idx) => {
       if (idx !== selectedPlantIndex) return p;
@@ -1708,7 +1764,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
 
-    recordBurnTransaction('BURN_SPEEDUP', 50, tr('Yield Bud Empire: Aceleración Fotónica Sala Indoor Completa (30 Plantas)'));
+    recordBurnTransaction('BURN_SPEEDUP', 50, tr('Yield Bud Empire: Aceleración Fotónica Sala Indoor Completa (30 Plantas)'), ledgerRef.current);
+    growSpeedup('room');
 
     setIndoorPlants(prev => prev.map(p => {
       const nextProgress = boostWithinPhase(p.progressPercent, 30);
@@ -1720,6 +1777,46 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Harvest single plant
+  /**
+   * A harvest enters the warehouse. With the server, it decides how much of it is real (it can't exceed what the account's facility
+   * and plots can grow: sim/harvestCap.ts) and its answer is what the player gets; without it (local demo) the grams are added here.
+   */
+  const addHarvest = (flower: number, trim: number, source: 'room' | 'plot') => {
+    if (flower <= 0 && trim <= 0) return;
+    if (!ledgerRef.current) {
+      setRawFlowerGrams(prev => prev + flower);
+      setTrimGrams(prev => prev + trim);
+      if (flower > 0) setMaterials(prev => addMaterials(prev, { fibra_cruda: Math.round(flower * FIBRE_PER_FLOWER_GRAM) }));
+      return;
+    }
+    void intent<{ flower: number; trim: number; fibre: number; clipped: boolean }>('harvest', { flower, trim, source }).then(r => {
+      if (r.ok) {
+        applySnapshot(r.snapshot);
+        if (r.result.clipped) showNotification(tr('Tu instalación todavía no da para tanta cosecha: se guardaron {v0} g de flor. Con el tiempo (o acelerando) vuelve a rendir.', { v0: Math.round(r.result.flower) }), 'info');
+      } else if (r.error !== 'offline') showNotification(reasonText(r.error) ?? tr('No se pudo guardar la cosecha ({error})', { error: r.error }), 'info');
+    });
+  };
+
+  /** with the server, a grow speed-up is its own intent: it charges and adds harvest allowance for the plants it pushes */
+  const growSpeedup = (scope: 'plant' | 'room') => {
+    if (!ledgerRef.current) return;
+    void intent('grow_speedup', { scope }).then(r => { if (r.ok) applySnapshot(r.snapshot); else if (r.error !== 'offline') { showNotification(reasonText(r.error) ?? tr('No se pudo acelerar ({error})', { error: r.error }), 'info'); void fetchState().then(x => x && applySnapshot(x)); } });
+  };
+
+  /** with the server, a lab batch is only real once it accepts it (it can't give more than the recipe's yield); if it refuses, the batch goes away */
+  const serverProcess = (batch: ProcessedProduct, inputGrams: number) => {
+    if (!ledgerRef.current) return;
+    pendingBatchesRef.current.add(batch.id);
+    void intent('process', { product: productKey(batch.type, batch.recipeId), grams: inputGrams, out: batch.quantityGrams }).then(r => {
+      pendingBatchesRef.current.delete(batch.id);
+      if (r.ok) { applySnapshot(r.snapshot); return; }
+      if (r.error === 'offline') return;
+      setProcessedProducts(prev => prev.filter(p => p.id !== batch.id));
+      showNotification(reasonText(r.error) ?? tr('El servidor no aceptó el lote ({error})', { error: r.error }), 'info');
+      void fetchState().then(x => x && applySnapshot(x));
+    });
+  };
+
   const harvestPlant = () => {
     const target = indoorPlants[selectedPlantIndex];
     if (!target) return;
@@ -1742,9 +1839,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const trimHarvested = Math.round(flowerHarvested * 0.4);
     const seedsGot = !maleTarget && target.pollinated ? giveSeeds(target.strain, SEEDS_PER_POLLINATED) : 0;
 
-    setRawFlowerGrams(prev => prev + flowerHarvested);
-    setTrimGrams(prev => prev + trimHarvested);
-    if (flowerHarvested > 0) setMaterials(prev => addMaterials(prev, { fibra_cruda: Math.round(flowerHarvested * FIBRE_PER_FLOWER_GRAM) }));
+    addHarvest(flowerHarvested, trimHarvested, 'room');
 
     updateQuestProgress('quest_harvest_run', 1);
     if (!maleTarget) reportEvent('harvest', 1);
@@ -1813,9 +1908,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       pollinated: false
     } : p));
 
-    setRawFlowerGrams(prev => prev + totalFlower);
-    setTrimGrams(prev => prev + totalTrim);
-    if (totalFlower > 0) setMaterials(prev => addMaterials(prev, { fibra_cruda: Math.round(totalFlower * FIBRE_PER_FLOWER_GRAM) }));
+    addHarvest(totalFlower, totalTrim, 'room');
     updateQuestProgress('quest_harvest_run', readyIndices.length);
     reportEvent('harvest', readyIndices.length - maleCut);
     addXp(readyIndices.length * 150, tr('Cosecha Sala Indoor'));
@@ -2312,9 +2405,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (p.pollinated) seeds += giveSeeds(p.strain, SEEDS_PER_POLLINATED);
     }
     setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.filter(p => p.stage !== 'ready_harvest') }));
-    setRawFlowerGrams(prev => prev + flower);
-    setTrimGrams(prev => prev + trim);
-    if (flower > 0) setMaterials(prev => addMaterials(prev, { fibra_cruda: Math.round(flower * FIBRE_PER_FLOWER_GRAM) }));
+    addHarvest(flower, trim, 'plot');
     updateQuestProgress('quest_harvest_run', ready.length);
     reportEvent('harvest', ready.length - maleCut);
     addXp(ready.length * 180, tr('Cosecha en parcela'));
@@ -2957,6 +3048,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setProcessedProducts(prev => [newProd, ...prev]);
+    serverProcess(newProd, gramsInput);
     reportEvent('lab', 1);
     addXp(80, tr('Extracción Industrial'));
     showNotification(tr('¡Extracción completada! Se crearon {productYieldGrams}g de {name} (Valor: {value} $FLORA, +80 XP)', { productYieldGrams, name, value }), 'success');
@@ -2977,6 +3069,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!takeStation('forge')) return false;      // licence checked again + electricity
     const t = craftTotals(r, qty);
     playClickSound();
+    if (ledgerRef.current) {
+      // with the server the job is its own: it takes the inputs and the fee and delivers when the timer ends (forge_collect)
+      void intent('forge_start', { recipe: recipeId, qty }).then(res => {
+        if (res.ok) {
+          applySnapshot(res.snapshot);
+          recordBurnTransaction('BURN_PROCESS', t.fee, tr('Yield Bud Empire Forja: {name} ×{qty}', { name: r.name, qty }), true);
+          showNotification(tr('Forja: {name} ×{qty} en marcha ({minutes} min). Se quemaron {fee} $FLORA.', { name: r.name, qty, minutes: t.minutes, fee: t.fee }), 'success');
+        } else if (res.error !== 'offline') showNotification(reasonText(res.error) ?? tr('No se pudo empezar la forja ({error})', { error: res.error }), 'info');
+      });
+      return true;
+    }
     if (t.flower > 0) setRawFlowerGrams(prev => Math.max(0, Number((prev - t.flower).toFixed(2))));
     if (t.trim > 0) setTrimGrams(prev => Math.max(0, Number((prev - t.trim).toFixed(2))));
     if (Object.keys(t.materials).length) setMaterials(prev => addMaterials(prev, t.materials, -1));
@@ -2986,12 +3089,41 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showNotification(tr('Forja: {name} ×{qty} en marcha ({minutes} min). Se quemaron {fee} $FLORA.', { name: r.name, qty, minutes: t.minutes, fee: t.fee }), 'success');
     return true;
   };
+  const forgeCollecting = useRef(false);
   // finished jobs deliver their materials or products (also the ones that finished while the player was away)
   useEffect(() => {
     const tick = () => {
       const now = Date.now();
       const done = forgeJobsRef.current.filter(j => j.endsAt <= now && !forgeDone.current.has(j.id));
       if (done.length === 0) return;
+      if (ledgerRef.current) {
+        // the server delivers: ask it once, draw the batches it handed over, then take its word for the warehouse
+        if (forgeCollecting.current) return;
+        forgeCollecting.current = true;
+        void intent<{ delivered: ForgeJob[] }>('forge_collect', {}).then(res => {
+          forgeCollecting.current = false;
+          if (!res.ok) return;
+          for (const j of res.result.delivered) {
+            if (forgeDone.current.has(j.id)) continue;
+            forgeDone.current.add(j.id);
+            const r = FORGE_RECIPE_BY_ID[j.recipeId];
+            if (!r) continue;
+            if (r.out.product) {
+              const pr = r.out.product; const grams = craftTotals(r, j.qty).outProductGrams;
+              setProcessedProducts(prev => [{
+                id: `prod-forge-${j.id}`, name: `${pr.name.replace(/ \(.*\)$/, '')} ×${j.qty}`, type: pr.type, recipeId: r.id, strainOrigin: 'Forja',
+                quantityGrams: grams, potency: pr.potency, qualityScore: 90, marketValueFlora: Math.round(grams * PRODUCT_PRICE[pr.type] * ECON.priceScale),
+                createdAt: Date.now(), batchHash: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`,
+              }, ...prev]);
+            }
+            addXp(40 * j.qty, tr('Forja'));
+            reportEvent('lab', 1);
+            showNotification(tr('Forja terminada: {name} ×{qty}. Míralo en el Maletín.', { name: r.name, qty: j.qty }), 'success');
+          }
+          applySnapshot(res.snapshot);
+        });
+        return;
+      }
       for (const j of done) {
         forgeDone.current.add(j.id);
         const r = FORGE_RECIPE_BY_ID[j.recipeId];
@@ -3035,6 +3167,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!takeStation('breeding')) return false; // licence checked again + electricity
     const generation = capGeneration(Math.max(mother.generation ?? 1, father.generation ?? 1));
     setMaterials(prev => addMaterials(prev, breedingCost(useReagent), -1));
+    if (ledgerRef.current) {
+      // the server keeps the materials: the cross uses them up there too
+      const items = Object.fromEntries(Object.entries(breedingCost(useReagent)).map(([m, n]) => [`mat:${m}`, n]));
+      void intent('consume', { items }).then(r => { if (r.ok) applySnapshot(r.snapshot); else if (r.error !== 'offline') void fetchState().then(x => x && applySnapshot(x)); });
+    }
     recordBurnTransaction('BURN_PROCESS', CHAMBER_FEE, tr('Yield Bud Empire Cría: cruce en cámara {v0}', { v0: lineageLabel(mother.strain, father.strain, generation) }));
     const now = Date.now();
     const seed = (now ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
@@ -3149,6 +3286,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       batchHash: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`
     };
     setProcessedProducts(prev => [prod, ...prev]);
+    serverProcess(prod, spec.grams);
     reportEvent('lab', 1);
     addXp(spec.xp ?? 90, tr('Laboratorio Industrial'));
     showNotification(tr('Lote acuñado: {outGrams}g de {label} (valor {value} $FLORA, calidad {quality}%). Se quemaron {feeFlora} $FLORA.', { outGrams, label: spec.label, value, quality, feeFlora: spec.feeFlora }), 'success');
@@ -3252,6 +3390,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setProcessedProducts(prev => [newProd, ...prev]);
+    serverProcess(newProd, gramsInput);
 
     if (isCritical) {
       updateQuestProgress('quest_rosin_gold', 1);

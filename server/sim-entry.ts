@@ -8,3 +8,6 @@ export * as terroir from '../src/sim/terroir';
 export * as lands from '../src/sim/lands';
 export { INITIAL_FACILITIES, INITIAL_QUESTS } from '../src/data/initialData';
 export * as products from '../src/sim/products';
+export * as harvestCap from '../src/sim/harvestCap';
+export * as forge from '../src/sim/forge';
+export * as breeding from '../src/sim/breeding';

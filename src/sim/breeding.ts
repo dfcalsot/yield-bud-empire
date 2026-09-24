@@ -1,6 +1,7 @@
 import type { Strain, TerpeneProfile } from '../types';
 import type { MaterialId } from './forge';
 import { t as tr } from '../i18n/core';
+import { MAX_RESIN_MULT } from './harvestCap';
 
 /**
  * Cría (breeding): pure trait-inheritance and seed-yield math, no React and no side effects — the caller (GameContext)
@@ -77,7 +78,8 @@ export function inheritTraits(mother: Strain, father: Strain, generation: Genera
   const thc = take(mother.thcPercentage, father.thcPercentage);
   const cbd = take(mother.cbdPercentage, father.cbdPercentage);
   const cycleDurationSeconds = take(mother.cycleDurationSeconds, father.cycleDurationSeconds, true);
-  const resinYieldMultiplier = take(mother.resinYieldMultiplier, father.resinYieldMultiplier, true);
+  // capped: the server's harvest ceiling (sim/harvestCap.ts) assumes no strain yields more than MAX_RESIN_MULT
+  const resinYieldMultiplier = Math.min(MAX_RESIN_MULT, take(mother.resinYieldMultiplier, father.resinYieldMultiplier, true));
   const terpenes = {} as TerpeneProfile;
   for (const k of TERPENE_KEYS) terpenes[k] = Math.round(take(mother.terpenes[k], father.terpenes[k]) * 1000) / 1000;
   return {

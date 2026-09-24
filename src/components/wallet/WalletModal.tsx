@@ -10,8 +10,8 @@ import { t, k, localize } from '../../i18n';
 
 const KIND_LABEL: Record<string, string> = localize<Record<string, string>>({
   starter: k('Saldo de bienvenida'), claim: k('Reclamo diario'), sale: k('Venta en el Dispensario'), sale_fee: k('Comisión de venta'), build: k('Obra'), speedup: k('Aceleración'), hire: k('Fichaje'), chest: k('Cofre'), rank_up: k('Ascenso'),
-  land: k('Tierra'), wages: k('Sueldos'), refund: k('Duplicado devuelto'), quest: k('Misión'), level: k('Nivel'), import: k('Progreso importado'), spend: k('Compra'), p2p_buy: k('Compra a un jugador'), p2p_sale: k('Venta a un jugador'), grant: k('Ajuste de la casa'),
-}, ['starter', 'claim', 'sale', 'sale_fee', 'build', 'speedup', 'hire', 'chest', 'rank_up', 'land', 'wages', 'refund', 'quest', 'level', 'import', 'spend', 'p2p_buy', 'p2p_sale', 'grant']);
+  land: k('Tierra'), wages: k('Sueldos'), refund: k('Duplicado devuelto'), quest: k('Misión'), level: k('Nivel'), import: k('Progreso importado'), spend: k('Compra'), p2p_buy: k('Compra a un jugador'), p2p_sale: k('Venta a un jugador'), forge: k('Forja'), grant: k('Ajuste de la casa'),
+}, ['starter', 'claim', 'sale', 'sale_fee', 'build', 'speedup', 'hire', 'chest', 'rank_up', 'land', 'wages', 'refund', 'quest', 'level', 'import', 'spend', 'p2p_buy', 'p2p_sale', 'grant', 'forge']);
 const EXPLORER: Record<Chain, (a: string) => string> = {
   solana: (a) => `https://explorer.solana.com/address/${a}?cluster=devnet`,
   ronin: (a) => `https://saigon-app.roninchain.com/address/${a}`,
