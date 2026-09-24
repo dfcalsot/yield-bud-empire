@@ -12,6 +12,7 @@ import {
 } from './lib.mjs';
 import { installEconomy } from './economy.mjs';
 import { installGame } from './game.mjs';
+import { installBridge } from './bridge.mjs';
 import { createPrereg } from './prereg.mjs';
 import { installWallet } from './wallet.mjs';
 
@@ -570,6 +571,7 @@ function finishOAuth(ctx, name, data, fail, rawInvite, terms) {
 export const economy = installEconomy({ db, route, HttpError, sessionAccount, audit, limit, readJson });
 export const wallet = installWallet({ db, route, HttpError, sessionAccount, audit, limit, readJson });
 export const game = installGame({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy });
+export const bridge = await installBridge({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy, cfg, env: process.env });
 
 /* ───────────────────────────── server ───────────────────────────── */
 
@@ -588,6 +590,7 @@ function send(res, status, body, ctx) {
   if (ctx?.setCookies?.length) headers['Set-Cookie'] = ctx.setCookies;
   if (ctx?.cors) Object.assign(headers, { 'Access-Control-Allow-Origin': ctx.cors, Vary: 'Origin', 'Cross-Origin-Resource-Policy': 'cross-origin' });
   if (body?.redirect) { res.writeHead(302, { ...headers, Location: body.redirect }); return res.end(); }
+  if (body?.__raw) { res.writeHead(status, { ...headers, 'Content-Type': body.__raw.type, 'Cache-Control': 'public, max-age=300' }); return res.end(body.__raw.body); }
   headers['Content-Type'] = 'application/json; charset=utf-8';
   if (body?.retryAfter) headers['Retry-After'] = String(body.retryAfter);
   res.writeHead(status, headers);

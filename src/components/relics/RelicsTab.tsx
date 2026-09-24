@@ -6,6 +6,7 @@ import { MATERIAL_BY_ID, type MaterialId } from '../../sim/forge';
 import { MintCeremony } from '../MintCeremony';
 import { ListNftButton } from '../market/ListNft';
 import { RelicCard } from './RelicCard';
+import { BridgePanel, WithdrawButton, useBridge } from './BridgePanel';
 import { t } from '../../i18n';
 
 /** the weekly activity chest and the relics it gave: open, equip (3), sell to other players or melt into materials */
@@ -14,6 +15,7 @@ export const RelicsTab: React.FC<{ match: (text: string) => boolean }> = ({ matc
   const [reveal, setReveal] = useState<Relic | null>(null);
   const [busy, setBusy] = useState(false);
   const [melting, setMelting] = useState<string | null>(null);
+  const bridge = useBridge();
   const ageDays = (Date.now() - accountStartedAt) / 86400000;
   const eligible = (empire?.rank ?? 1) >= ACTIVITY.minEmpireRank && ageDays >= ACTIVITY.minAgeDays;
   const next = ACTIVITY.chests[Math.min(activity.earned, ACTIVITY.chests.length - 1)];
@@ -59,6 +61,8 @@ export const RelicsTab: React.FC<{ match: (text: string) => boolean }> = ({ matc
         )}
       </section>
 
+      <BridgePanel status={bridge.status} refresh={() => { void bridge.refresh(); }} />
+
       <div className="text-[11px] font-mono text-neutral-400">{t('Equipadas: {n}/{max} · cada una de un tipo distinto', { n: relicEquip.length, max: MAX_EQUIPPED })}</div>
       {list.length === 0 ? (
         <p className="text-sm text-neutral-400 text-center py-6">{t('Todavía no tienes reliquias. Juega esta semana para ganar tu primer cofre.')}</p>
@@ -71,6 +75,7 @@ export const RelicsTab: React.FC<{ match: (text: string) => boolean }> = ({ matc
               <RelicCard key={r.id} relic={r} equipped={on} footer={
                 <div className="flex flex-wrap gap-1">
                   <button type="button" className="sr-btn !py-0.5 !text-[10px]" onClick={() => (on ? unequipRelic(r.id) : equipRelic(r.id))} data-testid="relic-equip">{on ? t('Quitar') : t('Equipar')}</button>
+                  {!on && <WithdrawButton relic={r} status={bridge.status} onDone={() => { void bridge.refresh(); }} />}
                   {!r.bound && !on && <ListNftButton what={{ nftId: r.id }} name={RELIC_TYPE_BY_ID[r.typeId]?.name ?? r.id} rarity={r.rarity} className="sr-btn !py-0.5 !text-[10px]" />}
                   {melting === r.id ? (
                     <button type="button" className="sr-btn !py-0.5 !text-[10px] !text-rose-200" title={reward} onClick={() => { setMelting(null); meltRelic(r.id); }}><Flame className="inline w-3 h-3" /> {t('Confirmar')}</button>

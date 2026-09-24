@@ -10,9 +10,9 @@ const PORT = 30000 + Math.floor(Math.random() * 2000), MOCK = PORT + 1;
 Object.assign(process.env, {
   PORT: String(PORT), HOST: '127.0.0.1', DATA_DIR: dir, PUBLIC_URL: `http://localhost:${PORT}`, TRUST_PROXY: '1', SKIP_MX: '1', DEV_EXPOSE_LINKS: '1', POW_BITS: '8', MAX_ACCOUNTS_PER_IP: '3',
   GOOGLE_CLIENT_ID: 'gid', GOOGLE_CLIENT_SECRET: 'gsec', GOOGLE_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, GOOGLE_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, GOOGLE_USER_URL: `http://127.0.0.1:${MOCK}/user/google`,
-  X_CLIENT_ID: 'xid', X_CLIENT_SECRET: 'xsec', X_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, X_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, X_USER_URL: `http://127.0.0.1:${MOCK}/user/x`,
+  BRIDGE_FAKE: '1', X_CLIENT_ID: 'xid', X_CLIENT_SECRET: 'xsec', X_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, X_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, X_USER_URL: `http://127.0.0.1:${MOCK}/user/x`,
 });
-const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg, economy } = await import('./index.mjs');
+const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg, economy, bridge } = await import('./index.mjs');
 
 // mock identity provider (NOT Google or X: it only proves that our OAuth code paths behave)
 const profiles = { google: {}, x: {} };
@@ -879,8 +879,72 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   const od = await game(RD, 'openActivityChest');
   ok('reliquias: una cuenta de desarrollador recibe reliquias ligadas que no se pueden vender', od.status === 200 && od.json.result.bound === true && (await intent(RD, 'list', { nftId: od.json.result.id, price: 100 })).json.error === 'relic_bound');
 }
+// ── puente on-chain de reliquias (con una cadena falsa en memoria)
+{
+  const game = (P, type, params = {}) => call('POST', '/api/game/action', { jar: P.jar, ip: P.ip, body: { type, params } });
+  const br = (P, path, body) => (body === undefined ? call('GET', `/api/bridge/${path}`, { jar: P.jar, ip: P.ip }) : call('POST', `/api/bridge/${path}`, { jar: P.jar, ip: P.ip, body }));
+  const chain = bridge.chain;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const link = (P, addr) => db.prepare("INSERT INTO wallet_links (account_id, chain, address, linked_at) VALUES (?, 'solana', ?, ?)").run(P.id, addr, Date.now());
+  const relic = (P, n, rarity = 'rare', extra = {}) => { const rid = `relic-br-${P.id}-${n}`; db.prepare("INSERT INTO nfts (id, account_id, kind, data, minted_at) VALUES (?,?,?,?,?)").run(rid, P.id, 'relic', JSON.stringify({ id: rid, typeId: 'soil', stat: 'roomYield', rarity, value: 0.04, serial: 5000 + P.id * 10 + n, season: 'classic', mintedAt: Date.now(), ...extra }), Date.now()); return rid; };
+  const BA = await mkPlayer(110); await state(BA); setFlora(BA, 1000);
+  const r1 = relic(BA, 1);
+  ok('puente: sin billetera vinculada no sale', (await br(BA, 'withdraw', { relicId: r1 })).json.error === 'bridge_no_wallet');
+  link(BA, 'WalletA111111111111111111111111111111111111');
+  const rb = relic(BA, 2, 'rare', { bound: true });
+  ok('puente: una reliquia ligada no sale', (await br(BA, 'withdraw', { relicId: rb })).json.error === 'relic_bound');
+  await game(BA, 'equipRelic', { relicId: r1 });
+  ok('puente: una reliquia equipada no sale', (await br(BA, 'withdraw', { relicId: r1 })).json.error === 'bridge_equipped');
+  await game(BA, 'unequipRelic', { relicId: r1 });
+  const f0 = wallet(BA).flora;
+  const w = await br(BA, 'withdraw', { relicId: r1 });
+  ok('puente: sacar una reliquia rara quema 40 $FLORA y la deja en camino', w.status === 200 && w.json.fee === 40 && wallet(BA).flora === f0 - 40 && !(await state(BA)).snapshot.relics.some((r) => r.id === r1));
+  ok('puente: en camino no se puede vender ni equipar adentro', (await intent(BA, 'list', { nftId: r1, price: 100 })).json.error === 'not_yours' && (await game(BA, 'equipRelic', { relicId: r1 })).json.error === 'not_yours');
+  await wait(700);
+  const st1 = (await br(BA, 'status')).json;
+  const out = st1.outside.find((x) => x.relic.id === r1);
+  ok('puente: el proceso la acuña en la colección, en la billetera del jugador', out?.state === 'onchain' && (await chain.fetchAsset(out.asset))?.owner === 'WalletA111111111111111111111111111111111111' && (await chain.fetchAsset(out.asset)).collection === st1.collection);
+  // metadatos públicos
+  const meta = (await call('GET', `/api/nft/relic?s=${out.relic.serial}`, { ip: newIp() })).json;
+  const img = await fetch(`${base}/api/nft/relic-image?s=${out.relic.serial}`);
+  ok('puente: metadatos públicos con atributos e imagen SVG', meta.name?.includes(`#${out.relic.serial}`) && meta.attributes?.length >= 4 && img.headers.get('content-type') === 'image/svg+xml' && (await img.text()).startsWith('<svg'));
+  // venta afuera: pasa a otra billetera, y esa cuenta la trae al juego
+  const BB = await mkPlayer(111); await state(BB); link(BB, 'WalletB111111111111111111111111111111111111');
+  chain.move(out.asset, 'WalletB111111111111111111111111111111111111', 'WalletA111111111111111111111111111111111111');
+  ok('puente: la billetera nueva ve la reliquia en «Mis reliquias en Solana»', (await br(BB, 'mine')).json.assets.some((x) => x.asset === out.asset && x.relic?.id === r1));
+  ok('puente: arma la transferencia a la bóveda para que la firme su billetera', (await br(BB, 'deposit-tx', { asset: out.asset })).json.tx?.length > 10 && (await br(BA, 'deposit-tx', { asset: out.asset })).json.error === 'bridge_not_owner');
+  ok('puente: no se acredita si todavía no llegó a la bóveda', (await br(BB, 'deposit', { asset: out.asset })).json.error === 'bridge_not_in_vault');
+  chain.move(out.asset, chain.address, 'WalletB111111111111111111111111111111111111');
+  ok('puente: otra cuenta no puede reclamar lo que envió otra billetera', (await br(BA, 'deposit', { asset: out.asset })).json.error === 'bridge_not_sender');
+  const d = await br(BB, 'deposit', { asset: out.asset });
+  ok('puente: al llegar a la bóveda, la reliquia entra al juego en la cuenta que la envió', d.status === 200 && owner(r1) === BB.id && (await state(BB)).snapshot.relics.some((r) => r.id === r1));
+  ok('puente: no se acredita dos veces', (await br(BB, 'deposit', { asset: out.asset })).json.error === 'bridge_already_in');
+  chain.forge('Forged11111111111111111111111111111111111', chain.address);
+  ok('puente: un activo de otra colección se rechaza', (await br(BB, 'deposit', { asset: 'Forged11111111111111111111111111111111111' })).json.error === 'bridge_not_ours');
+  // volver a sacarla reutiliza el mismo activo (transferencia desde la bóveda, no una acuñación nueva)
+  setFlora(BB, 1000);
+  const w2 = await br(BB, 'withdraw', { relicId: r1 });
+  await wait(700);
+  ok('puente: sacarla otra vez usa el mismo activo', w2.json.asset === out.asset && (await chain.fetchAsset(out.asset)).owner === 'WalletB111111111111111111111111111111111111');
+  // fallos: reintenta y, al final, devuelve la reliquia y el $FLORA
+  const r3 = relic(BA, 3, 'legendary'); setFlora(BA, 1000);
+  chain.fail = 100;
+  await br(BA, 'withdraw', { relicId: r3 });
+  for (let i = 0; i < 12; i++) { await bridge.work(); }
+  chain.fail = 0;
+  ok('puente: si la cadena falla una y otra vez, la reliquia y los 150 $FLORA vuelven', wallet(BA).flora === 1000 && (await state(BA)).snapshot.relics.some((r) => r.id === r3));
+  // cuentas de desarrollador y tope diario
+  const BD = await mkPlayer(112); await state(BD); link(BD, 'WalletD111111111111111111111111111111111111'); setFlora(BD, 1000);
+  db.prepare("UPDATE accounts SET flags = flags || 'dev,' WHERE id = ?").run(BD.id);
+  ok('puente: una cuenta de desarrollador no saca nada', (await br(BD, 'withdraw', { relicId: relic(BD, 1) })).json.error === 'bridge_dev');
+  const BC = await mkPlayer(113); await state(BC); link(BC, 'WalletC111111111111111111111111111111111111'); setFlora(BC, 1000);
+  for (let i = 1; i <= 3; i++) await br(BC, 'withdraw', { relicId: relic(BC, i, 'common') });
+  ok('puente: máximo 3 salidas por cuenta al día', (await br(BC, 'withdraw', { relicId: relic(BC, 4, 'common') })).json.error === 'bridge_daily_cap');
+  await wait(500);
+}
 // ── idioma de la cuenta: correos en inglés para quien juega en inglés
 {
+  limiter.m.clear();   // the sections above created many accounts within a minute (global sign-up budget)
   cfg.inviteOnly = false;
   const j = {};
   const r = await reg({ jar: j, body: { email: 'english.player@example.com', username: 'English Grower', lang: 'en' } });

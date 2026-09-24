@@ -10,3 +10,11 @@ await build({
   bundle: true, format: 'esm', platform: 'node', target: 'node20', logLevel: 'warning', legalComments: 'none',
 });
 console.log('server/gen/sim.mjs built');
+// the Solana side of the bridge (Metaplex Core + web3.js), one self-contained file for the account service
+await build({
+  entryPoints: [path.join(root, 'server/chain-entry.ts')],
+  outfile: path.join(root, 'server/gen/chain.mjs'),
+  bundle: true, format: 'esm', platform: 'node', target: 'node20', logLevel: 'warning', legalComments: 'none',
+  banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
+});
+console.log('server/gen/chain.mjs built');

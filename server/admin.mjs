@@ -1,4 +1,4 @@
-// Operator tool: node server/admin.mjs stats | games | dev <username> [off] | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
+// Operator tool: node server/admin.mjs stats | games | dev <username> [off] | bridge [airdrop] | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
 //                | invite [cantidad] [usos] [nota] | invites | revoke <código> | seats <N> | wave <N> | waiting | prereg
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
@@ -31,6 +31,17 @@ if (cmd === 'stats') {
   console.table(db.prepare("SELECT id, username, email, source, email_verified AS ok, flags, datetime(created_at/1000,'unixepoch') AS creada FROM accounts WHERE flags != '' ORDER BY created_at DESC LIMIT 100").all());
 } else if (cmd === 'audit') {
   console.table(db.prepare("SELECT datetime(ts/1000,'unixepoch') AS cuando, event, account_id AS cuenta, ip_hash, detail FROM audit ORDER BY ts DESC LIMIT ?").all(Number(arg ?? 30)));
+} else if (cmd === 'bridge') {
+  // the relic bridge: its wallet (created here if missing, so it can be funded before turning the bridge on), balance, collection, jobs
+  const { newKeypair, createChain } = await import('./gen/chain.mjs');
+  const file = path.join(dir, 'bridge-keypair.json');
+  if (!fs.existsSync(file)) { fs.writeFileSync(file, JSON.stringify(newKeypair().secretKey), { mode: 0o600 }); console.log('billetera del puente creada'); }
+  const rpc = process.env.SOLANA_RPC || 'https://api.devnet.solana.com';
+  const chain = createChain({ rpc, secretKey: JSON.parse(fs.readFileSync(file, 'utf8')) });
+  if (arg === 'airdrop') { try { console.log('airdrop:', await chain.airdrop(1)); } catch (e) { console.log('el faucet no respondió:', e.message); } }
+  let col = null; try { col = db.prepare("SELECT v FROM bridge_meta WHERE k = 'collection'").get()?.v ?? null; } catch { /* no table yet */ }
+  console.log({ red: rpc, activo: process.env.BRIDGE_ENABLED === '1', billetera: chain.address, saldoSOL: await chain.balance().catch(() => '¿?'), coleccion: col, explorador: chain.explorer('address', chain.address) });
+  try { console.table(db.prepare("SELECT id, account_id AS cuenta, nft_id, dir, status, tries, substr(error, 1, 60) AS error, datetime(created_at/1000,'unixepoch') AS creado FROM bridge_jobs ORDER BY id DESC LIMIT 15").all()); } catch { /* no jobs yet */ }
 } else if (cmd === 'dev') {
   // developer account: keeps its test balance for playing, but can never take anything real out with $FLORA (V2P, future withdrawals)
   const a = db.prepare('SELECT id, flags FROM accounts WHERE username = ?').get(arg);

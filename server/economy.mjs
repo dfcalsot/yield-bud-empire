@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
   const saveState = (id, st) => q.putState.run(id, JSON.stringify(st));
   const nftRows = (id, kind) => q.nftsOf.all(id).filter((r) => !kind || r.kind === kind).map((r) => ({ ...r, data: JSON.parse(r.data) }));
   const roster = (id) => nftRows(id, 'staff').map((r) => r.data);                       // includes listed ones (they still count toward the cap)
-  const free = (id, kind) => nftRows(id, kind).filter((r) => !r.escrow).map((r) => r.data);   // what the player can actually use
+  const free = (id, kind) => nftRows(id, kind).filter((r) => !r.escrow && !r.chain_state).map((r) => r.data);   // listed or out on-chain: not usable   // what the player can actually use
   const saveStaff = (s) => q.setNft.run(JSON.stringify(s), s.id);
 
   /* ───────────── goods: flower, trim, materials, products ───────────── */
@@ -412,7 +412,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     list({ id, now, p }) {
       const nftId = p.designId ? `av-${id}-${str(p.designId, 40)}` : str(p.nftId, 70), price = Math.floor(num(p.price, P2P.minPrice, P2P.maxPrice));
       need(q.activeCount.get(id).n < P2P.maxListings, 'too_many_listings');
-      let row = q.nft.get(nftId); need(row && row.account_id === id && P2P.kinds.includes(row.kind) && !row.escrow, 'not_yours');
+      let row = q.nft.get(nftId); need(row && row.account_id === id && P2P.kinds.includes(row.kind) && !row.escrow && !row.chain_state, 'not_yours');
       let data = JSON.parse(row.data), rarity = '';
       if (row.kind === 'staff') {
         rarity = data.rarity;
@@ -561,7 +561,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       return { relic };
     },
     relic_equip({ id, p }) {
-      const row = q.nft.get(str(p.relicId, 80)); need(row && row.account_id === id && row.kind === 'relic' && !row.escrow, 'not_yours');
+      const row = q.nft.get(str(p.relicId, 80)); need(row && row.account_id === id && row.kind === 'relic' && !row.escrow && !row.chain_state, 'not_yours');
       const relic = JSON.parse(row.data); const st = stateOf(id);
       const eq = equippedRelics(id, st).map((r) => r.id);
       if (p.on) {
@@ -575,7 +575,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       return { relicEquip: eq };
     },
     relic_melt({ id, p }) {
-      const row = q.nft.get(str(p.relicId, 80)); need(row && row.account_id === id && row.kind === 'relic' && !row.escrow, 'not_yours');
+      const row = q.nft.get(str(p.relicId, 80)); need(row && row.account_id === id && row.kind === 'relic' && !row.escrow && !row.chain_state, 'not_yours');
       const relic = JSON.parse(row.data); const st = stateOf(id);
       st.relicEquip = (st.relicEquip ?? []).filter((x) => x !== relic.id); saveState(id, st);
       q.delNft.run(relic.id);
