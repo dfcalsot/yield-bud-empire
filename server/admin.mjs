@@ -1,4 +1,4 @@
-// Operator tool: node server/admin.mjs stats | games | dev <username> [off] | bridge [airdrop] | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
+// Operator tool: node server/admin.mjs stats | games | dev <username> [off] | bridge [airdrop] | aviso <archivo.json> [enviar] | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
 //                | invite [cantidad] [usos] [nota] | invites | revoke <código> | seats <N> | wave <N> | waiting | prereg
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
@@ -42,6 +42,22 @@ if (cmd === 'stats') {
   let col = null; try { col = db.prepare("SELECT v FROM bridge_meta WHERE k = 'collection'").get()?.v ?? null; } catch { /* no table yet */ }
   console.log({ red: rpc, activo: process.env.BRIDGE_ENABLED === '1', billetera: chain.address, saldoSOL: await chain.balance().catch(() => '¿?'), coleccion: col, explorador: chain.explorer('address', chain.address) });
   try { console.table(db.prepare("SELECT id, account_id AS cuenta, nft_id, dir, status, tries, substr(error, 1, 60) AS error, datetime(created_at/1000,'unixepoch') AS creado FROM bridge_jobs ORDER BY id DESC LIMIT 15").all()); } catch { /* no jobs yet */ }
+} else if (cmd === 'aviso') {
+  // aviso por correo a todas las cuentas verificadas, en su idioma: admin.mjs aviso <archivo.json> [enviar]
+  // el archivo trae { "es": { "subject", "text" }, "en": { ... } }; {usuario} se reemplaza por el nombre. Sin "enviar" solo muestra.
+  const msg = JSON.parse(fs.readFileSync(arg, 'utf8'));
+  const rows = db.prepare('SELECT id, username, email, lang FROM accounts WHERE email_verified = 1 AND email IS NOT NULL ORDER BY id').all();
+  let mailer = null, ok = 0;
+  for (const r of rows) {
+    const m = msg[r.lang === 'en' ? 'en' : 'es'];
+    const text = m.text.replaceAll('{usuario}', r.username);
+    if (extra !== 'enviar') { console.log(`#${r.id} ${r.username} (${r.lang ?? 'es'}) → ${m.subject}`); continue; }
+    if (!process.env.SMTP_URL) { console.log('falta SMTP_URL (cargar /data/oauth.env)'); break; }
+    mailer ??= (await import('nodemailer')).default.createTransport(process.env.SMTP_URL);
+    try { await mailer.sendMail({ from: process.env.MAIL_FROM ?? 'Yield Bud Empire <info@yieldbudempire.com>', to: r.email, subject: m.subject, text }); ok++; console.log(`#${r.id} ${r.username}: enviado`); }
+    catch (e) { console.log(`#${r.id} ${r.username}: no se pudo (${e.code ?? e.message})`); }
+  }
+  if (extra === 'enviar') console.log(`enviados ${ok} de ${rows.length}`);
 } else if (cmd === 'dev') {
   // developer account: keeps its test balance for playing, but can never take anything real out with $FLORA (V2P, future withdrawals)
   const a = db.prepare('SELECT id, flags FROM accounts WHERE username = ?').get(arg);
