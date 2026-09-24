@@ -47,7 +47,7 @@ export const STORY: MissionDef[] = localize<MissionDef[]>([
   { id: 'flora_1', npc: 'merchant', title: k('Primera compra'), event: 'buy', goal: 1, reward: { lots: [{ id: 'water_50' }], xp: 30 },
     ask: k('Mire, jefe, un cultivador que no compra no crece. Llévese cualquier cosa de la tienda y le regalo agua.'), thanks: k('¡Trato hecho! Agua limpia de la casa.') },
   { id: 'flora_2', npc: 'merchant', title: k('Cliente de confianza'), event: 'buy', goal: 3, reward: { lots: [{ id: 'nut_biobizz' }], xp: 50 },
-    ask: k('Tres compras más y le doy un fertilizante de cortesía. Los clientes fieles se cuidan.'), thanks: k('Para usted, con cariño: nutrientes BioBizz.') },
+    ask: k('Tres compras más y le doy un fertilizante de cortesía. Los clientes fieles se cuidan.'), thanks: k('Para usted, con cariño: nutrientes TerraViva.') },
   { id: 'flora_3', npc: 'merchant', title: k('Mayorista'), event: 'buy', goal: 6, reward: { lots: [{ id: 'energy_20' }, { id: 'pest_neem' }], xp: 90 },
     ask: k('Seis compras y ya es mayorista. Le tengo un bono de energía y neem para las plagas.'), thanks: k('¡Mayorista oficial! Que no le falte luz ni le sobren bichos.') },
 

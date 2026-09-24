@@ -467,7 +467,7 @@ export const INITIAL_SEED_BANK: SeedBankItem[] = [
   {
     id: 'seed_super_silver_haze',
     name: k('Solana Super Silver Haze (Fem)'),
-    breeder: 'Green House / Yield Vault',
+    breeder: 'Yield Vault Genetics',
     seedType: 'Feminizada',
     lineage: 'Skunk #1 x Northern Lights x Haze',
     thcPercentage: 24.5,
@@ -487,7 +487,7 @@ export const INITIAL_SEED_BANK: SeedBankItem[] = [
   {
     id: 'seed_neon_kush_rosin',
     name: k('Neon Kush Live Rosin Cut (Fem)'),
-    breeder: 'Exotic Genetix x Yield',
+    breeder: 'Neon Genetix Lab x Yield',
     seedType: 'Feminizada',
     lineage: 'Hindu Kush x Neon Gas #8',
     thcPercentage: 28.2,
@@ -507,7 +507,7 @@ export const INITIAL_SEED_BANK: SeedBankItem[] = [
   {
     id: 'seed_gelato_auto',
     name: k('Royal Gelato Auto (Fast Flowering)'),
-    breeder: 'FastBuds Botánica',
+    breeder: 'RapidBud Botánica',
     seedType: 'Autofloreciente',
     lineage: 'Gelato 33 x Yield Ruderalis F4',
     thcPercentage: 23.0,
@@ -540,7 +540,7 @@ export const INITIAL_SEED_BANK: SeedBankItem[] = [
   {
     id: 'seed_colombian_gold_landrace',
     name: k('Santa Marta Colombian Gold (Regular)'),
-    breeder: 'World of Seeds Landrace',
+    breeder: 'Semillas del Mundo Landrace',
     seedType: 'Landrace',
     lineage: 'Sierra Nevada de Santa Marta (Pura Landrace)',
     thcPercentage: 18.5,
@@ -573,8 +573,8 @@ export const INITIAL_SEED_BANK: SeedBankItem[] = [
   },
   {
     id: 'seed_runtz_terp_bomb',
-    name: k('Runtz Terpene Bomb S1 (Fem)'),
-    breeder: 'Barney’s Farm x Yield',
+    name: k('Rainbow Candy Terp Bomb S1 (Fem)'),
+    breeder: 'Barnyard Farm x Yield',
     seedType: 'Feminizada',
     lineage: 'Zkittlez x Gelato #33',
     thcPercentage: 29.0,
@@ -637,7 +637,7 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
     name: k('Sistema de CO2 Presurizado con Solenoide & Sensor NDIR'),
     category: 'co2',
     categoryLabel: k('Sistemas de CO2'),
-    brand: 'TrolMaster / YieldGas',
+    brand: 'YieldGas Controls',
     priceFlora: 280,
     priceSol: 0.35,
     spec: k('Botella 10kg + Regulador Dual + Sensor Infrarrojo NDIR (0-2500 PPM)'),
@@ -650,7 +650,7 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
     name: k('Bolsas Orgánicas de CO2 Micelio Activo (Pack x2)'),
     category: 'co2',
     categoryLabel: k('Sistemas de CO2'),
-    brand: 'ExHale HomeGrow',
+    brand: 'MycoBreath',
     priceFlora: 60,
     priceSol: 0.08,
     spec: k('Emisión pasiva constante de 700-900 PPM durante 6 meses'),
@@ -665,7 +665,7 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
     name: k('Sistema de Riego Automático por Goteo Gravitacional'),
     category: 'irrigation',
     categoryLabel: k('Automatización de Riego'),
-    brand: 'AutoPot Hydroponics SmartValve',
+    brand: 'GravityPot SmartValve',
     priceFlora: 220,
     priceSol: 0.28,
     spec: k('Tanque 47L + Válvula AquaValve de demanda radicular'),
@@ -678,7 +678,7 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
     name: k('Bomba Dosificadora Automática de Nutrientes A+B'),
     category: 'irrigation',
     categoryLabel: k('Automatización de Riego'),
-    brand: 'Bluelab PeriPod & Pro Controller',
+    brand: 'AquaLab DosePro Controller',
     priceFlora: 390,
     priceSol: 0.45,
     spec: k('Controlador PID con 3 bombas peristálticas para pH Up/Down y Nutrientes A+B'),
@@ -693,7 +693,7 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
     name: k('Medidor Digital de pH de Grado Laboratorio con ATC'),
     category: 'meters',
     categoryLabel: k('Instrumental Científico'),
-    brand: 'Bluelab pH Pen Pro',
+    brand: 'AquaLab pH Pen Pro',
     priceFlora: 120,
     priceSol: 0.14,
     spec: k('Precisión ±0.05 pH, Calibración en 2 puntos (4.01 / 7.01), Compensación Térmica ATC'),
@@ -706,7 +706,7 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
     name: k('Conductímetro Digital EC / PPM (Electroconductividad)'),
     category: 'meters',
     categoryLabel: k('Instrumental Científico'),
-    brand: 'Apera Instruments EC60 Pocket Tester',
+    brand: 'Conducta EC60 Pocket Tester',
     priceFlora: 135,
     priceSol: 0.16,
     spec: k('Sensor de platino negro, escala mS/cm y conversión PPM 500 / 700'),
@@ -719,7 +719,7 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
     name: k('Sensor Cuántico PAR / PPFD & Medidor de Lúmenes Full-Spectrum'),
     category: 'meters',
     categoryLabel: k('Instrumental Científico'),
-    brand: 'Apogee Instruments MQ-500',
+    brand: 'Quanta Instruments PAR-500',
     priceFlora: 310,
     priceSol: 0.38,
     spec: k('Respuesta espectral 400-700nm + ePAR 700-750nm (μmol/m²s y lux lúmenes)'),
@@ -734,7 +734,7 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
     name: k('Controlador Climático Integrado Inteligente con Sensor VPD'),
     category: 'climate',
     categoryLabel: k('Controladores Climáticos'),
-    brand: 'AC Infinity Controller 69 PRO',
+    brand: 'ClimaCore Controller 69 PRO',
     priceFlora: 240,
     priceSol: 0.30,
     spec: k('Sensor suizo Sensirion de Temp, Humedad y VPD con 4 salidas PWM programables'),
@@ -747,7 +747,7 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
     name: k('Deshumidificador Criogénico Comercial 50L/día'),
     category: 'climate',
     categoryLabel: k('Controladores Climáticos'),
-    brand: 'Quest Climate Dual Tech',
+    brand: 'DryMax Dual Tech',
     priceFlora: 340,
     priceSol: 0.42,
     spec: k('Compresor rotativo eficiente, drenaje continuo y rango 35-80% RH'),
@@ -759,26 +759,26 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
   // NUTRIENTES
   {
     id: 'supply_pack_advanced_nutrients',
-    name: k('Línea Completa Advanced Nutrients pH Perfect (Micro-Grow-Bloom + Big Bud)'),
+    name: k('Línea Completa NutriPro pH Master (Micro-Grow-Bloom + Bloom Max)'),
     category: 'nutrients',
     categoryLabel: k('Nutrición Botánica'),
-    brand: 'Advanced Nutrients',
+    brand: 'NutriPro Labs',
     priceFlora: 175,
     priceSol: 0.22,
-    spec: k('Fórmula quelada con tecnología auto-amortiguadora de pH (pH Perfect)'),
-    description: k('Mantiene automáticamente el pH entre 5.8 y 6.3 sin necesidad de ácidos correctores. Incluye estimulador de floración Big Bud.'),
+    spec: k('Fórmula quelada con tecnología auto-amortiguadora de pH (pH Master)'),
+    description: k('Mantiene automáticamente el pH entre 5.8 y 6.3 sin necesidad de ácidos correctores. Incluye estimulador de floración Bloom Max.'),
     installed: false,
-    features: [k('Tecnología pH Perfect'), k('+25% tamaño de cálices con Big Bud'), k('Quelatos de aminoácidos')]
+    features: [k('Tecnología pH Master'), k('+25% tamaño de cálices con Bloom Max'), k('Quelatos de aminoácidos')]
   },
   {
     id: 'supply_pack_athena_pro',
-    name: k('Línea de Fertilizantes Sales Grado Comercial Athena Pro Line'),
+    name: k('Línea de Fertilizantes Sales Grado Comercial Atlas Pro Line'),
     category: 'nutrients',
     categoryLabel: k('Nutrición Botánica'),
-    brand: 'Athena Ag Pro Line',
+    brand: 'Atlas Ag Pro Line',
     priceFlora: 260,
     priceSol: 0.32,
-    spec: k('Athena Core, Grow y Bloom solubles en polvo para máxima pureza sin sedimentos'),
+    spec: k('Atlas Core, Grow y Bloom solubles en polvo para máxima pureza sin sedimentos'),
     description: k('El estándar de las macro-instalaciones de California. Cero residuos, biodisponibilidad del 100% y tricomas superlimpios para rosin.'),
     installed: false,
     features: [k('Ideal para extracción Live Rosin'), k('Cero sedimentos en goteros'), k('Pureza de laboratorio farmacéutico')]
@@ -788,12 +788,12 @@ export const INITIAL_GROW_SUPPLIES: GrowSupplyItem[] = [
 export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
   {
     id: 'advanced_nutrients',
-    name: k('Advanced Nutrients'),
-    line: k('pH Perfect & Grand Master Level'),
+    name: k('NutriPro Labs'),
+    line: k('pH Master & Grand Line'),
     category: 'Mineral Quelada',
     colorTheme: '#06b6d4',
-    description: k('Fórmula basada en quelatos sintéticos y orgánicos con tecnología pH Perfect que estabiliza la solución en 5.8-6.2 de forma automática.'),
-    baseProducts: [k('pH Perfect Grow'), k('pH Perfect Micro'), k('pH Perfect Bloom'), k('B-52 B-Complex'), k('Big Bud'), k('Overdrive'), k('Flawless Finish')],
+    description: k('Fórmula basada en quelatos sintéticos y orgánicos con tecnología pH Master que estabiliza la solución en 5.8-6.2 de forma automática.'),
+    baseProducts: [k('pH Master Grow'), k('pH Master Micro'), k('pH Master Bloom'), k('B-Complex Boost'), k('Bloom Max'), k('Final Push'), k('Clean Finish')],
     stages: [
       {
         stageName: k('Germinación & Plántulas'),
@@ -803,10 +803,10 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('300 - 400 PPM'),
         recommendedNpk: '1-1-1 suave',
         dosageMlPerLiter: [
-          { productName: k('pH Perfect Micro'), mlPerL: 0.5 },
-          { productName: k('pH Perfect Grow'), mlPerL: 0.5 },
-          { productName: k('pH Perfect Bloom'), mlPerL: 0.5 },
-          { productName: k('B-52 Booster'), mlPerL: 1.0 }
+          { productName: k('pH Master Micro'), mlPerL: 0.5 },
+          { productName: k('pH Master Grow'), mlPerL: 0.5 },
+          { productName: k('pH Master Bloom'), mlPerL: 0.5 },
+          { productName: k('B-Complex Boost'), mlPerL: 1.0 }
         ],
         instructions: k('Solución muy suave para no quemar las raíces tiernas. Humedecer jiffys o lana de roca.')
       },
@@ -818,10 +818,10 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('600 - 750 PPM'),
         recommendedNpk: '3-1-2',
         dosageMlPerLiter: [
-          { productName: k('pH Perfect Grow'), mlPerL: 2.0 },
-          { productName: k('pH Perfect Micro'), mlPerL: 2.0 },
-          { productName: k('pH Perfect Bloom'), mlPerL: 1.0 },
-          { productName: k('B-52 Booster'), mlPerL: 2.0 }
+          { productName: k('pH Master Grow'), mlPerL: 2.0 },
+          { productName: k('pH Master Micro'), mlPerL: 2.0 },
+          { productName: k('pH Master Bloom'), mlPerL: 1.0 },
+          { productName: k('B-Complex Boost'), mlPerL: 2.0 }
         ],
         instructions: k('Promueve follaje verde oscuro, ramas fuertes y expansión del sistema radicular.')
       },
@@ -833,10 +833,10 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('800 - 950 PPM'),
         recommendedNpk: '3-1-3',
         dosageMlPerLiter: [
-          { productName: k('pH Perfect Grow'), mlPerL: 4.0 },
-          { productName: k('pH Perfect Micro'), mlPerL: 4.0 },
-          { productName: k('pH Perfect Bloom'), mlPerL: 2.0 },
-          { productName: k('B-52 Booster'), mlPerL: 2.0 }
+          { productName: k('pH Master Grow'), mlPerL: 4.0 },
+          { productName: k('pH Master Micro'), mlPerL: 4.0 },
+          { productName: k('pH Master Bloom'), mlPerL: 2.0 },
+          { productName: k('B-Complex Boost'), mlPerL: 2.0 }
         ],
         instructions: k('Máximo vigor previo al cambio de fotoperiodo a 12/12. Preparación estructural.')
       },
@@ -848,10 +848,10 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('900 - 1050 PPM'),
         recommendedNpk: '1-3-2',
         dosageMlPerLiter: [
-          { productName: k('pH Perfect Micro'), mlPerL: 3.0 },
-          { productName: k('pH Perfect Grow'), mlPerL: 2.0 },
-          { productName: k('pH Perfect Bloom'), mlPerL: 4.0 },
-          { productName: k('Bud Ignitor'), mlPerL: 2.0 }
+          { productName: k('pH Master Micro'), mlPerL: 3.0 },
+          { productName: k('pH Master Grow'), mlPerL: 2.0 },
+          { productName: k('pH Master Bloom'), mlPerL: 4.0 },
+          { productName: k('Bloom Starter'), mlPerL: 2.0 }
         ],
         instructions: k('Multiplica los puntos de floración (nudos) durante el estirón inicial (stretch).')
       },
@@ -863,10 +863,10 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('1000 - 1200 PPM'),
         recommendedNpk: k('0-5-4 (Alto PK)'),
         dosageMlPerLiter: [
-          { productName: k('pH Perfect Micro'), mlPerL: 4.0 },
-          { productName: k('pH Perfect Bloom'), mlPerL: 4.0 },
-          { productName: k('Big Bud (PK Booster)'), mlPerL: 2.0 },
-          { productName: k('Overdrive (End Bloom)'), mlPerL: 1.5 }
+          { productName: k('pH Master Micro'), mlPerL: 4.0 },
+          { productName: k('pH Master Bloom'), mlPerL: 4.0 },
+          { productName: k('Bloom Max (PK Booster)'), mlPerL: 2.0 },
+          { productName: k('Final Push (End Bloom)'), mlPerL: 1.5 }
         ],
         instructions: k('Aporte masivo de Fósforo y Potasio quelado. Los cálices engordan y se llenan de glándulas resinosas.')
       },
@@ -878,7 +878,7 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('100 - 200 PPM'),
         recommendedNpk: k('0-0-0 (Agua Pura)'),
         dosageMlPerLiter: [
-          { productName: k('Flawless Finish Quelante'), mlPerL: 2.0 }
+          { productName: k('Clean Finish Quelante'), mlPerL: 2.0 }
         ],
         instructions: k('Elimina residuos minerales retenidos en el tejido celular para asegurar ceniza blanca limpia y humo aromático.')
       }
@@ -886,12 +886,12 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
   },
   {
     id: 'biobizz_organic',
-    name: k('BioBizz Worldwide'),
+    name: k('TerraViva Orgánica'),
     line: k('100% Certified Organic & Micro-Life'),
     category: 'Orgánica 100%',
     colorTheme: '#10b981',
     description: k('Filosofía holística holandesa con extractos de remolacha azucarera, vinaza y algas marinas que alimentan la microbiología viva del suelo.'),
-    baseProducts: [k('Bio-Grow'), k('Bio-Bloom'), k('Top-Max'), k('Root-Juice'), k('Alg-A-Mic'), k('Bio-Heaven')],
+    baseProducts: [k('Terra-Grow'), k('Terra-Bloom'), k('Terra-Max'), k('Raíz-Viva'), k('Alga-Vital'), k('Terra-Vita')],
     stages: [
       {
         stageName: k('Germinación & Plántulas'),
@@ -901,8 +901,8 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('250 - 350 PPM'),
         recommendedNpk: k('Orgánico Suave'),
         dosageMlPerLiter: [
-          { productName: k('Root-Juice (Estimulador)'), mlPerL: 2.0 },
-          { productName: k('Bio-Heaven'), mlPerL: 1.0 }
+          { productName: k('Raíz-Viva (Estimulador)'), mlPerL: 2.0 },
+          { productName: k('Terra-Vita'), mlPerL: 1.0 }
         ],
         instructions: k('Estimula el desarrollo de raíces y micorrizas sin alterar el pH orgánico del sustrato.')
       },
@@ -914,9 +914,9 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('500 - 650 PPM'),
         recommendedNpk: k('Bio-Nitrógeno'),
         dosageMlPerLiter: [
-          { productName: k('Bio-Grow'), mlPerL: 1.5 },
-          { productName: k('Bio-Heaven'), mlPerL: 2.0 },
-          { productName: k('Alg-A-Mic'), mlPerL: 1.0 }
+          { productName: k('Terra-Grow'), mlPerL: 1.5 },
+          { productName: k('Terra-Vita'), mlPerL: 2.0 },
+          { productName: k('Alga-Vital'), mlPerL: 1.0 }
         ],
         instructions: k('Proporciona nitrógeno de asimilación lenta derivado de melazas y microelementos marinos.')
       },
@@ -928,9 +928,9 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('650 - 800 PPM'),
         recommendedNpk: k('Crecimiento Robusto'),
         dosageMlPerLiter: [
-          { productName: k('Bio-Grow'), mlPerL: 2.5 },
-          { productName: k('Bio-Heaven'), mlPerL: 2.0 },
-          { productName: k('Alg-A-Mic'), mlPerL: 1.5 }
+          { productName: k('Terra-Grow'), mlPerL: 2.5 },
+          { productName: k('Terra-Vita'), mlPerL: 2.0 },
+          { productName: k('Alga-Vital'), mlPerL: 1.5 }
         ],
         instructions: k('Incrementar riego para acondicionar el sustrato vivo antes del pase a floración.')
       },
@@ -942,11 +942,11 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('800 - 900 PPM'),
         recommendedNpk: k('Transición Floral'),
         dosageMlPerLiter: [
-          { productName: k('Bio-Grow'), mlPerL: 2.0 },
-          { productName: k('Bio-Bloom'), mlPerL: 2.0 },
-          { productName: k('Top-Max'), mlPerL: 1.0 }
+          { productName: k('Terra-Grow'), mlPerL: 2.0 },
+          { productName: k('Terra-Bloom'), mlPerL: 2.0 },
+          { productName: k('Terra-Max'), mlPerL: 1.0 }
         ],
-        instructions: k('Top-Max moviliza nutrientes y acelera el transporte de azúcares a las pre-flores.')
+        instructions: k('Terra-Max moviliza nutrientes y acelera el transporte de azúcares a las pre-flores.')
       },
       {
         stageName: k('Floración Plena'),
@@ -956,10 +956,10 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('900 - 1000 PPM'),
         recommendedNpk: k('Fósforo y Potasio Natural'),
         dosageMlPerLiter: [
-          { productName: k('Bio-Grow'), mlPerL: 1.5 },
-          { productName: k('Bio-Bloom'), mlPerL: 3.5 },
-          { productName: k('Top-Max'), mlPerL: 3.0 },
-          { productName: k('Bio-Heaven'), mlPerL: 3.0 }
+          { productName: k('Terra-Grow'), mlPerL: 1.5 },
+          { productName: k('Terra-Bloom'), mlPerL: 3.5 },
+          { productName: k('Terra-Max'), mlPerL: 3.0 },
+          { productName: k('Terra-Vita'), mlPerL: 3.0 }
         ],
         instructions: k('Intensa producción de terpenos orgánicos y resina de color ámbar natural.')
       },
@@ -979,12 +979,12 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
   },
   {
     id: 'athena_pro',
-    name: k('Athena Ag Pro Line'),
+    name: k('Atlas Ag Pro Line'),
     line: k('Clean & Soluble Commercial Standard'),
     category: 'Sales Grado Comercial',
     colorTheme: '#8b5cf6',
     description: k('El sistema preferido por cultivadores comerciales de California y extractores de Rosin. Cero impurezas, sedimentos ni metales pesados.'),
-    baseProducts: [k('Athena Core'), k('Athena Grow'), k('Athena Bloom'), k('Athena Cleanse'), k('Athena CaMg')],
+    baseProducts: [k('Atlas Core'), k('Atlas Grow'), k('Atlas Bloom'), k('Atlas Cleanse'), k('Atlas CaMg')],
     stages: [
       {
         stageName: k('Germinación & Propagación'),
@@ -994,11 +994,11 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('400 - 500 PPM'),
         recommendedNpk: k('Bajo EC Ultra Limpio'),
         dosageMlPerLiter: [
-          { productName: k('Athena Core'), mlPerL: 1.0 },
-          { productName: k('Athena Grow'), mlPerL: 1.0 },
-          { productName: k('Athena Cleanse'), mlPerL: 0.5 }
+          { productName: k('Atlas Core'), mlPerL: 1.0 },
+          { productName: k('Atlas Grow'), mlPerL: 1.0 },
+          { productName: k('Atlas Cleanse'), mlPerL: 0.5 }
         ],
-        instructions: k('Athena Cleanse mantiene la línea de riego estéril contra patógenos y biofilm.')
+        instructions: k('Atlas Cleanse mantiene la línea de riego estéril contra patógenos y biofilm.')
       },
       {
         stageName: k('Vegetativo Fuerte'),
@@ -1008,11 +1008,11 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('1000 - 1250 PPM'),
         recommendedNpk: k('Core + Grow 3:5'),
         dosageMlPerLiter: [
-          { productName: k('Athena Core'), mlPerL: 3.0 },
-          { productName: k('Athena Grow'), mlPerL: 5.0 },
-          { productName: k('Athena Cleanse'), mlPerL: 0.5 }
+          { productName: k('Atlas Core'), mlPerL: 3.0 },
+          { productName: k('Atlas Grow'), mlPerL: 5.0 },
+          { productName: k('Atlas Cleanse'), mlPerL: 0.5 }
         ],
-        instructions: k('Athena tolera altas ECs gracias a sales ultra refinadas sin generar puntas quemadas.')
+        instructions: k('Atlas tolera altas ECs gracias a sales ultra refinadas sin generar puntas quemadas.')
       },
       {
         stageName: k('Floración Plena'),
@@ -1022,9 +1022,9 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('1250 - 1500 PPM'),
         recommendedNpk: k('Core + Bloom 3:5'),
         dosageMlPerLiter: [
-          { productName: k('Athena Core'), mlPerL: 3.0 },
-          { productName: k('Athena Bloom'), mlPerL: 5.0 },
-          { productName: k('Athena Cleanse'), mlPerL: 1.0 }
+          { productName: k('Atlas Core'), mlPerL: 3.0 },
+          { productName: k('Atlas Bloom'), mlPerL: 5.0 },
+          { productName: k('Atlas Cleanse'), mlPerL: 1.0 }
         ],
         instructions: k('En combinación con 1200 PPM de CO2 genera glándulas de resina con tricomas gigantes.')
       },
@@ -1036,7 +1036,7 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPpm500: k('100 - 200 PPM'),
         recommendedNpk: k('Cleanse Puro'),
         dosageMlPerLiter: [
-          { productName: k('Athena Cleanse'), mlPerL: 2.0 }
+          { productName: k('Atlas Cleanse'), mlPerL: 2.0 }
         ],
         instructions: k('Remueve precipitaciones minerales de raíz a copa.')
       }

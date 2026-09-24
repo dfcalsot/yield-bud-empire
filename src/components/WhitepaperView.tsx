@@ -319,7 +319,7 @@ export const WhitepaperView: React.FC = () => {
                 {t('4. Identidad Visual y Tecnológica')}
               </h2>
               <p>
-                {t('Yield Bud Empire aprovecha tuberías avanzadas de generación por IA (similares a herramientas de vanguardia como Higgsfield) para la producción de activos dinámicos, garantizando una alta fidelidad visual en los clientes web sin inflar los tamaños de descarga.')}
+                {t('Yield Bud Empire aprovecha tuberías avanzadas de generación por IA para la producción de activos dinámicos, garantizando una alta fidelidad visual en los clientes web sin inflar los tamaños de descarga.')}
               </p>
 
               <div className="rounded-2xl overflow-hidden border border-neutral-800">

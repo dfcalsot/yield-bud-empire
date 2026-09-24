@@ -55,7 +55,7 @@ export const CATALOG: CatalogItem[] = localize<CatalogItem[]>([
   { id: 'lamp_bar1200', category: 'lamp', kind: 'equipment', name: k('Barra LED Quantum 1 200 W'), brand: 'Samsung LM301H', tier: 2, priceFlora: 340, priceSol: 0.34, watts: 1200, maxPpfd: 820, wearPerDay: 0.9,
     description: k('Barras multi-espectro con diodos LM301H EVO y rojo profundo 660 nm.'),
     specs: [{ label: k('Potencia'), value: '1 200 W' }, { label: k('PPFD máx.'), value: k('820 µmol/m²s') }, { label: k('Desgaste'), value: k('0.9 %/día') }] },
-  { id: 'lamp_board2400', category: 'lamp', kind: 'equipment', name: k('Quantum Board Pro 2 400 W + Far-Red'), brand: 'Spider Farmer', tier: 3, priceFlora: 780, priceSol: 0.78, watts: 2400, maxPpfd: 1150, wearPerDay: 0.8,
+  { id: 'lamp_board2400', category: 'lamp', kind: 'equipment', name: k('Quantum Board Pro 2 400 W + Far-Red'), brand: 'Arachne Grow', tier: 3, priceFlora: 780, priceSol: 0.78, watts: 2400, maxPpfd: 1150, wearPerDay: 0.8,
     description: k('Matriz de alta densidad con far-red 730 nm y UV: rendimiento de resina superior.'),
     specs: [{ label: k('Potencia'), value: '2 400 W' }, { label: k('PPFD máx.'), value: k('1 150 µmol/m²s') }, { label: k('Desgaste'), value: k('0.8 %/día') }] },
   { id: 'lamp_matrix4000', category: 'lamp', kind: 'equipment', name: k('Matriz Full-Spectrum Industrial 4 000 W'), brand: 'Yield Labs', tier: 4, priceFlora: 1600, priceSol: 1.6, watts: 4000, maxPpfd: 1400, wearPerDay: 0.7,
@@ -74,7 +74,7 @@ export const CATALOG: CatalogItem[] = localize<CatalogItem[]>([
     specs: [{ label: k('Capacidad'), value: k('36 000 BTU') }, { label: k('Consumo'), value: '3 kW' }, { label: k('Desgaste'), value: k('0.9 %/día') }] },
 
   /* ── Riego ── */
-  { id: 'irr_autopot', category: 'irrigation', kind: 'equipment', name: k('AutoPot Gravitacional (sin bomba)'), brand: 'AutoPot SmartValve', tier: 2, priceFlora: 220, priceSol: 0.22, autoWater: true, waterEff: 0.55, pumpKw: 0, wearPerDay: 0.6,
+  { id: 'irr_autopot', category: 'irrigation', kind: 'equipment', name: k('GravityPot Gravitacional (sin bomba)'), brand: 'GravityPot SmartValve', tier: 2, priceFlora: 220, priceSol: 0.22, autoWater: true, waterEff: 0.55, pumpKw: 0, wearPerDay: 0.6,
     description: k('Riega solo cuando el sustrato lo pide, sin electricidad. Consume algo más de agua.'),
     specs: [{ label: k('Riego'), value: k('Automático') }, { label: k('Consumo eléctrico'), value: '0 kW' }, { label: k('Agua'), value: k('0.55 L/planta') }] },
   { id: 'irr_drip', category: 'irrigation', kind: 'equipment', name: k('Goteo Presurizado con Bomba 24 V'), brand: 'Netafim', tier: 2, priceFlora: 260, priceSol: 0.26, autoWater: true, waterEff: 0.45, pumpKw: 0.04, wearPerDay: 0.9,
@@ -85,17 +85,17 @@ export const CATALOG: CatalogItem[] = localize<CatalogItem[]>([
     specs: [{ label: k('Riego'), value: k('Automático') }, { label: k('Consumo'), value: '0.08 kW' }, { label: k('Agua'), value: k('0.25 L/planta') }] },
 
   /* ── CO₂ ── */
-  { id: 'co2_mycelium', category: 'co2', kind: 'equipment', name: k('Bolsas de CO₂ de Micelio (x2)'), brand: 'ExHale HomeGrow', tier: 1, priceFlora: 60, priceSol: 0.06, co2Ppm: 900, wearPerDay: 0.5,
+  { id: 'co2_mycelium', category: 'co2', kind: 'equipment', name: k('Bolsas de CO₂ de Micelio (x2)'), brand: 'MycoBreath', tier: 1, priceFlora: 60, priceSol: 0.06, co2Ppm: 900, wearPerDay: 0.5,
     description: k('Emisión pasiva de CO₂ por micelio: +18 % de crecimiento sin electricidad.'),
     specs: [{ label: 'CO₂', value: '900 ppm' }, { label: k('Consumo'), value: '0 kW' }] },
-  { id: 'co2_tank', category: 'co2', kind: 'equipment', name: k('Sistema de CO₂ Presurizado + Sensor NDIR'), brand: 'TrolMaster', tier: 3, priceFlora: 280, priceSol: 0.28, co2Ppm: 1200, wearPerDay: 0.7,
+  { id: 'co2_tank', category: 'co2', kind: 'equipment', name: k('Sistema de CO₂ Presurizado + Sensor NDIR'), brand: 'YieldGas', tier: 3, priceFlora: 280, priceSol: 0.28, co2Ppm: 1200, wearPerDay: 0.7,
     description: k('Botella, regulador y sensor infrarrojo: mantiene 1 200 ppm y acelera la fotosíntesis un 35 %.'),
     specs: [{ label: 'CO₂', value: '1 200 ppm' }, { label: k('Sensor'), value: 'NDIR' }] },
 
   /* ── Medidores ── */
-  { id: 'meter_ph', category: 'meter', kind: 'equipment', name: k('Sonda de pH Digital'), brand: 'Bluelab', tier: 1, priceFlora: 45, priceSol: 0.05, wearPerDay: 0.3, description: k('Calibración 4.01 / 7.01, precisión ±0.01 pH.'), specs: [{ label: k('Precisión'), value: k('±0.01 pH') }] },
-  { id: 'meter_ec', category: 'meter', kind: 'equipment', name: k('Electroconductímetro EC/PPM'), brand: 'Bluelab', tier: 1, priceFlora: 45, priceSol: 0.05, wearPerDay: 0.3, description: k('Mide la fuerza de la solución nutritiva.'), specs: [{ label: k('Rango'), value: k('0–5 mS/cm') }] },
-  { id: 'meter_par', category: 'meter', kind: 'equipment', name: k('Sensor Cuántico PAR'), brand: 'Apogee', tier: 2, priceFlora: 140, priceSol: 0.14, wearPerDay: 0.2, description: k('Lectura precisa de PPFD sobre el dosel.'), specs: [{ label: k('Rango'), value: k('0–2 500 µmol') }] },
+  { id: 'meter_ph', category: 'meter', kind: 'equipment', name: k('Sonda de pH Digital'), brand: 'AquaLab', tier: 1, priceFlora: 45, priceSol: 0.05, wearPerDay: 0.3, description: k('Calibración 4.01 / 7.01, precisión ±0.01 pH.'), specs: [{ label: k('Precisión'), value: k('±0.01 pH') }] },
+  { id: 'meter_ec', category: 'meter', kind: 'equipment', name: k('Electroconductímetro EC/PPM'), brand: 'AquaLab', tier: 1, priceFlora: 45, priceSol: 0.05, wearPerDay: 0.3, description: k('Mide la fuerza de la solución nutritiva.'), specs: [{ label: k('Rango'), value: k('0–5 mS/cm') }] },
+  { id: 'meter_par', category: 'meter', kind: 'equipment', name: k('Sensor Cuántico PAR'), brand: 'Quanta', tier: 2, priceFlora: 140, priceSol: 0.14, wearPerDay: 0.2, description: k('Lectura precisa de PPFD sobre el dosel.'), specs: [{ label: k('Rango'), value: k('0–2 500 µmol') }] },
 
   /* ── Paneles solares (generan electricidad) ── */
   { id: 'solar_400', category: 'solar', kind: 'equipment', name: k('Panel Solar 400 W'), brand: 'SunSol', tier: 2, priceFlora: 500, priceSol: 0.5, solarKw: 0.4, wearPerDay: 0.1,
@@ -106,13 +106,13 @@ export const CATALOG: CatalogItem[] = localize<CatalogItem[]>([
     specs: [{ label: k('Pico'), value: '1.2 kW' }, { label: k('Generación'), value: k('≈4.8 kWh/día') }] },
 
   /* ── Nutrientes ── */
-  { id: 'nut_biobizz', category: 'nutrient', kind: 'consumable', name: k('BioBizz Bio-Grow 250 ml'), brand: 'BioBizz', tier: 1, priceFlora: 35, priceSol: 0.04, amount: 250, unit: 'ml', feedBonus: 1.0,
+  { id: 'nut_biobizz', category: 'nutrient', kind: 'consumable', name: k('TerraViva Terra-Grow 250 ml'), brand: 'TerraViva', tier: 1, priceFlora: 35, priceSol: 0.04, amount: 250, unit: 'ml', feedBonus: 1.0,
     description: k('Fertilizante orgánico base para vegetativo y floración.'), specs: [{ label: k('Contenido'), value: '250 ml' }, { label: k('Bonus'), value: 'x1.00' }] },
-  { id: 'nut_canna', category: 'nutrient', kind: 'consumable', name: k('CANNA Terra 500 ml'), brand: 'CANNA', tier: 2, priceFlora: 80, priceSol: 0.08, amount: 500, unit: 'ml', feedBonus: 1.03,
+  { id: 'nut_canna', category: 'nutrient', kind: 'consumable', name: k('Kanopia Terra 500 ml'), brand: 'Kanopia', tier: 2, priceFlora: 80, priceSol: 0.08, amount: 500, unit: 'ml', feedBonus: 1.03,
     description: k('Línea mineral para tierra con quelatos estables.'), specs: [{ label: k('Contenido'), value: '500 ml' }, { label: k('Bonus'), value: 'x1.03' }] },
-  { id: 'nut_advanced', category: 'nutrient', kind: 'consumable', name: k('Advanced Nutrients pH Perfect 500 ml'), brand: 'Advanced Nutrients', tier: 3, priceFlora: 190, priceSol: 0.19, amount: 500, unit: 'ml', feedBonus: 1.06,
+  { id: 'nut_advanced', category: 'nutrient', kind: 'consumable', name: k('NutriPro pH Master 500 ml'), brand: 'NutriPro Labs', tier: 3, priceFlora: 190, priceSol: 0.19, amount: 500, unit: 'ml', feedBonus: 1.06,
     description: k('Fórmula autoajustable de pH con estimulantes de resina.'), specs: [{ label: k('Contenido'), value: '500 ml' }, { label: k('Bonus'), value: 'x1.06' }] },
-  { id: 'nut_athena', category: 'nutrient', kind: 'consumable', name: k('Athena Pro Line 1 L'), brand: 'Athena', tier: 4, priceFlora: 430, priceSol: 0.43, amount: 1000, unit: 'ml', feedBonus: 1.1,
+  { id: 'nut_athena', category: 'nutrient', kind: 'consumable', name: k('Atlas Pro Line 1 L'), brand: 'Atlas', tier: 4, priceFlora: 430, priceSol: 0.43, amount: 1000, unit: 'ml', feedBonus: 1.1,
     description: k('La línea profesional de los concursos: máxima densidad de cogollo.'), specs: [{ label: k('Contenido'), value: '1 000 ml' }, { label: k('Bonus'), value: 'x1.10' }] },
 
   /* ── Agua ── */

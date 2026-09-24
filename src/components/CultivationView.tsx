@@ -153,7 +153,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                 <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1.5">
                   <div className="flex justify-between items-center text-neutral-400 text-[11px]">
                     <span>{t('Sensor Cuántico PAR')}</span>
-                    <span className="text-amber-400 text-[10px]">{t('Apogee ePAR')}</span>
+                    <span className="text-amber-400 text-[10px]">{t('Quanta ePAR')}</span>
                   </div>
                   <div className="text-xl font-bold text-amber-400">
                     {activePlant.ppfdLightIntensity} <span className="text-xs font-normal text-neutral-500">μmol/m²s</span>
@@ -200,7 +200,7 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
                   }`}
                 >
                   <Droplet className="w-3.5 h-3.5 text-blue-400" />
-                  <span>{t('Riego: {v0}', { v0: autoWaterActive ? t('AUTOPOT ON') : 'MANUAL' })}</span>
+                  <span>{t('Riego: {v0}', { v0: autoWaterActive ? t('GRAVITYPOT ON') : 'MANUAL' })}</span>
                 </button>
 
                 <button

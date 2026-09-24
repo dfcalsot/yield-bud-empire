@@ -84,35 +84,35 @@ export const SALTS: Ingredient[] = localize<Ingredient[]>([
  * multiplicado por la potencia calibrada de cada marca (ver BRAND_POTENCY), de modo que sus tablas oficiales den la EC que anuncian.
  */
 export const BRAND_INGREDIENTS: Ingredient[] = localize<Ingredient[]>([
-  // Advanced Nutrients
-  I({ id: 'ph_perfect_grow', name: k('pH Perfect Grow'), kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 38, P: 6, K: 55, Mg: 7, S: 5 }, max: 6, step: 0.25, color: '#5eead4', blurb: k('Base rica en N y K para el crecimiento.') }),
-  I({ id: 'ph_perfect_micro', name: k('pH Perfect Micro'), kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 42, K: 6, Ca: 58, Mg: 5, Fe: 1.0 }, max: 6, step: 0.25, color: '#67e8f9', blurb: k('Base de calcio, nitrógeno y micronutrientes.') }),
-  I({ id: 'ph_perfect_bloom', name: k('pH Perfect Bloom'), kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 46, K: 62, Mg: 11, S: 9, Fe: 0.4 }, max: 6, step: 0.25, color: '#c4b5fd', blurb: k('Base de fósforo y potasio para floración.') }),
-  I({ id: 'b52', name: k('B-52 Booster'), kind: 'stimulant', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 1 }, bio: 1.0, max: 4, step: 0.25, color: '#fcd34d', blurb: k('Complejo de vitaminas B: ayuda a la planta a gestionar el estrés. No sustituye a la base.') }),
-  I({ id: 'big_bud', name: k('Big Bud (PK)'), kind: 'booster', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 28, K: 40 }, bio: 0.4, max: 6, step: 0.25, color: '#e879f9', blurb: k('Refuerzo de fósforo-potasio para engordar cogollos.') }),
-  I({ id: 'overdrive', name: k('Overdrive (fin de floración)'), kind: 'booster', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 24, K: 34 }, bio: 0.5, max: 6, step: 0.25, color: '#f0abfc', blurb: k('Impulso final de PK antes del lavado.') }),
-  I({ id: 'flawless_finish', name: k('Flawless Finish (quelante)'), kind: 'flush', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: {}, flush: true, max: 8, step: 0.5, color: '#e2e8f0', blurb: k('Agente quelante para el lavado: arrastra sales acumuladas en el sustrato.') }),
-  // BioBizz (orgánico: el N-P-K solo está disponible cuando los microbios lo mineralizan)
-  I({ id: 'bio_grow', name: k('Bio-Grow'), kind: 'liquid', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 30, P: 8, K: 40, Ca: 10, Mg: 6, S: 6 }, max: 8, step: 0.25, color: '#86efac', blurb: k('Fertilizante orgánico de crecimiento (humus y extracto de algas).') }),
-  I({ id: 'bio_bloom', name: k('Bio-Bloom'), kind: 'liquid', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 5, P: 32, K: 50, Mg: 8, S: 12 }, max: 8, step: 0.25, color: '#fdba74', blurb: k('Orgánico de floración, rico en P y K.') }),
-  I({ id: 'top_max', name: k('Top-Max'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { K: 4 }, bio: 0.8, max: 6, step: 0.25, color: '#fde047', blurb: k('Estimulador orgánico de floración.') }),
-  I({ id: 'alg_a_mic', name: k('Alg-A-Mic'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { K: 10 }, bio: 1.0, max: 6, step: 0.25, color: '#5eead4', blurb: k('Extracto de algas: hormonas naturales y micronutrientes.') }),
-  I({ id: 'bio_heaven', name: k('Bio-Heaven'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 6 }, bio: 0.9, max: 6, step: 0.25, color: '#a7f3d0', blurb: k('Aminoácidos y energía para raíces y microbioma.') }),
-  I({ id: 'root_juice', name: k('Root-Juice'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: {}, bio: 0.9, max: 6, step: 0.25, color: '#fcd34d', blurb: k('Estimulador de raíces y de la vida del sustrato.') }),
-  // Athena
-  I({ id: 'athena_core', name: k('Athena Core'), kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { N: 60, Ca: 75, Mg: 22, Fe: 0.8 }, max: 6, step: 0.25, color: '#7dd3fc', blurb: k('Base N-Ca-Mg de la línea Blended.') }),
-  I({ id: 'athena_grow', name: k('Athena Grow'), kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { N: 42, P: 9, K: 55, S: 6 }, max: 6, step: 0.25, color: '#6ee7b7', blurb: k('Fase de crecimiento (N-P-K-S).') }),
-  I({ id: 'athena_bloom', name: k('Athena Bloom'), kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { P: 50, K: 70, S: 10 }, max: 6, step: 0.25, color: '#d8b4fe', blurb: k('Fase de floración (P-K-S).') }),
-  I({ id: 'bud_ignitor', name: k('Bud Ignitor'), kind: 'booster', unit: 'ml', brand: 'athena_pro', approx: true, per: { P: 18, K: 22 }, bio: 0.6, max: 6, step: 0.25, color: '#f9a8d4', blurb: k('Activa la formación de flores al cambiar el fotoperíodo.') }),
-  I({ id: 'athena_cleanse', name: k('Athena Cleanse'), kind: 'flush', unit: 'ml', brand: 'athena_pro', approx: true, per: {}, flush: true, max: 8, step: 0.5, color: '#e2e8f0', blurb: k('Limpiador de sales para las últimas semanas.') }),
+  // NutriPro Labs
+  I({ id: 'ph_perfect_grow', name: k('pH Master Grow'), kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 38, P: 6, K: 55, Mg: 7, S: 5 }, max: 6, step: 0.25, color: '#5eead4', blurb: k('Base rica en N y K para el crecimiento.') }),
+  I({ id: 'ph_perfect_micro', name: k('pH Master Micro'), kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 42, K: 6, Ca: 58, Mg: 5, Fe: 1.0 }, max: 6, step: 0.25, color: '#67e8f9', blurb: k('Base de calcio, nitrógeno y micronutrientes.') }),
+  I({ id: 'ph_perfect_bloom', name: k('pH Master Bloom'), kind: 'liquid', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 46, K: 62, Mg: 11, S: 9, Fe: 0.4 }, max: 6, step: 0.25, color: '#c4b5fd', blurb: k('Base de fósforo y potasio para floración.') }),
+  I({ id: 'b52', name: k('B-Complex Boost'), kind: 'stimulant', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { N: 1 }, bio: 1.0, max: 4, step: 0.25, color: '#fcd34d', blurb: k('Complejo de vitaminas B: ayuda a la planta a gestionar el estrés. No sustituye a la base.') }),
+  I({ id: 'big_bud', name: k('Bloom Max (PK)'), kind: 'booster', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 28, K: 40 }, bio: 0.4, max: 6, step: 0.25, color: '#e879f9', blurb: k('Refuerzo de fósforo-potasio para engordar cogollos.') }),
+  I({ id: 'overdrive', name: k('Final Push (fin de floración)'), kind: 'booster', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: { P: 24, K: 34 }, bio: 0.5, max: 6, step: 0.25, color: '#f0abfc', blurb: k('Impulso final de PK antes del lavado.') }),
+  I({ id: 'flawless_finish', name: k('Clean Finish (quelante)'), kind: 'flush', unit: 'ml', brand: 'advanced_nutrients', approx: true, per: {}, flush: true, max: 8, step: 0.5, color: '#e2e8f0', blurb: k('Agente quelante para el lavado: arrastra sales acumuladas en el sustrato.') }),
+  // TerraViva (orgánico: el N-P-K solo está disponible cuando los microbios lo mineralizan)
+  I({ id: 'bio_grow', name: k('Terra-Grow'), kind: 'liquid', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 30, P: 8, K: 40, Ca: 10, Mg: 6, S: 6 }, max: 8, step: 0.25, color: '#86efac', blurb: k('Fertilizante orgánico de crecimiento (humus y extracto de algas).') }),
+  I({ id: 'bio_bloom', name: k('Terra-Bloom'), kind: 'liquid', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 5, P: 32, K: 50, Mg: 8, S: 12 }, max: 8, step: 0.25, color: '#fdba74', blurb: k('Orgánico de floración, rico en P y K.') }),
+  I({ id: 'top_max', name: k('Terra-Max'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { K: 4 }, bio: 0.8, max: 6, step: 0.25, color: '#fde047', blurb: k('Estimulador orgánico de floración.') }),
+  I({ id: 'alg_a_mic', name: k('Alga-Vital'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { K: 10 }, bio: 1.0, max: 6, step: 0.25, color: '#5eead4', blurb: k('Extracto de algas: hormonas naturales y micronutrientes.') }),
+  I({ id: 'bio_heaven', name: k('Terra-Vita'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: { N: 6 }, bio: 0.9, max: 6, step: 0.25, color: '#a7f3d0', blurb: k('Aminoácidos y energía para raíces y microbioma.') }),
+  I({ id: 'root_juice', name: k('Raíz-Viva'), kind: 'stimulant', unit: 'ml', brand: 'biobizz_organic', organic: true, approx: true, per: {}, bio: 0.9, max: 6, step: 0.25, color: '#fcd34d', blurb: k('Estimulador de raíces y de la vida del sustrato.') }),
+  // Atlas
+  I({ id: 'athena_core', name: k('Atlas Core'), kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { N: 60, Ca: 75, Mg: 22, Fe: 0.8 }, max: 6, step: 0.25, color: '#7dd3fc', blurb: k('Base N-Ca-Mg de la línea Blended.') }),
+  I({ id: 'athena_grow', name: k('Atlas Grow'), kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { N: 42, P: 9, K: 55, S: 6 }, max: 6, step: 0.25, color: '#6ee7b7', blurb: k('Fase de crecimiento (N-P-K-S).') }),
+  I({ id: 'athena_bloom', name: k('Atlas Bloom'), kind: 'liquid', unit: 'ml', brand: 'athena_pro', approx: true, per: { P: 50, K: 70, S: 10 }, max: 6, step: 0.25, color: '#d8b4fe', blurb: k('Fase de floración (P-K-S).') }),
+  I({ id: 'bud_ignitor', name: k('Bloom Starter'), kind: 'booster', unit: 'ml', brand: 'athena_pro', approx: true, per: { P: 18, K: 22 }, bio: 0.6, max: 6, step: 0.25, color: '#f9a8d4', blurb: k('Activa la formación de flores al cambiar el fotoperíodo.') }),
+  I({ id: 'athena_cleanse', name: k('Atlas Cleanse'), kind: 'flush', unit: 'ml', brand: 'athena_pro', approx: true, per: {}, flush: true, max: 8, step: 0.5, color: '#e2e8f0', blurb: k('Limpiador de sales para las últimas semanas.') }),
 ], ['name', 'blurb']);
 
 /** Nombre que usan las tablas de las marcas → ingrediente. */
 const PRODUCT_ALIAS: Record<string, string> = {
-  'pH Perfect Grow': 'ph_perfect_grow', 'pH Perfect Micro': 'ph_perfect_micro', 'pH Perfect Bloom': 'ph_perfect_bloom', 'B-52 Booster': 'b52',
-  'Big Bud (PK Booster)': 'big_bud', 'Overdrive (End Bloom)': 'overdrive', 'Flawless Finish Quelante': 'flawless_finish',
-  'Bio-Grow': 'bio_grow', 'Bio-Bloom': 'bio_bloom', 'Top-Max': 'top_max', 'Alg-A-Mic': 'alg_a_mic', 'Bio-Heaven': 'bio_heaven', 'Root-Juice (Estimulador)': 'root_juice',
-  'Athena Core': 'athena_core', 'Athena Grow': 'athena_grow', 'Athena Bloom': 'athena_bloom', 'Bud Ignitor': 'bud_ignitor', 'Athena Cleanse': 'athena_cleanse',
+  'pH Master Grow': 'ph_perfect_grow', 'pH Master Micro': 'ph_perfect_micro', 'pH Master Bloom': 'ph_perfect_bloom', 'B-Complex Boost': 'b52',
+  'Bloom Max (PK Booster)': 'big_bud', 'Final Push (End Bloom)': 'overdrive', 'Clean Finish Quelante': 'flawless_finish',
+  'Terra-Grow': 'bio_grow', 'Terra-Bloom': 'bio_bloom', 'Terra-Max': 'top_max', 'Alga-Vital': 'alg_a_mic', 'Terra-Vita': 'bio_heaven', 'Raíz-Viva (Estimulador)': 'root_juice',
+  'Atlas Core': 'athena_core', 'Atlas Grow': 'athena_grow', 'Atlas Bloom': 'athena_bloom', 'Bloom Starter': 'bud_ignitor', 'Atlas Cleanse': 'athena_cleanse',
 };
 
 export const INGREDIENTS: Record<string, Ingredient> = Object.fromEntries([...SALTS, ...BRAND_INGREDIENTS].map((i) => [i.id, i]));

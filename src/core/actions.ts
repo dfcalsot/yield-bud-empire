@@ -501,7 +501,7 @@ export const ACTIONS: Record<string, Action> = {
     const descriptions = {
       ph: tr('Sonda de pH calibrada con buffer patrón 4.01 / 7.01 (Precisión ±0.01 pH)'),
       ec: tr('Electroconductímetro calibrado en 1413 μS/cm (Lectura exacta mS/cm)'),
-      par: tr('Sensor Apogee Quantum nivelado a 180° y calibrado en ePAR 400-750nm'),
+      par: tr('Sensor cuántico Quanta nivelado a 180° y calibrado en ePAR 400-750nm'),
       lux: tr('Luxómetro calibrado contra sensor fotométrico CIE (Factor x54)'),
     };
     // XP once a day per meter (it used to be free XP on every click)

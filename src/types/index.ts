@@ -84,7 +84,7 @@ export interface PlantInGrow {
   lightSchedule: '18/6' | '12/12' | '24/0';
   ecLevel: number; // Electrical conductivity (nutrients, e.g. 1.8 mS/cm)
   phLevel: number; // e.g. 6.2
-  nutrientBrand: string; // e.g. 'Advanced Nutrients' | 'BioBizz' | 'Athena Pro' | 'Canna'
+  nutrientBrand: string; // e.g. 'NutriPro Labs' | 'TerraViva' | 'Atlas Pro' | 'Kanopia'
   autoWateringEnabled?: boolean;
   autoClimateEnabled?: boolean;
   trichomeMaturity: {

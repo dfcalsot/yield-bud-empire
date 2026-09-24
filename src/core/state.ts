@@ -387,14 +387,27 @@ export function normalizeGame(raw: unknown, now: number, opts: { paidLevel?: num
 
   // the clock: a save resumes where it stopped (offline catch-up), never in the future and never more than the catch-up window ago
   s.lastSimAt = Math.min(now, Math.max(now - BALANCE.maxCatchUpSeconds * 1000, num(r.lastSimAt ?? r.savedAt, 0, now, now)));
-  return s;
+  return dropLegacyDemo(s);
 }
 
 /** what the old browser game handed out as decoration and nobody earned: a demo patent ("Emerald Terp Queen", id pat-001) */
 export function dropLegacyDemo(s: GameState): GameState {
   if (s.patents.some((p) => p.id === 'pat-001')) s.patents = s.patents.filter((p) => p.id !== 'pat-001');
+  // real brand names the old game used are now invented ones (plants planted before keep their label otherwise)
+  const fix = (p: PlantInGrow) => {
+    const nb = OLD_BRANDS[p.nutrientBrand];
+    const sn = p.strain?.name?.includes('Runtz') ? p.strain.name.replace('Runtz Terpene Bomb', 'Rainbow Candy Terp Bomb').replace('Runtz', 'Rainbow Candy') : null;
+    return nb || sn ? { ...p, nutrientBrand: nb ?? p.nutrientBrand, strain: sn ? { ...p.strain, name: sn } : p.strain } : p;
+  };
+  s.indoorPlants = s.indoorPlants.map(fix);
+  s.dormantPlants = s.dormantPlants.map(fix);
+  for (const k of Object.keys(s.plotPlants)) s.plotPlants[k] = s.plotPlants[k].map(fix);
   return s;
 }
+const OLD_BRANDS: Record<string, string> = {
+  'Advanced Nutrients': 'NutriPro Labs', 'BioBizz': 'TerraViva', 'BioBizz Worldwide': 'TerraViva Orgánica', 'Athena Ag Pro Line': 'Atlas Ag Pro Line',
+  'Athena Pro': 'Atlas Pro', 'Athena': 'Atlas', 'Canna': 'Kanopia', 'CANNA': 'Kanopia',
+};
 
 /** the facility the economy says the account uses (its best unlocked tier) */
 export const facilityOfTier = (tier: number) => INITIAL_FACILITIES.filter((f) => f.tier <= tier).sort((a, b) => b.tier - a.tier)[0] ?? INITIAL_FACILITIES[0];
