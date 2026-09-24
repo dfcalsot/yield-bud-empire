@@ -44,6 +44,8 @@ export interface GrowFacility {
   art: string;
   /** empire rank needed to build it (sim/empire.ts); undefined = none */
   minEmpireRank?: number;
+  /** water and nutrient solution used per watering / feeding (hydroponics recirculate); undefined = 1 */
+  resourceUse?: number;
 }
 
 export interface MachineEquipment {

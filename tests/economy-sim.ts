@@ -36,8 +36,8 @@ ok('vender el doble no paga el doble (profundidad de mercado)', probe(2 * 20) < 
 ok('partir una venta en trozos nunca paga más que venderla de una vez', (() => { const a = saleRevenue(pricePerGram(), 100, EMPTY_DEPTH, T0).revenue; let d: Depth = EMPTY_DEPTH, b = 0; for (let i = 0; i < 10; i++) { const s = saleRevenue(pricePerGram(), 10, d, T0); d = s.depth; b += s.revenue; } return b <= a + 1e-6; })());
 ok('el ingreso está acotado aunque se venda sin parar (mucho menos que lineal)', probe(5000) < 0.02 * 5000 * 20 * pricePerGram());
 ok('cada venta quema algo, y más en instalaciones mayores', burnRateOfSale(1) > 0 && burnRateOfSale(2) > burnRateOfSale(1));
-ok('de lo que entra, el F2P quema al menos el 60 % (deflación)', f2p.burned >= 0.6 * f2p.minted, `(${(f2p.burned / f2p.minted * 100).toFixed(0)} %)`);
-ok('el de pago quema al menos el 60 % de lo que emite (contando sus compras de imperio)', payer.burned >= 0.6 * payer.minted, `(${(payer.burned / payer.minted * 100).toFixed(0)} %)`);
+ok('de lo que entra, el F2P quema al menos el 75 % (deflación)', f2p.burned >= 0.75 * f2p.minted, `(${(f2p.burned / f2p.minted * 100).toFixed(0)} %)`);
+ok('el de pago quema al menos el 75 % de lo que emite (contando sus compras de imperio)', payer.burned >= 0.75 * payer.minted, `(${(payer.burned / payer.minted * 100).toFixed(0)} %)`);
 ok('sin contar sus compras voluntarias, el de pago ya quema ≥ 40 % (comisión, licencias, obras, aceleraciones)', payer.burned - payer.voluntary >= 0.4 * payer.minted, `(${((payer.burned - payer.voluntary) / payer.minted * 100).toFixed(0)} %)`);
 ok('el saldo que un jugador acumula en un día es pequeño (F2P ≤ 120, pago ≤ 150 $FLORA)', f2p.maxDailyNet <= 120 && payer.maxDailyNet <= 150, `(F2P ${Math.round(f2p.maxDailyNet)} · pago ${Math.round(payer.maxDailyNet)})`);
 ok('nunca se acumula una fortuna: cada uno ahorra solo para su siguiente escalón (el de pago, para la primera sede del imperio)', f2p.endBalance < TIERS[3].costFlora && payer.endBalance < TIERS[4].costFlora, `(F2P ${Math.round(f2p.endBalance)} · pago ${Math.round(payer.endBalance)})`);
@@ -52,7 +52,8 @@ ok('nunca se acumula una fortuna: cada uno ahorra solo para su siguiente escaló
   ok('imperio: el rango 10 tarda más de un año, pague o no', !(rd(P, 10) < 365) && !(rd(F, 10) < 365), `(pago día ${rd(P, 10)})`);
   ok('imperio: el de pago va como mucho ~2,6× más rápido en los rangos', [3, 5, 7].every((n) => !(rd(F, n) / rd(P, n) > 2.6)));
   ok('imperio: ninguna sede se construye antes de su rango', [5, 6, 7].every((t) => !(P.days[t - 1] > 0) || P.days[t - 1] >= rd(P, [5, 7, 9][t - 5])));
-  ok('imperio: con las sedes, lo quemado sigue siendo al menos el 60 % de lo emitido', P.burned >= 0.6 * P.minted && F.burned >= 0.6 * F.minted);
+  ok('deflación: a 1 y a 2 años se quema al menos el 75 % de lo emitido, pague o no', [365, 730].every((d) => ['f2p', 'payer'].every((k) => { const r = play(k as 'f2p', d); return r.burned >= 0.75 * r.minted; })));
+  ok('imperio: sin pagar, la primera sede llega entre los meses 9 y 14', F.days[4] >= 270 && F.days[4] <= 430, `(día ${F.days[4] || 'nunca'})`);
 }
 
 console.log(failed === 0 ? '\nALL OK' : `\n${failed} FAILED`);

@@ -36,8 +36,8 @@ ok('vender el doble no paga el doble (profundidad de mercado)', probe(2 * 20) < 
 ok('partir una venta en trozos nunca paga más que venderla de una vez', (() => { const a = saleRevenue(pricePerGram(), 100, EMPTY_DEPTH, T0).revenue; let d: Depth = EMPTY_DEPTH, b = 0; for (let i = 0; i < 10; i++) { const s = saleRevenue(pricePerGram(), 10, d, T0); d = s.depth; b += s.revenue; } return b <= a + 1e-6; })());
 ok('el ingreso está acotado aunque se venda sin parar (mucho menos que lineal)', probe(5000) < 0.02 * 5000 * 20 * pricePerGram());
 ok('cada venta quema algo, y más en instalaciones mayores', burnRateOfSale(1) > 0 && burnRateOfSale(2) > burnRateOfSale(1));
-ok('de lo que entra, el F2P quema al menos el 60 % (deflación)', f2p.burned >= 0.6 * f2p.minted, `(${(f2p.burned / f2p.minted * 100).toFixed(0)} %)`);
-ok('el de pago quema al menos el 60 % de lo que emite (contando sus compras de imperio)', payer.burned >= 0.6 * payer.minted, `(${(payer.burned / payer.minted * 100).toFixed(0)} %)`);
+ok('de lo que entra, el F2P quema al menos el 75 % (deflación)', f2p.burned >= 0.75 * f2p.minted, `(${(f2p.burned / f2p.minted * 100).toFixed(0)} %)`);
+ok('el de pago quema al menos el 75 % de lo que emite (contando sus compras de imperio)', payer.burned >= 0.75 * payer.minted, `(${(payer.burned / payer.minted * 100).toFixed(0)} %)`);
 ok('sin contar sus compras voluntarias, el de pago ya quema ≥ 40 % (comisión, licencias, obras, aceleraciones)', payer.burned - payer.voluntary >= 0.4 * payer.minted, `(${((payer.burned - payer.voluntary) / payer.minted * 100).toFixed(0)} %)`);
 ok('el saldo que un jugador acumula en un día es pequeño (F2P ≤ 120, pago ≤ 150 $FLORA)', f2p.maxDailyNet <= 120 && payer.maxDailyNet <= 150, `(F2P ${Math.round(f2p.maxDailyNet)} · pago ${Math.round(payer.maxDailyNet)})`);
 ok('nunca se acumula una fortuna: cada uno ahorra solo para su siguiente escalón (el de pago, para la primera sede del imperio)', f2p.endBalance < TIERS[3].costFlora && payer.endBalance < TIERS[4].costFlora, `(F2P ${Math.round(f2p.endBalance)} · pago ${Math.round(payer.endBalance)})`);

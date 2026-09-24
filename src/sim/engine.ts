@@ -83,6 +83,8 @@ export interface SimEnv {
   stormLoss?: number;
   /** multiplies the substrate's drying (heat, soil drainage) */
   evap?: number;
+  /** water and nutrient solution spent per watering / feeding (hydroponics recirculate: < 1); default 1 */
+  useFactor?: number;
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -222,15 +224,16 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   if (moisture > 90) moisture = Math.max(90, moisture - (moisture - 90) * 0.2 * Math.min(1, hours * 4));   // runoff
   moisture = Math.min(100, moisture);
   if (env.autoWater && moisture < B.autoWaterTrigger) {
-    const cost = env.equip?.waterPerPlantAuto ?? 0.5;
+    const cost = (env.equip?.waterPerPlantAuto ?? 0.5) * (env.useFactor ?? 1);
     if (!env.budget || env.budget.waterL >= cost) {
       if (env.budget) env.budget.waterL -= cost;
       moisture = B.autoWaterTarget;
     }
   }
   // a hired gardener waters by hand (from the tank) when the irrigation system does not
-  if (moisture < B.autoWaterTrigger && env.gardener?.water && env.budget && env.budget.waterL >= B.waterPerWatering) {
-    env.budget.waterL -= B.waterPerWatering;
+  const handWater = B.waterPerWatering * (env.useFactor ?? 1);
+  if (moisture < B.autoWaterTrigger && env.gardener?.water && env.budget && env.budget.waterL >= handWater) {
+    env.budget.waterL -= handWater;
     moisture = B.autoWaterTarget;
   }
 
@@ -238,8 +241,9 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   let ec = Math.max(B.ecFloor, s.ec - B.ecDecayPerHour * hours);
   let feedBonus = p.feedBonus;
   let phLevel = p.phLevel;
-  if (env.gardener?.feed && ec < B.ecOk + 0.15 && env.budget && (env.budget.nutrientMl ?? 0) >= B.feedMl) {
-    env.budget.nutrientMl = (env.budget.nutrientMl ?? 0) - B.feedMl;
+  const feedMl = B.feedMl * (env.useFactor ?? 1);
+  if (env.gardener?.feed && ec < B.ecOk + 0.15 && env.budget && (env.budget.nutrientMl ?? 0) >= feedMl) {
+    env.budget.nutrientMl = (env.budget.nutrientMl ?? 0) - feedMl;
     ec = B.ecFed;
     feedBonus = env.gardener.feedBonus;
     phLevel = 6.2; // el jardinero prepara la solución con el pH corregido
@@ -344,6 +348,7 @@ function siteEnvFor(base: SimEnv, sc: SiteConditions): SimEnv {
   return {
     ...base,
     siteCond: sc,
+    useFactor: 1,
     autoWater: false,
     autoClimate: false,
     equip: undefined,

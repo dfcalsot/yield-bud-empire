@@ -29,6 +29,7 @@ export function deriveEnv(s: GameState, ext: Ext): SimEnv {
     autoWater: s.autoWaterActive && eq.autoWater,
     autoClimate: s.autoClimateActive && eq.hasAc,
     facilityBonus: ext.facility.environmentBonus * (1 + ext.mods.growth),
+    useFactor: ext.facility.resourceUse ?? 1,
     co2Ppm: Math.max(s.co2Ppm, eq.co2Ppm),
     lightOn: 1,
     equip: eq,

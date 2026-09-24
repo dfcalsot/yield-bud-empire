@@ -12,7 +12,8 @@ export const T0 = Date.UTC(2026, 0, 1, 8);
 export const TIERS = INITIAL_FACILITIES; // 1 armario, 2 carpa, 3 invernadero, 4 hidropónica, 5–7 sedes del imperio (piden rango)
 
 /** what running each installation costs per day in market consumables ($FLORA): energy at ≈3 $FLORA/kWh, water and nutrients */
-const RUNNING_COST = [34, 46, 62, 104, 150, 200, 260];
+// hydroponics and the empire seats recirculate water and nutrient solution (GrowFacility.resourceUse 0.6)
+const RUNNING_COST = [34, 46, 62, 70, 100, 130, 170];
 /** production model calibrated on sim/engine.ts: 75 g per plant per cycle × strain resin (≈1.3) × facility bonus × health (≈0.94), 4-day cycles */
 const gramsPerDay = (tier: number) => (TIERS[tier - 1].capacityPlants * 75 * 1.3 * TIERS[tier - 1].environmentBonus * 0.94) / 4;
 export const pricePerGram = () => 9.9 * ECON.priceScale; // rosin is the best product: 0.22 yield × 45 per gram of flower

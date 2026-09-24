@@ -42,6 +42,8 @@ export type Action = (r: Run, p: Params) => unknown;
 const PHASE_NAMES: Record<string, string> = Object.fromEntries(PHASES.map((x) => [x.id, x.label]));
 const plural = (n: number) => (n > 1 ? 's' : '');
 const SINGLE_SLOT = ['lamp', 'ac', 'irrigation'];
+/** water / nutrient used in the indoor room per plant: hydroponic facilities recirculate (see GrowFacility.resourceUse) */
+const roomUse = (r: Run) => r.ctx.ext().facility.resourceUse ?? 1;
 const fmtH = (h: number) => { const m = Math.max(1, Math.ceil(h * 60)); return m >= 60 ? tr('{v0} h {v1} min', { v0: Math.floor(m / 60), v1: m % 60 }) : `${m} min`; };
 
 /* ───────────── shared pieces ───────────── */
@@ -120,7 +122,7 @@ function fertigate(r: Run, idx: unknown, scope: 'one' | 'all', e: { feedBonus: n
   if (s.indoorPlants.length === 0) no(tr('Siembra una planta para aplicarle la solución'));
   const { i: sel } = plantAt(r, idx);
   const n = scope === 'all' ? s.indoorPlants.length : 1;
-  takeResource(r, 'nutrient', USE.nutrientPerPlant * n);
+  takeResource(r, 'nutrient', USE.nutrientPerPlant * n * roomUse(r));
   sfx(r, 'water');
   const feedBonus = Math.min(1.15, e.feedBonus * (1 + (bestFeedBonus(s.assets) - 1) * 0.5));
   const ec = Number(e.ec.toFixed(2)), ph = Number(e.ph.toFixed(2));
@@ -164,7 +166,7 @@ export const ACTIONS: Record<string, Action> = {
   /* ── indoor room ── */
   waterPlant(r, p) {
     const { i } = plantAt(r, p.idx);
-    takeResource(r, 'water', USE.waterPerPlantManual);
+    takeResource(r, 'water', USE.waterPerPlantManual * roomUse(r));
     sfx(r, 'water');
     const x = r.s.indoorPlants[i];
     r.s.indoorPlants[i] = { ...x, soilMoisture: Math.min(100, x.soilMoisture + 55), health: Math.min(100, x.health + 5), lastWatered: r.ctx.now };
@@ -176,7 +178,7 @@ export const ACTIONS: Record<string, Action> = {
   },
   waterAllPlants(r) {
     const n = r.s.indoorPlants.length;
-    takeResource(r, 'water', USE.waterPerPlantManual * n);
+    takeResource(r, 'water', USE.waterPerPlantManual * n * roomUse(r));
     sfx(r, 'water');
     r.s.indoorPlants = r.s.indoorPlants.map((x) => ({ ...x, soilMoisture: Math.min(100, x.soilMoisture + 55), health: Math.min(100, x.health + 5), lastWatered: r.ctx.now }));
     questProgress(r, 'quest_water_micro', 5);
@@ -187,7 +189,7 @@ export const ACTIONS: Record<string, Action> = {
   },
   feedNutrients(r, p) {
     const { i } = plantAt(r, p.idx);
-    takeResource(r, 'nutrient', USE.nutrientPerPlant);
+    takeResource(r, 'nutrient', USE.nutrientPerPlant * roomUse(r));
     sfx(r, 'click');
     const feedBonus = bestFeedBonus(r.s.assets);
     const x = r.s.indoorPlants[i];
@@ -199,7 +201,7 @@ export const ACTIONS: Record<string, Action> = {
   },
   feedAllPlants(r) {
     const n = r.s.indoorPlants.length;
-    takeResource(r, 'nutrient', USE.nutrientPerPlant * n);
+    takeResource(r, 'nutrient', USE.nutrientPerPlant * n * roomUse(r));
     sfx(r, 'click');
     const feedBonus = bestFeedBonus(r.s.assets);
     r.s.indoorPlants = r.s.indoorPlants.map((x) => ({ ...x, feedBonus, ecLevel: 2.1, phLevel: 6.2, health: Math.min(100, x.health + 10), lastFed: r.ctx.now }));
