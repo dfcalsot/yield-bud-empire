@@ -25,7 +25,7 @@ export const WhitepaperView: React.FC = () => {
     { id: 'resumen', title: t('1. Resumen Ejecutivo'), icon: Sparkles },
     { id: 'bucle', title: t('2. Bucle de Jugabilidad'), icon: Layers },
     { id: 'tokenomica', title: t('3. Tokenómica $FLORA'), icon: Flame },
-    { id: 'solana', title: t('3.2 Arquitectura Solana'), icon: Cpu },
+    { id: 'solana', title: t('3.2 Arquitectura'), icon: Cpu },
     { id: 'visual', title: t('4. Identidad Tecnológica'), icon: ShieldCheck },
     { id: 'roadmap', title: t('5. Hoja de Ruta (Roadmap)'), icon: Compass },
     { id: 'conclusion', title: t('6. Conclusión'), icon: CheckCircle2 }
@@ -38,7 +38,7 @@ export const WhitepaperView: React.FC = () => {
       status: 'completado',
       milestones: [
         t('Finalización de conceptos y pruebas de estrés de la tokenómica deflacionaria'),
-        t('Desarrollo de contratos inteligentes principales en Solana Devnet (Programas Anchor)'),
+        t('Puente de reliquias a Solana devnet (Metaplex Core)'),
         t('Prototipos visuales rápidos (interfaz, cepas, entornos)')
       ]
     },
@@ -48,7 +48,7 @@ export const WhitepaperView: React.FC = () => {
       status: 'en_progreso',
       milestones: [
         t('Lanzamiento del Cultivador Casero basado en Web (nivel F2P accesible)'),
-        t('Integración con la Red Principal de Solana para servicios de tokens y quema programada'),
+        t('Puente de reliquias en la red principal de Solana, tras una revisión de seguridad'),
         t('Airdrops de cepas de semillas impulsados por la comunidad y pruebas iniciales de estrés')
       ]
     },
@@ -59,7 +59,7 @@ export const WhitepaperView: React.FC = () => {
       milestones: [
         t('Introducción de laboratorios de extracción y mecánicas de química avanzada (Live Rosin, Rotovap)'),
         t('Despliegue de sistemas de gremios (Cooperativas Agrícolas Descentralizadas)'),
-        t('Lanzamiento del mercado descentralizado para genéticas de semillas con patentes on-chain')
+        t('Mercado entre jugadores ampliado a genéticas y semillas')
       ]
     },
     {
@@ -76,7 +76,7 @@ export const WhitepaperView: React.FC = () => {
 
   const handleCopySummary = () => {
     navigator.clipboard.writeText(
-      t('Yield Bud Empire: El Multiverso Botánico Descentralizado. Libro Blanco y Modelo Económico v1.0 construido en Solana.')
+      t('Yield Bud Empire: El Multiverso Botánico. Libro Blanco y Modelo Económico.')
     );
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -97,15 +97,15 @@ export const WhitepaperView: React.FC = () => {
               {t('DOCUMENTO OFICIAL v1.0')}
             </span>
             <span className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 font-mono text-xs">
-              {t('SOLANA BLOCKCHAIN')}
+              {t('SIMULACIÓN BOTÁNICA')}
             </span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-serif">
-            {t('Yield Bud Empire: El Multiverso Botánico Descentralizado')}
+            {t('Yield Bud Empire: El Multiverso Botánico')}
           </h1>
           <p className="text-sm sm:text-base text-neutral-300 leading-relaxed">
-            {t('Libro Blanco y Modelo Económico de simulación botánica de alta precisión, microclimas interactivos, extracción comercial y tokenómica deflacionaria autosostenible en la red Solana.')}
+            {t('Libro Blanco y Modelo Económico de simulación botánica de alta precisión, microclimas interactivos, extracción comercial y tokenómica deflacionaria autosostenible.')}
           </p>
 
           <div className="flex items-center gap-3 pt-2">
@@ -159,7 +159,7 @@ export const WhitepaperView: React.FC = () => {
                 {t('1. Resumen Ejecutivo')}
               </h2>
               <p>
-                <strong>{t('Yield Bud Empire')}</strong>{' '}{t('es un videojuego de simulación de próxima generación, accesible desde navegador y dispositivos móviles, construido sobre la')}{' '}<strong>{t('blockchain de Solana')}</strong>{t('. Fusiona la simulación agrícola inmersiva —específicamente enfocada en el cultivo de cannabis y cáñamo prémium— con un modelo económico')}{' '}<strong>{t('deflacionario, estricto y sostenible')}</strong>.
+                <strong>{t('Yield Bud Empire')}</strong>{' '}{t('es un videojuego de simulación de próxima generación, accesible desde navegador y dispositivos móviles, que corre en nuestro servidor y usa')}{' '}<strong>{t('Solana solo como opción')}</strong>{t('. Fusiona la simulación agrícola inmersiva —específicamente enfocada en el cultivo de cannabis y cáñamo prémium— con un modelo económico')}{' '}<strong>{t('deflacionario, estricto y sostenible')}</strong>.
               </p>
               <p>
                 {t('Comenzando como cultivadores independientes bajo un modelo totalmente gratuito (')}<em>{t('Free-to-Play')}</em>{' '}{t('o F2P), los jugadores evolucionan desde una configuración casera básica hasta convertirse en maestros cultivadores. Gestionan microclimas, cruces genéticos, procesamiento comercial y la creación de marcas virtuales globales.')}
@@ -233,7 +233,7 @@ export const WhitepaperView: React.FC = () => {
 
                 <h3 className="text-base font-bold text-white pt-2">{t('2.3 Creación de Marca y el Multiverso')}</h3>
                 <ul className="list-disc pl-5 space-y-1.5 text-xs text-neutral-400">
-                  <li><strong>{t('Genéticas Personalizadas:')}</strong>{' '}{t('Cruce de parentales para generar fenotipos únicos con perfiles aromáticos registrados on-chain.')}</li>
+                  <li><strong>{t('Genéticas Personalizadas:')}</strong>{' '}{t('Cruce de parentales para generar fenotipos únicos con perfiles aromáticos registrados como patente.')}</li>
                   <li><strong>{t('Escaparates Virtuales:')}</strong>{' '}{t('Lanzamiento de marcas distintivas y dispensarios que comercian bienes en el multiverso.')}</li>
                 </ul>
               </div>
@@ -277,7 +277,7 @@ export const WhitepaperView: React.FC = () => {
                   </div>
                   <h4 className="text-sm font-bold text-white">{t('Patentes Genómicas')}</h4>
                   <p className="text-xs text-neutral-400">
-                    {t('Registrar cepas de semillas exclusivas y marcas comerciales on-chain requiere una tarifa de quema de tokens no reembolsable.')}
+                    {t('Registrar cepas de semillas exclusivas como patente requiere una tarifa de quema de $FLORA no reembolsable.')}
                   </p>
                 </div>
               </div>
@@ -288,24 +288,24 @@ export const WhitepaperView: React.FC = () => {
           {activeSection === 'solana' && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <h2 className="text-2xl font-bold text-white font-serif border-b border-neutral-800 pb-3">
-                {t('3.2 Ventajas de la Arquitectura de Solana')}
+                {t('3.2 Arquitectura: servidor autoritativo y Solana opcional')}
               </h2>
               <p>
-                {t('Yield Bud Empire aprovecha la arquitectura ultra-escalable de Solana para hacer viables mecánicas complejas que en otras redes resultarían prohibitivas en costo o latencia.')}
+                {t('El juego corre entero en nuestro servidor, y Solana se suma solo donde aporta y siempre de forma opcional.')}
               </p>
 
               <div className="space-y-3">
                 <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-1">
-                  <h4 className="text-sm font-bold text-emerald-400">{t('Liquidación Instantánea (Sub-segundo)')}</h4>
+                  <h4 className="text-sm font-bold text-emerald-400">{t('Servidor autoritativo')}</h4>
                   <p className="text-xs text-neutral-400">
-                    {t('El alto rendimiento de Solana (bloques de 400ms) garantiza que las microtransacciones (ciclos de riego, comercio en dispensario, desgaste de piezas) se ejecuten al instante con comisiones inferiores a $0.00025.')}
+                    {t('Cada acción (regar, vender, reparar, comprar) se valida en el servidor y se asienta en un libro mayor: nadie puede inventar saldo desde el navegador, y $FLORA vive solo dentro del juego.')}
                   </p>
                 </div>
 
                 <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-1">
-                  <h4 className="text-sm font-bold text-purple-400">{t('Inventario Criptográfico On-Chain')}</h4>
+                  <h4 className="text-sm font-bold text-purple-400">{t('Reliquias en Solana')}</h4>
                   <p className="text-xs text-neutral-400">
-                    {t('Títulos de instalaciones, semillas raras y patentes genómicas se aseguran criptográficamente en Solana mediante programas personalizados desarrollados en el marco')}{' '}<strong>{t('Anchor')}</strong>.
+                    {t('Las reliquias ganadas jugando pueden salir como NFT a tu billetera Solana vinculada (Metaplex Core, con 5 % de regalía en cada reventa) y volver al juego. Hoy funciona en devnet.')}
                   </p>
                 </div>
               </div>
@@ -380,7 +380,7 @@ export const WhitepaperView: React.FC = () => {
                 {t('6. Conclusión')}
               </h2>
               <p>
-                <strong>{t('Yield Bud Empire')}</strong>{' '}{t('redefine los juegos en blockchain al anclar una jugabilidad divertida y accesible a un modelo deflacionario matemáticamente sólido. Al estructurar la simulación en torno a una forma de arte agrícola universalmente reconocida —el cultivo de cannabis y cáñamo— y respaldarla de forma segura en Solana, el proyecto fusiona los juegos casuales, los activos digitales y la utilidad del mundo real de manera fluida.')}
+                <strong>{t('Yield Bud Empire')}</strong>{' '}{t('une una jugabilidad divertida y accesible con un modelo deflacionario medido por pruebas automáticas. Al estructurar la simulación en torno a una forma de arte agrícola universalmente reconocida —el cultivo de cannabis y cáñamo— y sumar Solana solo como opción para las reliquias, el proyecto combina juego casual, objetos digitales y utilidad del mundo real.')}
               </p>
               <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 font-mono">
                 {t('✓ Listo para el multiverso botánico. Comienza ahora tu viaje F2P como cultivador novato.')}

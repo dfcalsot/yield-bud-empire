@@ -86,7 +86,7 @@ export const GeneticsLabView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono">
-              {t('Solana Anchor Program: Genómica On-Chain')}
+              {t('Laboratorio de genómica')}
             </span>
             <span className="text-xs text-neutral-400 font-mono">
               {t('Propiedad Intelectual NFT')}
@@ -97,7 +97,7 @@ export const GeneticsLabView: React.FC = () => {
             {t('Laboratorio de Madres, Padres, Hibridación & Patentes')}
           </h2>
           <p className="text-xs text-neutral-400 mt-0.5">
-            {t('Preserva plantas madre élite, recolecta polen de sementales seleccionados, genera híbridos F1 con vigor de heterosis y patenta nuevas cepas en Solana.')}
+            {t('Preserva plantas madre élite, recolecta polen de sementales seleccionados, genera híbridos F1 con vigor de heterosis y patenta nuevas cepas en el registro del juego.')}
           </p>
         </div>
 
@@ -149,7 +149,7 @@ export const GeneticsLabView: React.FC = () => {
           }`}
         >
           <ShieldCheck className="w-4 h-4 text-amber-400" />
-          <span>{t('Registro de Patentes On-Chain')}</span>
+          <span>{t('Registro de patentes')}</span>
         </button>
       </div>
 
@@ -521,7 +521,7 @@ export const GeneticsLabView: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-amber-400" />
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                    {t('Registro de Patente On-Chain')}
+                    {t('Registro de patente')}
                   </h3>
                 </div>
                 <span className="text-[11px] font-mono text-amber-400 flex items-center gap-1">
@@ -531,7 +531,7 @@ export const GeneticsLabView: React.FC = () => {
               </div>
 
               <p className="text-xs text-neutral-400 leading-relaxed">
-                {t('Patentar una cepa la convierte en un título de propiedad intelectual único en Solana, otorgando derechos de obtentor en el multiverso botánico y regalías comerciales.')}
+                {t('Patentar una cepa la convierte en un título único dentro del juego: quedas registrado como su obtentor en el multiverso botánico.')}
               </p>
 
               {/* List of unpatented strains available to register */}
@@ -542,7 +542,7 @@ export const GeneticsLabView: React.FC = () => {
 
                 {unpatentedStrains.length === 0 ? (
                   <p className="text-xs text-neutral-500 py-3 text-center">
-                    {t('Todas tus genéticas actuales ya han sido patentadas en Solana. Cruza nuevos parentales para registrar más.')}
+                    {t('Todas tus genéticas actuales ya están patentadas. Cruza nuevos parentales para registrar más.')}
                   </p>
                 ) : (
                   unpatentedStrains.map((strain) => (
@@ -578,10 +578,10 @@ export const GeneticsLabView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <FileCheck className="w-4 h-4 text-emerald-400" />
                 <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                  {t('Títulos On-Chain Emitidos ({length})', { length: patents.length })}
+                  {t('Títulos emitidos ({length})', { length: patents.length })}
                 </h3>
               </div>
-              <span className="text-[10px] font-mono text-neutral-400">{t('Anchor ID #441')}</span>
+              <span className="text-[10px] font-mono text-neutral-400">{t('Registro del juego')}</span>
             </div>
 
             <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4">

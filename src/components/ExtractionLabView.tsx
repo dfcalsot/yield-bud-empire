@@ -171,7 +171,7 @@ export const ExtractionLabView: React.FC = () => {
         </div>
 
         <span className="text-xs text-neutral-500 font-mono hidden md:inline">
-          {t('Desgaste Deflacionario On-Chain')}
+          {t('Desgaste deflacionario')}
         </span>
       </div>
 
@@ -305,7 +305,7 @@ export const ExtractionLabView: React.FC = () => {
                   </h3>
                 </div>
                 <span className="text-[11px] font-mono text-neutral-400">
-                  {t('Lote On-Chain')}
+                  {t('Lote registrado')}
                 </span>
               </div>
 
@@ -450,7 +450,7 @@ export const ExtractionLabView: React.FC = () => {
                   {t('Depreciación y Mantenimiento de Maquinaria')}
                 </h3>
                 <p className="text-xs text-neutral-400">
-                  {t('La fricción y el uso continuo degradan la maquinaria. Reparar cada equipo quema $FLORA en la red Solana.')}
+                  {t('La fricción y el uso continuo degradan la maquinaria. Reparar cada equipo quema $FLORA.')}
                 </p>
               </div>
             </div>

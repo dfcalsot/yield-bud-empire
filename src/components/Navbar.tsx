@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { CannabisLeaf, LeafCoin } from './icons/CannabisIcons';
 import { Avatar } from './profile/AvatarArt';
-import { SOLANA_NETWORKS } from '../utils/solana';
 import { YieldMark } from './brand/YieldLogo';
 import { YieldBudWordmark } from './brand/YieldBudWordmark';
 import { LangSwitch } from '../i18n/LangSwitch';
@@ -45,7 +44,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     faucetAt,
     walletAddress,
     isWalletConnected,
-    solanaNetwork,
     playerLevel,
     empire,
     rankTitle,
@@ -53,7 +51,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     isAuthenticated
   } = useGame();
 
-  const netConfig = SOLANA_NETWORKS[solanaNetwork];
   const [tick, setTick] = useState(() => Date.now());
   useEffect(() => { const t = setInterval(() => setTick(Date.now()), 30000); return () => clearInterval(t); }, []);
   const claim = claimStatus(faucetAt, tick);
@@ -88,16 +85,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-1.5 font-medium hover:text-white transition cursor-pointer text-left min-w-0"
             title={t('Wallet del juego: tus $FLORA, NFT y billeteras vinculadas')}
           >
-            <span className={`w-2 h-2 shrink-0 rounded-full ${netConfig.badgeColor} animate-pulse`}></span>
-            <span className="text-white font-semibold truncate">{tr(netConfig.name)}</span>
-            <span className="hidden sm:inline text-[10px] px-1.5 rounded bg-neutral-800 text-neutral-300 font-mono">{netConfig.badgeLabel}</span>
+            <span className="w-2 h-2 shrink-0 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-white font-semibold truncate">{t('Wallet del juego')}</span>
+            <span className="hidden sm:inline text-[10px] px-1.5 rounded bg-neutral-800 text-neutral-300 font-mono">$FLORA</span>
           </button>
           <span className="hidden lg:flex items-center gap-1 text-neutral-500">
             <Cpu className="w-3.5 h-3.5" />
-            {t('Tiempo de bloque:')}{' '}<strong className="text-neutral-300 font-mono">392ms</strong>
+            {t('Todo se valida en el servidor')}
           </span>
           <span className="hidden xl:inline text-neutral-500">
-            {t('Tarifa de red promedio:')}{' '}<strong className="text-emerald-400 font-mono">0.000005 SOL</strong>
+            {t('Reliquias → Solana devnet (opcional)')}
           </span>
         </div>
 

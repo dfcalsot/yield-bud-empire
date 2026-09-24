@@ -228,7 +228,7 @@ export const DispensaryV2PView: React.FC = () => {
             </div>
 
             <p className="text-xs text-neutral-400 leading-relaxed">
-              {t('Canjea tus tokens')}{' '}<strong className="text-emerald-400">$FLORA</strong>{' '}{t('por productos tangibles del mundo real: terpenos botánicos puros certificados, aceites orgánicos de cáñamo y merchandising con verificación Solana NFC.')}
+              {t('Canjea tus tokens')}{' '}<strong className="text-emerald-400">$FLORA</strong>{' '}{t('por productos tangibles del mundo real: terpenos botánicos puros certificados, aceites orgánicos de cáñamo y merchandising con etiqueta NFC de autenticidad.')}
             </p>
 
             <div className="space-y-3">
@@ -281,7 +281,7 @@ export const DispensaryV2PView: React.FC = () => {
                   </h3>
                 </div>
                 <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3" />{' '}{t('Certificado Solana')}
+                  <ShieldCheck className="w-3 h-3" />{' '}{t('Certificado')}
                 </span>
               </div>
 
@@ -297,7 +297,7 @@ export const DispensaryV2PView: React.FC = () => {
                       <span>{t('{requiredFlora} $FLORA Quemados', { requiredFlora: order.item.requiredFlora })}</span>
                     </div>
                     <div className="text-[10px] text-neutral-500 truncate">
-                      {t('Tx Solana: {txSig}', { txSig: order.txSig })}
+                      {t('Orden: {txSig}', { txSig: order.txSig })}
                     </div>
                   </div>
                 ))}
@@ -366,7 +366,7 @@ export const DispensaryV2PView: React.FC = () => {
               </div>
 
               <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 text-[11px] text-amber-300 leading-relaxed">
-                {t('Al confirmar, se quemarán permanentemente')}{' '}<strong>{selectedV2pItem.requiredFlora} $FLORA</strong>{' '}{t('en la blockchain de Solana y se generará una orden con certificado NFT de trazabilidad botánica.')}
+                {t('Al confirmar, se quemarán permanentemente')}{' '}<strong>{selectedV2pItem.requiredFlora} $FLORA</strong>{' '}{t('y se generará una orden con certificado de trazabilidad botánica.')}
               </div>
 
               <button

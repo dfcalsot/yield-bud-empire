@@ -93,7 +93,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
                 {tr('Banco de Semillas Botánico & Genoteca')}
               </span>
               <span className="text-xs text-neutral-500 font-mono hidden sm:inline">
-                {tr('Certificación Fito-Onchain')}
+                {tr('Certificación fitosanitaria')}
               </span>
             </div>
 
@@ -102,7 +102,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
             </h1>
 
             <p className="text-sm text-neutral-300 leading-relaxed">
-              {tr('Adquiere genéticas puras Landrace, híbridos estabilizados y automáticas de alto rendimiento. Las compras con')}{' '}<strong className="text-amber-400 font-mono">$FLORA</strong>{' '}{tr('ejecutan quema deflacionaria on-chain; las compras con')}{' '}<strong className="text-purple-300 font-mono">SOL</strong>{' '}{tr('liquidan en el pool botánico descentralizado.')}
+              {tr('Adquiere genéticas puras Landrace, híbridos estabilizados y automáticas de alto rendimiento. Las compras con')}{' '}<strong className="text-amber-400 font-mono">$FLORA</strong>{' '}{tr('queman ese $FLORA para siempre; las compras con')}{' '}<strong className="text-purple-300 font-mono">SOL</strong>{' '}{tr('usan el saldo SOL de prueba del juego.')}
             </p>
           </div>
 
@@ -315,7 +315,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
               {tr('3. Regulares & Landrace Puras')}
             </h4>
             <p className="text-neutral-400">
-              {tr('Contienen machos y hembras en ratio natural 50/50. Son indispensables para el banco de madres/padres y la obtención de polen fértil con el que crear nuevas líneas híbridas F1 on-chain.')}
+              {tr('Contienen machos y hembras en ratio natural 50/50. Son indispensables para el banco de madres/padres y la obtención de polen fértil con el que crear nuevas líneas híbridas F1.')}
             </p>
           </div>
         </div>

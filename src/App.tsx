@@ -167,7 +167,7 @@ function YieldBudEmpireApp() {
 
       {/* Footer */}
       <footer className="mb-24 px-4 text-center text-[11px] text-neutral-600">
-        <span className="font-serif text-neutral-400">{t('Yield Bud Empire')}</span>{' '}{t('· Solana SPL & Anchor · Simulación agronómica educativa ·')}
+        <span className="font-serif text-neutral-400">{t('Yield Bud Empire')}</span>{' '}{t('· Simulación agronómica educativa ·')}
         <button onClick={() => goToTab('whitepaper')} className="hover:text-emerald-300 transition cursor-pointer">{t('Libro Blanco')}</button> · <span title={t('Versión de este juego (si no coincide con la última, recarga con Ctrl+Shift+R)')}>{buildLabel()}</span>
       </footer>
 

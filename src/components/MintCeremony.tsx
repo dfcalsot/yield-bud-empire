@@ -26,7 +26,7 @@ interface MintCeremonyProps {
 const PHASE_MS = [1300, 1500, 1000]; // signing, confirming, minting → reveal
 
 const PHASES = localize({
-  onchain: [k('Firmando transacción'), k('Confirmando en Solana'), k('Acuñando NFT')],
+  onchain: [k('Validando en el servidor'), k('Registrando en el juego'), k('Acuñando NFT')],
   birth: [k('Cruzando parentales'), k('Secuenciando genoma'), k('Naciendo la F1')],
 } as const, ['onchain', 'birth']);
 
@@ -198,8 +198,8 @@ export const MintCeremony: React.FC<MintCeremonyProps> = ({ card, render, varian
               {signature && <CopyRow label="FIRMA" value={signature} shown={shortAddress(signature, 6, 6)} />}
               <p className="text-[10px] font-mono text-neutral-500 leading-snug pt-1">
                 {variant === 'onchain'
-                  ? tr('Confirmado en la Devnet simulada del juego{v0}. El identificador es simulado: no existe en la Solana real.', { v0: slot ? tr(' · bloque #{v0}', { v0: slot.toLocaleString() }) : '' })
-                  : tr('Nace fuera de la cadena. Regístrala como patente para acuñarla on-chain y quemar $FLORA.')}
+                  ? tr('Registrado en el juego{v0}. Es un objeto del juego y vive en nuestro servidor.', { v0: slot ? tr(' · registro #{v0}', { v0: slot.toLocaleString() }) : '' })
+                  : tr('Es un híbrido nuevo. Regístralo como patente (quema 250 $FLORA) para que quede a tu nombre.')}
               </p>
             </div>
             <NeonButton tone="emerald" onClick={onClose} className="px-8 py-3">{closeLabel}</NeonButton>

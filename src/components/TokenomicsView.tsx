@@ -62,7 +62,7 @@ export const TokenomicsView: React.FC = () => {
               {t('Modelo Económico Deflacionario $FLORA v1.0')}
             </span>
             <span className="text-xs text-neutral-400 font-mono">
-              {t('Solana SPL Standard')}
+              {t('Moneda del juego · no sale del juego')}
             </span>
           </div>
           <h2 className="text-xl font-bold text-white mt-1 flex items-center gap-2 font-serif">
@@ -128,7 +128,7 @@ export const TokenomicsView: React.FC = () => {
           </div>
           <h3 className="text-sm font-bold text-white">{t('Patentes Genómicas')}</h3>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            {t('Registrar cepas exclusivas como NFT on-chain en Solana requiere una tarifa de quema de 250 $FLORA no reembolsable.')}
+            {t('Registrar cepas exclusivas como patente del juego requiere una tarifa de quema de 250 $FLORA no reembolsable.')}
           </p>
           <div className="pt-2 border-t border-neutral-800 flex justify-between items-baseline">
             <span className="text-[11px] text-neutral-500 font-mono">{t('Total Quemado:')}</span>
@@ -299,12 +299,12 @@ export const TokenomicsView: React.FC = () => {
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-emerald-400" />
             <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-              {t('Registro de Transacciones & Quemados en Solana (Devnet)')}
+              {t('Registro de transacciones y quemas del juego')}
             </h3>
           </div>
           <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5" />
-            {t('Anchor Smart Contracts')}
+            {t('Libro mayor del servidor')}
           </span>
         </div>
 

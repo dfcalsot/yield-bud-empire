@@ -899,8 +899,8 @@ export const ACTIONS: Record<string, Action> = {
     if (!strain) throw new GameError('bad_params');
     if (strain.isPatented) no(tr('Esta genética ya está patentada.'));
     if (r.s.patents.length >= CAPS.patents) no(tr('Llegaste al máximo de patentes ({n}).', { n: CAPS.patents }));
-    if (r.ctx.ext().flora < 250) no(tr('Saldo insuficiente: Registrar una patente genómica on-chain requiere quemar 250 $FLORA'));
-    burn(r, 'BURN_PATENT', 250, tr('Yield Bud Empire: Registro On-Chain de Patente Genómica ({name})', { name: strain.name }));
+    if (r.ctx.ext().flora < 250) no(tr('Saldo insuficiente: registrar una patente genómica requiere quemar 250 $FLORA'));
+    burn(r, 'BURN_PATENT', 250, tr('Registro de patente genómica ({name})', { name: strain.name }));
     const wallet = P.opt(p.wallet, 60);
     const pat: GenomicPatent = {
       id: r.ctx.uid('pat'), strainName: strain.name, patentNumber: `SOL-PAT-${Math.floor(1000 + r.ctx.rng() * 9000)}-CF`, solanaSignature: r.s.transactions[0]?.signature ?? '',
@@ -914,7 +914,7 @@ export const ACTIONS: Record<string, Action> = {
     questProgress(r, 'quest_genomic_breed', 1);
     event(r, 'patent', 1);
     addXp(r, 300);
-    say(r, tr('¡Patente {patentNumber} registrada en Solana! Se quemaron 250 $FLORA (+300 XP)', { patentNumber: pat.patentNumber }), 'burn');
+    say(r, tr('¡Patente {patentNumber} registrada! Se quemaron 250 $FLORA (+300 XP)', { patentNumber: pat.patentNumber }), 'burn');
     return true;
   },
   saveCurrentPlantAsMotherOrFather(r, p) {
@@ -1036,7 +1036,7 @@ export const ACTIONS: Record<string, Action> = {
     r.s.redeemed = r.s.redeemed.slice(0, CAPS.redeemed);
     r.s.brand = { ...r.s.brand, totalV2pShipped: r.s.brand.totalV2pShipped + 1 };
     boom(r, { particleCount: 120, spread: 90, origin: { y: 0.5 } });
-    say(r, tr('¡Orden V2P confirmada! Se quemaron {requiredFlora} $FLORA. Certificado emitido en Solana', { requiredFlora: item.requiredFlora }), 'success');
+    say(r, tr('¡Orden V2P confirmada! Se quemaron {requiredFlora} $FLORA. Certificado emitido', { requiredFlora: item.requiredFlora }), 'success');
     return true;
   },
 

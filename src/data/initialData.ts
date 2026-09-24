@@ -271,7 +271,7 @@ export const INITIAL_MACHINES: MachineEquipment[] = [
     wearRatePerCycle: 2,
     repairCostFlora: 120,
     efficiencyBonus: 1.0,
-    description: k('Separa e identifica THC, CBD, CBN, CBG y terpenos; emite el certificado de análisis (COA) del lote on-chain.'),
+    description: k('Separa e identifica THC, CBD, CBN, CBG y terpenos; emite el certificado de análisis (COA) del lote.'),
     status: 'operativo'
   },
   {
@@ -305,7 +305,7 @@ export const INITIAL_V2P_ITEMS: V2pRedemptionItem[] = [
     requiredFlora: 1400,
     stockPhysical: 89,
     art: 'v2p_cbd_drops',
-    description: k('Extraído de cáñamo premium con cromatografía verificada por laboratorio externo y trazabilidad on-chain.'),
+    description: k('Extraído de cáñamo premium con cromatografía verificada por laboratorio externo y trazabilidad de lote.'),
     nftCertificateId: 'CERT-SOL-CBD-882'
   },
   {
@@ -315,7 +315,7 @@ export const INITIAL_V2P_ITEMS: V2pRedemptionItem[] = [
     requiredFlora: 600,
     stockPhysical: 55,
     art: 'v2p_grow_hoodie',
-    description: k('Tejido 55% fibra de cáñamo natural y 45% algodón orgánico con chip NFC integrado vinculado a tu billetera Solana.'),
+    description: k('Tejido 55% fibra de cáñamo natural y 45% algodón orgánico con etiqueta NFC de autenticidad.'),
     nftCertificateId: 'CERT-SOL-MRCH-109'
   }
 ];
@@ -363,7 +363,7 @@ export const INITIAL_QUESTS = [
   {
     id: 'quest_machine_repair',
     title: k('Mantenimiento Deflacionario'),
-    description: k('Repara una máquina desgastada quemando $FLORA de forma permanente en Solana.'),
+    description: k('Repara una máquina desgastada quemando $FLORA de forma permanente.'),
     category: 'deflacion' as const,
     targetCount: 1,
     currentCount: 0,
@@ -376,7 +376,7 @@ export const INITIAL_QUESTS = [
   {
     id: 'quest_genomic_breed',
     title: k('Pionero Genético'),
-    description: k('Realiza un cruzamiento botánico o registra una patente genómica on-chain.'),
+    description: k('Realiza un cruzamiento botánico o registra una patente genómica.'),
     category: 'genetica' as const,
     targetCount: 1,
     currentCount: 0,
