@@ -12,8 +12,10 @@ export * from './ctx';
 export * from './state';
 export { deriveEnv, fitRoom, reconcileProducts } from './tick';
 export { PUBLIC, SERVER_ONLY };
+export { packGame, unpackGame, type PackedGame } from './pack';
 
-const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+/** a private copy to work on (structuredClone is ~3× faster; JSON is the fallback for anything it can't copy) */
+const clone = <T>(v: T): T => { try { return structuredClone(v); } catch { return JSON.parse(JSON.stringify(v)) as T; } };
 
 export interface Advanced { state: GameState; fx: Effect[] }
 export interface Applied extends Advanced { result: unknown; tickFx: Effect[] }

@@ -235,7 +235,7 @@ interface GameContextType {
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+const clone = <T,>(v: T): T => { try { return structuredClone(v); } catch { return JSON.parse(JSON.stringify(v)) as T; } };
 const UI_EVENTS = new Set<MissionEvent>(['visit', 'planet', 'openbag', 'gauges']);
 const POLL_MS = 30_000;
 const SFX: Record<string, () => void> = {

@@ -12,6 +12,7 @@ import { GROW_SPEEDUP } from '../sim/harvestCap';
 import { getLang } from '../i18n/core';
 import { GameError, NeedsServer, type Ctx, type Effect, type Ext, type ToastKind } from './ctx';
 import { facilityOfTier, type GameState } from './state';
+import { unpackGame } from './pack';
 
 export interface GameAnswer { serverNow: number; state: GameState; snapshot: Snapshot; fx?: Effect[]; tickFx?: Effect[]; ok?: boolean; result?: unknown }
 export type ActionAnswer = ({ ok: true } & GameAnswer) | { ok: false; error: string; text?: string; kind?: ToastKind; status: number };
@@ -23,7 +24,8 @@ export async function fetchGame(): Promise<GameAnswer | { error: string; status:
   try {
     const r = await fetch(`/api/game/state?lang=${lang()}`, { credentials: 'same-origin' });
     if (!r.ok) return { error: (await r.json().catch(() => ({})) as { error?: string }).error ?? 'error', status: r.status };
-    return (await r.json()) as GameAnswer;
+    const a = (await r.json()) as GameAnswer;
+    return { ...a, state: unpackGame(a.state) };
   } catch { return { error: 'offline', status: 0 }; }
 }
 
@@ -32,7 +34,8 @@ async function post(path: string, body: unknown): Promise<ActionAnswer> {
     const r = await fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json', 'x-cf-csrf': '1' }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({})) as Record<string, unknown>;
     if (!r.ok) return { ok: false, error: String(j.error ?? 'error'), text: typeof j.text === 'string' ? j.text : undefined, kind: j.kind as ToastKind | undefined, status: r.status };
-    return { ...(j as unknown as GameAnswer), ok: true };
+    const a = j as unknown as GameAnswer;
+    return { ...a, state: a.state ? unpackGame(a.state) : a.state, ok: true };
   } catch { return { ok: false, error: 'offline', status: 0 }; }
 }
 export const postAction = (type: string, params: Record<string, unknown>, idem: string) => post('/api/game/action', { type, params, idem, lang: lang() });

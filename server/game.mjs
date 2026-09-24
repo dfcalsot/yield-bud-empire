@@ -60,23 +60,23 @@ CREATE TABLE IF NOT EXISTS game_idem (account_id INTEGER NOT NULL, idem TEXT NOT
   /** the account's game, created (or migrated from its old browser save) the first time */
   function load(acc, now) {
     const row = q.get.get(acc.id);
-    if (row) return JSON.parse(row.json);
+    if (row) return C.unpackGame(JSON.parse(row.json));
     const est = econ.stateOf(acc.id);
     const paidLevel = Math.max(1, ...(est.levelsClaimed ?? [1]).filter(Number.isFinite));
     const plotIds = econ.free(acc.id, 'land').map((p) => p.id);
     const legacy = econ.legacySave(acc.id);
     const s = C.normalizeGame(legacy?.data ?? null, now, { paidLevel, username: acc.username, plotIds });
     C.reconcileProducts(s, econ.inventoryOf(acc.id).products, now);
-    q.ins.run(acc.id, JSON.stringify(s), 0, now, now, legacy ? `save@${legacy.savedAt}` : null);
+    q.ins.run(acc.id, JSON.stringify(C.packGame(s)), 0, now, now, legacy ? `save@${legacy.savedAt}` : null);
     audit(legacy ? 'game_migrated' : 'game_created', acc.id, null);
     return s;
   }
-  const save = (id, s, now) => q.put.run(JSON.stringify(s), now, id);
+  const save = (id, s, now) => q.put.run(JSON.stringify(C.packGame(s)), now, id);
 
   const langOf = (acc, v) => (v === 'en' || v === 'es' ? v : acc.lang === 'en' ? 'en' : 'es');
 
   /** the answer the browser mirrors: its game, the economy's snapshot and what to show */
-  const answer = (id, s, now, extra) => ({ serverNow: now, state: s, snapshot: econ.snapshot(id, now), ...extra });
+  const answer = (id, s, now, extra) => ({ serverNow: now, state: C.packGame(s), snapshot: econ.snapshot(id, now), ...extra });
 
   function tx(fn) {
     db.exec('BEGIN IMMEDIATE');
@@ -100,7 +100,11 @@ CREATE TABLE IF NOT EXISTS game_idem (account_id INTEGER NOT NULL, idem TEXT NOT
 
   function act(acc, type, params, idem, lang) {
     const id = acc.id;
-    if (idem) { const r = q.idem.get(id, idem); if (r) return JSON.parse(r.response); }
+    // a repeated key (double click, retry after a lost answer): the first result again, with the game as it is now
+    if (idem) {
+      const r = q.idem.get(id, idem);
+      if (r) { const now = Date.now(); return answer(id, load(acc, now), now, { ...JSON.parse(r.response), tickFx: [] }); }
+    }
     if (!C.PUBLIC.has(type)) throw new HttpError(400, 'unknown_action');
     const now = Date.now();
     useLangNow(lang, EN);
@@ -113,7 +117,8 @@ CREATE TABLE IF NOT EXISTS game_idem (account_id INTEGER NOT NULL, idem TEXT NOT
         ctx.payLevels(out.state.playerLevel);
         save(id, out.state, now);
         const res = answer(id, out.state, now, { ok: true, result: out.result, fx: out.fx, tickFx: out.tickFx });
-        if (idem) q.putIdem.run(id, idem, JSON.stringify(res), now);
+        // only what the replay needs (not the whole game: that made each click cost ~100 KB for a day)
+        if (idem) q.putIdem.run(id, idem, JSON.stringify({ ok: true, result: out.result, fx: out.fx }), now);
         return res;
       });
     } catch (e) {

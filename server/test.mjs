@@ -745,13 +745,23 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   const old = { playerLevel: 50, playerXp: 999999, seedInventory: { seed_chrono_og: 9999, hybrid_seed_fake: 50 }, assets: [{ id: 'a1', catalogId: 'water_200', remaining: 1e9, mintedAt: 1 }, { id: 'a2', catalogId: 'no-existe', remaining: 5 }], indoorPlants: [plant], lastSimAt: Date.now() - 3600_000, profile: { displayName: 'Viejo', avatar: '🌿' }, mothersFathers: [] };
   db.prepare('INSERT INTO saves (account_id, data, saved_at, updated_at) VALUES (?,?,?,?)').run(GM.id, JSON.stringify(old), Date.now(), Date.now());
   g = await gs(GM);
-  const m = g.json.state;
+  const m = sim.core.unpackGame(g.json.state);
   ok('migración: el nivel no pasa del que el servidor ya pagó y la XP se limita', m.playerLevel === 3 && m.playerXp < 1600);
   ok('migración: semillas con tope, las de genéticas perdidas se descartan', m.seedInventory.seed_chrono_og === 60 && !('hybrid_seed_fake' in m.seedInventory));
   ok('migración: lotes con su cantidad máxima y solo del catálogo', m.assets.length === 1 && m.assets[0].remaining <= 200);
   ok('migración: la planta queda dentro de lo que el juego permite', m.indoorPlants[0].strain.resinYieldMultiplier <= sim.harvestCap.MAX_RESIN_MULT && m.indoorPlants[0].estimatedDryYieldGrams <= 75 * sim.harvestCap.MAX_RESIN_MULT * 2.4 && m.indoorPlants[0].strain.cycleDurationSeconds >= 40);
   ok('migración: conserva el perfil', m.profile.displayName === 'Viejo');
   ok('migración: se hace una sola vez (la partida vieja ya no manda)', db.prepare('SELECT migrated_from FROM game_state WHERE account_id = ?').get(GM.id).migrated_from?.startsWith('save@'));
+  // tamaño: la partida viaja y se guarda empaquetada, y la clave de doble clic guarda solo el resultado
+  {
+    const packed = sim.core.packGame(m), back = sim.core.unpackGame(packed);
+    const strip = (x) => JSON.stringify(x, (k, v) => (k === 'sim' || k === 'age' ? undefined : v));
+    ok('empaquetar y desempaquetar devuelve la misma partida', strip(back) === strip(m) && back.indoorPlants[0].strain.resinYieldMultiplier === m.indoorPlants[0].strain.resinYieldMultiplier);
+    const idemRows = db.prepare('SELECT length(response) n FROM game_idem WHERE account_id = ?').all(GA.id);
+    ok('la clave de doble clic guarda solo el resultado (no la partida entera)', idemRows.length > 0 && idemRows.every((r) => r.n < 6000), `(máx ${Math.max(...idemRows.map((r) => r.n))} bytes)`);
+    const rep = await act(GA, 'waterPlant', { idx: 0 }, { idem: 'w-1' });
+    ok('repetir una clave devuelve el primer resultado con la partida de ahora', rep.status === 200 && rep.json.ok && Array.isArray(rep.json.fx) && rep.json.state.playerLevel === gameRow(GA).playerLevel);
+  }
   ok('el guardado en la nube del navegador ya no existe', (await call('POST', '/api/save', { jar: GM.jar, ip: GM.ip, body: { data: { playerLevel: 99 }, savedAt: Date.now() } })).status === 404 && (await call('GET', '/api/save', { jar: GM.jar, ip: GM.ip })).status === 404);
 
   const r = stateRow(E1); r.levelsClaimed = [1, 2, 3, 4];
