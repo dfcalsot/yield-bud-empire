@@ -12,6 +12,7 @@ import { GROW_SPEEDUP } from '../sim/harvestCap';
 import { getLang } from '../i18n/core';
 import { GameError, NeedsServer, type Ctx, type Effect, type Ext, type ToastKind } from './ctx';
 import { facilityOfTier, type GameState } from './state';
+import { combineMods, relicMods } from '../sim/relics';
 import { unpackGame } from './pack';
 
 export interface GameAnswer { serverNow: number; state: GameState; snapshot: Snapshot; fx?: Effect[]; tickFx?: Effect[]; ok?: boolean; result?: unknown }
@@ -49,7 +50,8 @@ export const refusalText = (a: { error: string; text?: string }) => a.text ?? re
 /** the staff bonuses of the hires assigned and paid, from the economy snapshot */
 export function modsOf(snap: Snapshot, now: number) {
   const working = STAFF_ROLES.map((r) => snap.staff.find((x) => x.id === snap.staffAssign[r])).filter((x): x is StaffNft => !!x && isActive(x, now));
-  return working.length ? modifiersOf(working) : NO_MODS;
+  const equipped = (snap.relicEquip ?? []).map((id) => snap.relics?.find((r) => r.id === id)).filter((r): r is NonNullable<typeof r> => !!r);
+  return combineMods(working.length ? modifiersOf(working) : NO_MODS, relicMods(equipped));
 }
 
 export function extOfSnapshot(snap: Snapshot, now: number): Ext {
@@ -60,6 +62,7 @@ export function extOfSnapshot(snap: Snapshot, now: number): Ext {
     forgeJobs: snap.forgeJobs ?? [],
     empire: snap.empire ?? null,
     dev: snap.dev,
+    createdAt: snap.createdAt,
   };
 }
 

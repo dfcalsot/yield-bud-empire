@@ -25,6 +25,7 @@ import { BREEDING_LIMITS, CROSS_MINUTES, capGeneration, type Generation } from '
 import { MAX_ROOM_PLANTS } from '../sim/facilities';
 import { PLOT_SIZE } from '../sim/terroir';
 import { t as tr } from '../i18n/core';
+import { emptyActivity, normalizeActivity, type Activity } from '../sim/relics';
 
 export interface BreedingJob { id: string; motherId: string; fatherId: string; name: string; generation: Generation; useReagent: boolean; seed: number; startedAt: number; endsAt: number }
 export interface BreedingLogEntry { id: string; label: string; strainName: string; generation: Generation; mutated: boolean; seeds: number; createdAt: number }
@@ -79,6 +80,8 @@ export interface GameState {
   tutorialPaid: string[];
   /** one-off and cooldown XP / actions: key → time it was last granted */
   once: Record<string, number>;
+  /** this week's activity toward the relic chests (sim/relics.ts) */
+  activity: Activity;
   solBalance: number;
   totalFloraBurned: number;
   burnStats: { speedUp: number; repairs: number; patents: number; v2p: number };
@@ -141,7 +144,7 @@ export function freshGame(now: number, username = ''): GameState {
     machines: [], products: [],
     brand: { name: username ? `${username} Botanicals`.slice(0, CAPS.brandName) : 'YieldSol Botanicals', tagline: tr('Genéticas puras cultivadas en Yield Bud Empire'), level: 1, reputation: 100, dispensaryOpen: true, totalSalesFlora: 0, totalV2pShipped: 0, accentColor: '#10b981' },
     v2pStock: {}, redeemed: [],
-    playerLevel: 1, playerXp: 0, quests: [], missions: emptyMissions(), tutorial: emptyTutorial(), tutorialPaid: [], once: {},
+    playerLevel: 1, playerXp: 0, quests: [], missions: emptyMissions(), tutorial: emptyTutorial(), tutorialPaid: [], once: {}, activity: emptyActivity(now),
     solBalance: 1.85, totalFloraBurned: 0, burnStats: { speedUp: 0, repairs: 0, patents: 0, v2p: 0 }, transactions: [],
     profile: { displayName: username.slice(0, CAPS.displayName) || 'Grower', avatar: '🌱', facilityName: 'Carpa Casera 80x80cm', role: 'Principiante Botánico' },
   };
@@ -376,6 +379,7 @@ export function normalizeGame(raw: unknown, now: number, opts: { paidLevel?: num
   s.missions = normalizeMissions(r.missions);
   s.tutorial = normalizeTutorial(r.tutorial);
   s.tutorialPaid = Array.from(new Set([...arr<string>(r.tutorialPaid), ...s.tutorial.claimed].filter((x) => typeof x === 'string'))).slice(0, 40);
+  s.activity = normalizeActivity(r.activity, now);
   s.once = Object.fromEntries(Object.entries(obj(r.once)).filter(([, v]) => typeof v === 'number').slice(0, 400)) as Record<string, number>;
 
   s.solBalance = num(r.solBalance, 0, CAPS.sol, base.solBalance);
@@ -391,7 +395,9 @@ export function normalizeGame(raw: unknown, now: number, opts: { paidLevel?: num
 }
 
 /** what the old browser game handed out as decoration and nobody earned: a demo patent ("Emerald Terp Queen", id pat-001) */
-export function dropLegacyDemo(s: GameState): GameState {
+export function dropLegacyDemo(s: GameState, now = Date.now()): GameState {
+  // games saved before a field existed get it (e.g. the weekly activity of the relic chests)
+  s.activity = normalizeActivity(s.activity, now);
   if (s.patents.some((p) => p.id === 'pat-001')) s.patents = s.patents.filter((p) => p.id !== 'pat-001');
   // real brand names the old game used are now invented ones (plants planted before keep their label otherwise)
   const fix = (p: PlantInGrow) => {

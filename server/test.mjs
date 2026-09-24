@@ -820,6 +820,65 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   const n = await call('POST', '/api/game/action', { jar: NP.jar, ip: NP.ip, body: { type: 'redeemV2p', params: { itemId: 'v2p_grow_hoodie', name: 'Y', country: 'CR' } } });
   ok('una cuenta normal sí canjea', n.status === 200 && (await state(NP)).snapshot.dev === false);
 }
+// ── cofres de actividad y reliquias: se ganan jugando, bonos con tope, se venden entre jugadores
+{
+  const game = (P, type, params = {}) => call('POST', '/api/game/action', { jar: P.jar, ip: P.ip, body: { type, params } });
+  const gRow = (P) => JSON.parse(db.prepare('SELECT json FROM game_state WHERE account_id = ?').get(P.id).json);
+  const gPut = (P, st) => db.prepare('UPDATE game_state SET json = ? WHERE account_id = ?').run(JSON.stringify(st), P.id);
+  const eSet = (P, f) => { const st = stateRow(P); f(st); db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(st), P.id); };
+  const RA = await mkPlayer(100); await state(RA); await call('GET', '/api/game/state', { jar: RA.jar, ip: RA.ip });
+  // una partida guardada antes de las reliquias (sin el campo de actividad) carga igual
+  { const old = gRow(RA); delete old.activity; gPut(RA, old); const g0 = await call('GET', '/api/game/state', { jar: RA.jar, ip: RA.ip });
+    ok('reliquias: una partida vieja sin actividad carga y la recibe vacía', g0.status === 200 && g0.json.state.activity?.pending === 0); }
+  // una cuenta nueva no gana cofres (antigüedad y rango), aunque juegue
+  let st = gRow(RA); st.activity = { ...st.activity, points: 200, days: ['2000-01-01', '2000-01-02', '2000-01-03', '2000-01-04', '2000-01-05'] }; gPut(RA, st);
+  await game(RA, 'waterPlant', { idx: 0 });
+  ok('reliquias: una cuenta nueva (menos de 7 días, rango 1) no gana cofres', gRow(RA).activity.pending === 0);
+  eSet(RA, (x) => { x.created = Date.now() - 10 * 86400000; x.empireRank = 2; });
+  st = gRow(RA); st.activity = { ...st.activity, points: 59, perKind: {}, days: ['2000-01-01', '2000-01-02'], earned: 0, pending: 0 }; gPut(RA, st);
+  const w = await game(RA, 'waterPlant', { idx: 0 });
+  ok('reliquias: con 60 puntos y 3 días se gana el primer cofre (y lo avisa)', gRow(RA).activity.pending === 1 && w.json.fx.some((f) => /cofre de actividad/i.test(f.m ?? '')));
+  for (let i = 0; i < 25; i++) await game(RA, 'waterPlant', { idx: 0 });
+  ok('reliquias: regar sin parar no llena la semana (tope por tipo)', (gRow(RA).activity.perKind.water ?? 0) <= 15);
+  st = gRow(RA); st.activity = { ...st.activity, points: 1000, days: ['a', 'b', 'c', 'd', 'e', 'f'] }; gPut(RA, st);
+  await game(RA, 'feedNutrients', { idx: 0 });
+  ok('reliquias: máximo 2 cofres por semana', gRow(RA).activity.earned === 2 && gRow(RA).activity.pending === 2);
+  ok('reliquias: el navegador no puede pedir una reliquia directo', (await intent(RA, 'relic_chest', {})).json.error === 'unknown_intent' && (await game(RA, 'relic_chest')).json.error === 'unknown_action');
+  const o1 = await game(RA, 'openActivityChest');
+  const r1 = o1.json.result;
+  ok('reliquias: abrir el cofre acuña una reliquia única con serie y la guarda como NFT', o1.status === 200 && /^relic-\d+$/.test(r1.id) && r1.serial > 1000 && !!db.prepare("SELECT 1 FROM nfts WHERE id = ? AND kind = 'relic'").get(r1.id) && gRow(RA).activity.pending === 1);
+  await game(RA, 'openActivityChest');
+  ok('reliquias: sin cofres pendientes no se abre nada', (await game(RA, 'openActivityChest')).status === 400);
+  // equipar: 3 como máximo, distintas; bonos dentro del tope
+  const mk = (P, n, stat, rarity = 'legendary') => { const rid = `relic-test-${P.id}-${n}`; db.prepare("INSERT INTO nfts (id, account_id, kind, data, minted_at) VALUES (?,?,?,?,?)").run(rid, P.id, 'relic', JSON.stringify({ id: rid, typeId: 'x', stat, rarity, value: 1, serial: 900 + n, season: 'classic', mintedAt: Date.now() }), Date.now()); return rid; };
+  const a1 = mk(RA, 1, 'roomYield'), a2 = mk(RA, 2, 'roomYield'), a3 = mk(RA, 3, 'growth'), a4 = mk(RA, 4, 'labYield'), a5 = mk(RA, 5, 'plotYield');
+  await game(RA, 'unequipRelic', { relicId: r1.id });
+  ok('reliquias: equipar una', (await game(RA, 'equipRelic', { relicId: a1 })).status === 200 && (await state(RA)).snapshot.relicEquip.includes(a1));
+  ok('reliquias: no se equipan dos del mismo tipo', (await game(RA, 'equipRelic', { relicId: a2 })).json.error === 'relic_same_stat');
+  await game(RA, 'equipRelic', { relicId: a3 }); await game(RA, 'equipRelic', { relicId: a4 });
+  ok('reliquias: máximo 3 equipadas', (await game(RA, 'equipRelic', { relicId: a5 })).json.error === 'relic_slots');
+  const mods = sim.relics.relicMods([{ stat: 'roomYield', rarity: 'legendary' }, { stat: 'growth', rarity: 'legendary' }]);
+  ok('reliquias: el bono respeta su tope (sala +8 %, crecimiento +5 %) y nunca toca el precio de venta', mods.roomYield === 0.08 && mods.growth === 0.05 && !('sellBonus' in mods));
+  // fundir
+  const matBefore = (await state(RA)).snapshot.inventory.materials.resina_refinada ?? 0;
+  const m = await game(RA, 'meltRelic', { relicId: a4 });
+  ok('reliquias: fundir da materiales y la reliquia deja de existir', m.status === 200 && (await state(RA)).snapshot.inventory.materials.resina_refinada === matBefore + 5 && !db.prepare('SELECT 1 FROM nfts WHERE id = ?').get(a4) && !(await state(RA)).snapshot.relicEquip.includes(a4));
+  // mercado entre jugadores
+  const RB = await mkPlayer(101); await state(RB); setFlora(RB, 5000);
+  const ls = await intent(RA, 'list', { nftId: a5, price: 300 });
+  ok('reliquias: se ponen a la venta en el mercado', ls.status === 200 && (await market(RB, '?kind=relic')).listings.some((l) => l.nftId === a5));
+  const bb = await intent(RB, 'buy_listing', { listingId: ls.json.result.listingId });
+  ok('reliquias: otro jugador la compra y pasa a ser suya', bb.status === 200 && owner(a5) === RB.id);
+  // una equipada que se pone a la venta deja de dar su bono
+  await intent(RA, 'list', { nftId: a1, price: 100 });
+  ok('reliquias: una reliquia en venta deja de estar equipada', !(await state(RA)).snapshot.relicEquip.includes(a1));
+  // cuentas de desarrollador: reliquias ligadas
+  const RD = await mkPlayer(102); await state(RD); await call('GET', '/api/game/state', { jar: RD.jar, ip: RD.ip });
+  db.prepare("UPDATE accounts SET flags = flags || 'dev,' WHERE id = ?").run(RD.id);
+  const sd = gRow(RD); sd.activity = { ...sd.activity, pending: 1 }; gPut(RD, sd);
+  const od = await game(RD, 'openActivityChest');
+  ok('reliquias: una cuenta de desarrollador recibe reliquias ligadas que no se pueden vender', od.status === 200 && od.json.result.bound === true && (await intent(RD, 'list', { nftId: od.json.result.id, price: 100 })).json.error === 'relic_bound');
+}
 // ── idioma de la cuenta: correos en inglés para quien juega en inglés
 {
   cfg.inviteOnly = false;

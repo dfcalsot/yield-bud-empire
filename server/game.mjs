@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS game_idem (account_id INTEGER NOT NULL, idem TEXT NOT
     return {
       flora: w.flora, tier: st.tier, facility, mods: econ.activeMods(id, st, now),
       plots: econ.free(id, 'land'), avatars: econ.free(id, 'avatar').map((a) => a.designId),
-      inventory: econ.inventoryOf(id), forgeJobs: Array.isArray(st.forgeJobs) ? st.forgeJobs : [], empire: econ.empireOf(id), dev: isDev(id),
+      inventory: econ.inventoryOf(id), forgeJobs: Array.isArray(st.forgeJobs) ? st.forgeJobs : [], empire: econ.empireOf(id), dev: isDev(id), createdAt: st.created,
     };
   }
 

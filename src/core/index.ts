@@ -22,20 +22,20 @@ export interface Applied extends Advanced { result: unknown; tickFx: Effect[] }
 
 /** move the world to ctx.now; `quiet` = the browser's display tick (no notices, nothing that needs the server) */
 export function advance(state: GameState, ctx: Ctx, opts: { quiet?: boolean; extraSeconds?: number } = {}): Advanced {
-  const r = { s: clone(state), ctx, fx: [] as Effect[] };
+  const r: { s: GameState; ctx: Ctx; fx: Effect[]; late?: Effect[] } = { s: clone(state), ctx, fx: [] };
   tick(r, opts);
   if (!opts.quiet) reconcileProducts(r.s, ctx.ext().inventory.products, ctx.now);
-  return { state: r.s, fx: r.fx };
+  return { state: r.s, fx: [...r.fx, ...(r.late ?? [])] };
 }
 
 export function applyAction(state: GameState, type: string, params: Record<string, unknown> | undefined, ctx: Ctx, opts: { quiet?: boolean } = {}): Applied {
   const fn = PUBLIC.has(type) ? ACTIONS[type] : undefined;
   if (!fn) throw Object.assign(new Error('unknown_action'), { code: 'unknown_action' });
-  const r = { s: clone(state), ctx, fx: [] as Effect[] };
+  const r: { s: GameState; ctx: Ctx; fx: Effect[]; late?: Effect[] } = { s: clone(state), ctx, fx: [] };
   tick(r, opts);
-  const tickFx = r.fx;
-  r.fx = [];
+  const tickFx = [...r.fx, ...(r.late ?? [])];
+  r.fx = []; r.late = [];
   const result = fn(r, params && typeof params === 'object' ? params : {});
   if (!opts.quiet) reconcileProducts(r.s, ctx.ext().inventory.products, ctx.now);
-  return { state: r.s, result: result === undefined ? null : result, fx: r.fx, tickFx };
+  return { state: r.s, result: result === undefined ? null : result, fx: [...r.fx, ...(r.late ?? [])], tickFx };
 }

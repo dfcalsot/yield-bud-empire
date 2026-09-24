@@ -9,7 +9,7 @@ import {
   CATALOG_BY_ID, USE, newAsset, bestFeedBonus, repairCostOf, ownsStation, spendPest, garbageOf, stockOf,
 } from '../economy/catalog';
 import { applyTechnique, canTrain, TECHNIQUE_BY_ID } from '../sim/techniques';
-import { canCraft, craftTotals, FORGE_RECIPE_BY_ID } from '../sim/forge';
+import { canCraft, craftTotals, FORGE_RECIPE_BY_ID, MATERIAL_BY_ID, type MaterialId } from '../sim/forge';
 import { breedingCost, canBreed, capGeneration, CHAMBER_FEE, CROSS_MINUTES, lineageLabel, BREEDING_LIMITS } from '../sim/breeding';
 import { productKey, PRODUCT_PRICE } from '../sim/products';
 import { boostWithinPhase, isHarvestable, phaseOf, PHASES, stageOf } from '../sim/phases';
@@ -26,6 +26,7 @@ import {
   stageOfProgress, strengthForEc, type Mix, type MediumId, type StageId, type WaterId,
 } from '../sim/nutrition';
 import { RECIPE_BY_ID, HPLC_FEE } from '../lab/recipes';
+import { RELIC_RARITY_LABEL, RELIC_TYPE_BY_ID, rollWeek, type Relic } from '../sim/relics';
 import { t as tr } from '../i18n/core';
 import { GameError, type Ctx } from './ctx';
 import {
@@ -1049,6 +1050,26 @@ export const ACTIONS: Record<string, Action> = {
     return 40;
   },
 
+  /* ── relics: the weekly activity chest and the relics it gives ── */
+  openActivityChest(r) {
+    r.s.activity = rollWeek(r.s.activity, r.ctx.now);
+    if (r.s.activity.pending <= 0) no(tr('No tienes cofres de actividad por abrir. Juega esta semana para ganar uno.'));
+    const res = r.ctx.econ<{ relic: Relic }>('relic_chest', {});
+    r.s.activity = { ...r.s.activity, pending: r.s.activity.pending - 1, opened: r.s.activity.opened + 1 };
+    sfx(r, 'levelup');
+    const type = RELIC_TYPE_BY_ID[res.relic.typeId];
+    say(r, tr('Reliquia acuñada: {name} ({rarity}). Equípala o véndela en el Maletín → Reliquias.', { name: type?.name ?? res.relic.typeId, rarity: RELIC_RARITY_LABEL[res.relic.rarity] ?? res.relic.rarity }), 'success');
+    return res.relic;
+  },
+  equipRelic(r, p) { r.ctx.econ('relic_equip', { relicId: P.str(p.relicId, 80), on: true }); sfx(r, 'click'); },
+  unequipRelic(r, p) { r.ctx.econ('relic_equip', { relicId: P.str(p.relicId, 80), on: false }); sfx(r, 'click'); },
+  meltRelic(r, p) {
+    const res = r.ctx.econ<{ materials: Record<string, number> }>('relic_melt', { relicId: P.str(p.relicId, 80) });
+    sfx(r, 'burn');
+    say(r, tr('Reliquia fundida: recibiste {what}.', { what: Object.entries(res.materials).map(([m, n]) => `${n}× ${MATERIAL_BY_ID[m as MaterialId]?.name ?? m}`).join(', ') }), 'info');
+    return res.materials;
+  },
+
   /* ── progress ── */
   claimQuestReward(r, p) {
     const q = questsOf(r.s).find((x) => x.id === p.questId);
@@ -1175,6 +1196,7 @@ export const PUBLIC = new Set(Object.keys(ACTIONS).filter((k) => k !== 'breedStr
 export const SERVER_ONLY = new Set([
   'buyPlot', 'openChest', 'upgradeFacility', 'speedUpConstruction', 'hireCandidate', 'openStaffChest', 'assignStaff', 'rankUpStaff',
   'claimDaily', 'openGift', 'listNft', 'cancelListing', 'buyListing', 'claimQuestReward',
+  'openActivityChest', 'equipRelic', 'unequipRelic', 'meltRelic',
 ]);
 
 export { stockOf };

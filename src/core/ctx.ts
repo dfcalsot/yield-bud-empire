@@ -27,6 +27,8 @@ export interface Ext {
   empire: EmpireView | null;
   /** a developer account (test balance): it can play, but never take anything real out with $FLORA */
   dev?: boolean;
+  /** when the account started (its age gates the activity chests) */
+  createdAt?: number;
 }
 
 export interface Ctx {

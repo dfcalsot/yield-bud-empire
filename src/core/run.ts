@@ -5,13 +5,15 @@
 import type { PlantInGrow, SolanaTransaction, Strain, GrowStage } from '../types';
 import { CATALOG_BY_ID, USE, ownsStation, spendResource, stockOf, type ResourceKind } from '../economy/catalog';
 import { bump, type MissionEvent } from '../sim/missions';
+import { ACTIVITY, addActivity, normalizeActivity } from '../sim/relics';
 import { ECON } from '../sim/economy';
 import { INITIAL_QUESTS } from '../data/initialData';
 import { t as tr } from '../i18n/core';
 import { GameError, type Ctx, type Effect, type Sfx, type ToastKind } from './ctx';
 import { CAPS, XP_NEEDED, rankTitleOf, seedBankOf, type GameState } from './state';
 
-export interface Run { s: GameState; ctx: Ctx; fx: Effect[] }
+/** `late`: notices shown after everything else the action says (so a chest earned isn't hidden by the action's own toast) */
+export interface Run { s: GameState; ctx: Ctx; fx: Effect[]; late?: Effect[] }
 
 export const say = (r: Run, m: string, k: ToastKind = 'info') => { r.fx.push({ t: 'toast', m, k }); };
 export const sfx = (r: Run, s: Sfx) => { r.fx.push({ t: 'sfx', s }); };
@@ -71,7 +73,16 @@ export function questProgress(r: Run, id: string, inc = 1) {
   }
 }
 
-export const event = (r: Run, ev: MissionEvent, n = 1) => { if (n > 0) r.s.missions = bump(r.s.missions, ev, n, r.ctx.now); };
+export function event(r: Run, ev: MissionEvent, n = 1) {
+  if (!(n > 0)) return;
+  r.s.missions = bump(r.s.missions, ev, n, r.ctx.now);
+  // the week's activity toward the relic chests (only accounts old enough and with some empire rank earn them)
+  const ext = r.ctx.ext();
+  const eligible = (ext.empire?.rank ?? 1) >= ACTIVITY.minEmpireRank && r.ctx.now - (ext.createdAt ?? r.ctx.now) >= ACTIVITY.minAgeDays * 86400_000;
+  const { activity, newChests } = addActivity(r.s.activity ?? normalizeActivity(null, r.ctx.now), ev, n, r.ctx.now, eligible);
+  r.s.activity = activity;
+  if (newChests > 0) (r.late ??= []).push({ t: 'sfx', s: 'quest' }, { t: 'toast', m: tr('🎁 ¡Ganaste un cofre de actividad! Ábrelo en el Maletín → Reliquias.'), k: 'success' });
+}
 
 /** a key granted at most once every `hours` (0 = once ever); returns whether it was granted now */
 export function once(r: Run, key: string, hours = 0): boolean {

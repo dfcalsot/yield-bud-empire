@@ -1,4 +1,6 @@
 import { EmpireBadge } from '../empire/EmpireBadge';
+import { RelicCard } from '../relics/RelicCard';
+import type { Relic } from '../../sim/relics';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowLeftRight, Flame, RefreshCw, Undo2 } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
@@ -12,13 +14,14 @@ import { DESIGN_BY_ID } from '../../sim/avatars';
 import type { StaffNft } from '../../sim/staff';
 import { t, k } from '../../i18n';
 
-const KINDS: Array<[ListingKind | 'all', string]> = [['all', k('Todo')], ['staff', k('Personal')], ['land', k('Tierras')], ['avatar', k('Avatares')]];
+const KINDS: Array<[ListingKind | 'all', string]> = [['all', k('Todo')], ['staff', k('Personal')], ['land', k('Tierras')], ['avatar', k('Avatares')], ['relic', k('Reliquias')]];
 const RARITIES = ['all', 'common', 'rare', 'epic', 'legendary'] as const;
 const SORTS: Array<[string, string]> = [['new', k('Recientes')], ['cheap', k('Más baratos')], ['dear', k('Más caros')]];
 
 /** the item of a listing as the same collectible card the rest of the game uses */
 export const ListingCard: React.FC<{ l: ListingView; footer?: React.ReactNode }> = ({ l, footer }) => {
   if (l.kind === 'staff') return <StaffCard staff={l.data as unknown as StaffNft} footer={footer} />;
+  if (l.kind === 'relic') return <RelicCard relic={l.data as unknown as Relic} footer={footer} />;
   if (l.kind === 'land') return <LandCard card={landCardOf(l.data as unknown as Parameters<typeof landCardOf>[0])} footer={footer} />;
   const d = DESIGN_BY_ID[String(l.data.designId)];
   if (!d) return null;

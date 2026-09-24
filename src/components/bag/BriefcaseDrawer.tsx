@@ -13,8 +13,9 @@ import { landRarity } from '../../sim/lands';
 import { RosterPanel } from '../staff/RosterPanel';
 import { StaffPortrait } from '../staff/StaffCard';
 import { ListNftButton } from '../market/ListNft';
+import { RelicsTab } from '../relics/RelicsTab';
 import { ROLE_INFO } from '../../sim/staff';
-import { Tag, Hammer } from 'lucide-react';
+import { Tag, Hammer, Gift } from 'lucide-react';
 import { MATERIALS, type MaterialId, type MaterialFamily } from '../../sim/forge';
 import { MaterialGlyph } from '../forge/ForgeIcons';
 import { t as tr } from '../../i18n';
@@ -25,7 +26,7 @@ import { t as tr } from '../../i18n';
  * It only reads existing game state; the actions are the same ones the other screens call.
  */
 type Match = ((...xs: Array<string | undefined>) => boolean) & { searching: boolean };
-type TabId = 'recursos' | 'equipo' | 'semillas' | 'cosecha' | 'materiales' | 'genetica' | 'coleccion' | 'plantilla';
+type TabId = 'recursos' | 'equipo' | 'semillas' | 'cosecha' | 'materiales' | 'genetica' | 'coleccion' | 'plantilla' | 'reliquias';
 
 const SEEN_KEY = 'ybe_bag_seen_at';
 const readSeen = () => { try { return Number(localStorage.getItem(SEEN_KEY)) || 0; } catch { return 0; } };
@@ -44,7 +45,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
   const [q, setQ] = useState('');
   const [seenAt, setSeenAt] = useState(0);
 
-  useEffect(() => { if (open && initialTab && ['recursos', 'equipo', 'semillas', 'cosecha', 'materiales', 'genetica', 'coleccion', 'plantilla'].includes(initialTab)) setTab(initialTab as TabId); }, [open, initialTab]);
+  useEffect(() => { if (open && initialTab && ['recursos', 'equipo', 'semillas', 'cosecha', 'materiales', 'genetica', 'coleccion', 'plantilla', 'reliquias'].includes(initialTab)) setTab(initialTab as TabId); }, [open, initialTab]);
   useEffect(() => {
     if (open) { setSeenAt(readSeen()); return; }
     writeSeen(Date.now());
@@ -71,6 +72,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
     genetica: g.mothersFathers.length + g.patents.length,
     coleccion: g.avatars.reduce((n: number, a: { count: number }) => n + a.count, 0) + g.plots.length + g.staff.length,
     plantilla: g.staff.length,
+    reliquias: g.relics.length,
   };
   const newIn = (list: OwnedAsset[]) => list.filter((a) => a.mintedAt > seenAt && !a.starter).length;
 
@@ -83,6 +85,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
     { id: 'genetica', label: tr('Genética'), icon: <FlaskConical className="w-4 h-4" /> },
     { id: 'coleccion', label: 'NFT', icon: <Crown className="w-4 h-4" /> },
     { id: 'plantilla', label: tr('Plantilla'), icon: <Users className="w-4 h-4" /> },
+    { id: 'reliquias', label: tr('Reliquias'), icon: <Gift className="w-4 h-4" />, fresh: g.activity.pending },
   ];
 
   if (!open) return null;
@@ -125,6 +128,7 @@ export const BriefcaseDrawer: React.FC<{ open: boolean; onClose: () => void; onN
           {tab === 'cosecha' && <HarvestTab match={match} onNavigate={(t) => { onClose(); onNavigate(t); }} />}
           {tab === 'materiales' && <MaterialsTab match={match} onOpenForge={() => { onClose(); onNavigate('forja'); }} />}
           {tab === 'genetica' && <GeneticsTab match={match} />}
+          {tab === 'reliquias' && <RelicsTab match={match} />}
           {tab === 'plantilla' && <RosterPanel onHire={() => { onClose(); onNavigate('market:staff'); }} />}
           {tab === 'coleccion' && <CollectionTab match={match} onOpenPlanet={() => { onClose(); onNavigate('planeta'); }} onOpenRoster={() => setTab('plantilla')} onOpenMarket={() => { onClose(); onNavigate('market:p2p'); }} />}
         </div>

@@ -22,6 +22,7 @@ import type { NpcKind } from '../components/npc/Npc';
 import type { TutorialState } from '../sim/tutorial';
 import type { MediumId, Mix, StageId } from '../sim/nutrition';
 import { rankInfo, type EmpireView } from '../sim/empire';
+import { emptyActivity, type Activity, type Relic } from '../sim/relics';
 import { CATALOG_BY_ID, USE, equipStatsOf, gardenerLevelOf, garbageOf, ownsStation, stockOf, type EquipStats, type OwnedAsset } from '../economy/catalog';
 import { type ListingView, type Snapshot } from '../economy/ledger';
 import { mintAddressFor } from '../utils/nft';
@@ -83,6 +84,16 @@ interface GameContextType {
 
   /** empire rank, its points by source and its perks (counted by the server) */
   empire: EmpireView | null;
+  /** relic NFTs held, the ones equipped (max 3) and this week's activity toward the chests */
+  relics: Relic[];
+  relicEquip: string[];
+  activity: Activity;
+  /** when the account's game started (the server's clock; gates the activity chests) */
+  accountStartedAt: number;
+  openActivityChest: () => Promise<Relic | null>;
+  equipRelic: (relicId: string) => void;
+  unequipRelic: (relicId: string) => void;
+  meltRelic: (relicId: string) => void;
   facilities: GrowFacility[];
   currentFacility: GrowFacility;
   upgradeFacility: (facilityId: string) => Promise<void>;
@@ -655,6 +666,11 @@ const GameView: React.FC<GameViewProps> = ({ view, account, online, act, send, n
     currentUser, isAuthenticated: true, logoutUser, updateUserProfile,
 
     empire: snap.empire ?? null,
+    relics: snap.relics ?? [], relicEquip: snap.relicEquip ?? [], activity: s.activity ?? emptyActivity(now), accountStartedAt: snap.createdAt ?? account?.createdAt ?? now,
+    openActivityChest: () => send<Relic>('openActivityChest'),
+    equipRelic: (relicId) => { void send('equipRelic', { relicId }); },
+    unequipRelic: (relicId) => { void send('unequipRelic', { relicId }); },
+    meltRelic: (relicId) => { void send('meltRelic', { relicId }); },
     facilities, currentFacility,
     upgradeFacility: async (facilityId) => { await send('upgradeFacility', { facilityId }); },
     construction: snap.construction,

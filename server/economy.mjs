@@ -12,7 +12,7 @@
 // only from `process`/`forge` (bounded by the recipe's yield), inputs only from `harvest`, which is capped by what the account's
 // facility and plots can physically grow (sim/harvestCap.ts). The grow simulation stays in the browser; its output can't exceed that.
 import crypto from 'node:crypto';
-import { economy as E, products as PR, facilities as F, staff as S, avatars as A, terroir as T, lands as L, harvestCap as HC, forge as FG, empire as EM, INITIAL_FACILITIES, INITIAL_QUESTS } from './gen/sim.mjs';
+import { economy as E, products as PR, facilities as F, staff as S, avatars as A, terroir as T, lands as L, harvestCap as HC, forge as FG, empire as EM, relics as RL, INITIAL_FACILITIES, INITIAL_QUESTS } from './gen/sim.mjs';
 
 const DAY = 86400_000;
 // per product gram, before ECON.priceScale: the same table the client and the lab stations use (sim/products.ts), by recipe id then by type
@@ -24,7 +24,7 @@ const CAPS = { staff: 24, avatars: 60, plots: 12, floraOnImport: 1500 };
 const INV_IMPORT = { flower: 3000, trim: 1500, material: 200, productFlora: 20000 };
 const MATERIAL_IDS = new Set(FG.MATERIALS.map((m) => m.id));
 // Player-to-player market: what is listed sits in escrow, the sale is one transaction, and a slice of every sale is burned.
-const P2P = { feeRate: 0.05, minPrice: 1, maxPrice: 100000, maxListings: 20, pageSize: 24, kinds: ['staff', 'land', 'avatar'] };
+const P2P = { feeRate: 0.05, minPrice: 1, maxPrice: 100000, maxListings: 20, pageSize: 24, kinds: ['staff', 'land', 'avatar', 'relic'] };
 const rng = () => crypto.randomInt(0, 2 ** 32) / 2 ** 32;
 /** what the browser may still ask the economy for directly (the rest runs inside game actions) */
 const PUBLIC_INTENTS = new Set(['claim_daily', 'start_build', 'speedup_build', 'hire', 'staff_chest', 'rank_up', 'assign', 'buy_plot', 'avatar_chest', 'open_gift', 'list', 'cancel_listing', 'buy_listing', 'sell']);
@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS gifts (id INTEGER PRIMARY KEY AUTOINCREMENT, account_
 CREATE INDEX IF NOT EXISTS idx_gifts_acc ON gifts(account_id, opened_at);
 CREATE TABLE IF NOT EXISTS econ_idem (account_id INTEGER NOT NULL, idem TEXT NOT NULL, response TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (account_id, idem));
 CREATE TABLE IF NOT EXISTS inventory (account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, item TEXT NOT NULL, grams REAL NOT NULL, PRIMARY KEY (account_id, item));
+CREATE TABLE IF NOT EXISTS serials (name TEXT PRIMARY KEY, n INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE, data TEXT NOT NULL, saved_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
 `);
   const q = {
@@ -85,6 +86,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     putInv: db.prepare('INSERT INTO inventory (account_id, item, grams) VALUES (?,?,?) ON CONFLICT(account_id, item) DO UPDATE SET grams = excluded.grams'),
     save: db.prepare('SELECT data, saved_at FROM saves WHERE account_id = ?'),
     flagsOf: db.prepare('SELECT flags FROM accounts WHERE id = ?'),
+    nextSerial: db.prepare('INSERT INTO serials (name, n) VALUES (?, 1001) ON CONFLICT(name) DO UPDATE SET n = n + 1 RETURNING n'),
     salesOf: db.prepare("SELECT COALESCE(SUM(delta), 0) s FROM ledger WHERE account_id = ? AND kind = 'sale'"),
     putSave: db.prepare('INSERT INTO saves (account_id, data, saved_at, updated_at) VALUES (?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET data = excluded.data, saved_at = excluded.saved_at, updated_at = excluded.updated_at'),
   };
@@ -160,7 +162,8 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
   const activeMods = (id, st, now) => {
     const all = roster(id);
     const working = S.STAFF_ROLES.map((r) => all.find((x) => x.id === st.staffAssign[r])).filter((x) => x && S.isActive(x, now));
-    return working.length ? S.modifiersOf(working) : { ...S.NO_MODS };
+    const staffMods = working.length ? S.modifiersOf(working) : { ...S.NO_MODS };
+    return RL.combineMods(staffMods, RL.relicMods(equippedRelics(id, st)));
   };
   function settle(id, now) {
     const st = stateOf(id);
@@ -186,6 +189,11 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
 
   /* ───────────── empire rank (sim/empire.ts): points from what really happened; the rank never goes down ───────────── */
   /** what the game itself keeps (patents, chamber crosses, player level): server/game.mjs reports it after every action */
+  /** the relics equipped that the account still holds (a listed or sold one stops counting) */
+  function equippedRelics(id, st) {
+    const mine = free(id, 'relic');
+    return (st.relicEquip ?? []).map((rid) => mine.find((r) => r.id === rid)).filter(Boolean);
+  }
   function setGameStats(id, g) {
     const st = stateOf(id); const cur = st.gameStats ?? {};
     if (cur.patents === g.patents && cur.crosses === g.crosses && cur.level === g.level) return;
@@ -228,6 +236,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       // el nivel más alto que el servidor ya pagó: el juego nunca muestra menos (antes se perdía al cambiar de navegador)
       level: Math.max(1, ...(st.levelsClaimed ?? [1]).filter(Number.isFinite)),
       empire: empireOf(id),
+      relics: free(id, 'relic'), relicEquip: (st.relicEquip ?? []).filter((rid) => free(id, 'relic').some((r) => r.id === rid)), createdAt: st.created,
       dev: /(^|,)dev,/.test(q.flagsOf.get(id)?.flags ?? ''),
       gifts: q.giftsOf.all(id).map((g) => ({ id: g.id, amount: g.amount, note: g.note, createdAt: g.created_at })),
       listings: q.activeOf.all(id).map(listingView), p2p: { feeRate: P2P.feeRate, minPrice: P2P.minPrice, maxPrice: P2P.maxPrice, maxListings: P2P.maxListings },
@@ -411,6 +420,11 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
         for (const r of Object.keys(st.staffAssign)) if (st.staffAssign[r] === row.id) delete st.staffAssign[r];   // a listed assistant stops working
         saveState(id, st);
       } else if (row.kind === 'land') rarity = L.landRarity(data.landRating);
+      else if (row.kind === 'relic') {
+        need(!data.bound, 'relic_bound');
+        const st = stateOf(id); st.relicEquip = (st.relicEquip ?? []).filter((x) => x !== row.id); saveState(id, st);   // a listed relic stops working
+        rarity = data.rarity;
+      }
       else if (row.kind === 'avatar') {
         rarity = A.DESIGN_BY_ID[data.designId]?.rarity ?? '';
         // one copy leaves the stack: the listing is its own NFT until it is sold or taken back
@@ -434,6 +448,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       need(l.seller_id !== id, 'own_listing');
       if (l.kind === 'staff') need(roster(id).length < CAPS.staff, 'roster_full');
       if (l.kind === 'land') need(nftRows(id, 'land').length < maxLandsOf(id), 'too_many_lands');
+      if (l.kind === 'relic') need(nftRows(id, 'relic').length < RL.MAX_RELICS, 'too_many_relics');
       const fee = Math.max(1, Math.round(l.price * P2P.feeRate));
       transfer(id, l.seller_id, l.price, fee, `${l.kind} #${l.nft_id}`, now);
       if (l.kind === 'avatar') giveAvatar(id, JSON.parse(l.data), l.nft_id, now); else q.moveNft.run(id, l.nft_id);
@@ -533,6 +548,40 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       }
       st.invImported = true; saveState(id, st);
       return { inventory: inventoryOf(id) };
+    },
+
+    /* ── relics (sim/relics.ts): only the game core calls these, after checking the account earned the chest ── */
+    relic_chest({ id, now }) {
+      need(nftRows(id, 'relic').length < RL.MAX_RELICS, 'too_many_relics');
+      const dev = /(^|,)dev,/.test(q.flagsOf.get(id)?.flags ?? '');
+      const serial = q.nextSerial.get('relic').n;
+      const rid = `relic-${serial}`;
+      const relic = RL.rollRelic(rng, rid, serial, A.seasonOf(new Date(now)), now, dev);
+      q.putNft.run(rid, id, 'relic', JSON.stringify(relic), now);
+      return { relic };
+    },
+    relic_equip({ id, p }) {
+      const row = q.nft.get(str(p.relicId, 80)); need(row && row.account_id === id && row.kind === 'relic' && !row.escrow, 'not_yours');
+      const relic = JSON.parse(row.data); const st = stateOf(id);
+      const eq = equippedRelics(id, st).map((r) => r.id);
+      if (p.on) {
+        if (!eq.includes(relic.id)) {
+          need(eq.length < RL.MAX_EQUIPPED, 'relic_slots');
+          need(!equippedRelics(id, st).some((r) => r.stat === relic.stat), 'relic_same_stat');
+          eq.push(relic.id);
+        }
+      } else { const i = eq.indexOf(relic.id); if (i >= 0) eq.splice(i, 1); }
+      st.relicEquip = eq; saveState(id, st);
+      return { relicEquip: eq };
+    },
+    relic_melt({ id, p }) {
+      const row = q.nft.get(str(p.relicId, 80)); need(row && row.account_id === id && row.kind === 'relic' && !row.escrow, 'not_yours');
+      const relic = JSON.parse(row.data); const st = stateOf(id);
+      st.relicEquip = (st.relicEquip ?? []).filter((x) => x !== relic.id); saveState(id, st);
+      q.delNft.run(relic.id);
+      const materials = RL.meltReward(relic.rarity);
+      for (const [m, n] of Object.entries(materials)) invAdd(id, `mat:${m}`, n);
+      return { materials };
     },
 
     spend({ id, now, p }) {

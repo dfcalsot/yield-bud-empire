@@ -4,6 +4,7 @@ import type { Depth } from '../sim/economy';
 import type { PityMap } from '../sim/avatars';
 import { k, t } from '../i18n/core';
 import type { EmpireView } from '../sim/empire';
+import type { Relic } from '../sim/relics';
 
 /**
  * The client of the server-owned economy (server/economy.mjs). The server keeps the wallet, the ledger and the NFTs; the game keeps
@@ -29,10 +30,14 @@ export interface Snapshot {
   empire?: EmpireView;
   /** developer account: it plays, but nothing real can be taken out with $FLORA */
   dev?: boolean;
+  /** relic NFTs held (not on sale), the ones equipped, and when the account started */
+  relics?: Relic[];
+  relicEquip?: string[];
+  createdAt?: number;
   gifts: Array<{ id: number; amount: number; note: string; createdAt: number }>;
   listings: ListingView[]; p2p: { feeRate: number; minPrice: number; maxPrice: number; maxListings: number };
 }
-export type ListingKind = 'staff' | 'land' | 'avatar';
+export type ListingKind = 'staff' | 'land' | 'avatar' | 'relic';
 /** one offer on the player market: the item travels with its data, so it can be drawn as its own card */
 export interface ListingView { id: number; nftId: string; kind: ListingKind; rarity: string; price: number; createdAt: number; sellerId: number; data: Record<string, unknown>; seller?: string; sellerRank?: number; mine?: boolean }
 export interface MarketPage { listings: ListingView[]; more: boolean; feeRate: number; recent: Array<{ id: number; kind: ListingKind; rarity: string; price: number; at: number }> }
@@ -88,6 +93,7 @@ export const REASON: Record<string, string> = {
   forge_material: k('Te faltan materiales para esa receta'), forge_tier: k('Esa receta pide una instalación de más nivel'), forge_jobs: k('La forja ya tiene el máximo de trabajos en marcha'),
   forge_flora: k('Saldo insuficiente para la forja'), forge_qty: k('Cantidad no válida'),
   empire_rank: k('Esa sede pide un rango de imperio más alto'),
+  too_many_relics: k('Ya tienes el máximo de reliquias'), relic_slots: k('Ya tienes 3 reliquias equipadas'), relic_same_stat: k('Ya tienes equipada una reliquia de ese tipo'), relic_bound: k('Esa reliquia está ligada a tu cuenta: no se puede vender'),
 };
 /** el motivo de un rechazo del servidor, en el idioma del jugador (undefined si no hay texto para ese código) */
 export const reasonText = (code: string): string | undefined => (REASON[code] ? t(REASON[code]) : undefined);
