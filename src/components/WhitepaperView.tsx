@@ -39,7 +39,7 @@ export const WhitepaperView: React.FC = () => {
       milestones: [
         t('Finalización de conceptos y pruebas de estrés de la tokenómica deflacionaria'),
         t('Desarrollo de contratos inteligentes principales en Solana Devnet (Programas Anchor)'),
-        t('Creación de prototipos visuales asistidos por IA (interfaz, cepas, entornos)')
+        t('Prototipos visuales rápidos (interfaz, cepas, entornos)')
       ]
     },
     {
@@ -319,7 +319,7 @@ export const WhitepaperView: React.FC = () => {
                 {t('4. Identidad Visual y Tecnológica')}
               </h2>
               <p>
-                {t('Yield Bud Empire aprovecha tuberías avanzadas de generación por IA para la producción de activos dinámicos, garantizando una alta fidelidad visual en los clientes web sin inflar los tamaños de descarga.')}
+                {t('Yield Bud Empire dibuja su arte con código (SVG y CSS procedurales) para producir activos dinámicos, garantizando una alta fidelidad visual en los clientes web sin inflar los tamaños de descarga.')}
               </p>
 
               <div className="rounded-2xl overflow-hidden border border-neutral-800">

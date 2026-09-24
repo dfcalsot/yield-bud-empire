@@ -1,23 +1,16 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Yield Bud Empire — el juego
 
-# Run and deploy your AI Studio app
+Juego de cultivo en el navegador (React + Vite) con un servicio de cuentas y juego en Node (`server/`). Lo publica el repositorio de despliegue.
 
-This contains everything you need to run your app locally.
+## Correr en local
 
-View your app in AI Studio: https://ai.studio/apps/6aa77698-a510-4d0a-9621-c12a524de435
+Requisitos: Node.js 22 o más.
 
-## Run Locally
+1. `npm install`
+2. Servicio de cuentas y juego: `npm run auth` (puerto 3020)
+3. Juego: `npm run dev` (puerto 3000; `/api` va al servicio)
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Pruebas del servidor: `npm run auth:test`. Chequeo de tipos e idiomas: `npm run lint`.
 
 ## Idiomas (español / inglés)
 
