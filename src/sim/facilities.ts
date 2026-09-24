@@ -3,7 +3,7 @@
  * with patience and the paying player advances faster, but only within limits (a few speed-ups per day, each pricier than the
  * last, and every speed-up burns $FLORA). Pure, so the economy simulation can reuse it.
  */
-export const BUILD_HOURS: Record<string, number> = { tent_pro: 12, greenhouse_commercial: 48, lab_pharma_hydro: 120 };
+export const BUILD_HOURS: Record<string, number> = { tent_pro: 12, greenhouse_commercial: 48, lab_pharma_hydro: 120, hydro_complex: 168, grow_campus: 240, empire_seat: 336 };
 
 /** speed-ups allowed per real day, the share of the REMAINING time each one cuts, and the price curve */
 export const SPEEDUP = { perDay: 2, share: 0.2, minCutHours: 1, baseFloraPerHour: 15, priceGrowth: 1.8 } as const;

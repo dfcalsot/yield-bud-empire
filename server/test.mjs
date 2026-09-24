@@ -768,6 +768,45 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(r), E1.id);
   ok('nivel: el estado del servidor informa el nivel más alto ya pagado', (await state(E1)).snapshot.level === 4 && (await state(G1)).snapshot.level === 1);
 }
+// ── rango de imperio: puntos de lo que de verdad pasó, nunca baja, abre sedes y topes
+{
+  const EP = await mkPlayer(90); await state(EP);
+  const emp = async () => (await state(EP)).snapshot.empire;
+  let e = await emp();
+  ok('imperio: una cuenta nueva empieza en rango 1 con su desglose', e.rank === 1 && e.points === 0 && e.perks.maxLands === 12 && e.next === 250);
+  // regalos y asignaciones no suman; las ventas sí
+  db.prepare("INSERT INTO ledger (account_id, ts, kind, delta, balance, ref) VALUES (?,?,?,?,?,?)").run(EP.id, Date.now(), 'grant', 900000, 900000, 'prueba');
+  e = await emp();
+  ok('imperio: un regalo o una asignación de $FLORA no da puntos', e.breakdown.sales === 0 && e.points === 0);
+  stock(EP, 'prod:live_rosin', 30); setFlora(EP, 100000);
+  for (let i = 0; i < 3; i++) await intent(EP, 'sell', { type: 'live_rosin', grams: 10 });
+  e = await emp();
+  ok('imperio: las ventas del dispensario suman puntos', e.breakdown.sales > 0);
+  // cosechar suma (lo que la economía guardó, con su techo)
+  const h = await inner(EP, 'harvest', { flower: 400, trim: 100, source: 'room' });
+  e = await emp();
+  ok('imperio: la flor cosechada suma (1 punto cada 40 g, con el techo físico)', h.status === 200 && e.breakdown.harvested === Math.floor(h.json.result.flower / 40));
+  // tierras y rango que no baja
+  const st0 = stateRow(EP); st0.stats = { harvested: 400000 }; db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(st0), EP.id);
+  e = await emp();
+  ok('imperio: con suficientes puntos sube de rango y abre ventajas (tope de tierras, forja, cámara)', e.rank >= 8 && e.perks.maxLands === 16 && e.perks.forgeJobs === 1 && e.perks.breedingJobs === 1, `(rango ${e.rank}, ${e.points} pts)`);
+  const st1 = stateRow(EP); st1.stats = { harvested: 0 }; db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(st1), EP.id);
+  ok('imperio: el rango nunca baja aunque bajen los puntos', (await emp()).rank === e.rank);
+  // sedes: piden rango
+  const EQ = await mkPlayer(91); await state(EQ); setFlora(EQ, 1000000);
+  const sq = stateRow(EQ); sq.tier = 4; sq.unlocked = ['tent_starter', 'tent_pro', 'greenhouse_commercial', 'lab_pharma_hydro']; db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(sq), EQ.id);
+  let b2 = await intent(EQ, 'start_build', { facilityId: 'hydro_complex' });
+  ok('sedes: el Complejo Hidropónico no se construye sin rango 5', b2.json.error === 'empire_rank' && b2.json.need === 5);
+  const gb = await call('POST', '/api/game/action', { jar: EQ.jar, ip: EQ.ip, body: { type: 'upgradeFacility', params: { facilityId: 'hydro_complex' } } });
+  ok('sedes: el juego explica qué rango falta', gb.status === 400 && /rango de imperio 5/.test(gb.json.text ?? ''));
+  const sq2 = stateRow(EQ); sq2.empireRank = 5; db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(sq2), EQ.id);
+  b2 = await intent(EQ, 'start_build', { facilityId: 'hydro_complex' });
+  ok('sedes: con rango 5 se construye (cuesta y tarda como las demás)', b2.status === 200 && b2.json.result.cost === 5000 && b2.json.result.hours === 168);
+  ok('sedes: no se salta al Campus sin pasar por el Complejo', (await intent(EQ, 'start_build', { facilityId: 'grow_campus' })).json.error !== undefined);
+  // lo que el juego cuenta (patentes, cruces, nivel) llega al rango
+  await call('GET', '/api/game/state', { jar: EQ.jar, ip: EQ.ip });
+  ok('imperio: el nivel de jugador y lo del juego llegan al desglose', (await state(EQ)).snapshot.empire.breakdown.tier === 450);
+}
 // ── idioma de la cuenta: correos en inglés para quien juega en inglés
 {
   cfg.inviteOnly = false;

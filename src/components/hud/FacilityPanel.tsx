@@ -14,7 +14,10 @@ const PERKS: Record<string, string[]> = localize({
   tent_pro: [k('4 plantas a la vez'), k('Paredes reflectantes y filtro de carbón'), k('Control real de temperatura y olor')],
   greenhouse_commercial: [k('8 plantas bajo cielo real'), k('Paneles solares: energía casi gratis de día'), k('Ventilación natural y nebulización')],
   lab_pharma_hydro: [k('12 plantas de calidad farmacéutica'), k('Racks NFT y tanques de nutrientes'), k('Clima automático y esterilización UV')],
-}, ['tent_starter', 'tent_pro', 'greenhouse_commercial', 'lab_pharma_hydro']);
+  hydro_complex: [k('18 plantas en dos salas hidropónicas'), k('Laboratorio de control propio'), k('Sede del imperio: pide rango 5')],
+  grow_campus: [k('24 plantas en un campus entero'), k('Salas de clonación y centro de datos'), k('Sede del imperio: pide rango 7')],
+  empire_seat: [k('30 plantas: la sala completa'), k('El mejor clima que se puede construir'), k('Sede del imperio: pide rango 9')],
+}, ['tent_starter', 'tent_pro', 'greenhouse_commercial', 'lab_pharma_hydro', 'hydro_complex', 'grow_campus', 'empire_seat']);
 
 const useNow = (ms: number) => {
   const [now, setNow] = useState(() => Date.now());
@@ -25,7 +28,8 @@ const useNow = (ms: number) => {
 const hoursLabel = (h: number) => (h >= 48 ? tr('{v0} días', { v0: Math.round(h / 24) }) : h >= 24 ? tr('1 día') : `${h} h`);
 
 export const FacilityPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { facilities, currentFacility, floraBalance, upgradeFacility, construction, speedUpConstruction, equipStats } = useGame();
+  const { facilities, currentFacility, floraBalance, upgradeFacility, construction, speedUpConstruction, equipStats, empire } = useGame();
+  const rank = empire?.rank ?? 1;
   const now = useNow(1000);
   const building = construction ? facilities.find((f) => f.id === construction.facilityId) : undefined;
   const quote = construction ? speedUpQuote(construction, now) : null;
@@ -67,6 +71,7 @@ export const FacilityPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
             const st = stateOf(f);
             const hours = buildHoursOf(f.id);
             const afford = floraBalance >= f.costFlora;
+            const needRank = f.minEmpireRank && rank < f.minEmpireRank ? f.minEmpireRank : 0;
             return (
               <article key={f.id} className={`fp-card fp-card--${st}`} data-facility-card={f.id}>
                 <div className="fp-view">
@@ -94,14 +99,17 @@ export const FacilityPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                         <div className="flex items-center justify-between text-[11px] font-mono text-amber-200"><span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" />{t('Faltan {v0}', { v0: formatDuration(remainingMs(construction, now) / 1000) })}</span><span>{Math.round(progressOf(construction, now) * 100)}%</span></div>
                       </>
                     )}
-                    {st === 'next' && !construction && (
+                    {st === 'next' && !construction && needRank > 0 && (
+                      <p className="text-[11px] text-amber-200 font-mono" data-testid="needs-rank"><Lock className="inline w-3 h-3 mr-1" />{t('Pide rango de imperio {need} (tienes {rank}). Míralo en tu Perfil.', { need: needRank, rank })}</p>
+                    )}
+                    {st === 'next' && !construction && !needRank && (
                       <>
                         <div className="text-[11px] font-mono text-neutral-400 flex justify-between"><span><Clock className="inline w-3 h-3 mr-1" />{t('Obra: {v0}', { v0: hoursLabel(hours) })}</span><span className={afford ? 'text-amber-300' : 'text-rose-300'}>{f.costFlora} $FLORA</span></div>
                         <button type="button" disabled={!afford} onClick={() => upgradeFacility(f.id)} className="fp-cta"><Hammer className="w-4 h-4" />{afford ? tr('Empezar obra') : tr('Te faltan {v0} $FLORA', { v0: Math.ceil(f.costFlora - floraBalance) })}</button>
                       </>
                     )}
                     {st === 'next' && construction && <p className="text-[11px] text-neutral-500">{t('Hay otra obra en marcha.')}</p>}
-                    {st === 'locked' && <p className="text-[11px] text-neutral-500">{t('Requiere construir antes el nivel {v0}. · Obra {v1} · {costFlora} $FLORA', { v0: f.tier - 1, v1: hoursLabel(hours), costFlora: f.costFlora })}</p>}
+                    {st === 'locked' && <p className="text-[11px] text-neutral-500">{t('Requiere construir antes el nivel {v0}. · Obra {v1} · {costFlora} $FLORA', { v0: f.tier - 1, v1: hoursLabel(hours), costFlora: f.costFlora })}{f.minEmpireRank ? tr(' · rango de imperio {n}', { n: f.minEmpireRank }) : ''}</p>}
                     {st === 'passed' && <p className="text-[11px] text-neutral-500">{t('Superada: ya tienes algo mejor.')}</p>}
                     {st === 'current' && <p className="text-[11px] text-emerald-300/80">{t('Aquí estás cultivando ahora.')}</p>}
                   </div>

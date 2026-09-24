@@ -3,6 +3,7 @@ import type { Construction } from '../sim/facilities';
 import type { Depth } from '../sim/economy';
 import type { PityMap } from '../sim/avatars';
 import { k, t } from '../i18n/core';
+import type { EmpireView } from '../sim/empire';
 
 /**
  * The client of the server-owned economy (server/economy.mjs). The server keeps the wallet, the ledger and the NFTs; the game keeps
@@ -24,12 +25,14 @@ export interface Snapshot {
   /** how much more flower the account can harvest right now (grams), its ceiling and how fast it refills */
   harvest?: { allowance: number; cap: number; perHour: number };
   forgeJobs?: Array<{ id: string; recipeId: string; qty: number; startedAt: number; endsAt: number }>;
+  /** empire rank, its points by source and its perks (sim/empire.ts) */
+  empire?: EmpireView;
   gifts: Array<{ id: number; amount: number; note: string; createdAt: number }>;
   listings: ListingView[]; p2p: { feeRate: number; minPrice: number; maxPrice: number; maxListings: number };
 }
 export type ListingKind = 'staff' | 'land' | 'avatar';
 /** one offer on the player market: the item travels with its data, so it can be drawn as its own card */
-export interface ListingView { id: number; nftId: string; kind: ListingKind; rarity: string; price: number; createdAt: number; sellerId: number; data: Record<string, unknown>; seller?: string; mine?: boolean }
+export interface ListingView { id: number; nftId: string; kind: ListingKind; rarity: string; price: number; createdAt: number; sellerId: number; data: Record<string, unknown>; seller?: string; sellerRank?: number; mine?: boolean }
 export interface MarketPage { listings: ListingView[]; more: boolean; feeRate: number; recent: Array<{ id: number; kind: ListingKind; rarity: string; price: number; at: number }> }
 export type IntentResult<T = unknown> = { ok: true; result: T; snapshot: Snapshot } | { ok: false; error: string; extra?: Record<string, unknown> };
 
@@ -82,6 +85,7 @@ export const REASON: Record<string, string> = {
   insufficient_stock: k('No tienes suficiente en el inventario'), forge_flower: k('Te falta flor seca para esa receta'), forge_trim: k('Te falta trim para esa receta'),
   forge_material: k('Te faltan materiales para esa receta'), forge_tier: k('Esa receta pide una instalación de más nivel'), forge_jobs: k('La forja ya tiene el máximo de trabajos en marcha'),
   forge_flora: k('Saldo insuficiente para la forja'), forge_qty: k('Cantidad no válida'),
+  empire_rank: k('Esa sede pide un rango de imperio más alto'),
 };
 /** el motivo de un rechazo del servidor, en el idioma del jugador (undefined si no hay texto para ese código) */
 export const reasonText = (code: string): string | undefined => (REASON[code] ? t(REASON[code]) : undefined);

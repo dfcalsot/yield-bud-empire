@@ -12,7 +12,7 @@
 // only from `process`/`forge` (bounded by the recipe's yield), inputs only from `harvest`, which is capped by what the account's
 // facility and plots can physically grow (sim/harvestCap.ts). The grow simulation stays in the browser; its output can't exceed that.
 import crypto from 'node:crypto';
-import { economy as E, products as PR, facilities as F, staff as S, avatars as A, terroir as T, lands as L, harvestCap as HC, forge as FG, INITIAL_FACILITIES, INITIAL_QUESTS } from './gen/sim.mjs';
+import { economy as E, products as PR, facilities as F, staff as S, avatars as A, terroir as T, lands as L, harvestCap as HC, forge as FG, empire as EM, INITIAL_FACILITIES, INITIAL_QUESTS } from './gen/sim.mjs';
 
 const DAY = 86400_000;
 // per product gram, before ECON.priceScale: the same table the client and the lab stations use (sim/products.ts), by recipe id then by type
@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     invItem: db.prepare('SELECT grams FROM inventory WHERE account_id = ? AND item = ?'),
     putInv: db.prepare('INSERT INTO inventory (account_id, item, grams) VALUES (?,?,?) ON CONFLICT(account_id, item) DO UPDATE SET grams = excluded.grams'),
     save: db.prepare('SELECT data, saved_at FROM saves WHERE account_id = ?'),
+    salesOf: db.prepare("SELECT COALESCE(SUM(delta), 0) s FROM ledger WHERE account_id = ? AND kind = 'sale'"),
     putSave: db.prepare('INSERT INTO saves (account_id, data, saved_at, updated_at) VALUES (?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET data = excluded.data, saved_at = excluded.saved_at, updated_at = excluded.updated_at'),
   };
   setInterval(() => { try { q.sweepIdem.run(Date.now() - 2 * DAY); } catch { /* */ } }, 3600_000).unref();
@@ -182,6 +183,27 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     return st;
   }
 
+  /* ───────────── empire rank (sim/empire.ts): points from what really happened; the rank never goes down ───────────── */
+  /** what the game itself keeps (patents, chamber crosses, player level): server/game.mjs reports it after every action */
+  function setGameStats(id, g) {
+    const st = stateOf(id); const cur = st.gameStats ?? {};
+    if (cur.patents === g.patents && cur.crosses === g.crosses && cur.level === g.level) return;
+    st.gameStats = { patents: g.patents, crosses: g.crosses, level: g.level }; saveState(id, st);
+  }
+  function empireOf(id) {
+    const st = stateOf(id); const g = st.gameStats ?? {};
+    const stats = {
+      harvested: st.stats?.harvested ?? 0, sales: q.salesOf.get(id).s, lands: nftRows(id, 'land').length, tier: st.tier,
+      patents: g.patents ?? 0, crosses: g.crosses ?? 0, staff: roster(id).length, level: g.level ?? 1,
+    };
+    const { total, breakdown } = EM.empirePoints(stats);
+    const rank = Math.max(st.empireRank ?? 1, EM.rankOf(total));
+    if (rank !== st.empireRank) { st.empireRank = rank; saveState(id, st); }
+    const next = EM.EMPIRE_RANKS[rank]?.at ?? null;
+    return { rank, points: total, next, breakdown, perks: EM.perksOf(rank) };
+  }
+  const maxLandsOf = (id) => empireOf(id).perks.maxLands;
+
   /* ───────────── snapshot the client mirrors ───────────── */
   function snapshot(id, now) {
     const w = q.wallet.get(id), st = stateOf(id);
@@ -204,6 +226,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       forgeJobs: Array.isArray(st.forgeJobs) ? st.forgeJobs : [],
       // el nivel más alto que el servidor ya pagó: el juego nunca muestra menos (antes se perdía al cambiar de navegador)
       level: Math.max(1, ...(st.levelsClaimed ?? [1]).filter(Number.isFinite)),
+      empire: empireOf(id),
       gifts: q.giftsOf.all(id).map((g) => ({ id: g.id, amount: g.amount, note: g.note, createdAt: g.created_at })),
       listings: q.activeOf.all(id).map(listingView), p2p: { feeRate: P2P.feeRate, minPrice: P2P.minPrice, maxPrice: P2P.maxPrice, maxListings: P2P.maxListings },
     };
@@ -266,6 +289,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       const st = stateOf(id); const f = FACILITY_BY_ID[str(p.facilityId, 40)];
       need(f, 'bad_params'); need(!st.construction, 'build_in_progress');
       need(!st.unlocked.includes(f.id), 'already_built'); need(f.tier === st.tier + 1, 'skip_rung');
+      if (f.minEmpireRank) need(empireOf(id).rank >= f.minEmpireRank, 'empire_rank', { need: f.minEmpireRank });
       const c = F.startConstruction(f.id, now); need(c, 'bad_params');
       debit(id, f.costFlora, 'build', f.name, now); st.construction = c; saveState(id, st);
       return { hours: F.buildHoursOf(f.id), cost: f.costFlora };
@@ -324,7 +348,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     buy_plot({ id, now, p }) {
       const offerId = str(p.offerId, 60); const m = /^plot-([a-z_]+)-(\d+)$/.exec(offerId);
       need(m && T.REGION_BY_ID[m[1]], 'bad_params');
-      need(nftRows(id, 'land').length < CAPS.plots, 'too_many_lands');
+      need(nftRows(id, 'land').length < maxLandsOf(id), 'too_many_lands');
       const taken = new Set(q.takenLands.all().map((r) => r.id));
       const offer = L.landOffers(m[1], taken).offers.find((o) => o.id === offerId);
       need(offer, 'plot_taken');
@@ -407,7 +431,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       const l = q.listing.get(Math.floor(num(p.listingId, 1, 2 ** 40))); need(l && l.status === 'active', 'listing_gone');
       need(l.seller_id !== id, 'own_listing');
       if (l.kind === 'staff') need(roster(id).length < CAPS.staff, 'roster_full');
-      if (l.kind === 'land') need(nftRows(id, 'land').length < CAPS.plots, 'too_many_lands');
+      if (l.kind === 'land') need(nftRows(id, 'land').length < maxLandsOf(id), 'too_many_lands');
       const fee = Math.max(1, Math.round(l.price * P2P.feeRate));
       transfer(id, l.seller_id, l.price, fee, `${l.kind} #${l.nft_id}`, now);
       if (l.kind === 'avatar') giveAvatar(id, JSON.parse(l.data), l.nft_id, now); else q.moveNft.run(id, l.nft_id);
@@ -425,7 +449,9 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       const gFlower = r2(Math.min(flower, a.grams));
       const gTrim = r2(Math.min(trim, gFlower * HC.TRIM_PER_FLOWER + 0.5));
       const fibre = Math.round(gFlower * FG.FIBRE_PER_FLOWER_GRAM);
-      a.grams = Math.max(0, a.grams - gFlower); st.harvestAllowance = a; saveState(id, st);
+      a.grams = Math.max(0, a.grams - gFlower); st.harvestAllowance = a;
+      st.stats = { ...(st.stats ?? {}), harvested: r2((st.stats?.harvested ?? 0) + gFlower) };   // counts for the empire rank
+      saveState(id, st);
       invAdd(id, 'flower', gFlower); invAdd(id, 'trim', gTrim); invAdd(id, 'mat:fibra_cruda', fibre);
       return { flower: gFlower, trim: gTrim, fibre, clipped: gFlower < flower - 0.01 };
     },
@@ -454,7 +480,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       const qty = Math.floor(num(p.qty, 1, FG.FORGE_LIMITS.maxQty));
       const st = stateOf(id); const jobs = Array.isArray(st.forgeJobs) ? st.forgeJobs : [];
       const inv = inventoryOf(id);
-      const check = FG.canCraft({ flower: inv.flower, trim: inv.trim, materials: inv.materials, flora: q.wallet.get(id).flora, tier: st.tier, hasForge: true, jobs: jobs.length }, r, qty);
+      const check = FG.canCraft({ flower: inv.flower, trim: inv.trim, materials: inv.materials, flora: q.wallet.get(id).flora, tier: st.tier, hasForge: true, jobs: jobs.length, extraJobs: empireOf(id).perks.forgeJobs }, r, qty);
       need(check.ok, `forge_${check.reason ?? 'bad'}`);
       const t = FG.craftTotals(r, qty);
       debit(id, t.fee, 'forge', `${r.id} ×${qty}`, now);
@@ -587,7 +613,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     const rows = db.prepare(`SELECT * FROM listings WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ? OFFSET ?`).all(...args, P2P.pageSize + 1, page * P2P.pageSize);
     const more = rows.length > P2P.pageSize;
     return {
-      listings: rows.slice(0, P2P.pageSize).map((r) => ({ ...listingView(r), seller: q.userName.get(r.seller_id)?.username ?? '—', mine: r.seller_id === a.id })),
+      listings: rows.slice(0, P2P.pageSize).map((r) => ({ ...listingView(r), seller: q.userName.get(r.seller_id)?.username ?? '—', sellerRank: stateOf(r.seller_id).empireRank ?? 1, mine: r.seller_id === a.id })),
       more, feeRate: P2P.feeRate,
       recent: q.recentSales.all().map((r) => ({ id: r.id, kind: r.kind, rarity: r.rarity, price: r.price, at: r.closed_at })),
     };
@@ -596,5 +622,5 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
   /* The old cloud save (table `saves`) is only read once more: server/game.mjs migrates it into the server-run game. */
   const legacySave = (id) => { const r = q.save.get(id); return r ? { savedAt: r.saved_at, data: JSON.parse(r.data) } : null; };
 
-  return { run, snapshot, walletOf, settle, importLocal, INTENTS, credit, debit, stateOf, saveState, free, activeMods, inventoryOf, payLevels, legacySave, wallet: (id) => q.wallet.get(id) };
+  return { empireOf, setGameStats, run, snapshot, walletOf, settle, importLocal, INTENTS, credit, debit, stateOf, saveState, free, activeMods, inventoryOf, payLevels, legacySave, wallet: (id) => q.wallet.get(id) };
 }

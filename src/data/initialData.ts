@@ -141,6 +141,43 @@ export const INITIAL_FACILITIES: GrowFacility[] = [
     description: k('Cuarto limpio con racks NFT, tanques de nutrientes, esterilización UV, enfriadora y pantalla de control. Doce plantas de calidad farmacéutica.'),
     unlocked: false,
     art: 'lab_pharma_hydro'
+  },
+  // sedes del imperio: más allá de la hidropónica, cada una pide un rango de imperio (sim/empire.ts)
+  {
+    id: 'hydro_complex',
+    name: k('Complejo Hidropónico'),
+    tier: 5,
+    costFlora: 5000,
+    capacityPlants: 18,
+    environmentBonus: 2.0,
+    description: k('Dos salas hidropónicas unidas por un pasillo limpio, con su propio laboratorio de control. Dieciocho plantas.'),
+    unlocked: false,
+    art: 'lab_pharma_hydro',
+    minEmpireRank: 5
+  },
+  {
+    id: 'grow_campus',
+    name: k('Campus de Cultivo'),
+    tier: 6,
+    costFlora: 12000,
+    capacityPlants: 24,
+    environmentBonus: 2.1,
+    description: k('Un campus entero: invernaderos, salas de clonación y un centro de datos que ajusta cada sala. Veinticuatro plantas.'),
+    unlocked: false,
+    art: 'lab_pharma_hydro',
+    minEmpireRank: 7
+  },
+  {
+    id: 'empire_seat',
+    name: k('Sede del Imperio'),
+    tier: 7,
+    costFlora: 25000,
+    capacityPlants: 30,
+    environmentBonus: 2.2,
+    description: k('El corazón del imperio: tres filas de diez plantas bajo el mejor clima que se puede construir.'),
+    unlocked: false,
+    art: 'lab_pharma_hydro',
+    minEmpireRank: 9
   }
 ];
 

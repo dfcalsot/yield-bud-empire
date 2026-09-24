@@ -40,7 +40,20 @@ ok('de lo que entra, el F2P quema al menos el 60 % (deflación)', f2p.burned >= 
 ok('el de pago quema al menos el 60 % de lo que emite (contando sus compras de imperio)', payer.burned >= 0.6 * payer.minted, `(${(payer.burned / payer.minted * 100).toFixed(0)} %)`);
 ok('sin contar sus compras voluntarias, el de pago ya quema ≥ 40 % (comisión, licencias, obras, aceleraciones)', payer.burned - payer.voluntary >= 0.4 * payer.minted, `(${((payer.burned - payer.voluntary) / payer.minted * 100).toFixed(0)} %)`);
 ok('el saldo que un jugador acumula en un día es pequeño (F2P ≤ 120, pago ≤ 150 $FLORA)', f2p.maxDailyNet <= 120 && payer.maxDailyNet <= 150, `(F2P ${Math.round(f2p.maxDailyNet)} · pago ${Math.round(payer.maxDailyNet)})`);
-ok('nunca se acumula una fortuna: el F2P sigue ahorrando para el siguiente escalón y el de pago ha gastado en el imperio', f2p.endBalance < TIERS[3].costFlora && payer.endBalance < 1000, `(F2P ${Math.round(f2p.endBalance)} · pago ${Math.round(payer.endBalance)})`);
+ok('nunca se acumula una fortuna: cada uno ahorra solo para su siguiente escalón (el de pago, para la primera sede del imperio)', f2p.endBalance < TIERS[3].costFlora && payer.endBalance < TIERS[4].costFlora, `(F2P ${Math.round(f2p.endBalance)} · pago ${Math.round(payer.endBalance)})`);
+
+// ── empire ranks (sim/empire.ts): long-term progression, never faster than the design promises
+{
+  const F = play('f2p', 760), P = play('payer', 760);
+  const rd = (r: typeof F, n: number) => r.rankDays[n - 1];
+  console.log(`  Rangos F2P  ${F.rankDays.map((d, i) => `R${i + 1}:${d}`).join(' ')}\n  Rangos pago ${P.rankDays.map((d, i) => `R${i + 1}:${d}`).join(' ')}`);
+  ok('imperio: el F2P llega al rango 5 (primera sede) entre los meses 4 y 6', rd(F, 5) >= 120 && rd(F, 5) <= 185, `(día ${rd(F, 5)})`);
+  ok('imperio: el rango 7 no llega antes de 6 meses sin pagar', !(rd(F, 7) < 180), `(día ${rd(F, 7)})`);
+  ok('imperio: el rango 10 tarda más de un año, pague o no', !(rd(P, 10) < 365) && !(rd(F, 10) < 365), `(pago día ${rd(P, 10)})`);
+  ok('imperio: el de pago va como mucho ~2,6× más rápido en los rangos', [3, 5, 7].every((n) => !(rd(F, n) / rd(P, n) > 2.6)));
+  ok('imperio: ninguna sede se construye antes de su rango', [5, 6, 7].every((t) => !(P.days[t - 1] > 0) || P.days[t - 1] >= rd(P, [5, 7, 9][t - 5])));
+  ok('imperio: con las sedes, lo quemado sigue siendo al menos el 60 % de lo emitido', P.burned >= 0.6 * P.minted && F.burned >= 0.6 * F.minted);
+}
 
 console.log(failed === 0 ? '\nALL OK' : `\n${failed} FAILED`);
 process.exit(failed ? 1 : 0);

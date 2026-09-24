@@ -339,14 +339,14 @@ export function normalizeGame(raw: unknown, now: number, opts: { paidLevel?: num
     : arr<string>(r.installedSupplies).filter((id) => INITIAL_GROW_SUPPLIES.some((g) => g.id === id));
   const donors = arr(r.mothersFathers).map((x) => normalizeDonor(x, now)).filter((x): x is MotherFatherPlant => !!x);
   s.mothersFathers = Array.isArray(r.mothersFathers) ? donors.slice(0, CAPS.donors) : base.mothersFathers;
-  s.patents = arr(r.patents).filter((x) => typeof obj(x).id === 'string').slice(0, CAPS.patents) as GenomicPatent[];
+  s.patents = arr(r.patents).filter((x) => typeof obj(x).id === 'string' && obj(x).id !== 'pat-001').slice(0, CAPS.patents) as GenomicPatent[];
   s.breedingJobs = arr(r.breedingJobs).map((x) => {
     const j = obj(x);
     if (typeof j.id !== 'string' || typeof j.motherId !== 'string' || typeof j.fatherId !== 'string') return null;
     const startedAt = num(j.startedAt, 0, now, now);
     return { id: j.id.slice(0, 60), motherId: j.motherId, fatherId: j.fatherId, name: str(j.name, CAPS.strainName, 'Cruce'), generation: capGeneration(Number(j.generation) || 1),
       useReagent: bool(j.useReagent), seed: Math.floor(num(j.seed, 0, 2 ** 32, 1)) >>> 0, startedAt, endsAt: Math.max(startedAt + CROSS_MINUTES * 60_000, num(j.endsAt, 0, 9e15, 0)) };
-  }).filter((x): x is BreedingJob => !!x).slice(0, BREEDING_LIMITS.jobs);
+  }).filter((x): x is BreedingJob => !!x).slice(0, BREEDING_LIMITS.jobs + 1);
   s.breedingLog = arr(r.breedingLog).filter((x) => typeof obj(x).id === 'string').slice(0, 100) as BreedingLogEntry[];
   s.machines = legacy
     ? arr(r.machines).map((x) => ({ id: String(obj(x).id), wearPercentage: num(obj(x).wearPercentage, 0, 100, 100) })).filter((m) => INITIAL_MACHINES.some((i) => i.id === m.id))
@@ -387,6 +387,12 @@ export function normalizeGame(raw: unknown, now: number, opts: { paidLevel?: num
 
   // the clock: a save resumes where it stopped (offline catch-up), never in the future and never more than the catch-up window ago
   s.lastSimAt = Math.min(now, Math.max(now - BALANCE.maxCatchUpSeconds * 1000, num(r.lastSimAt ?? r.savedAt, 0, now, now)));
+  return s;
+}
+
+/** what the old browser game handed out as decoration and nobody earned: a demo patent ("Emerald Terp Queen", id pat-001) */
+export function dropLegacyDemo(s: GameState): GameState {
+  if (s.patents.some((p) => p.id === 'pat-001')) s.patents = s.patents.filter((p) => p.id !== 'pat-001');
   return s;
 }
 

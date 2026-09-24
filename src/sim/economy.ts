@@ -21,7 +21,7 @@ export const ECON = {
   depthHalfLifeHours: 12,
   /** burned on every sale, plus a licence that grows with the installation (index = facility tier − 1) */
   marketFee: 0.025,
-  saleTax: [0, 0.3, 0.3, 0.35] as readonly number[],
+  saleTax: [0, 0.3, 0.3, 0.35, 0.38, 0.4, 0.42] as readonly number[],
   /** the daily claim that replaces the unlimited faucet: one small claim every 24 h */
   dailyClaim: 10,
   dailyClaimEveryHours: 24,

@@ -21,6 +21,7 @@ import { STAFF_ROLES, isActive as staffIsActive, wageOf, type Candidate, type Mo
 import type { NpcKind } from '../components/npc/Npc';
 import type { TutorialState } from '../sim/tutorial';
 import type { MediumId, Mix, StageId } from '../sim/nutrition';
+import { rankInfo, type EmpireView } from '../sim/empire';
 import { CATALOG_BY_ID, USE, equipStatsOf, gardenerLevelOf, garbageOf, ownsStation, stockOf, type EquipStats, type OwnedAsset } from '../economy/catalog';
 import { type ListingView, type Snapshot } from '../economy/ledger';
 import { mintAddressFor } from '../utils/nft';
@@ -80,6 +81,8 @@ interface GameContextType {
   logoutUser: () => void;
   updateUserProfile: (updates: Partial<UserProfile>) => void;
 
+  /** empire rank, its points by source and its perks (counted by the server) */
+  empire: EmpireView | null;
   facilities: GrowFacility[];
   currentFacility: GrowFacility;
   upgradeFacility: (facilityId: string) => Promise<void>;
@@ -305,6 +308,14 @@ export const GameProvider: React.FC<{ account: ServerAccount | null; children: R
     if (prev?.construction && !a.snapshot.construction && a.snapshot.tier > prev.tier) {
       confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } });
       setNotification({ message: tr('¡Obra terminada! Tu nueva instalación ya está lista.'), type: 'success' });
+    }
+    // the empire rank went up
+    const r0 = prev?.empire?.rank, r1 = a.snapshot.empire?.rank;
+    if (r0 && r1 && r1 > r0) {
+      playLevelUpSound();
+      confetti({ particleCount: 160, spread: 100, origin: { y: 0.45 }, colors: ['#fbbf24', '#fde68a', '#c084fc', '#34d399'] });
+      const info = rankInfo(r1);
+      setNotification({ message: tr('👑 ¡Rango de imperio {rank}: {title}!{v2}', { rank: r1, title: info.title, v2: info.unlocks.length ? tr(' Desbloqueaste: {what}.', { what: info.unlocks.join(' · ') }) : '' }), type: 'success' });
     }
   }, []);
 
@@ -643,6 +654,7 @@ const GameView: React.FC<GameViewProps> = ({ view, account, online, act, send, n
 
     currentUser, isAuthenticated: true, logoutUser, updateUserProfile,
 
+    empire: snap.empire ?? null,
     facilities, currentFacility,
     upgradeFacility: async (facilityId) => { await send('upgradeFacility', { facilityId }); },
     construction: snap.construction,

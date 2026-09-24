@@ -826,7 +826,7 @@ export const ACTIONS: Record<string, Action> = {
     if (!rec) throw new GameError('bad_params');
     const qty = P.int(p.qty, 1, 10);
     const ext = r.ctx.ext();
-    const check = canCraft({ flower: ext.inventory.flower, trim: ext.inventory.trim, materials: ext.inventory.materials, flora: ext.flora, tier: ext.tier, hasForge: ownsStation(r.s.assets, 'forge'), jobs: ext.forgeJobs.length }, rec, qty);
+    const check = canCraft({ flower: ext.inventory.flower, trim: ext.inventory.trim, materials: ext.inventory.materials, flora: ext.flora, tier: ext.tier, hasForge: ownsStation(r.s.assets, 'forge'), jobs: ext.forgeJobs.length, extraJobs: ext.empire?.perks.forgeJobs ?? 0 }, rec, qty);
     if (!check.ok) no(check.message);
     takeStation(r, 'forge');
     const t = craftTotals(rec, qty);
@@ -842,7 +842,7 @@ export const ACTIONS: Record<string, Action> = {
     if (!mother || !father) no(tr('Selecciona una Madre y un Padre válidos.'));
     const useReagent = p.useReagent === true;
     const ext = r.ctx.ext();
-    const check = canBreed({ tier: ext.tier, hasChamber: ownsStation(r.s.assets, 'breeding'), jobs: r.s.breedingJobs.length, materials: ext.inventory.materials }, mother!.id, father!.id, useReagent);
+    const check = canBreed({ tier: ext.tier, hasChamber: ownsStation(r.s.assets, 'breeding'), jobs: r.s.breedingJobs.length, materials: ext.inventory.materials, extraJobs: ext.empire?.perks.breedingJobs ?? 0 }, mother!.id, father!.id, useReagent);
     if (!check.ok) no(check.message);
     if (ext.flora < CHAMBER_FEE) no(tr('Saldo insuficiente: el cruce quema {fee} $FLORA', { fee: CHAMBER_FEE }));
     takeStation(r, 'breeding');
@@ -1101,6 +1101,7 @@ export const ACTIONS: Record<string, Action> = {
     if (!target) throw new GameError('bad_params');
     const ext = r.ctx.ext();
     if (target.tier <= ext.tier) no(target.tier < ext.tier ? tr('{name} ya la superaste: tu instalación actual es mejor.', { name: target.name }) : tr('Esa es tu instalación actual.'));
+    if (target.minEmpireRank && (ext.empire?.rank ?? 1) < target.minEmpireRank) no(tr('{name} pide rango de imperio {rank}. Súbelo cosechando, vendiendo y creciendo.', { name: target.name, rank: target.minEmpireRank }));
     const res = r.ctx.econ<{ hours: number; cost: number }>('start_build', { facilityId: target.id });
     burn(r, 'BURN_SPEEDUP', res.cost ?? target.costFlora, tr('Yield Bud Empire: Obra de {name}', { name: target.name }), false);
     const h = res.hours;

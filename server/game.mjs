@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS game_idem (account_id INTEGER NOT NULL, idem TEXT NOT
     return {
       flora: w.flora, tier: st.tier, facility, mods: econ.activeMods(id, st, now),
       plots: econ.free(id, 'land'), avatars: econ.free(id, 'avatar').map((a) => a.designId),
-      inventory: econ.inventoryOf(id), forgeJobs: Array.isArray(st.forgeJobs) ? st.forgeJobs : [],
+      inventory: econ.inventoryOf(id), forgeJobs: Array.isArray(st.forgeJobs) ? st.forgeJobs : [], empire: econ.empireOf(id),
     };
   }
 
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS game_idem (account_id INTEGER NOT NULL, idem TEXT NOT
   /** the account's game, created (or migrated from its old browser save) the first time */
   function load(acc, now) {
     const row = q.get.get(acc.id);
-    if (row) return C.unpackGame(JSON.parse(row.json));
+    if (row) return C.dropLegacyDemo(C.unpackGame(JSON.parse(row.json)));
     const est = econ.stateOf(acc.id);
     const paidLevel = Math.max(1, ...(est.levelsClaimed ?? [1]).filter(Number.isFinite));
     const plotIds = econ.free(acc.id, 'land').map((p) => p.id);
@@ -71,7 +71,10 @@ CREATE TABLE IF NOT EXISTS game_idem (account_id INTEGER NOT NULL, idem TEXT NOT
     audit(legacy ? 'game_migrated' : 'game_created', acc.id, null);
     return s;
   }
-  const save = (id, s, now) => q.put.run(JSON.stringify(C.packGame(s)), now, id);
+  const save = (id, s, now) => {
+    q.put.run(JSON.stringify(C.packGame(s)), now, id);
+    econ.setGameStats(id, { patents: s.patents.length, crosses: s.breedingLog.length, level: s.playerLevel });   // they count for the empire rank
+  };
 
   const langOf = (acc, v) => (v === 'en' || v === 'es' ? v : acc.lang === 'en' ? 'en' : 'es');
 

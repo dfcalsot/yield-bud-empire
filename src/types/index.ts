@@ -42,6 +42,8 @@ export interface GrowFacility {
   unlocked: boolean;
   /** id of the animated illustration (components/art/GameArt) */
   art: string;
+  /** empire rank needed to build it (sim/empire.ts); undefined = none */
+  minEmpireRank?: number;
 }
 
 export interface MachineEquipment {

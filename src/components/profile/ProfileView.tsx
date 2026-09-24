@@ -1,3 +1,4 @@
+import { EmpireCard } from '../empire/EmpireCard';
 import React, { useMemo, useRef, useState } from 'react';
 import { Check, Coins, Flame, LogOut, Lock, Pencil, Settings, Upload, X } from 'lucide-react';
 import { logoutServer } from '../../auth/api';
@@ -155,6 +156,8 @@ export const ProfileView: React.FC<{ onOpenAccountModal: () => void }> = ({ onOp
             </div>
           </div>
         </div>
+
+        <EmpireCard />
 
         {/* tabs */}
         <div className="flex flex-wrap items-center gap-2">

@@ -1,3 +1,4 @@
+import { artBase, artFilter } from '../empire/seatArt';
 import React, { useId } from 'react';
 import { t as tr } from '../../i18n';
 
@@ -146,8 +147,8 @@ const Hydro: React.FC<{ p: string }> = ({ p }) => (
 export const FacilityArt: React.FC<{ kind: string; className?: string; slice?: boolean; label?: string }> = ({ kind, className, slice, label }) => {
   const p = uid(useId());
   return (
-    <svg viewBox="0 0 240 150" className={`fa-art ${className ?? ''}`} preserveAspectRatio={slice ? 'xMidYMid slice' : 'xMidYMid meet'} role="img" aria-label={label ?? tr('Instalación de cultivo')}>
-      {kind === 'greenhouse_commercial' ? <Greenhouse p={p} /> : kind === 'lab_pharma_hydro' ? <Hydro p={p} /> : <Tent p={p} />}
+    <svg viewBox="0 0 240 150" className={`fa-art ${className ?? ''}`} preserveAspectRatio={slice ? 'xMidYMid slice' : 'xMidYMid meet'} role="img" aria-label={label ?? tr('Instalación de cultivo')} style={{ filter: artFilter(kind) }}>
+      {artBase(kind) === 'greenhouse_commercial' ? <Greenhouse p={p} /> : artBase(kind) === 'lab_pharma_hydro' ? <Hydro p={p} /> : <Tent p={p} />}
     </svg>
   );
 };

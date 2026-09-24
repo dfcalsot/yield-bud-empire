@@ -1,3 +1,4 @@
+import { EmpireBadge } from './empire/EmpireBadge';
 import React, { useEffect, useRef, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import {
@@ -46,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     isWalletConnected,
     solanaNetwork,
     playerLevel,
+    empire,
     rankTitle,
     currentUser,
     isAuthenticated
@@ -141,6 +143,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Award className="w-4 h-4 text-amber-400 shrink-0" />
               <span className="font-bold">{t('Nv.')} {playerLevel}</span>
             </div>
+            {empire && <div className="hidden md:flex items-center h-full"><EmpireBadge rank={empire.rank} compact onClick={() => setCurrentTab('perfil')} /></div>}
           </div>
 
           {/* Idioma y sonido: a la vista en pantallas anchas, en un menú en las chicas */}

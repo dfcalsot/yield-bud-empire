@@ -15,3 +15,4 @@ export * as breeding from '../src/sim/breeding';
 export * as core from '../src/core/index';
 export { useLangNow } from '../src/i18n/core';
 export { EN } from '../src/i18n/en';
+export * as empire from '../src/sim/empire';

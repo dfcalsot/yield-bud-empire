@@ -87,7 +87,7 @@ export const FORGE_LIMITS = { jobs: 3, maxQty: 10 } as const;
 /** what the forge and the harvest give for free */
 export const FIBRE_PER_FLOWER_GRAM = 0.5;
 
-export interface ForgeStock { flower: number; trim: number; materials: Materials; flora: number; tier: number; hasForge: boolean; jobs: number }
+export interface ForgeStock { flower: number; trim: number; materials: Materials; flora: number; tier: number; hasForge: boolean; jobs: number; /** extra slots from the empire rank */ extraJobs?: number }
 export type CraftCheck = { ok: true } | { ok: false; reason: 'license' | 'tier' | 'jobs' | 'qty' | 'flower' | 'trim' | 'material' | 'flora'; message: string };
 
 /** total inputs, fee, time and outputs of `qty` crafts */
@@ -104,7 +104,8 @@ export function canCraft(stock: ForgeStock, r: ForgeRecipe, qty: number): CraftC
   if (!Number.isInteger(qty) || qty < 1 || qty > FORGE_LIMITS.maxQty) return { ok: false, reason: 'qty', message: tr('Elige entre 1 y {maxQty} unidades.', { maxQty: FORGE_LIMITS.maxQty }) };
   if (!stock.hasForge) return { ok: false, reason: 'license', message: tr('Necesitas la licencia «Forja de materiales» (Grow Market → Licencias).') };
   if (stock.tier < r.minTier) return { ok: false, reason: 'tier', message: tr('Esta receta pide una instalación de nivel {minTier} o más.', { minTier: r.minTier }) };
-  if (stock.jobs >= FORGE_LIMITS.jobs) return { ok: false, reason: 'jobs', message: tr('La forja ya tiene {jobs} trabajos en marcha.', { jobs: FORGE_LIMITS.jobs }) };
+  const maxJobs = FORGE_LIMITS.jobs + (stock.extraJobs ?? 0);
+  if (stock.jobs >= maxJobs) return { ok: false, reason: 'jobs', message: tr('La forja ya tiene {jobs} trabajos en marcha.', { jobs: maxJobs }) };
   const t = craftTotals(r, qty);
   if (stock.flower + 1e-9 < t.flower) return { ok: false, reason: 'flower', message: tr('Faltan {v0} g de flor seca.', { v0: (t.flower - stock.flower).toFixed(1) }) };
   if (stock.trim + 1e-9 < t.trim) return { ok: false, reason: 'trim', message: tr('Faltan {v0} g de trim.', { v0: (t.trim - stock.trim).toFixed(1) }) };

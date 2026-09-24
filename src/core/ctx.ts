@@ -6,6 +6,7 @@
 import type { GrowFacility } from '../types';
 import type { Mods } from '../sim/staff';
 import type { ServerPlot } from '../economy/ledger';
+import type { EmpireView } from '../sim/empire';
 
 export interface Inventory { flower: number; trim: number; materials: Record<string, number>; products: Record<string, number> }
 export interface ForgeJobView { id: string; recipeId: string; qty: number; startedAt: number; endsAt: number }
@@ -22,6 +23,8 @@ export interface Ext {
   avatars: string[];
   inventory: Inventory;
   forgeJobs: ForgeJobView[];
+  /** empire rank and its perks (null before the server has counted them) */
+  empire: EmpireView | null;
 }
 
 export interface Ctx {
