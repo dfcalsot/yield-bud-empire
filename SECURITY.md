@@ -40,6 +40,13 @@ navegador ── https ──▶ (proxy inverso: Caddy / Cloudflare)  ──▶ 
 4. **HTTPS**: hoy se sirve por HTTP. Con HTTPS delante (Caddy o Cloudflare) las cookies llevan `Secure` y se activa HSTS. También da protección DDoS de red que este servicio no puede dar por sí solo.
 5. **Un humano con muchas cuentas** (granjas humanas o IP rotativas) no lo detiene un PoW. Capas siguientes: vincular una **billetera Solana con firma** (una billetera = una cuenta), edad mínima de la billetera, y límites económicos para cuentas nuevas.
 6. Copias de seguridad de `server/data/` y rotación del secreto (`server/data/secret.key`).
+7. **Puente on-chain de reliquias** (`server/bridge.mjs`, devnet). Lo que ya controla:
+   - solo acepta activos de nuestra colección y que ya estén en la bóveda;
+   - acredita a la cuenta cuya billetera vinculada firmó el envío;
+   - no acredita dos veces y reintenta con la misma dirección de activo, así que no crea duplicados;
+   - tiene topes diarios.
+
+   Antes de mainnet hace falta: una billetera nueva solo para mainnet (y con poco saldo), un RPC propio o de un proveedor, revisar el costo real en SOL y una revisión de seguridad aparte. La llave `bridge-keypair.json` es tan sensible como `secret.key`.
 
 ## Puesta en marcha
 

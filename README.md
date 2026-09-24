@@ -41,3 +41,13 @@ Nada de la partida vive en el navegador. El navegador es una pantalla: pide el e
 - **Migración**: al arrancar, las cuentas con la partida vieja del navegador (tabla `saves`) pasan al servidor con topes (nivel ≤ el ya
   pagado, semillas y lotes con máximo, plantas dentro de lo posible). `node server/admin.mjs games` muestra cómo quedó cada una.
 - **Pruebas**: `npm run auth:test` (servidor, incluye ataques: mandar estado, acciones inventadas, adelantar el reloj, rendimientos falsos).
+
+## Puente de reliquias a Solana (`server/bridge.mjs`)
+- Las reliquias salen como NFT de Metaplex Core a la billetera vinculada y vuelven al juego enviándolas a la bóveda (la billetera del puente).
+  La colección «Yield Bud Empire · Reliquias» lleva un 5 % de regalía. Al salir se quema $FLORA según la rareza (20/40/80/150), y el SOL lo pone el equipo.
+- Topes: 3 salidas al día por cuenta y 50 en todo el juego; las cuentas de desarrollador no sacan nada. Afuera, la reliquia no da bonos ni se vende adentro.
+- Configuración: `BRIDGE_ENABLED=1`, `SOLANA_RPC` (devnet por defecto) y `BRIDGE_ROYALTY_WALLET` (por defecto, la del puente).
+  La llave está en `DATA_DIR/bridge-keypair.json` (600, entra en el respaldo nocturno).
+- `node server/admin.mjs bridge` muestra la billetera, el saldo, la colección y los últimos trabajos. Las pruebas usan una cadena falsa (`BRIDGE_FAKE=1`).
+- Devnet (2026-09-24): colección `7qQdqWMWsGD3SG7Ubp9ELTQ4oqZENLwbs9QQMbj9Sw7a`, billetera `8b1E4KU6M8T8ZXU3YGAEBz77tenDZHPsZhEkewA2eAFj`.
+  Probado de punta a punta con dos cuentas y dos billeteras: sacar, vender afuera y traer. Mainnet solo con aprobación y con una billetera nueva.
