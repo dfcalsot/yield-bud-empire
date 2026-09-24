@@ -20,7 +20,7 @@ const CHAIN_STYLE: Record<Chain, { color: string; emoji: string }> = { solana: {
 
 /**
  * The game wallet: the account's in-game address, its $FLORA and NFTs, and the external wallets (Solana, Ronin) linked by a signed
- * challenge. Linking proves ownership and nothing else: no funds move and no asset leaves the game yet (that bridge comes later).
+ * challenge. Linking proves ownership and nothing else: no funds move. Relics leave through the bridge (server/bridge.mjs), never by linking.
  */
 export const WalletModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { floraBalance, staff, plots, avatars, myListings, ledgerOn, currentUser } = useGame();
@@ -138,7 +138,7 @@ export const WalletModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
                 );
               })}
               {msg && <p className={`text-[11.5px] ${msg.ok ? 'text-emerald-300' : 'text-rose-300'}`} role="status" data-testid="wallet-msg">{t(msg.text)}</p>}
-              <p className="text-[10.5px] leading-snug text-neutral-500">{t('Vincular es solo una firma que prueba que la billetera es tuya: no cuesta nada ni mueve fondos. Por ahora los activos viven en el juego; el puente a Solana devnet y Ronin Saigon llegará después.')}</p>
+              <p className="text-[10.5px] leading-snug text-neutral-500">{t('Vincular es solo una firma que prueba que la billetera es tuya: no cuesta nada ni mueve fondos. Con Solana vinculada podés sacar tus reliquias como NFT (en devnet por ahora) desde el maletín → Reliquias.')}</p>
             </section>
 
             <section className="space-y-1.5">
