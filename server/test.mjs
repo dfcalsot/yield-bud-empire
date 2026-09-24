@@ -12,7 +12,7 @@ Object.assign(process.env, {
   GOOGLE_CLIENT_ID: 'gid', GOOGLE_CLIENT_SECRET: 'gsec', GOOGLE_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, GOOGLE_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, GOOGLE_USER_URL: `http://127.0.0.1:${MOCK}/user/google`,
   X_CLIENT_ID: 'xid', X_CLIENT_SECRET: 'xsec', X_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, X_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, X_USER_URL: `http://127.0.0.1:${MOCK}/user/x`,
 });
-const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg } = await import('./index.mjs');
+const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg, economy } = await import('./index.mjs');
 
 // mock identity provider (NOT Google or X: it only proves that our OAuth code paths behave)
 const profiles = { google: {}, x: {} };
@@ -245,6 +245,12 @@ const mkPlayer = async (n) => {
   return { jar, ip, id: meR.json.account.id };
 };
 const intent = (P, type, params, idem) => call('POST', '/api/econ/intent', { jar: P.jar, ip: P.ip, body: { type, params, idem } });
+// lo que el navegador ya no puede pedir (cosechar, procesar, premios, gastos sueltos) solo corre dentro de las acciones del juego:
+// las pruebas de sus límites lo llaman por dentro, como lo hace server/game.mjs
+const inner = async (P, type, params, idem) => {
+  try { return { status: 200, json: economy.run({ id: P.id }, type, params, idem) }; }
+  catch (e) { return { status: e.status ?? 500, json: { error: e.code ?? String(e), ...(e.extra ?? {}) } }; }
+};
 const state = async (P) => (await call('GET', '/api/econ/state', { jar: P.jar, ip: P.ip })).json;
 const setFlora = (P, n) => db.prepare('UPDATE wallets SET flora = ? WHERE account_id = ?').run(n, P.id);
 const wallet = (P) => db.prepare('SELECT * FROM wallets WHERE account_id = ?').get(P.id);
@@ -260,13 +266,17 @@ let cl = await intent(E1, 'claim_daily', {});
 ok('reclamo diario: suma el monto fijo', cl.status === 200 && cl.json.snapshot.flora === ECON.starterFlora + ECON.dailyClaim);
 cl = await intent(E1, 'claim_daily', {});
 ok('reclamo diario: una sola vez cada 24 h', cl.status === 400 && cl.json.error === 'too_early' && cl.json.leftMs > 0);
-let sp = await intent(E1, 'spend', { amount: 1000, memo: 'trampa' });
+let sp = await inner(E1, 'spend', { amount: 1000, memo: 'trampa' });
 ok('gastar más de lo que hay se rechaza y no toca el saldo', sp.status === 400 && sp.json.error === 'insufficient' && (await state(E1)).snapshot.flora === ECON.starterFlora + ECON.dailyClaim);
-ok('un gasto no puede ser negativo (no se puede imprimir saldo gastando)', (await intent(E1, 'spend', { amount: -100 })).status === 400 && (await intent(E1, 'spend', { amount: 0 })).status === 400);
+ok('un gasto no puede ser negativo (no se puede imprimir saldo gastando)', (await inner(E1, 'spend', { amount: -100 })).status === 400 && (await inner(E1, 'spend', { amount: 0 })).status === 400);
 const f0 = (await state(E1)).snapshot.flora;
-const idemA = await intent(E1, 'spend', { amount: 10, memo: 'x' }, 'k-1'), idemB = await intent(E1, 'spend', { amount: 10, memo: 'x' }, 'k-1');
+const idemA = await inner(E1, 'spend', { amount: 10, memo: 'x' }, 'k-1'), idemB = await inner(E1, 'spend', { amount: 10, memo: 'x' }, 'k-1');
 ok('clave idempotente: el doble clic no cobra dos veces', idemA.status === 200 && idemB.status === 200 && (await state(E1)).snapshot.flora === f0 - 10 && idemB.json.snapshot.flora === idemA.json.snapshot.flora);
 ok('un intent desconocido se rechaza', (await intent(E1, 'print_money', { amount: 1e9 })).json.error === 'unknown_intent');
+{
+  const blocked = await Promise.all(['spend', 'harvest', 'process', 'reward', 'consume', 'import_inventory', 'grow_speedup', 'forge_start', 'forge_collect'].map((t) => intent(E1, t, { amount: 5, flower: 100, trim: 10, product: 'rso', grams: 10, out: 1, kind: 'level', level: 2 })));
+  ok('el navegador ya no puede reportar cosechas, lotes, premios ni gastos sueltos (solo corren dentro del juego)', blocked.every((r) => r.status === 400 && r.json.error === 'unknown_intent'));
+}
 
 // builds: cost, one at a time, no skipping, capped speed-ups, finished by time
 const E2 = await mkPlayer(2); await state(E2); setFlora(E2, 5000);
@@ -329,17 +339,18 @@ ok('tierra: un id inventado o ya vendido antes de abrir se rechaza', (await inte
 // avatars, rewards
 const cav = await intent(E7, 'avatar_chest', { chestId: 'season' });
 ok('cofre de avatar: cobra, tira en el servidor y guarda el NFT', cav.status === 200 && cav.json.snapshot.avatars.length === 1 && cav.json.result.owned.count === 1);
-const rq = await intent(E3, 'reward', { kind: 'quest', id: 'quest_water_micro' });
-ok('misión con $FLORA: una sola vez y con el monto de la tabla del servidor', rq.status === 200 && rq.json.result.amount > 0 && (await intent(E3, 'reward', { kind: 'quest', id: 'quest_water_micro' })).json.error === 'already_claimed' && (await intent(E3, 'reward', { kind: 'quest', id: 'inventada' })).status === 400);
-ok('bono de nivel: no se puede saltar a un nivel absurdo en una cuenta nueva', (await intent(E3, 'reward', { kind: 'level', level: 60 })).json.error === 'too_fast');
-ok('bono de nivel: un nivel cercano se cobra una vez', (await intent(E3, 'reward', { kind: 'level', level: 3 })).status === 200 && (await intent(E3, 'reward', { kind: 'level', level: 3 })).json.error === 'already_claimed');
+const rq = await inner(E3, 'reward', { kind: 'quest', id: 'quest_water_micro' });
+ok('misión con $FLORA: una sola vez y con el monto de la tabla del servidor', rq.status === 200 && rq.json.result.amount > 0 && (await inner(E3, 'reward', { kind: 'quest', id: 'quest_water_micro' })).json.error === 'already_claimed' && (await inner(E3, 'reward', { kind: 'quest', id: 'inventada' })).status === 400);
+ok('bono de nivel: no se puede saltar a un nivel absurdo en una cuenta nueva', (await inner(E3, 'reward', { kind: 'level', level: 60 })).json.error === 'too_fast');
+ok('bono de nivel: un nivel cercano se cobra una vez', (await inner(E3, 'reward', { kind: 'level', level: 3 })).status === 200 && (await inner(E3, 'reward', { kind: 'level', level: 3 })).json.error === 'already_claimed');
 
 // import of a local save: capped, once
 const E9 = await mkPlayer(9); await state(E9);
 const legend = sim.staff.makeStaff('staff-import-1', 'foreman', 'legendary', 5, Date.now(), 5);
-const imp = await call('POST', '/api/econ/import-local', { jar: E9.jar, ip: E9.ip, body: { flora: 9_999_999, tier: 3, staff: [legend, { id: 3 }], staffAssign: { foreman: 'staff-import-1' }, avatars: [{ designId: 'classic-1', count: 2, firstAt: 1, serial: 1234 }, { designId: 'no-existe', count: 1 }], plots: [{ id: 'plot-asia-20', mintedAt: 5 }, { id: 'plot-mars-1' }] } });
+const imp = await (async (b) => { try { return { status: 200, json: economy.importLocal({ id: E9.id }, b) }; } catch (e) { return { status: e.status, json: { error: e.code } }; } })({ flora: 9_999_999, tier: 3, staff: [legend, { id: 3 }], staffAssign: { foreman: 'staff-import-1' }, avatars: [{ designId: 'classic-1', count: 2, firstAt: 1, serial: 1234 }, { designId: 'no-existe', count: 1 }], plots: [{ id: 'plot-asia-20', mintedAt: 5 }, { id: 'plot-mars-1' }] });
 ok('importar guardado local: el saldo se limita, los NFT se validan y la tierra se calcula con la fórmula del servidor', imp.status === 200 && imp.json.snapshot.flora === 1500 && imp.json.snapshot.tier === 3 && imp.json.snapshot.staff.length === 1 && imp.json.snapshot.avatars.length === 1 && imp.json.snapshot.plots.length === 1 && imp.json.snapshot.plots[0].landRating === sim.terroir.plotOffer('asia', 20).landRating);
-ok('importar: solo una vez', (await call('POST', '/api/econ/import-local', { jar: E9.jar, ip: E9.ip, body: { flora: 500 } })).json.error === 'already_imported');
+ok('importar: solo una vez', (() => { try { economy.importLocal({ id: E9.id }, { flora: 500 }); return false; } catch (e) { return e.code === 'already_imported'; } })());
+ok('importar un guardado local ya no existe como ruta pública', (await call('POST', '/api/econ/import-local', { jar: E9.jar, ip: E9.ip, body: { flora: 500 } })).status === 404);
 const owner = (nid) => db.prepare('SELECT account_id FROM nfts WHERE id = ?').get(nid)?.account_id;
 
 // ── player market (P2P): escrow, one-transaction sales, burned fee
@@ -598,76 +609,154 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   let blocked = 0; for (let i = 0; i < 5; i++) if ((await intent(GP, 'sell', { type: 'rso', grams: 2000 })).status === 400) blocked++;
   ok('mercadería: repetir ventas inventadas no crea $FLORA', blocked === 5 && wallet(GP).flora === flora0);
   // cosecha: armario (1 plaza, bono 1.0), sin parcelas → techo = 75 × 2.5 × 1.2 × 1.1 = 247.5 g por planta, cupo inicial 1.25 × eso
-  r = await intent(GP, 'harvest', { flower: 100000, trim: 100000, source: 'room' });
+  r = await inner(GP, 'harvest', { flower: 100000, trim: 100000, source: 'room' });
   const cap1 = 75 * 2.5 * 1.2 * 1.1 * 1.25;
   ok('cosecha: lo que pasa del cupo se recorta (no se rechaza)', r.status === 200 && r.json.result.clipped === true && Math.abs(r.json.result.flower - cap1) < 0.5 && r.json.result.trim <= r.json.result.flower * 0.45 + 0.6);
   ok('cosecha: también da la fibra del tallo', r.json.result.fibre === Math.round(r.json.result.flower * 0.5) && r.json.snapshot.inventory.materials.fibra_cruda === r.json.result.fibre);
-  r = await intent(GP, 'harvest', { flower: 200, trim: 0 });
+  r = await inner(GP, 'harvest', { flower: 200, trim: 0 });
   ok('cosecha: con el cupo gastado, cosechar de nuevo al instante casi no da nada', r.json.result.flower < 1);
   const st = stateRow(GP); st.harvestAllowance.at -= 86400_000; db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(st), GP.id);
-  r = await intent(GP, 'harvest', { flower: 1000, trim: 0 });
+  r = await inner(GP, 'harvest', { flower: 1000, trim: 0 });
   ok('cosecha: el cupo se recarga con el tiempo (un día ≈ 123,75 g en el armario)', Math.abs(r.json.result.flower - 123.75) < 1);
   const floraS = wallet(GP).flora;
-  r = await intent(GP, 'grow_speedup', { scope: 'plant' });
-  const after = await intent(GP, 'harvest', { flower: 1000, trim: 0 });
+  r = await inner(GP, 'grow_speedup', { scope: 'plant' });
+  const after = await inner(GP, 'harvest', { flower: 1000, trim: 0 });
   ok('aceleración: cobra 25 $FLORA y suma cupo (35 % de una planta)', r.status === 200 && wallet(GP).flora === floraS - 25 && Math.abs(after.json.result.flower - 247.5 * 0.35) < 1);
   // procesar: nunca más producto que el rendimiento de la receta
   const flowerHave = after.json.snapshot.inventory.flower;
-  r = await intent(GP, 'process', { product: 'rso', grams: 100, out: 20 });
+  r = await inner(GP, 'process', { product: 'rso', grams: 100, out: 20 });
   ok('proceso: sacar más producto que el rendimiento máximo se rechaza', r.status === 400 && r.json.error === 'bad_params');
-  r = await intent(GP, 'process', { product: 'rso', grams: 100, out: 12 });
+  r = await inner(GP, 'process', { product: 'rso', grams: 100, out: 12 });
   ok('proceso: descuenta la flor y guarda el producto', r.status === 200 && Math.abs(r.json.snapshot.inventory.flower - (flowerHave - 100)) < 0.02 && r.json.snapshot.inventory.products.rso === 12);
-  r = await intent(GP, 'process', { product: 'rso', grams: 4000, out: 1 });
+  r = await inner(GP, 'process', { product: 'rso', grams: 4000, out: 1 });
   ok('proceso: sin flor suficiente no se puede', r.status === 400 && r.json.error === 'insufficient_stock');
   r = await intent(GP, 'sell', { type: 'rso', grams: 12 });
   const r2 = await intent(GP, 'sell', { type: 'rso', grams: 12 });
   ok('venta: con producto real se vende una vez, no dos', r.status === 200 && r.json.result.gross > 0 && r2.status === 400);
   // forja: los insumos salen al empezar y el producto llega al terminar
   stock(GP, 'trim', 20);
-  r = await intent(GP, 'forge_start', { recipe: 'render_wax', qty: 1 });
+  r = await inner(GP, 'forge_start', { recipe: 'render_wax', qty: 1 });
   ok('forja: empieza, cobra y descuenta el trim', r.status === 200 && r.json.snapshot.forgeJobs.length === 1);
   const st2 = stateRow(GP); st2.forgeJobs[0].endsAt = Date.now() - 1; db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(st2), GP.id);
-  r = await intent(GP, 'forge_collect', {});
+  r = await inner(GP, 'forge_collect', {});
   ok('forja: al terminar entrega el material', r.status === 200 && r.json.snapshot.inventory.materials.cera === 5 && r.json.snapshot.forgeJobs.length === 0);
   const NP = await mkPlayer(72); await state(NP);
-  r = await intent(NP, 'forge_start', { recipe: 'render_wax', qty: 1 });
+  r = await inner(NP, 'forge_start', { recipe: 'render_wax', qty: 1 });
   ok('forja: sin insumos no arranca', r.status === 400 && /^forge_/.test(r.json.error));
-  r = await intent(GP, 'consume', { items: { 'mat:cera': 2 } });
-  const rc = await intent(GP, 'consume', { items: { 'mat:cera': 99 } });
-  const rx = await intent(GP, 'consume', { items: { 'prod:rso': 1 } });
+  r = await inner(GP, 'consume', { items: { 'mat:cera': 2 } });
+  const rc = await inner(GP, 'consume', { items: { 'mat:cera': 99 } });
+  const rx = await inner(GP, 'consume', { items: { 'prod:rso': 1 } });
   ok('consumo: solo quita, y solo lo que hay', r.status === 200 && r.json.snapshot.inventory.materials.cera === 3 && rc.json.error === 'insufficient_stock' && rx.json.error === 'bad_params');
   // importación única de lo que el navegador ya tenía
   const IP = await mkPlayer(71); await state(IP);
-  r = await intent(IP, 'import_inventory', { flower: 999999, trim: 5, materials: { cera: 9999, inventado: 5 }, products: { diamonds: 5000, inventado: 3 } });
+  r = await inner(IP, 'import_inventory', { flower: 999999, trim: 5, materials: { cera: 9999, inventado: 5 }, products: { diamonds: 5000, inventado: 3 } });
   const inv = r.json.snapshot.inventory;
   ok('importación: respeta los topes', r.status === 200 && inv.flower === 3000 && inv.trim === 5 && inv.materials.cera === 200 && !('inventado' in inv.materials) && inv.products.diamonds > 0 && inv.products.diamonds < 5000 && !('inventado' in inv.products));
-  ok('importación: solo una vez', (await intent(IP, 'import_inventory', { flower: 10 })).json.error === 'already_imported');
+  ok('importación: solo una vez', (await inner(IP, 'import_inventory', { flower: 10 })).json.error === 'already_imported');
 }
-// ── guardado en la nube: la partida no se pierde al cambiar de navegador, celular o dirección del juego
+// ── el juego entero corre en el servidor (server/game.mjs + src/core): el navegador solo pide acciones
 {
-  const sv = (P, body) => call('POST', '/api/save', { jar: P.jar, ip: P.ip, body });
-  ok('nube: sin sesión no hay partida (401)', (await call('GET', '/api/save', { ip: newIp() })).status === 401);
-  let g = await call('GET', '/api/save', { jar: E1.jar, ip: E1.ip });
-  ok('nube: cuenta sin copia devuelve vacío', g.status === 200 && g.json.data === null && g.json.savedAt === 0);
-  const t0 = Date.now();
-  let p = await sv(E1, { data: { playerLevel: 7, playerXp: 120 }, savedAt: t0 });
-  g = await call('GET', '/api/save', { jar: E1.jar, ip: E1.ip });
-  ok('nube: guarda y devuelve la partida', p.json.ok === true && g.json.data.playerLevel === 7 && g.json.savedAt === t0);
-  p = await sv(E1, { data: { playerLevel: 2 }, savedAt: t0 - 5000 });
-  g = await call('GET', '/api/save', { jar: E1.jar, ip: E1.ip });
-  ok('nube: una copia más vieja (otro dispositivo) no pisa la nueva', p.json.stale === true && g.json.data.playerLevel === 7);
-  p = await sv(E1, { data: { x: 'a'.repeat(1100 * 1024) }, savedAt: t0 + 1 });
-  ok('nube: una partida gigante se rechaza', p.status === 413);
-  p = await sv(E1, { data: [1, 2], savedAt: t0 + 1 });
-  ok('nube: datos que no son una partida se rechazan', p.status === 400);
-  p = await sv(E1, { data: { playerLevel: 8 }, savedAt: t0 + 10 * 86400_000 });
-  const at = (await call('GET', '/api/save', { jar: E1.jar, ip: E1.ip })).json.savedAt;
-  ok('nube: un reloj adelantado no gana para siempre', p.json.ok === true && at <= Date.now() + 60_000);
-  const EN = G1;
-  ok('nube: cada cuenta ve solo su partida', (await call('GET', '/api/save', { jar: EN.jar, ip: EN.ip })).json.data === null);
+  const gs = (P, lang) => call('GET', `/api/game/state${lang ? `?lang=${lang}` : ''}`, { jar: P.jar, ip: P.ip });
+  const act = (P, type, params = {}, extra = {}) => call('POST', '/api/game/action', { jar: P.jar, ip: P.ip, body: { type, params, ...extra } });
+  const gameRow = (P) => JSON.parse(db.prepare('SELECT json FROM game_state WHERE account_id = ?').get(P.id).json);
+  const putGame = (P, st) => db.prepare('UPDATE game_state SET json = ? WHERE account_id = ?').run(JSON.stringify(st), P.id);
+  const water = (st) => st.assets.filter((a) => a.catalogId.startsWith('water')).reduce((n, a) => n + (a.remaining ?? 0), 0);
+
+  ok('juego: sin sesión no hay partida (401)', (await call('GET', '/api/game/state', { ip: newIp() })).status === 401);
+  const GA = await mkPlayer(80);
+  let g = await gs(GA);
+  ok('juego: una cuenta nueva empieza con su sala, el kit de inicio y el estado de la economía', g.status === 200 && g.json.state.playerLevel === 1 && g.json.state.indoorPlants.length === 1 && g.json.state.assets.length > 3 && g.json.snapshot.flora === ECON.starterFlora);
+
+  // acciones: validadas y aplicadas por el servidor
+  const w0 = water(g.json.state);
+  let a = await act(GA, 'waterPlant', { idx: 0 }, { idem: 'w-1' });
+  ok('regar: gasta agua del stock del servidor y da XP', a.status === 200 && a.json.ok && water(a.json.state) < w0 && a.json.state.playerXp === 20 && a.json.fx.some((f) => f.t === 'toast'));
+  const again = await act(GA, 'waterPlant', { idx: 0 }, { idem: 'w-1' });
+  ok('regar: el doble clic (misma clave) no se aplica dos veces', again.status === 200 && gameRow(GA).playerXp === 20);
+  ok('el navegador no puede mandar estado: una acción inventada se rechaza', (await act(GA, 'setState', { playerLevel: 99 })).json.error === 'unknown_action' && (await act(GA, 'breedStrainsFree', { a: {}, b: {} })).json.error === 'unknown_action');
+  a = await act(GA, 'harvestPlant', { idx: 0 });
+  ok('cosechar una planta que no está lista se rechaza con el motivo', a.status === 400 && a.json.error === 'refused' && /no se puede cortar/i.test(a.json.text));
+
+  // el tiempo lo pone el reloj del servidor
+  let st = gameRow(GA); const p0 = st.indoorPlants[0].progressPercent;
+  st.lastSimAt = Date.now() - 6 * 3600_000; putGame(GA, st);
+  g = await gs(GA);
+  ok('el mundo avanza con el reloj del servidor (6 h sin jugar = la planta creció)', g.json.state.indoorPlants[0].progressPercent > p0);
+  const p1 = gameRow(GA).indoorPlants[0].progressPercent;
+  await act(GA, 'setPpfd', { ppfd: 700, extraSeconds: 9e6, now: Date.now() + 9e9 });
+  ok('el navegador no puede adelantar el reloj', Math.abs(gameRow(GA).indoorPlants[0].progressPercent - p1) < 1);
+
+  // cosecha: la calcula el servidor con su planta
+  st = gameRow(GA); st.indoorPlants[0] = { ...st.indoorPlants[0], progressPercent: 100, stage: 'ready_harvest', sim: undefined, health: 100, sex: 'female' }; putGame(GA, st);
+  const flower0 = (await state(GA)).snapshot.inventory.flower;
+  a = await act(GA, 'harvestPlant', { idx: 0, flower: 99999, grams: 99999 });
+  const got = a.json.snapshot.inventory.flower - flower0;
+  ok('cosecha: los gramos salen de la planta del servidor, no de los parámetros', a.status === 200 && got > 0 && got <= st.indoorPlants[0].estimatedDryYieldGrams && a.json.state.indoorPlants[0].progressPercent === 0, `(${got} g)`);
+
+  // laboratorio: rendimiento de la receta del servidor
+  stock(GA, 'flower', 100);
+  const fl = (await state(GA)).snapshot.inventory.flower;
+  a = await act(GA, 'runLabProcess', { recipeId: 'live_rosin', grams: 20, yieldRatio: 50, feeFlora: 0 });
+  const batch = a.json.state.products.find((x) => x.recipeId === 'live_rosin');
+  ok('laboratorio: el rendimiento y la tarifa son los de la receta (0,22 g/g, quema 12)', a.status === 200 && batch && batch.quantityGrams <= 20 * 0.22 + 0.01 && a.json.snapshot.inventory.products.live_rosin === batch.quantityGrams && Math.abs(a.json.snapshot.inventory.flower - (fl - 20)) < 0.01);
+  a = await act(GA, 'sellProduct', { productId: batch.id });
+  ok('vender un lote: sale del almacén y paga lo que dice el mercado del servidor', a.status === 200 && !a.json.state.products.some((x) => x.id === batch.id) && a.json.result.gross > 0 && !a.json.snapshot.inventory.products.live_rosin);
+  ok('un lote que no existe no se vende', (await act(GA, 'sellProduct', { productId: batch.id })).status === 400);
+
+  // XP gratis con límite
+  const xp0 = gameRow(GA).playerXp, lv0 = gameRow(GA).playerLevel;
+  await act(GA, 'calibrateMeter', { meter: 'ph' }); await act(GA, 'calibrateMeter', { meter: 'ph' }); await act(GA, 'calibrateMeter', { meter: 'ph' });
+  const st2 = gameRow(GA);
+  ok('calibrar da XP una vez al día por medidor (antes era XP infinita)', (st2.playerLevel > lv0 ? true : st2.playerXp - xp0 === 15));
+  a = await act(GA, 'collectPollenFromFather', { fatherId: 'father_santa_marta_male' });
+  const pol2 = await act(GA, 'collectPollenFromFather', { fatherId: 'father_santa_marta_male' });
+  ok('recolectar polen tiene espera (6 h)', a.status === 200 && pol2.status === 400 && pol2.json.error === 'refused');
+
+  // subir de nivel paga el bono una vez, en el servidor
+  st = gameRow(GA); st.playerXp = 740; st.playerLevel = 2; putGame(GA, st);
+  const lvlBefore = db.prepare("SELECT COUNT(*) n FROM ledger WHERE account_id = ? AND kind = 'level'").get(GA.id).n;
+  a = await act(GA, 'waterPlant', { idx: 0 });
+  const lvlAfter = db.prepare("SELECT COUNT(*) n FROM ledger WHERE account_id = ? AND kind = 'level'").get(GA.id).n;
+  ok('subir de nivel: el servidor paga el bono una sola vez', a.json.state.playerLevel === 3 && lvlAfter === lvlBefore + 1);
+  st = gameRow(GA); st.playerLevel = 2; st.playerXp = 745; putGame(GA, st);
+  await act(GA, 'waterPlant', { idx: 0 });
+  ok('subir de nivel dos veces al mismo nivel no cobra dos veces', db.prepare("SELECT COUNT(*) n FROM ledger WHERE account_id = ? AND kind = 'level'").get(GA.id).n === lvlAfter);
+
+  // guía: reiniciarla no vuelve a pagar
+  st = gameRow(GA); st.tutorialPaid = sim.core.normalizeGame({}, Date.now()).tutorialPaid.concat(['move', 'bag', 'water', 'feed', 'gauges', 'process', 'sell', 'buy', 'planet', 'harvest']); st.tutorial = { started: true, dismissed: false, minimized: false, index: 0, base: {}, claimed: [] }; putGame(GA, st);
+  const assetsN = gameRow(GA).assets.length, xpT = gameRow(GA).playerXp;
+  for (let i = 0; i < 4; i++) { await act(GA, 'reportEvent', { event: 'visit' }); await act(GA, 'claimTutorialStep'); }
+  ok('guía: un paso ya cobrado no se cobra otra vez al reiniciarla', gameRow(GA).assets.length === assetsN && gameRow(GA).playerXp === xpT && gameRow(GA).tutorial.claimed.includes('move'));
+  ok('eventos de interfaz: solo los que la interfaz ve', (await act(GA, 'reportEvent', { event: 'harvest' })).status === 400);
+
+  // perfil en el servidor
+  a = await call('POST', '/api/game/profile', { jar: GA.jar, ip: GA.ip, body: { updates: { displayName: 'Nuevo Nombre', bio: 'x'.repeat(500), avatarImage: 'javascript:alert(1)', avatarNft: 'legendary-1' } } });
+  ok('perfil: se guarda en el servidor con topes (sin imagen falsa ni avatar ajeno)', a.status === 200 && a.json.state.profile.displayName === 'Nuevo Nombre' && a.json.state.profile.bio.length === 200 && !a.json.state.profile.avatarImage && !a.json.state.profile.avatarNft);
+  ok('equipar un avatar que no es tuyo se rechaza', (await act(GA, 'equipAvatar', { designId: 'legendary-1' })).status === 400);
+
+  // idioma de los avisos
+  a = await act(GA, 'toggleAutoWater', {}, { lang: 'en' });
+  ok('los avisos salen en el idioma del jugador', a.status === 200 && a.json.fx.some((f) => f.t === 'toast' && /Automatic|Auto/i.test(f.m)), a.json.fx.map((f) => f.m).join(' | '));
+
+  // migración de una partida vieja del navegador, con topes
+  const GM = await mkPlayer(81); await state(GM);
+  const es0 = stateRow(GM); es0.levelsClaimed = [1, 2, 3]; db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(es0), GM.id);
+  const plant = { id: 'indoor-r1-p1-A', slotIndex: 0, strain: { id: 'x-hack', name: 'Hack', resinYieldMultiplier: 99, cycleDurationSeconds: 1, terpenes: {} }, progressPercent: 100, stage: 'ready_harvest', health: 100, soilMoisture: 80, estimatedDryYieldGrams: 999999, plantedAt: 1, lastWatered: 1, lastFed: 1, temperatureC: 24, relativeHumidity: 60 };
+  const old = { playerLevel: 50, playerXp: 999999, seedInventory: { seed_chrono_og: 9999, hybrid_seed_fake: 50 }, assets: [{ id: 'a1', catalogId: 'water_200', remaining: 1e9, mintedAt: 1 }, { id: 'a2', catalogId: 'no-existe', remaining: 5 }], indoorPlants: [plant], lastSimAt: Date.now() - 3600_000, profile: { displayName: 'Viejo', avatar: '🌿' }, mothersFathers: [] };
+  db.prepare('INSERT INTO saves (account_id, data, saved_at, updated_at) VALUES (?,?,?,?)').run(GM.id, JSON.stringify(old), Date.now(), Date.now());
+  g = await gs(GM);
+  const m = g.json.state;
+  ok('migración: el nivel no pasa del que el servidor ya pagó y la XP se limita', m.playerLevel === 3 && m.playerXp < 1600);
+  ok('migración: semillas con tope, las de genéticas perdidas se descartan', m.seedInventory.seed_chrono_og === 60 && !('hybrid_seed_fake' in m.seedInventory));
+  ok('migración: lotes con su cantidad máxima y solo del catálogo', m.assets.length === 1 && m.assets[0].remaining <= 200);
+  ok('migración: la planta queda dentro de lo que el juego permite', m.indoorPlants[0].strain.resinYieldMultiplier <= sim.harvestCap.MAX_RESIN_MULT && m.indoorPlants[0].estimatedDryYieldGrams <= 75 * sim.harvestCap.MAX_RESIN_MULT * 2.4 && m.indoorPlants[0].strain.cycleDurationSeconds >= 40);
+  ok('migración: conserva el perfil', m.profile.displayName === 'Viejo');
+  ok('migración: se hace una sola vez (la partida vieja ya no manda)', db.prepare('SELECT migrated_from FROM game_state WHERE account_id = ?').get(GM.id).migrated_from?.startsWith('save@'));
+  ok('el guardado en la nube del navegador ya no existe', (await call('POST', '/api/save', { jar: GM.jar, ip: GM.ip, body: { data: { playerLevel: 99 }, savedAt: Date.now() } })).status === 404 && (await call('GET', '/api/save', { jar: GM.jar, ip: GM.ip })).status === 404);
+
   const r = stateRow(E1); r.levelsClaimed = [1, 2, 3, 4];
   db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(r), E1.id);
-  ok('nivel: el estado del servidor informa el nivel más alto ya pagado', (await state(E1)).snapshot.level === 4 && (await state(EN)).snapshot.level === 1);
+  ok('nivel: el estado del servidor informa el nivel más alto ya pagado', (await state(E1)).snapshot.level === 4 && (await state(G1)).snapshot.level === 1);
 }
 // ── idioma de la cuenta: correos en inglés para quien juega en inglés
 {

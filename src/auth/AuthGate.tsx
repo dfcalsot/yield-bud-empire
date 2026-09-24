@@ -3,8 +3,7 @@ import { Eye, EyeOff, Loader2, Mail, ShieldCheck } from 'lucide-react';
 import { api, errText, solveCaptcha, logoutServer, saveAccountLang } from './api';
 import { YieldBudWordmark } from '../components/brand/YieldBudWordmark';
 import { Npc, useNpcSay } from '../components/npc/Npc';
-import { getStoredUserProfiles, saveUserProfile, setActiveUserId } from '../utils/auth';
-import type { UserProfile } from '../types';
+import { clearOldLocalGame } from '../utils/auth';
 import { t, getLang, setLang, hasChosenLang, useLang, t as tr } from '../i18n';
 import { LangSwitch } from '../i18n/LangSwitch';
 
@@ -20,19 +19,6 @@ const LEGAL = {
 };
 
 interface AuthConfig { google: boolean; x: boolean; emailDelivery: boolean; devLinks: boolean; inviteOnly?: boolean; captcha: { bits: number } }
-
-/** Make the account service's user the active local profile (game data stays per user in this browser). */
-function prepareProfile(a: ServerAccount) {
-  const id = `srv-${a.id}`;
-  if (!getStoredUserProfiles().some((u) => u.id === id)) {
-    const p: UserProfile = {
-      id, username: a.username, email: a.email ?? `${a.username}@cuenta.chronoflora`, displayName: a.username, avatar: '🌱', role: 'Principiante Botánico',
-      createdAt: a.createdAt, experienceLevel: 1, facilityName: 'Carpa Casera 80x80cm',
-    };
-    saveUserProfile(p);
-  }
-  setActiveUserId(id);
-}
 
 const strength = (pw: string) => {
   let s = 0;
@@ -285,7 +271,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
 /** Shows the game only for a signed-in (and, for e-mail accounts, verified) session. */
 export const AuthGate: React.FC<{ children: (account: ServerAccount | null) => React.ReactNode }> = ({ children }) => {
   const lang = useLang();   // al cambiar de idioma se vuelve a dibujar
-  const [state, setState] = useState<'loading' | 'anon' | 'ready' | 'demo' | 'down'>('loading');
+  const [state, setState] = useState<'loading' | 'anon' | 'ready' | 'down'>('loading');
   const [account, setAccount] = useState<ServerAccount | null>(null);
   const [config, setConfig] = useState<AuthConfig>({ google: false, x: false, emailDelivery: false, devLinks: false, captcha: { bits: 20 } });
   const [msg, setMsg] = useState('');
@@ -297,7 +283,7 @@ export const AuthGate: React.FC<{ children: (account: ServerAccount | null) => R
     else if (!a.lang || (hasChosenLang() && a.lang !== getLang())) void saveAccountLang(getLang());
     const ok = a.verified || a.providers.includes('x');
     if (!ok) { setAccount(a); setState('anon'); return; }
-    prepareProfile(a); setAccount(a); setState('ready');
+    clearOldLocalGame(); setAccount(a); setState('ready');
   };
 
   const boot = async () => {
@@ -316,8 +302,8 @@ export const AuthGate: React.FC<{ children: (account: ServerAccount | null) => R
       if (me.status === 200) { accept(me.data.account); return; }
       setState('anon');
     } catch {
-      // no account service reachable: development keeps working with the local demo profiles; production refuses to open
-      setState(import.meta.env.DEV ? 'demo' : 'down');
+      // the game lives on the server: without it there is nothing to play (the page retries)
+      setState('down');
     }
   };
   useEffect(() => { boot(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -328,10 +314,17 @@ export const AuthGate: React.FC<{ children: (account: ServerAccount | null) => R
     return () => window.removeEventListener('hashchange', onHash);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // without the server there is no game: try again by itself every few seconds
+  useEffect(() => {
+    if (state !== 'down') return;
+    const id = window.setTimeout(() => { void boot(); }, 5000);
+    return () => window.clearTimeout(id);
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (state === 'loading') return <div className="min-h-screen grid place-items-center bg-[#04090a] text-emerald-300 font-mono text-sm"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   if (state === 'down') return (
     <div className="min-h-screen grid place-items-center bg-[#04090a] p-6 text-center"><div className="max-w-sm space-y-3"><h1 className="font-serif text-xl font-black text-white">{t('No podemos verificar tu sesión')}</h1><p className="text-sm text-neutral-400">{t('El servicio de cuentas no responde. Tu partida está a salvo; inténtalo de nuevo en un momento.')}</p><button className="care-btn care-btn--gold" onClick={boot}>{t('Reintentar')}</button></div></div>
   );
   if (state === 'anon') return <AuthScreen key={lang} config={config} initialMsg={msg} resetToken={resetToken} onAccount={accept} />;
-  return <>{state === 'demo' && <div className="fixed bottom-2 left-2 z-[400] px-2 py-1 rounded bg-amber-400/90 text-neutral-950 text-[10px] font-mono font-bold pointer-events-none">{t('MODO DEMO LOCAL · sin servicio de cuentas')}</div>}{children(account)}</>;
+  return <>{children(account)}</>;
 };

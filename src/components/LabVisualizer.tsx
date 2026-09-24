@@ -40,7 +40,7 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
   onSelectCategory,
   onExecuteManualPress
 }) => {
-  const { machines, repairMachine, floraBalance, rawFlowerGrams, addXp } = useGame();
+  const { machines, repairMachine, floraBalance, rawFlowerGrams } = useGame();
 
   // Active machine based on selected tab
   const activeMachine = machines.find(m => {
@@ -139,7 +139,6 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
         quality: 99
       });
 
-      if (addXp) addXp(120, t('Extracción Crítica en Zona Dorada'));
       if (onExecuteManualPress) onExecuteManualPress(35, 99, true);
 
     } else if (finalPsi >= 70 && finalPsi <= 135) {
@@ -153,7 +152,6 @@ export const LabVisualizer: React.FC<LabVisualizerProps> = ({
         quality: 90
       });
 
-      if (addXp) addXp(60, t('Prensado Manual Exitoso'));
       if (onExecuteManualPress) onExecuteManualPress(15, 90, false);
 
     } else {

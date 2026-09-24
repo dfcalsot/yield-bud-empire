@@ -66,6 +66,12 @@ export async function setLang(l: Lang, remember = true): Promise<void> {
 
 export const getLang = (): Lang => current;
 
+/** el servidor (sin DOM): usa el idioma de quien pidió la acción, con el diccionario ya cargado */
+export function useLangNow(l: Lang, dict?: Record<string, string>): void {
+  if (dict && Object.keys(EN).length === 0) EN = dict;
+  current = l === 'en' && Object.keys(EN).length ? 'en' : 'es';
+}
+
 /** el texto en el idioma actual; `{nombre}` se reemplaza con `vars.nombre` */
 export function t(es: string | null | undefined, vars?: Record<string, string | number | null | undefined>): string {
   if (es == null) return '';

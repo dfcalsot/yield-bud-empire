@@ -46,7 +46,6 @@ export const CultivationView: React.FC<{ onOpenMarket?: (cat?: string) => void; 
     harvestAllReadyPlants,
     speedUpIndoorRoom,
     trainIndoorCanopy,
-    plantIndoorBatch,
     currentFacility,
     facilities,
     upgradeFacility,

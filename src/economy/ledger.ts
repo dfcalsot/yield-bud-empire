@@ -73,30 +73,6 @@ export async function fetchMarket(q: { kind?: string; rarity?: string; sort?: st
   } catch { return null; }
 }
 
-/** the one-time import of a local save (the server caps and validates it) */
-export async function importLocal(body: Record<string, unknown>): Promise<Snapshot | null> {
-  const r = await post('/api/econ/import-local', body);
-  if (!r || !r.ok) return null;
-  return ((await r.json()) as { snapshot: Snapshot }).snapshot;
-}
-
-/** la copia de la partida guardada en el servidor (null si no hay servicio o sesión; data null si todavía no hay copia) */
-export async function fetchCloudSave(): Promise<{ savedAt: number; data: Record<string, unknown> | null } | null> {
-  try {
-    const r = await fetch('/api/save', { credentials: 'same-origin' });
-    return r.ok ? ((await r.json()) as { savedAt: number; data: Record<string, unknown> | null }) : null;
-  } catch { return null; }
-}
-
-/** sube la partida; `keepalive` para cuando se cierra la pestaña (el navegador solo lo permite con cuerpos chicos) */
-export async function pushCloudSave(data: Record<string, unknown>, savedAt: number): Promise<{ ok: boolean; stale?: boolean } | null> {
-  try {
-    const body = JSON.stringify({ data, savedAt });
-    const r = await fetch('/api/save', { method: 'POST', credentials: 'same-origin', keepalive: body.length < 60_000, headers: { 'content-type': 'application/json', 'x-cf-csrf': '1' }, body });
-    return r.ok ? ((await r.json()) as { ok: boolean; stale?: boolean }) : null;
-  } catch { return null; }
-}
-
 /** short Spanish text for the reasons an intent can be refused */
 export const REASON: Record<string, string> = {
   insufficient: k('Saldo insuficiente'), too_early: k('Todavía no puedes reclamar'), build_in_progress: k('Ya hay una obra en marcha'), skip_rung: k('No se salta ningún escalón'), already_built: k('Esa instalación ya la tienes'),

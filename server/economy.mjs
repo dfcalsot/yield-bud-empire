@@ -26,6 +26,8 @@ const MATERIAL_IDS = new Set(FG.MATERIALS.map((m) => m.id));
 // Player-to-player market: what is listed sits in escrow, the sale is one transaction, and a slice of every sale is burned.
 const P2P = { feeRate: 0.05, minPrice: 1, maxPrice: 100000, maxListings: 20, pageSize: 24, kinds: ['staff', 'land', 'avatar'] };
 const rng = () => crypto.randomInt(0, 2 ** 32) / 2 ** 32;
+/** what the browser may still ask the economy for directly (the rest runs inside game actions) */
+const PUBLIC_INTENTS = new Set(['claim_daily', 'start_build', 'speedup_build', 'hire', 'staff_chest', 'rank_up', 'assign', 'buy_plot', 'avatar_chest', 'open_gift', 'list', 'cancel_listing', 'buy_listing', 'sell']);
 
 export function installEconomy({ db, route, HttpError, sessionAccount, audit, limit, readJson }) {
   db.exec(`
@@ -207,6 +209,18 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     };
   }
 
+  /** pay the level bonuses not paid yet up to `level` (the game core levels up on the server now); a level takes real time, so an
+   *  account can't cash more than 4 levels plus 4 per day of age — the rest waits and is paid later */
+  function payLevels(id, level, now) {
+    const st = stateOf(id);
+    const claimed = new Set(st.levelsClaimed ?? [1]);
+    const max = Math.min(Math.floor(level), 200, 4 + Math.floor(((now - st.created) / DAY) * 4));
+    let paid = 0;
+    for (let l = 2; l <= max; l++) if (!claimed.has(l)) { claimed.add(l); credit(id, E.ECON.levelBonus, 'level', `nivel ${l}`, now); paid += E.ECON.levelBonus; }
+    if (paid) { st.levelsClaimed = [...claimed].sort((a, b) => a - b); saveState(id, st); }
+    return paid;
+  }
+
   /* ───────────── intents ───────────── */
   const need = (cond, code, extra) => { if (!cond) throw new HttpError(400, code, extra); };
   const num = (v, lo, hi) => { const n = Number(v); need(Number.isFinite(n) && n >= lo && n <= hi, 'bad_params'); return n; };
@@ -254,7 +268,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       need(!st.unlocked.includes(f.id), 'already_built'); need(f.tier === st.tier + 1, 'skip_rung');
       const c = F.startConstruction(f.id, now); need(c, 'bad_params');
       debit(id, f.costFlora, 'build', f.name, now); st.construction = c; saveState(id, st);
-      return { hours: F.buildHoursOf(f.id) };
+      return { hours: F.buildHoursOf(f.id), cost: f.costFlora };
     },
     speedup_build({ id, now }) {
       const st = stateOf(id); need(st.construction, 'no_build');
@@ -273,7 +287,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       debit(id, cand.priceFlora, 'hire', candId, now);
       const hire = S.hireFromBoard({ ...cand, id: hireId }, now);
       q.putNft.run(hire.id, id, 'staff', JSON.stringify(hire), now);
-      return { staff: hire };
+      return { staff: hire, cost: cand.priceFlora };
     },
     staff_chest({ id, now, p }) {
       const chest = S.STAFF_CHESTS[str(p.chestId, 20)]; need(chest, 'bad_params');
@@ -291,7 +305,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       const row = q.nft.get(str(p.staffId, 60)); need(row && row.account_id === id && row.kind === 'staff' && !row.escrow, 'not_yours');
       const s = JSON.parse(row.data); const cost = S.rankUpCost(s); need(cost !== null, 'max_rank');
       debit(id, cost, 'rank_up', s.name, now); s.rank += 1; saveStaff(s);
-      return { staff: s };
+      return { staff: s, cost };
     },
     assign({ id, now, p }) {
       const role = str(p.role, 20); need(S.STAFF_ROLES.includes(role), 'bad_params');
@@ -303,7 +317,8 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
         st.staffAssign[role] = row.id;
       }
       saveState(id, st);
-      return {};
+      const cur = st.staffAssign[role] ? q.nft.get(st.staffAssign[role]) : null;
+      return cur ? { staff: JSON.parse(cur.data) } : {};
     },
 
     buy_plot({ id, now, p }) {
@@ -316,7 +331,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       debit(id, offer.priceFlora, 'land', offer.name, now);
       const land = { id: offer.id, region: offer.region, index: offer.index, name: offer.name, ratings: offer.ratings, landRating: offer.landRating, mintedAt: now };
       try { q.putNft.run(land.id, id, 'land', JSON.stringify(land), now); } catch { throw new HttpError(409, 'plot_taken'); }
-      return { plot: land };
+      return { plot: land, cost: offer.priceFlora };
     },
 
     avatar_chest({ id, now, p }) {
@@ -556,7 +571,10 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
   });
   route('POST', '/api/econ/intent', async (ctx) => {
     const a = who(ctx); const b = await readJson(ctx.req, 16 * 1024);
-    return run(a, String(b.type ?? ''), b.params, typeof b.idem === 'string' ? b.idem.slice(0, 80) : '');
+    const type = String(b.type ?? '');
+    // goods and rewards only move through the game (server/game.mjs): the browser can't report a harvest, a batch or a level
+    if (!PUBLIC_INTENTS.has(type)) throw new HttpError(400, 'unknown_intent');
+    return run(a, type, b.params, typeof b.idem === 'string' ? b.idem.slice(0, 80) : '');
   });
   route('GET', '/api/econ/market', (ctx) => {
     const a = who(ctx); const u = ctx.url;
@@ -574,31 +592,9 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       recent: q.recentSales.all().map((r) => ({ id: r.id, kind: r.kind, rarity: r.rarity, price: r.price, at: r.closed_at })),
     };
   });
-  route('POST', '/api/econ/import-local', async (ctx) => { const a = who(ctx); return importLocal(a, await readJson(ctx.req, 96 * 1024)); });
 
-  /* ───────────── guardado en la nube ─────────────
-   * La partida (plantas, semillas, XP, misiones…) la juega el navegador; acá se guarda una copia para que no se pierda al cambiar
-   * de navegador, de celular o de dirección del juego. Lo que vale dinero (saldo, NFTs, instalaciones) no sale de acá: al
-   * cargar, el juego vuelve a pedir el estado del servidor y eso manda. */
-  const SAVE_MAX = 1024 * 1024;
-  route('GET', '/api/save', (ctx) => {
-    const a = who(ctx); const r = q.save.get(a.id);
-    return r ? { savedAt: r.saved_at, data: JSON.parse(r.data) } : { savedAt: 0, data: null };
-  });
-  route('POST', '/api/save', async (ctx) => {
-    const a = who(ctx); limit(ctx, `save:${a.id}`, 30, 60_000);
-    const b = await readJson(ctx.req, SAVE_MAX + 4096);
-    const data = b.data, savedAt = Number(b.savedAt);
-    if (!data || typeof data !== 'object' || Array.isArray(data) || !Number.isFinite(savedAt) || savedAt <= 0) throw new HttpError(400, 'bad_params');
-    const now = Date.now();
-    const at = Math.min(savedAt, now + 60_000);   // un reloj adelantado no puede ganarle a todo lo que venga después
-    const prev = q.save.get(a.id);
-    if (prev && prev.saved_at > at) return { ok: false, stale: true, savedAt: prev.saved_at };   // otro dispositivo guardó algo más nuevo
-    const json = JSON.stringify(data);
-    if (json.length > SAVE_MAX) throw new HttpError(413, 'too_large');
-    q.putSave.run(a.id, json, at, now);
-    return { ok: true, savedAt: at };
-  });
+  /* The old cloud save (table `saves`) is only read once more: server/game.mjs migrates it into the server-run game. */
+  const legacySave = (id) => { const r = q.save.get(id); return r ? { savedAt: r.saved_at, data: JSON.parse(r.data) } : null; };
 
-  return { run, snapshot, walletOf, importLocal, INTENTS };
+  return { run, snapshot, walletOf, settle, importLocal, INTENTS, credit, debit, stateOf, saveState, free, activeMods, inventoryOf, payLevels, legacySave, wallet: (id) => q.wallet.get(id) };
 }

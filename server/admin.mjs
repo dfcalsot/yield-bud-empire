@@ -1,4 +1,4 @@
-// Operator tool: node server/admin.mjs stats | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
+// Operator tool: node server/admin.mjs stats | games | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
 //                | invite [cantidad] [usos] [nota] | invites | revoke <código> | seats <N> | wave <N> | waiting | prereg
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
@@ -20,6 +20,13 @@ if (cmd === 'stats') {
   console.log({ cuentas: n('SELECT COUNT(*) n FROM accounts'), verificadas: n('SELECT COUNT(*) n FROM accounts WHERE email_verified = 1'), nuevas24h: n('SELECT COUNT(*) n FROM accounts WHERE created_at > ?', day),
     marcadas: n("SELECT COUNT(*) n FROM accounts WHERE flags != ''"), sesionesActivas: n('SELECT COUNT(*) n FROM sessions WHERE expires_at > ?', Date.now()), bloqueadas: n('SELECT COUNT(*) n FROM accounts WHERE locked_until > ?', Date.now()) });
   console.table(db.prepare('SELECT event, COUNT(*) AS n FROM audit WHERE ts > ? GROUP BY event ORDER BY n DESC').all(day));
+} else if (cmd === 'games') {
+  // the games the server runs: level, plants, lots, seeds and where each one came from (a migrated browser save or new)
+  const rows = db.prepare('SELECT g.account_id, a.username, g.json, g.version, g.migrated_from, g.updated_at FROM game_state g JOIN accounts a ON a.id = g.account_id ORDER BY g.account_id').all();
+  console.table(rows.map((r) => { const s = JSON.parse(r.json); return {
+    cuenta: r.account_id, jugador: r.username, nivel: s.playerLevel, xp: s.playerXp, sala: s.indoorPlants.length,
+    parcelas: Object.values(s.plotPlants).map((x) => x.length).join('/'), lotes: s.assets.length, semillas: Object.values(s.seedInventory).reduce((a, b) => a + b, 0),
+    lotesLab: s.products.length, acciones: r.version, origen: r.migrated_from ?? 'nueva', kb: Math.round(r.json.length / 1024) }; }));
 } else if (cmd === 'flagged') {
   console.table(db.prepare("SELECT id, username, email, source, email_verified AS ok, flags, datetime(created_at/1000,'unixepoch') AS creada FROM accounts WHERE flags != '' ORDER BY created_at DESC LIMIT 100").all());
 } else if (cmd === 'audit') {

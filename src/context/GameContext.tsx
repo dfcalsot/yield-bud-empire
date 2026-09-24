@@ -1,129 +1,49 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import confetti from 'canvas-confetti';
-import { diagnose as diagnoseMix, dosesFromTable, feedEffect, phCorrection, solve as solveMix, stageOfProgress, strengthForEc, type Mix } from '../sim/nutrition';
-import {
-  Strain,
-  GrowFacility,
-  MachineEquipment,
-  PlantInGrow,
-  ProcessedProduct,
-  LabRunSpec,
-  PestKind,
-  OwnedPlot,
-  RegionId,
-  GenomicPatent,
-  VirtualBrand,
-  SolanaTransaction,
-  GrowStage,
-  TechniqueId,
-  V2pRedemptionItem,
-  GameQuest,
-  SeedBankItem,
-  GrowSupplyItem,
-  NutrientBrand,
-  GrowRoomId,
-  MotherFatherPlant,
-  SolanaNetwork,
-  UserProfile,
-  UserAccountData
+import { Loader2, WifiOff } from 'lucide-react';
+import type {
+  Strain, GrowFacility, MachineEquipment, PlantInGrow, ProcessedProduct, LabRunSpec, OwnedPlot, RegionId, GenomicPatent, VirtualBrand,
+  SolanaTransaction, TechniqueId, V2pRedemptionItem, GameQuest, SeedBankItem, GrowSupplyItem, NutrientBrand, GrowRoomId, MotherFatherPlant,
+  SolanaNetwork, UserProfile,
 } from '../types';
-import {
-  INITIAL_STRAINS,
-  INITIAL_FACILITIES,
-  INITIAL_MACHINES,
-  INITIAL_V2P_ITEMS,
-  INITIAL_QUESTS,
-  INITIAL_SEED_BANK,
-  INITIAL_GROW_SUPPLIES,
-  NUTRIENT_BRANDS_DATABASE,
-  GROW_ROOMS_CONFIG,
-  INITIAL_MOTHERS_FATHERS
-} from '../data/initialData';
-import {
-  SOLANA_NETWORKS,
-  connectBrowserWallet,
-  generateSolanaKeypair,
-  fetchLiveSolBalance,
-  requestSolanaAirdrop,
-  signSolanaMessage
-} from '../utils/solana';
-import {
-  getStoredUserProfiles,
-  saveUserProfile,
-  getActiveUserId,
-  setActiveUserId,
-  loadUserData,
-  saveUserData,
-  DEFAULT_DEMO_USERS
-} from '../utils/auth';
-import {
-  playWaterSound,
-  playHarvestChime,
-  playBurnSound,
-  playClickSound,
-  playLevelUpSound,
-  playQuestCompleteSound,
-  playGoldenDripSound,
-  isSoundEnabled,
-  setSoundEnabled
-} from '../utils/audio';
-
-import { applyTechnique, canTrain, TECHNIQUE_BY_ID } from '../sim/techniques';
-import { addMaterials, canCraft, craftTotals, FIBRE_PER_FLOWER_GRAM, FORGE_RECIPE_BY_ID, MATERIAL_BY_ID, type Materials } from '../sim/forge';
-import {
-  BREEDING_LIMITS, breedingCost, canBreed, capGeneration, CHAMBER_FEE, CROSS_MINUTES, GEN_LABEL, inheritTraits, lineageLabel, mulberry32, seedBatchSize,
-  type Generation,
-} from '../sim/breeding';
-import { PRODUCT_PRICE, productKey, TYPE_OF_KEY } from '../sim/products';
-import { boostWithinPhase, isHarvestable, phaseOf, PHASES, stageOf as stageFromProgress } from '../sim/phases';
-import { advanceWorld, calculateVpd, etaSeconds, formatDuration, isMale, maleCount, pestCount, PEST_INFO, plotEtaSeconds, powerDraw, sexFor, sexRevealed, SEEDS_PER_POLLINATED, SimEnv } from '../sim/engine';
-import { landOffers } from '../sim/lands';
-import { fetchState, importLocal, intent, fetchCloudSave, pushCloudSave, reasonText, type ListingView, type Snapshot } from '../economy/ledger';
-import { mintAddressFor } from '../utils/nft';
-import { siteConditions, plotOffer, terroirOf, REGION_BY_ID, PLOT_SIZE, type PlotOffer } from '../sim/terroir';
-import { CHESTS, DUPLICATE_REFUND, EMPTY_PITY, DESIGN_BY_ID, rollChest, seasonOf, type AvatarDesign, type ChestId, type OwnedAvatar, type PityMap } from '../sim/avatars';
-import {
-  CATALOG_BY_ID, OwnedAsset, USE, newAsset, starterAssets, equipStatsOf, stockOf, spendResource, bestFeedBonus, repairCostOf,
-  ownsStation, EquipStats, pestStock, spendPest, gardenerLevelOf, garbageOf, starterPestKit,
-} from '../economy/catalog';
-import { BALANCE } from '../sim/balance';
-import { ECON, EMPTY_DEPTH, burnRateOfSale, claimStatus, saleRevenue, type Depth } from '../sim/economy';
-import { applySpeedUp, buildHoursOf, fitToCapacity, isDone, normalizeConstruction, speedUpQuote, startConstruction, type Construction } from '../sim/facilities';
-import { bump as bumpMissions, claimErrand, claimStory, emptyMissions, normalizeMissions, rewardSummary, type MissionEvent, type MissionReward, type MissionState } from '../sim/missions';
-import {
-  EMPTY_STAFF_PITY, ROLE_INFO, STAFF_CHESTS, STAFF_ROLES, hireFromBoard, isActive as staffIsActive, modifiersOf, normalizeAssignments, normalizeRoster, rankUpCost, rollStaff, settleWages, wageOf, NO_MODS,
-  type Candidate, type Mods, type StaffChestId, type StaffNft, type StaffPity, type StaffRole,
-} from '../sim/staff';
+import { INITIAL_FACILITIES, NUTRIENT_BRANDS_DATABASE } from '../data/initialData';
+import { SOLANA_NETWORKS, connectBrowserWallet, generateSolanaKeypair, fetchLiveSolBalance, requestSolanaAirdrop, signSolanaMessage } from '../utils/solana';
+import { playWaterSound, playHarvestChime, playBurnSound, playClickSound, playLevelUpSound, playQuestCompleteSound, playGoldenDripSound, isSoundEnabled, setSoundEnabled } from '../utils/audio';
+import type { Materials } from '../sim/forge';
+import { etaSeconds, maleCount, pestCount, plotEtaSeconds, powerDraw } from '../sim/engine';
+import { plotOffer, type PlotOffer } from '../sim/terroir';
+import type { AvatarDesign, ChestId, OwnedAvatar, PityMap } from '../sim/avatars';
+import { DESIGN_BY_ID } from '../sim/avatars';
+import { burnRateOfSale, saleRevenue, type Depth } from '../sim/economy';
+import type { Construction } from '../sim/facilities';
+import type { MissionEvent, MissionState } from '../sim/missions';
+import { STAFF_ROLES, isActive as staffIsActive, wageOf, type Candidate, type Mods, type StaffChestId, type StaffNft, type StaffPity, type StaffRole } from '../sim/staff';
 import type { NpcKind } from '../components/npc/Npc';
-import { claimStep as claimTutStep, emptyTutorial, normalizeTutorial, skipStep as skipTutStep, startTutorial as startTutState, type TutorialState } from '../sim/tutorial';
-import { t as tr } from '../i18n';
-export { calculateVpd };
-
-// Generate realistic Solana signature
-export function generateSolanaSignature(): string {
-  const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-  let sig = '';
-  for (let i = 0; i < 88; i++) {
-    sig += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return sig;
-}
-
-export interface FertigationInput {
-  ec: number; ph: number; feedBonus: number; healthDelta: number; score: number; label: string;
-  scope: 'one' | 'all';
-  brandName?: string;
-}
+import type { TutorialState } from '../sim/tutorial';
+import type { MediumId, Mix, StageId } from '../sim/nutrition';
+import { CATALOG_BY_ID, USE, equipStatsOf, gardenerLevelOf, garbageOf, ownsStation, stockOf, type EquipStats, type OwnedAsset } from '../economy/catalog';
+import { type ListingView, type Snapshot } from '../economy/ledger';
+import { mintAddressFor } from '../utils/nft';
+import {
+  applyAction, advance, deriveEnv, GameError, NeedsServer, SERVER_ONLY, XP_NEEDED, rankTitleOf, facilityOfTier,
+  machinesOf, questsOf, seedBankOf, strainsOf, suppliesOf, v2pItemsOf, type Effect, type GameState, type ToastKind,
+  type BreedingJob, type BreedingLogEntry,
+} from '../core';
+import { fetchGame, postAction, postProfile, predictCtx, extOfSnapshot, modsOf, newIdem, refusalText, type ActionAnswer, type GameAnswer } from '../core/predict';
+import { logoutServer } from '../auth/api';
+import type { ServerAccount } from '../auth/AuthGate';
+import { BALANCE } from '../sim/balance';
+import { t as tr, useLang } from '../i18n';
+export { calculateVpd } from '../sim/engine';
+export type { BreedingJob, BreedingLogEntry };
 
 export interface ForgeJob { id: string; recipeId: string; qty: number; startedAt: number; endsAt: number }
 
-/** a chamber cross in progress; `seed` freezes the RNG so the outcome is fixed the moment the cross starts, not when it resolves. */
-export interface BreedingJob { id: string; motherId: string; fatherId: string; name: string; generation: Generation; useReagent: boolean; seed: number; startedAt: number; endsAt: number }
-/** one row of the Cría diary: what a chamber cross produced. */
-export interface BreedingLogEntry { id: string; label: string; strainName: string; generation: Generation; mutated: boolean; seeds: number; createdAt: number }
+/** a nutrient solution to apply: the recipe (water, litres, doses) and where; the server measures it itself */
+export interface FertigationInput { mix: Mix; stage: StageId; medium: MediumId; label: string; scope: 'one' | 'all'; brandName?: string }
 
 interface GameContextType {
-  // Wallet / Solana & Networks
+  // Wallet / Solana & Networks (this session's connection; the game wallet itself is the server's)
   walletAddress: string;
   isWalletConnected: boolean;
   solanaNetwork: SolanaNetwork;
@@ -138,67 +58,44 @@ interface GameContextType {
   floraBalance: number;
   solBalance: number;
   totalFloraBurned: number;
-  burnStats: {
-    speedUp: number;
-    repairs: number;
-    patents: number;
-    v2p: number;
-  };
+  burnStats: { speedUp: number; repairs: number; patents: number; v2p: number };
   transactions: SolanaTransaction[];
   requestAirdrop: () => void;
-  /** the wallet and NFTs belong to the server (false only when there is no account service: the game then plays with a local economy) */
+  /** the game runs on the server (always true once the game is open) */
   ledgerOn: boolean;
-  /** player market: my active offers, and the actions (every NFT kind: staff, land, avatar) */
   myListings: ListingView[];
-  /** chests the house sent to this account (operator gifts): opening one credits it once */
   gifts: Snapshot['gifts'];
   openGift: (giftId: number) => Promise<{ amount: number; note: string } | null>;
   p2pInfo: Snapshot['p2p'];
-  /** put an NFT on sale (it stays in escrow until it sells or you take it back). Avatars go by design id, one copy at a time. */
   listNft: (ref: { nftId?: string; designId?: string }, price: number) => Promise<boolean>;
   cancelListing: (listingId: number) => Promise<boolean>;
   buyListing: (listingId: number) => Promise<ListingView | null>;
-  /** the small daily claim that replaced the unlimited faucet */
   claimDaily: () => Promise<void>;
   faucetAt: number;
-  /** what selling a product would pay right now (market depth, the sale fee and the licence of your installation) */
   quoteSale: (productId: string) => { gross: number; fee: number; net: number; ratio: number } | null;
 
-  // User Accounts & Data Isolation
+  // the signed-in account (profile kept by the server)
   currentUser: UserProfile | null;
   isAuthenticated: boolean;
-  allUserProfiles: UserProfile[];
-  loginUser: (usernameOrEmail: string) => boolean;
-  registerUser: (profile: Omit<UserProfile, 'id' | 'createdAt'>) => boolean;
-  loginWithSolanaWallet: () => boolean;
-  switchUserAccount: (userId: string) => boolean;
-  importLocalSave: (fromUserId: string) => boolean;
   logoutUser: () => void;
   updateUserProfile: (updates: Partial<UserProfile>) => void;
 
-  // Cultivation & Indoor Grow Room (3 filas de 10 plantas en pares de 2)
   facilities: GrowFacility[];
   currentFacility: GrowFacility;
   upgradeFacility: (facilityId: string) => Promise<void>;
-  /** the installation being built (null when none) and the paid speed-up (burns $FLORA, limited per day) */
   construction: Construction | null;
   speedUpConstruction: () => Promise<boolean>;
 
-  // Staff NFTs: hires that replace the industry characters (bounded bonuses, daily wage burned)
   staff: StaffNft[];
   staffAssign: Partial<Record<StaffRole, string>>;
   staffPity: StaffPity;
-  /** the sum of the bonuses of the hires that are assigned AND paid (capped, see sim/staff.ts) */
   staffMods: Mods;
-  /** a $FLORA price after the shop keeper's discount */
   shopPrice: (flora: number) => number;
-  /** the hire working in a role, and whether its wage is paid (working) */
   staffIn: (role: StaffRole) => { staff: StaffNft; working: boolean } | null;
   hireCandidate: (c: Candidate) => Promise<StaffNft | null>;
   openStaffChest: (id: StaffChestId) => Promise<StaffNft | null>;
   assignStaff: (role: StaffRole, staffId: string | null) => Promise<void>;
   rankUpStaff: (staffId: string) => Promise<boolean>;
-  /** $FLORA per day the assigned hires cost */
   staffWagesPerDay: number;
   strains: Strain[];
   activePlant: PlantInGrow | null;
@@ -208,48 +105,39 @@ interface GameContextType {
   waterAllPlants: () => void;
   feedAllPlants: () => void;
   harvestAllReadyPlants: () => void;
-  plantIndoorBatch: (strain: Strain) => void;
   speedUpIndoorRoom: () => boolean;
   trainIndoorCanopy: () => void;
-  plantNewSeed: (strain: Strain, seedType?: string) => void;
+  plantNewSeed: (strain: Strain) => void;
   waterPlant: () => void;
   feedNutrients: () => void;
   setTemperature: (temp: number) => void;
   setHumidity: (rh: number) => void;
   setPpfd: (ppfd: number) => void;
   setLightSchedule: (schedule: '18/6' | '12/12' | '24/0') => void;
-  /** apply a training technique to the selected plant; refused outside its phase or a second time (returns whether it was applied) */
   trainPlant: (technique: TechniqueId) => boolean;
   speedUpGrowth: () => boolean;
   harvestPlant: () => void;
 
-  // Inventory & Processing
   rawFlowerGrams: number;
   trimGrams: number;
-  /** what the forge makes and the harvest leaves (fibre, wax, cloth, kits…) */
   materials: Materials;
   forgeJobs: ForgeJob[];
-  /** start `qty` crafts of a forge recipe: validates, takes the inputs, burns the fee and runs a real-time job */
   forgeCraft: (recipeId: string, qty: number) => boolean;
   breedingJobs: BreedingJob[];
   breedingLog: BreedingLogEntry[];
-  /** start a chamber cross: validates the cámara, the materials and the phase-driven cooldown, then runs a real-time job (hours, not instant) */
   crossBreed: (motherId: string, fatherId: string, name: string, useReagent: boolean) => boolean;
   processedProducts: ProcessedProduct[];
   machines: MachineEquipment[];
   processRawFlower: (type: 'cured_flower' | 'live_rosin' | 'full_spec_oil' | 'pure_terpenes', gramsInput: number) => boolean;
   runLabProcess: (spec: LabRunSpec) => ProcessedProduct | null;
-  /** real seconds until a plant is ready to harvest at its current conditions (Infinity if stalled) */
   getPlantEta: (plant: PlantInGrow) => number;
   certifyProduct: (productId: string, feeFlora?: number) => ProcessedProduct | null;
   repairMachine: (machineId: string) => boolean;
 
-  // Genetics & Patents
   patents: GenomicPatent[];
-  breedStrains: (parentA: Strain, parentB: Strain, name: string) => Strain;
+  breedStrains: (parentA: Strain, parentB: Strain, name: string) => Strain | null;
   registerPatent: (strain: Strain) => boolean;
 
-  // Seed Bank & Grow Supplies Market
   seedBank: SeedBankItem[];
   seedInventory: { [seedId: string]: number };
   buySeed: (seedId: string, currency?: 'FLORA' | 'SOL') => boolean;
@@ -257,36 +145,30 @@ interface GameContextType {
   suppliesMarket: GrowSupplyItem[];
   buySupply: (supplyId: string, currency?: 'FLORA' | 'SOL') => boolean;
 
-  // NFT assets: equipment, consumables (water / nutrients / electricity) and lab licences
   assets: OwnedAsset[];
   equipStats: EquipStats;
-  /** litres of water, ml of nutrient and kWh of electricity in stock, and the electric runway in days */
   resources: { water: number; nutrient: number; energy: number; kwhPerDay: number; solarKwhPerDay: number; energyDays: number };
   buyAsset: (catalogId: string, currency?: 'FLORA' | 'SOL', qty?: number) => boolean;
   setAssetEquipped: (assetId: string, equipped: boolean) => void;
   repairAsset: (assetId: string) => boolean;
   ownsStation: (stationId: string) => boolean;
 
-  // Plagues, gardener rating and nursery mode (HashKings-inspired)
-  /** NPC missions: event counters + story/daily claims (sim/missions.ts). `claim*` return the character's reply, or null if not claimable */
   missions: MissionState;
+  /** moments only the interface sees (a tab, the bag, the planet, the gauges); the rest the server counts itself */
   reportEvent: (event: MissionEvent, n?: number) => void;
   claimStoryMission: (id: string) => string | null;
   claimErrandMission: (npc: NpcKind) => string | null;
-  /** Chrono's tutorial (sim/tutorial.ts) */
   tutorial: TutorialState;
   startTutorial: () => void;
   claimTutorialStep: () => string | null;
   skipTutorialStep: () => void;
-  patchTutorial: (p: Partial<TutorialState>) => void;
+  patchTutorial: (p: Partial<Pick<TutorialState, 'dismissed' | 'minimized'>>) => void;
   care: { rating: number; cleanReadyInHours: number; pests: number; plotPests: number; males: number; plotMales: number; pollinated: number; garbage: number; gardenerLevel: 0 | 1 | 2; gardenerDays: number };
   treatPests: (scope: 'selected' | 'all', plotId?: string) => void;
   cleanRoom: () => boolean;
   recycleGarbage: () => void;
 
-  // Land plots on the planet: NFT parcels of 36 plants that grow outdoors under the sun and the weather
   plots: OwnedPlot[];
-  /** plots still for sale in a region (the next few, cheapest number first) and how many are left in total */
   plotsForSale: (region: RegionId) => { offers: PlotOffer[]; left: number };
   buyPlot: (offerId: string, currency?: 'FLORA' | 'SOL') => Promise<boolean>;
   plantPlot: (plotId: string, seedId: string, count?: number) => boolean;
@@ -294,26 +176,25 @@ interface GameContextType {
   feedPlot: (plotId: string) => void;
   harvestPlot: (plotId: string) => void;
   plotEta: (plot: OwnedPlot, plant: PlantInGrow) => number;
-  /** pull up the revealed males of the room (no plotId) or of a plot */
   removeMales: (plotId?: string) => void;
-  // Profile: collectible NFT avatars minted by opening chests
   avatars: OwnedAvatar[];
   chestPity: PityMap;
   showNotification: (message: string, type: 'success' | 'burn' | 'info') => void;
   openChest: (id: ChestId, currency?: 'FLORA' | 'SOL') => Promise<{ design: AvatarDesign; isNew: boolean; refund: number; owned: OwnedAvatar } | null>;
   equipAvatar: (designId: string | null) => void;
-  /** keep a male of a plot as a pollen donor in the Sanctuary of mothers & fathers */
   keepMaleAsFather: (plotId: string, slot: number) => void;
 
-  // Nutrient Tables & Feeding
   nutrientBrands: NutrientBrand[];
   selectedNutrientBrand: string;
   setSelectedNutrientBrand: (brandId: string) => void;
   applyNutrientStage: (stageIndex: number) => void;
-  /** Apply a prepared nutrient solution (from the Nutrition lab or tables) to the selected plant or the whole room. Spends stock; returns false if it could not. */
   applyFertigation: (f: FertigationInput) => boolean;
+  /** XP for a correct answer in the symptom quiz (once per symptom) and for a solved lab challenge (the server checks the mix) */
+  quizCorrect: (symptomId: string) => void;
+  claimChallenge: (challengeId: string, mix: Mix) => boolean;
+  /** a UFO waved at on the planet: XP three times a day (returns the XP, 0 when none is left today) */
+  ufoCaught: () => number;
 
-  // Grow Rooms & Climate/Irrigation Automation
   currentRoom: GrowRoomId;
   switchGrowRoom: (roomId: GrowRoomId) => void;
   co2Ppm: number;
@@ -324,14 +205,12 @@ interface GameContextType {
   toggleAutoClimate: () => void;
   calibrateMeter: (meterType: 'ph' | 'ec' | 'par' | 'lux') => void;
 
-  // Mothers, Fathers & Hybridization
   mothersFathers: MotherFatherPlant[];
   saveCurrentPlantAsMotherOrFather: (role: 'Madre (Esquejes / Clones)' | 'Padre (Donante de Polen)') => boolean;
   takeCloneFromMother: (motherId: string) => boolean;
   collectPollenFromFather: (fatherId: string) => number;
   hybridizeParents: (motherId: string, fatherId: string, newStrainName: string) => Strain | null;
 
-  // Brand & V2P
   brand: VirtualBrand;
   updateBrand: (name: string, tagline: string) => void;
   sellProduct: (productId: string) => void;
@@ -339,3515 +218,572 @@ interface GameContextType {
   redeemV2p: (item: V2pRedemptionItem, shippingDetails: { name: string; country: string }) => boolean;
   redeemedV2pList: { item: V2pRedemptionItem; timestamp: number; txSig: string; recipient: string }[];
 
-  // Gaming & Progression
   playerLevel: number;
   playerXp: number;
   xpNeeded: number;
   rankTitle: string;
-  addXp: (amount: number, reason?: string) => void;
   quests: GameQuest[];
   claimQuestReward: (questId: string) => void;
   executeManualRosinPress: (yieldBonus: number, quality: number, isCritical: boolean) => void;
 
-  // Sound
   soundEnabled: boolean;
   toggleSound: () => void;
 
-  // Notification / Toast helper
   notification: { message: string; type: 'success' | 'burn' | 'info' } | null;
   clearNotification: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-// Helper to generate the 30-plant indoor grow room (3 rows of 10 plants, arranged in pairs of 2)
-export const createInitialIndoorRoom = (baseStrain: Strain): PlantInGrow[] => {
-  const plants: PlantInGrow[] = [];
-  for (let r = 1; r <= 3; r++) {
-    for (let p = 1; p <= 5; p++) {
-      for (const pos of ['A', 'B'] as const) {
-        const slotIdx = (r - 1) * 10 + (p - 1) * 2 + (pos === 'A' ? 0 : 1);
-        // every plant of a new room starts where all plants start: germination, and lives every phase after it
-        const progressBase = 0;
-        const stage: GrowStage = stageFromProgress(progressBase);
-        const temp = Number((24.0 + (r * 0.2) + ((slotIdx % 3) * 0.1)).toFixed(1));
-        const rh = Number((58 - (r * 1) + ((slotIdx % 4) * 0.5)).toFixed(1));
-        const vpd = calculateVpd(temp, rh);
-
-        plants.push({
-          id: `indoor-r${r}-p${p}-${pos}`,
-          slotIndex: slotIdx,
-          rowIndex: r,
-          pairIndex: p,
-          positionInPair: pos,
-          strain: baseStrain,
-          plantedAt: Date.now(),
-          stage,
-          progressPercent: Math.min(100, progressBase),
-          health: Math.min(100, 94 + (slotIdx % 4)),
-          soilMoisture: Math.min(95, 68 + ((slotIdx % 5) * 5)),
-          temperatureC: temp,
-          relativeHumidity: rh,
-          vpdKpa: vpd,
-          ppfdLightIntensity: 650 + (p * 25),
-          luxLumens: Math.round((650 + (p * 25)) * 54),
-          co2Ppm: 750,
-          currentRoom: 'vegetative',
-          lightSchedule: '18/6',
-          ecLevel: 1.8,
-          phLevel: 6.2,
-          nutrientBrand: 'advanced_nutrients',
-          autoWateringEnabled: false,
-          autoClimateEnabled: false,
-          trichomeMaturity: { clear: 100, milky: 0, amber: 0 },
-          lastWatered: Date.now() - (slotIdx * 30000),
-          lastFed: Date.now() - (slotIdx * 60000),
-          estimatedDryYieldGrams: Math.round(75 * baseStrain.resinYieldMultiplier + (slotIdx % 10))
-        });
-      }
-    }
-  }
-  return plants;
+const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+const UI_EVENTS = new Set<MissionEvent>(['visit', 'planet', 'openbag', 'gauges']);
+const POLL_MS = 30_000;
+const SFX: Record<string, () => void> = {
+  water: playWaterSound, harvest: playHarvestChime, burn: playBurnSound, click: playClickSound, levelup: playLevelUpSound, quest: playQuestCompleteSound, golden: playGoldenDripSound,
 };
 
+interface View { state: GameState; snap: Snapshot }
+interface Pending { idem: string; type: string; params: Record<string, unknown>; predicted: boolean; resolve: (a: ActionAnswer) => void }
+
 /**
- * The batches this browser shows, made to match the grams the server holds per product key: batches beyond the server's stock go
- * away (sold elsewhere, or never really existed), a partly covered one is trimmed, and grams the server has but no batch shows
- * (made on another device, or imported) appear as one batch per product.
+ * The game as the browser sees it: the server's last answer, plus the actions it hasn't answered yet replayed on top (prediction).
+ * Nothing of the game is stored in the browser. Needs the connection: without it, a notice and automatic retries.
  */
-function reconcileBatches(batches: ProcessedProduct[], server: Record<string, number>, pending: ReadonlySet<string>): ProcessedProduct[] {
-  const left: Record<string, number> = { ...server };
-  const out: ProcessedProduct[] = [];
-  for (const b of batches) {
-    // v2p merch is not a warehouse good; a batch the server hasn't confirmed yet is kept as is (it isn't in its grams yet)
-    if (b.type === 'v2p_merch' || pending.has(b.id)) { out.push(b); continue; }
-    const key = productKey(b.type, b.recipeId);
-    const have = left[key] ?? 0;
-    if (have <= 0.009) continue;
-    const grams = Math.min(b.quantityGrams, have);
-    left[key] = have - grams;
-    out.push(grams < b.quantityGrams - 0.009 ? { ...b, quantityGrams: Number(grams.toFixed(2)), marketValueFlora: Math.round(b.marketValueFlora * (grams / b.quantityGrams)) } : b);
+export const GameProvider: React.FC<{ account: ServerAccount | null; children: React.ReactNode }> = ({ account, children }) => {
+  useLang();
+  const [boot, setBoot] = useState<'loading' | 'ready' | 'down'>('loading');
+  const [online, setOnline] = useState(true);
+  const [, setVersion] = useState(0);
+  const viewRef = useRef<View | null>(null);
+  const baseRef = useRef<View | null>(null);
+  const offsetRef = useRef(0);                               // server clock − this clock
+  const queueRef = useRef<Pending[]>([]);
+  const busyRef = useRef(false);
+  const nowSrv = () => Date.now() + offsetRef.current;
+  const render = () => setVersion((v) => v + 1);
+
+  // --- UI-only state (preferences of this screen, never part of the game) ---
+  const [selectedPlantIndex, setSelectedPlantIndex] = useState(0);
+  const [selectedNutrientBrand, setSelectedNutrientBrand] = useState<string>('advanced_nutrients');
+  const [sound, setSound] = useState(isSoundEnabled());
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'burn' | 'info' } | null>(null);
+  const showNotification = useCallback((message: string, type: 'success' | 'burn' | 'info') => setNotification({ message, type }), []);
+  const clearNotification = () => setNotification(null);
+  const [solanaNetwork, setSolanaNetworkState] = useState<SolanaNetwork>('devnet');
+  const [connectedWalletType, setConnectedWalletType] = useState<string>(tr('Phantom'));
+  const [activeProviderInstance, setActiveProviderInstance] = useState<unknown>(null);
+  const [walletAddress, setWalletAddress] = useState('');
+  const [isWalletConnected, setIsWalletConnected] = useState(false);
+
+  const playFx = useCallback((fx?: Effect[]) => {
+    for (const f of fx ?? []) {
+      if (f.t === 'toast') setNotification({ message: f.m, type: f.k });
+      else if (f.t === 'sfx') SFX[f.s]?.();
+      else if (f.t === 'confetti') confetti(f.o as confetti.Options);
+    }
+  }, []);
+
+  /** the server's answer is the truth: adopt it and replay what it hasn't answered yet */
+  const rebase = useCallback(() => {
+    const base = baseRef.current;
+    if (!base) return;
+    let state = base.state;
+    const snap = clone(base.snap);
+    for (const it of queueRef.current) {
+      if (!it.predicted) continue;
+      try { state = applyAction(state, it.type, it.params, predictCtx(snap, nowSrv(), it.idem), { quiet: true }).state; } catch { /* the server will say */ }
+    }
+    viewRef.current = { state, snap };
+    render();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const adopt = useCallback((a: GameAnswer) => {
+    offsetRef.current = a.serverNow - Date.now();
+    const prev = baseRef.current?.snap;
+    baseRef.current = { state: a.state, snap: a.snapshot };
+    // a build that finished on the server
+    if (prev?.construction && !a.snapshot.construction && a.snapshot.tier > prev.tier) {
+      confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } });
+      setNotification({ message: tr('¡Obra terminada! Tu nueva instalación ya está lista.'), type: 'success' });
+    }
+  }, []);
+
+  const pump = useCallback(async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    let wait = 1000;
+    try {
+      while (queueRef.current.length) {
+        const it = queueRef.current[0];
+        const a = await postAction(it.type, it.params, it.idem);
+        if (!a.ok && (a.status === 0 || a.status >= 500 || a.status === 429)) {
+          // no connection: the same action (same key) is retried, it never applies twice
+          setOnline(false);
+          await new Promise((r) => setTimeout(r, wait));
+          wait = Math.min(15_000, wait * 2);
+          continue;
+        }
+        wait = 1000;
+        setOnline(true);
+        queueRef.current.shift();
+        if (a.ok) {
+          adopt(a);
+          playFx(a.tickFx);
+          if (!it.predicted) playFx(a.fx);
+        } else {
+          if (a.status === 401) { window.location.reload(); return; }
+          // the server said no: its reason, and the screen goes back to its state
+          setNotification({ message: refusalText(a), type: (a.kind as ToastKind) ?? 'info' });
+        }
+        it.resolve(a);
+        rebase();
+      }
+    } finally { busyRef.current = false; }
+  }, [adopt, playFx, rebase]);
+
+  const enqueue = useCallback((type: string, params: Record<string, unknown>, predicted: boolean, idem = newIdem()) => new Promise<ActionAnswer>((resolve) => {
+    queueRef.current.push({ idem, type, params, predicted, resolve });
+    void pump();
+  }), [pump]);
+
+  /**
+   * Run an action: predicted here at once (same core as the server) and sent. Returns the predicted result, or `refused` with the
+   * reason already shown. Actions the browser can't predict are sent and their answer awaited (see `send`).
+   */
+  const act = useCallback((type: string, params: Record<string, unknown> = {}): { ok: boolean; result: unknown } => {
+    const view = viewRef.current;
+    if (!view) return { ok: false, result: null };
+    const idem = newIdem();
+    try {
+      const snap = clone(view.snap);
+      const out = applyAction(view.state, type, params, predictCtx(snap, nowSrv(), idem));
+      viewRef.current = { state: out.state, snap };
+      render();
+      playFx(out.fx);
+      void enqueue(type, params, true, idem);
+      return { ok: true, result: out.result };
+    } catch (e) {
+      if (e instanceof GameError) {
+        setNotification({ message: e.text ?? refusalText({ error: e.code }), type: e.kind });
+        return { ok: false, result: null };
+      }
+      if (!(e instanceof NeedsServer)) console.error(e);
+      void enqueue(type, params, false, idem);
+      return { ok: true, result: null };
+    }
+  }, [enqueue, playFx]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** an action only the server can do (it needs its tables or dice): sent and awaited; its answer shows what happened */
+  const send = useCallback(async <T,>(type: string, params: Record<string, unknown> = {}): Promise<T | null> => {
+    const a = await enqueue(type, params, false);
+    return a.ok ? (a.result as T) : null;
+  }, [enqueue]);
+
+  // first load, then a poll (the world keeps going on the server: plagues, deliveries, other devices)
+  const poll = useCallback(async () => {
+    if (queueRef.current.length) return;
+    const a = await fetchGame();
+    if ('error' in a) {
+      if (a.status === 401) { window.location.reload(); return; }
+      setOnline(false);
+      if (!baseRef.current) setBoot('down');
+      return;
+    }
+    if (queueRef.current.length) return;           // an action went out meanwhile: its answer is newer
+    setOnline(true);
+    adopt(a);
+    playFx(a.fx);
+    rebase();
+    setBoot('ready');
+  }, [adopt, playFx, rebase]);
+
+  useEffect(() => {
+    void poll();
+    const id = window.setInterval(() => void poll(), POLL_MS);
+    const onVisible = () => { if (!document.hidden) void poll(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { window.clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
+  }, [poll]);
+  // retry the first load while the server is unreachable
+  useEffect(() => {
+    if (boot !== 'down') return;
+    const id = window.setInterval(() => void poll(), 5000);
+    return () => window.clearInterval(id);
+  }, [boot, poll]);
+
+  // the screen animates the world between answers (display only: the server's next answer replaces it)
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const v = viewRef.current;
+      if (!v) return;
+      try { viewRef.current = { state: advance(v.state, predictCtx(clone(v.snap), nowSrv(), 'view'), { quiet: true }).state, snap: v.snap }; render(); } catch { /* next answer */ }
+    }, BALANCE.liveTickSeconds * 1000);
+    return () => window.clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // a timer ends (forge, chamber cross, build): ask the server, it delivers
+  const view = viewRef.current;
+  const nextDue = useMemo(() => {
+    if (!view) return 0;
+    const ends = [...(view.snap.forgeJobs ?? []).map((j) => j.endsAt), ...view.state.breedingJobs.map((j) => j.endsAt), view.snap.construction?.endsAt ?? 0].filter((x) => x > 0);
+    return ends.length ? Math.min(...ends) : 0;
+  }, [view]);
+  useEffect(() => {
+    if (!nextDue) return;
+    const t = window.setTimeout(() => void poll(), Math.min(2_000_000_000, Math.max(1500, nextDue - nowSrv() + 1500)));
+    return () => window.clearTimeout(t);
+  }, [nextDue, poll]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!view) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-[#04090a] p-6 text-center">
+        {boot === 'down' ? (
+          <div className="max-w-sm space-y-3">
+            <WifiOff className="w-8 h-8 text-amber-300 mx-auto" />
+            <h1 className="font-serif text-xl font-black text-white">{tr('Sin conexión, reintentando…')}</h1>
+            <p className="text-sm text-neutral-400">{tr('Tu partida vive en el servidor y está a salvo. En cuanto vuelva la conexión, el juego abre solo.')}</p>
+          </div>
+        ) : <Loader2 className="w-6 h-6 animate-spin text-emerald-300" />}
+      </div>
+    );
   }
-  for (const [key, grams] of Object.entries(left)) {
-    if (grams <= 0.009) continue;
-    const type = (TYPE_OF_KEY[key] ?? key) as ProcessedProduct['type'];
-    const price = PRODUCT_PRICE[key] ?? PRODUCT_PRICE[type] ?? 0;
-    out.push({
-      id: `srv-${key}`, name: tr('Lote guardado · {key}', { key }), type, recipeId: key !== type ? key : undefined, strainOrigin: 'Yield Bud Empire',
-      quantityGrams: Number(grams.toFixed(2)), potency: '', qualityScore: 90, marketValueFlora: Math.round(grams * price * ECON.priceScale),
-      createdAt: Date.now(), batchHash: `srv-${key}`,
-    });
-  }
-  return out;
+
+  return (
+    <GameView
+      view={view} account={account} online={online} act={act} send={send} nowSrv={nowSrv}
+      ui={{ selectedPlantIndex, setSelectedPlantIndex, selectedNutrientBrand, setSelectedNutrientBrand, sound, setSound, notification, showNotification, clearNotification }}
+      wallet={{ solanaNetwork, setSolanaNetworkState, connectedWalletType, setConnectedWalletType, activeProviderInstance, setActiveProviderInstance, walletAddress, setWalletAddress, isWalletConnected, setIsWalletConnected }}
+      onProfile={async (u) => {
+        const a = await postProfile(u as Record<string, unknown>);
+        if (a.ok) { adopt(a); rebase(); } else setNotification({ message: refusalText(a), type: 'info' });
+        return a.ok;
+      }}
+    >
+      {children}
+    </GameView>
+  );
+};
+
+interface GameViewProps {
+  view: View;
+  account: ServerAccount | null;
+  online: boolean;
+  act: (type: string, params?: Record<string, unknown>) => { ok: boolean; result: unknown };
+  send: <T>(type: string, params?: Record<string, unknown>) => Promise<T | null>;
+  nowSrv: () => number;
+  onProfile: (u: Partial<UserProfile>) => Promise<boolean>;
+  ui: {
+    selectedPlantIndex: number; setSelectedPlantIndex: (n: number) => void; selectedNutrientBrand: string; setSelectedNutrientBrand: (b: string) => void;
+    sound: boolean; setSound: (b: boolean) => void; notification: GameContextType['notification']; showNotification: GameContextType['showNotification']; clearNotification: () => void;
+  };
+  wallet: {
+    solanaNetwork: SolanaNetwork; setSolanaNetworkState: (n: SolanaNetwork) => void; connectedWalletType: string; setConnectedWalletType: (s: string) => void;
+    activeProviderInstance: unknown; setActiveProviderInstance: (p: unknown) => void; walletAddress: string; setWalletAddress: (s: string) => void;
+    isWalletConnected: boolean; setIsWalletConnected: (b: boolean) => void;
+  };
+  children: React.ReactNode;
 }
 
-export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // --- USER AUTH & MULTI-ACCOUNT STATE ---
-  const [allUserProfiles, setAllUserProfiles] = useState<UserProfile[]>(() => getStoredUserProfiles());
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    const users = getStoredUserProfiles();
-    const activeId = getActiveUserId();
-    return users.find(u => u.id === activeId) || users[0] || null;
-  });
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-
-  // --- SOLANA NETWORKS & WALLET STATE ---
-  const [solanaNetwork, setSolanaNetworkState] = useState<SolanaNetwork>(() => {
-    const users = getStoredUserProfiles();
-    const activeId = getActiveUserId();
-    const user = users.find(u => u.id === activeId) || users[0];
-    return user?.preferredNetwork || 'devnet';
-  });
-  const [connectedWalletType, setConnectedWalletType] = useState<string>(tr('Phantom'));
-  const [activeProviderInstance, setActiveProviderInstance] = useState<any>(null);
-
-  // Wallet State
-  const [walletAddress, setWalletAddress] = useState<string>(() => {
-    const users = getStoredUserProfiles();
-    const activeId = getActiveUserId();
-    const user = users.find(u => u.id === activeId) || users[0];
-    return user?.walletAddress || '';       // no made-up address: the game wallet lives on the server and external wallets are linked by signature
-  });
-  const [isWalletConnected, setIsWalletConnected] = useState<boolean>(() => !!getStoredUserProfiles().find(u => u.id === getActiveUserId())?.walletAddress);
-  const [floraBalance, setFloraBalance] = useState<number>(ECON.starterFlora);
-  // market depth (grams sold recently, see sim/economy.ts) and the last daily claim
-  const [marketDepth, setMarketDepth] = useState<Depth>(EMPTY_DEPTH);
-  const [faucetAt, setFaucetAt] = useState<number>(0);
-  const [solBalance, setSolBalance] = useState<number>(1.85);
-  const [totalFloraBurned, setTotalFloraBurned] = useState<number>(142850);
-  const [burnStats, setBurnStats] = useState({
-    speedUp: 38200,
-    repairs: 49450,
-    patents: 32500,
-    v2p: 22700
-  });
-  const [transactions, setTransactions] = useState<SolanaTransaction[]>([
-    {
-      id: 'tx-init-1',
-      signature: '5K2Qp8eA1V7xL7n4M8B9c...genesisSolana',
-      type: 'BURN_SPEEDUP',
-      amountFlora: 25,
-      timestamp: Date.now() - 3600000 * 4,
-      status: 'finalized',
-      blockSlot: 248910243,
-      memo: 'Yield Bud Empire: Speedup Boost (Anchor Instruction #4)'
-    },
-    {
-      id: 'tx-init-2',
-      signature: '3vK9xZbWp12LMn98RtU12...burnAnchor',
-      type: 'BURN_REPAIR',
-      amountFlora: 65,
-      timestamp: Date.now() - 3600000 * 2,
-      status: 'finalized',
-      blockSlot: 248914890,
-      memo: 'Yield Bud Empire: Prensa Hidráulica 10T Overhaul (Permanent Burn)'
-    }
-  ]);
-
-  // Cultivation
-  const [facilities, setFacilities] = useState<GrowFacility[]>(INITIAL_FACILITIES);
-  const [currentFacility, setCurrentFacility] = useState<GrowFacility>(INITIAL_FACILITIES[0]);
-  const [strains, setStrains] = useState<Strain[]>(INITIAL_STRAINS);
-  
-  // Seed Bank & Inventory
-  const [seedBank, setSeedBank] = useState<SeedBankItem[]>(INITIAL_SEED_BANK);
-  const [seedInventory, setSeedInventory] = useState<{ [seedId: string]: number }>({
-    seed_chrono_og: 3,
-    seed_gelato_auto: 1
-  });
-
-  // Grow Supplies Market
-  const [suppliesMarket, setSuppliesMarket] = useState<GrowSupplyItem[]>(INITIAL_GROW_SUPPLIES);
-
-  // Nutrient Brands & Feeding
-  const [nutrientBrands, setNutrientBrands] = useState<NutrientBrand[]>(NUTRIENT_BRANDS_DATABASE);
-  const [selectedNutrientBrand, setSelectedNutrientBrand] = useState<string>('advanced_nutrients');
-
-  // Rooms & Microclimate Automation
-  const [currentRoom, setCurrentRoom] = useState<GrowRoomId>('vegetative');
-  const [co2Ppm, setCo2PpmState] = useState<number>(750);
-  const [assets, setAssets] = useState<OwnedAsset[]>(() => starterAssets());
-  const assetsRef = useRef<OwnedAsset[]>(assets);
-  assetsRef.current = assets;
-  // gardener rating (0–100): falls with neglect and garbage, rises when the room is cleaned / garbage recycled
-  const [care, setCare] = useState<{ rating: number; lastCleanAt: number }>({ rating: 100, lastCleanAt: 0 });
-  const [plots, setPlots] = useState<OwnedPlot[]>([]);
-  const [avatars, setAvatars] = useState<OwnedAvatar[]>([]);
-  const [chestPity, setChestPity] = useState<PityMap>(EMPTY_PITY);
-  const [missions, setMissions] = useState<MissionState>(emptyMissions);
-  const missionsRef = useRef<MissionState>(missions);
-  const applyMissions = useCallback((next: MissionState) => { missionsRef.current = next; setMissions(next); }, []);
-  const reportEvent = useCallback((event: MissionEvent, n = 1) => { applyMissions(bumpMissions(missionsRef.current, event, n)); }, [applyMissions]);
-  const [tutorial, setTutorial] = useState<TutorialState>(emptyTutorial);
-  const tutorialRef = useRef<TutorialState>(tutorial);
-  const applyTutorial = useCallback((next: TutorialState) => { tutorialRef.current = next; setTutorial(next); }, []);
-  const plotsRef = useRef<OwnedPlot[]>(plots);
-  plotsRef.current = plots;
-  const [autoWaterActive, setAutoWaterActive] = useState<boolean>(false);
-  const [autoClimateActive, setAutoClimateActive] = useState<boolean>(false);
-
-  // Mothers, Fathers & Breeding Genotypes
-  const [mothersFathers, setMothersFathers] = useState<MotherFatherPlant[]>(INITIAL_MOTHERS_FATHERS);
-
-  // Indoor Grow Room: 3 Rows of 10 Plants in pairs of 2 (30 plants total)
-  // (the room is only as big as the installation: the starter closet holds one plant; the rest stay dormant until the room grows)
-  const [indoorPlants, setIndoorPlants] = useState<PlantInGrow[]>(() => {
-    return createInitialIndoorRoom(INITIAL_STRAINS[0]).slice(0, INITIAL_FACILITIES[0].capacityPlants);
-  });
-  const [dormantPlants, setDormantPlants] = useState<PlantInGrow[]>([]);
-  const [construction, setConstruction] = useState<Construction | null>(null);
-  const [staff, setStaff] = useState<StaffNft[]>([]);
-  const [staffAssign, setStaffAssign] = useState<Partial<Record<StaffRole, string>>>({});
-  const [staffPity, setStaffPity] = useState<StaffPity>(EMPTY_STAFF_PITY);
-  const [staffNow, setStaffNow] = useState(() => Date.now());
-  const staffMods = useMemo<Mods>(() => {
-    const working = STAFF_ROLES.map(r => staff.find(x => x.id === staffAssign[r])).filter((x): x is StaffNft => !!x && staffIsActive(x, staffNow));
-    return working.length ? modifiersOf(working) : NO_MODS;
-  }, [staff, staffAssign, staffNow]);
-  const [selectedPlantIndex, setSelectedPlantIndex] = useState<number>(0);
-
-  // Active plant refers to currently selected plant in the indoor room
+/** everything the screens read, derived from the view (the server's state + the predictions on top) */
+const GameView: React.FC<GameViewProps> = ({ view, account, online, act, send, nowSrv, onProfile, ui, wallet, children }) => {
+  const { state: s, snap } = view;
+  const now = nowSrv();
+  const { showNotification } = ui;
+  const ext = useMemo(() => extOfSnapshot(snap, now), [snap]); // eslint-disable-line react-hooks/exhaustive-deps
+  const staffMods = useMemo(() => modsOf(snap, now), [snap]); // eslint-disable-line react-hooks/exhaustive-deps
+  const strains = useMemo(() => strainsOf(s), [s.customStrains, s.patentMarks]); // eslint-disable-line react-hooks/exhaustive-deps
+  const seedBank = useMemo(() => seedBankOf(s), [s.customSeeds]); // eslint-disable-line react-hooks/exhaustive-deps
+  const machines = useMemo(() => machinesOf(s), [s.machines]); // eslint-disable-line react-hooks/exhaustive-deps
+  const quests = useMemo(() => questsOf(s), [s.quests]); // eslint-disable-line react-hooks/exhaustive-deps
+  const suppliesMarket = useMemo(() => suppliesOf(s), [s.installedSupplies]); // eslint-disable-line react-hooks/exhaustive-deps
+  const v2pItems = useMemo(() => v2pItemsOf(s), [s.v2pStock]); // eslint-disable-line react-hooks/exhaustive-deps
+  const facilities = useMemo(() => INITIAL_FACILITIES.map((f) => ({ ...f, unlocked: f.unlocked || snap.unlocked.includes(f.id) })), [snap.unlocked]);
+  const currentFacility = useMemo(() => ({ ...facilityOfTier(snap.tier), unlocked: true }), [snap.tier]);
+  const plots: OwnedPlot[] = useMemo(() => snap.plots.map((sp) => ({ ...sp, region: sp.region as RegionId, plants: s.plotPlants[sp.id] ?? [] })), [snap.plots, s.plotPlants]);
+  const avatars: OwnedAvatar[] = useMemo(() => snap.avatars.map((a) => ({ ...a, mint: mintAddressFor(`av-${a.designId}`) })), [snap.avatars]);
+  const equipStats = useMemo(() => equipStatsOf(s.assets), [s.assets]);
+  const simEnv = useMemo(() => deriveEnv(s, ext), [s, ext]);
+  const indoorPlants = s.indoorPlants;
+  const selectedPlantIndex = Math.min(ui.selectedPlantIndex, Math.max(0, indoorPlants.length - 1));
   const activePlant = indoorPlants[selectedPlantIndex] || indoorPlants[0] || null;
+  const idx = selectedPlantIndex;
+  const inv = snap.inventory ?? { flower: 0, trim: 0, materials: {}, products: {} };
+  const ok = (r: { ok: boolean }) => r.ok;
 
-  const selectPlant = useCallback((index: number) => {
-    if (index >= 0 && index < indoorRef.current.length) {
-      setSelectedPlantIndex(index);
-    }
-  }, []);
+  const currentUser: UserProfile | null = useMemo(() => account ? {
+    id: `srv-${account.id}`, username: account.username, email: account.email ?? '', displayName: s.profile.displayName, avatar: s.profile.avatar,
+    avatarImage: s.profile.avatarImage, avatarNft: s.profile.avatarNft, bio: s.profile.bio, role: s.profile.role, createdAt: account.createdAt,
+    experienceLevel: s.playerLevel, facilityName: s.profile.facilityName, walletAddress: wallet.walletAddress || undefined, preferredNetwork: wallet.solanaNetwork,
+  } : null, [account, s.profile, s.playerLevel, wallet.walletAddress, wallet.solanaNetwork]);
 
-  const setActivePlant = useCallback((updater: React.SetStateAction<PlantInGrow | null>) => {
-    setIndoorPlants(prev => {
-      const current = prev[selectedPlantIndex] || prev[0];
-      const updated = typeof updater === 'function' ? updater(current) : updater;
-      if (!updated) {
-        return prev.map((p, idx) => idx === selectedPlantIndex ? {
-          ...p,
-          stage: 'seed' as GrowStage,
-          progressPercent: 0,
-          health: 100,
-          soilMoisture: 85,
-          plantedAt: Date.now(),
-          trichomeMaturity: { clear: 100, milky: 0, amber: 0 }
-        } : p);
-      }
-      return prev.map((p, idx) => idx === selectedPlantIndex ? updated : p);
-    });
-  }, [selectedPlantIndex]);
-
-  // Inventory
-  const [rawFlowerGrams, setRawFlowerGrams] = useState<number>(8);
-  const [materials, setMaterials] = useState<Materials>({});
-  const [forgeJobs, setForgeJobs] = useState<ForgeJob[]>([]);
-  // how much more flower the server lets this account harvest right now (see sim/harvestCap.ts)
-  const [harvestInfo, setHarvestInfo] = useState<{ allowance: number; cap: number; perHour: number } | null>(null);
-  const [breedingJobs, setBreedingJobs] = useState<BreedingJob[]>([]);
-  const [breedingLog, setBreedingLog] = useState<BreedingLogEntry[]>([]);
-  const [trimGrams, setTrimGrams] = useState<number>(5);
-  const [processedProducts, setProcessedProducts] = useState<ProcessedProduct[]>([
-    {
-      id: 'prod-init-1',
-      name: 'Yield OG Live Rosin 90u',
-      type: 'live_rosin',
-      strainOrigin: 'Yield Foundation OG',
-      quantityGrams: 3,
-      potency: '78.5% THC | 6.2% Terps',
-      qualityScore: 94,
-      marketValueFlora: 35,
-      createdAt: Date.now() - 86400000,
-      batchHash: '0x9fa4b8...c721'
-    },
-    {
-      id: 'prod-init-2',
-      name: 'Solana Silver Cured Buds (Glass Jar)',
-      type: 'cured_flower',
-      strainOrigin: 'Solana Super Silver',
-      quantityGrams: 10,
-      potency: '24.2% THC',
-      qualityScore: 91,
-      marketValueFlora: 23,
-      createdAt: Date.now() - 43200000,
-      batchHash: '0x3cb17f...e411'
-    }
-  ]);
-
-  // Machines
-  const [machines, setMachines] = useState<MachineEquipment[]>(INITIAL_MACHINES);
-
-  // Genetics & Patents
-  const [patents, setPatents] = useState<GenomicPatent[]>([
-    {
-      id: 'pat-001',
-      strainName: 'Emerald Terp Queen',
-      patentNumber: 'SOL-PAT-9941-X',
-      solanaSignature: '4gR7TxW9zL1m...AnchorPat',
-      parentA: 'Gelato 41',
-      parentB: 'Yield Bud Gene v2',
-      creatorWallet: '7xKX...sU',
-      registeredDate: '2026-03-12',
-      thc: 25.4,
-      cbd: 3.5,
-      dominantTerpene: 'Mirceno & Linalol',
-      floraBurnedFee: 250
-    }
-  ]);
-
-  // Brand & V2P
-  const [brand, setBrand] = useState<VirtualBrand>({
-    name: 'YieldSol Botanicals',
-    tagline: tr('Genéticas de Cáñamo y Cannabis de Alta Pureza On-Chain'),
-    level: 2,
-    reputation: 98,
-    dispensaryOpen: true,
-    totalSalesFlora: 1840,
-    totalV2pShipped: 3,
-    accentColor: '#10b981'
-  });
-  const [v2pItems, setV2pItems] = useState<V2pRedemptionItem[]>(INITIAL_V2P_ITEMS);
-  const [redeemedV2pList, setRedeemedV2pList] = useState<{ item: V2pRedemptionItem; timestamp: number; txSig: string; recipient: string }[]>([]);
-
-  // Sound
-  const [sound, setSound] = useState(isSoundEnabled());
-
-  // Notification Toast
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'burn' | 'info' } | null>(null);
-
-  const showNotification = useCallback((message: string, type: 'success' | 'burn' | 'info') => {
-    setNotification({ message, type });
-  }, []);
-
-  const clearNotification = () => setNotification(null);
-
-  // Gaming & Progression System
-  const [playerLevel, setPlayerLevel] = useState<number>(1);
-  const [playerXp, setPlayerXp] = useState<number>(160);
-  const [quests, setQuests] = useState<GameQuest[]>(INITIAL_QUESTS);
-
-  const getXpNeeded = (level: number) => {
-    if (level === 1) return 300;
-    if (level === 2) return 750;
-    if (level === 3) return 1600;
-    if (level === 4) return 3200;
-    return 6000;
-  };
-
-  const getRankTitle = (level: number) => {
-    if (level === 1) return tr('Novato del Sustrato');
-    if (level === 2) return tr('Horticultor Botánico');
-    if (level === 3) return tr('Alquimista de Terpenos');
-    if (level === 4) return tr('Maestro Extractor Rosin');
-    return tr('Titán Genético Multiverso');
-  };
-
-  const xpNeeded = getXpNeeded(playerLevel);
-  const rankTitle = getRankTitle(playerLevel);
-
-  const updateQuestProgress = (questId: string, increment = 1) => {
-    setQuests(prev => prev.map(q => {
-      if (q.id === questId && !q.isCompleted) {
-        const nextCount = q.currentCount + increment;
-        const completed = nextCount >= q.targetCount;
-        if (completed) {
-          showNotification(tr('¡Misión lograda: "{title}"! Reclama tu recompensa en la barra de misiones', { title: q.title }), 'success');
-        }
-        return {
-          ...q,
-          currentCount: nextCount,
-          isCompleted: completed
-        };
-      }
-      return q;
-    }));
-  };
-
-  /** $FLORA earned by levelling up or finishing a quest: the server validates and pays it (or, with no service, it is added locally) */
-  const mintFlora = (localAmount: number, kind: 'level' | 'quest', params: Record<string, unknown>) => {
-    if (!ledgerRef.current) { setFloraBalance(b => b + localAmount); return; }
-    void intent('reward', { kind, ...params }).then(r => { if (r.ok) applySnapshot(r.snapshot); });
-  };
-
-  const addXp = (amount: number, reason?: string) => {
-    setPlayerXp(prev => {
-      const total = prev + amount;
-      const needed = getXpNeeded(playerLevel);
-      if (total >= needed) {
-        const nextLvl = playerLevel + 1;
-        setPlayerLevel(nextLvl);
-        mintFlora(ECON.levelBonus, 'level', { level: nextLvl });
-        playLevelUpSound();
-        confetti({
-          particleCount: 130,
-          spread: 90,
-          origin: { y: 0.4 },
-          colors: ['#10b981', '#fbbf24', '#a855f7', '#38bdf8']
-        });
-        showNotification(tr('¡SUBISTE DE NIVEL! Rango: {v0} (Nivel {nextLvl}) • Bono +{levelBonus} $FLORA', { v0: getRankTitle(nextLvl), nextLvl, levelBonus: ECON.levelBonus }), 'success');
-        return total - needed;
-      }
-      return total;
-    });
-  };
-
-  const claimQuestReward = (questId: string) => {
-    const targetQuest = quests.find(q => q.id === questId);
-    if (!targetQuest || !targetQuest.isCompleted || targetQuest.isClaimed) return;
-
-    playQuestCompleteSound();
-    setQuests(prev => prev.map(q => q.id === questId ? { ...q, isClaimed: true } : q));
-    mintFlora(targetQuest.rewardFlora, 'quest', { id: targetQuest.id });
-    addXp(targetQuest.rewardXp, tr('Misión: {title}', { title: targetQuest.title }));
-    showNotification(tr('¡Recompensa reclamada! +{rewardFlora} $FLORA y +{rewardXp} XP', { rewardFlora: targetQuest.rewardFlora, rewardXp: targetQuest.rewardXp }), 'success');
-  };
-
-  const toggleSound = () => {
-    const next = !sound;
-    setSound(next);
-    setSoundEnabled(next);
-  };
-
-  // --- SERVER-OWNED ECONOMY (server/economy.mjs): the wallet and the NFTs are the server's; this state is a mirror of its last answer ---
-  const [ledgerOn, setLedgerOn] = useState(false);
-  const [myListings, setMyListings] = useState<ListingView[]>([]);
-  const [gifts, setGifts] = useState<Snapshot['gifts']>([]);
-  const [p2pInfo, setP2pInfo] = useState<Snapshot['p2p']>({ feeRate: 0.05, minPrice: 1, maxPrice: 100000, maxListings: 20 });
-  const [srvOffers, setSrvOffers] = useState<Snapshot['offers'] | null>(null);
-  const ledgerRef = useRef(false); ledgerRef.current = ledgerOn;
-  const pendingBatchesRef = useRef<Set<string>>(new Set());
-  const hadLocalSaveRef = useRef(false);
-  const localSavedAtRef = useRef(0);          // cuándo se guardó la partida de este navegador que se cargó (0 = no había)
-  const cloudReadyRef = useRef(false);        // no se sube nada a la nube hasta haber comparado con lo que ya hay allá
-  const currentUserIdRef = useRef<string | undefined>(undefined);
-  const loadUserDataRef = useRef<(id: string, seed?: boolean) => void>(() => {});
-  const runTickRef = useRef<(s?: number) => void>(() => {});
-  const showNotificationRef = useRef<(m: string, t: 'success' | 'info' | 'burn') => void>(() => {});
-  const localSrcRef = useRef<Record<string, unknown>>({});
-  // what a local save would bring to the server the first time (it caps and validates all of it)
-  // the goods this browser had before the server kept them: imported once (with caps) on the first sync
-  const localGoodsRef = useRef<Record<string, unknown>>({});
-  localGoodsRef.current = {
-    flower: rawFlowerGrams, trim: trimGrams, materials,
-    products: processedProducts.reduce<Record<string, number>>((acc, p) => { if (p.type !== 'v2p_merch') { const key = productKey(p.type, p.recipeId); acc[key] = (acc[key] ?? 0) + p.quantityGrams; } return acc; }, {}),
-  };
-  localSrcRef.current = {
-    flora: floraBalance, tier: currentFacility.tier, staff, staffAssign,
-    avatars: avatars.map(a => ({ designId: a.designId, count: a.count, firstAt: a.firstAt, serial: a.serial })),
-    plots: plots.map(p => ({ id: p.id, mintedAt: p.mintedAt })),
-  };
-
-  const applySnapshot = useCallback((snap: Snapshot) => {
-    setFloraBalance(snap.flora);
-    setFaucetAt(snap.faucetAt);
-    setMarketDepth(snap.depth);
-    setConstruction(snap.construction);
-    const list = INITIAL_FACILITIES.map(f => ({ ...f, unlocked: f.unlocked || snap.unlocked.includes(f.id) }));
-    setFacilities(list);
-    setCurrentFacility(prev => list.filter(f => f.unlocked).sort((a, b) => b.tier - a.tier)[0] ?? prev);
-    setStaff(snap.staff); setStaffAssign(snap.staffAssign); setStaffPity(snap.staffPity);
-    setStaffNow(Date.now());
-    setPlots(prev => snap.plots.map(sp => prev.find(p => p.id === sp.id) ?? ({ ...sp, region: sp.region as RegionId, plants: [] })));
-    setAvatars(snap.avatars.map(a => ({ ...a, mint: mintAddressFor(`av-${a.designId}`) })));
-    setChestPity(snap.avatarPity);
-    setSrvOffers(snap.offers);
-    setMyListings(snap.listings ?? []);
-    setGifts(snap.gifts ?? []);
-    if (snap.p2p) setP2pInfo(snap.p2p);
-    // el nivel que el servidor ya pagó es el piso: una partida perdida en el navegador no te baja de nivel
-    if (typeof snap.level === 'number' && snap.level > 1) setPlayerLevel(prev => Math.max(prev, snap.level!));
-    // goods: the server keeps flower, trim, materials and forge jobs; the browser shows exactly that
-    if (snap.inventory) {
-      const inv = snap.inventory;
-      setRawFlowerGrams(inv.flower);
-      setTrimGrams(inv.trim);
-      setMaterials(inv.materials as Materials);
-      setProcessedProducts(prev => reconcileBatches(prev, inv.products, pendingBatchesRef.current));
-    }
-    if (snap.forgeJobs) setForgeJobs(snap.forgeJobs as ForgeJob[]);
-    if (snap.harvest) setHarvestInfo(snap.harvest);
-  }, []);
-
-  /** take the server's word for everything (login, and every minute after); the first time, a local save is imported with caps */
-  // (see the effects right below the function)
-  const syncFromServer = useCallback(async (): Promise<boolean> => {
-    // guardado en la nube: si el servidor tiene una partida más nueva que la de este navegador (otro celular, otro navegador,
-    // o la dirección del juego cambió), se usa esa; lo que vale dinero lo vuelve a poner el estado del servidor justo después
-    const uid = currentUserIdRef.current;
-    const cloud = await fetchCloudSave();
-    if (cloud && uid) {
-      if (cloud.data && cloud.savedAt > localSavedAtRef.current) {
-        saveUserData(uid, { ...(cloud.data as Partial<UserAccountData>), savedAt: cloud.savedAt });
-        loadUserDataRef.current(uid, false);
-        runTickRef.current();
-        localSavedAtRef.current = cloud.savedAt;
-        showNotificationRef.current(tr('Partida recuperada de la nube: nivel {v0}', { v0: (cloud.data as { playerLevel?: number }).playerLevel ?? 1 }), 'success');
-      }
-      cloudReadyRef.current = true;
-    }
-    const snap = await fetchState();
-    if (!snap) return false;
-    let use = snap;
-    if (!snap.imported) {
-      // first time on the server: bring the local save (capped), or close the window with an empty one so a save made later can never be imported over live progress
-      const imp = await importLocal(hadLocalSaveRef.current ? localSrcRef.current : { flora: 0, tier: 1 });
-      if (imp) use = imp;
-    }
-    if (use.inventory && !use.invImported) {
-      // first time the server keeps goods: bring what this browser already had (capped), or nothing if it had no save
-      const r = await intent('import_inventory', hadLocalSaveRef.current ? localGoodsRef.current : {});
-      if (r.ok) use = r.snapshot;
-    }
-    setLedgerOn(true);
-    applySnapshot(use);
-    return true;
-  }, [applySnapshot]);
-
-  useEffect(() => {
-    if (!currentUser?.id) return;
-    const t = setTimeout(() => { void syncFromServer(); }, 500);   // after the local save has been loaded
-    return () => clearTimeout(t);
-  }, [currentUser?.id, syncFromServer]);
-  useEffect(() => {
-    if (!ledgerOn) return;
-    const t = setInterval(async () => { const snap = await fetchState(); if (snap) applySnapshot(snap); }, 45000);
-    return () => clearInterval(t);
-  }, [ledgerOn, applySnapshot]);
-
-  // Add Solana burn transaction
-  const recordBurnTransaction = useCallback((type: SolanaTransaction['type'], amount: number, memo: string, reported = false) => {
-    const sig = generateSolanaSignature();
-    const newTx: SolanaTransaction = {
-      id: `tx-${Date.now()}`,
-      signature: sig,
-      type,
-      amountFlora: amount,
-      timestamp: Date.now(),
-      status: 'confirmed',
-      blockSlot: 248920000 + Math.floor(Math.random() * 5000),
-      memo
-    };
-
-    setTransactions(prev => [newTx, ...prev.slice(0, 24)]);
-    setFloraBalance(prev => Math.max(0, prev - amount));
-    setTotalFloraBurned(prev => prev + amount);
-    // a burn the server does not model yet (market items, seeds, repairs…): it debits the wallet, and its answer is the truth
-    if (ledgerRef.current && !reported) {
-      void intent('spend', { amount: Math.max(1, Math.round(amount)), memo }).then(r => { if (r.ok) applySnapshot(r.snapshot); else if (r.error !== 'offline') void fetchState().then(x => x && applySnapshot(x)); });
-    }
-
-    playBurnSound();
-
-    if (type === 'BURN_SPEEDUP') {
-      setBurnStats(prev => ({ ...prev, speedUp: prev.speedUp + amount }));
-    } else if (type === 'BURN_REPAIR' || type === 'BURN_PROCESS' || type === 'BURN_PURCHASE') {
-      setBurnStats(prev => ({ ...prev, repairs: prev.repairs + amount }));
-    } else if (type === 'BURN_PATENT') {
-      setBurnStats(prev => ({ ...prev, patents: prev.patents + amount }));
-    } else if (type === 'V2P_CLAIM') {
-      setBurnStats(prev => ({ ...prev, v2p: prev.v2p + amount }));
-    }
-  }, []);
-
-  // --- REAL-TIME SIMULATION (src/sim/engine.ts) ---
-  const lastSimRef = useRef<number>(Date.now());
-  const indoorRef = useRef<PlantInGrow[]>(indoorPlants);
-  indoorRef.current = indoorPlants;
-  const simEnvRef = useRef<SimEnv>(null as unknown as SimEnv);
-  const equipStats = equipStatsOf(assets);
-  simEnvRef.current = {
-    // automation only works with the matching NFT equipment installed (and not broken)
-    autoWater: autoWaterActive && equipStats.autoWater,
-    autoClimate: autoClimateActive && equipStats.hasAc,
-    facilityBonus: currentFacility.environmentBonus * (1 + staffMods.growth),
-    co2Ppm: Math.max(co2Ppm, equipStats.co2Ppm),
-    lightOn: 1,
-    equip: equipStats,
-    cleanliness: care.rating,
-    gardener: gardenerLevelOf(assets) > 0 ? { water: true, feed: true, treat: gardenerLevelOf(assets) >= 2, feedBonus: bestFeedBonus(assets) } : undefined,
-    getRoomTarget: (roomId) => {
-      const r = GROW_ROOMS_CONFIG.find(x => x.id === (roomId || currentRoom));
-      return r ? { tempC: r.targetTempC, rh: r.targetRhPercent } : undefined;
-    },
-  };
-
-  // --- USER DATA RESTORATION & PERSISTENCE ---
-  const saveCurrentUserDataForUser = useCallback((userId: string) => {
-    if (!userId) return;
-    const userToSave = allUserProfiles.find(u => u.id === userId);
-    if (!userToSave) return;
-
-    saveUserData(userId, {
-      profile: userToSave,
-      floraBalance,
-      solBalance,
-      totalFloraBurned,
-      activePlant,
-      indoorPlants,
-      selectedPlantIndex,
-      seedInventory,
-      suppliesMarket,
-      mothersFathers,
-      patents,
-      transactions,
-      quests,
-      playerLevel,
-      playerXp,
-      rawFlowerGrams,
-      trimGrams,
-      materials,
-      forgeJobs,
-      breedingJobs,
-      breedingLog,
-      brand,
-      lastSimAt: lastSimRef.current,
-      machines,
-      processedProducts,
-      autoWaterActive,
-      autoClimateActive,
-      assets,
-      care,
-      plots,
-      avatars,
-      chestPity,
-      missions,
-      tutorial,
-      facilityId: currentFacility.id,
-      unlockedFacilities: facilities.filter(f => f.unlocked).map(f => f.id),
-      construction,
-      dormantPlants,
-      staff,
-      staffAssign,
-      staffPity,
-      marketDepth,
-      faucetAt,
-      savedAt: Date.now()
-    });
-  }, [
-    allUserProfiles,
-    floraBalance,
-    solBalance,
-    totalFloraBurned,
-    activePlant,
-    indoorPlants,
-    selectedPlantIndex,
-    seedInventory,
-    suppliesMarket,
-    mothersFathers,
-    patents,
-    transactions,
-    quests,
-    playerLevel,
-    playerXp,
-    rawFlowerGrams,
-    trimGrams,
-    materials,
-    forgeJobs,
-    breedingJobs,
-    breedingLog,
-    brand,
-    machines,
-    processedProducts,
-    autoWaterActive,
-    autoClimateActive,
-    assets,
-    care,
-    plots,
-    avatars,
-    chestPity,
-    missions,
-    tutorial,
-    currentFacility,
-    facilities,
-    construction,
-    dormantPlants,
-    staff,
-    staffAssign,
-    staffPity,
-    marketDepth,
-    faucetAt
-  ]);
-
-  const loadUserDataForUser = useCallback((userId: string, seedIfMissing: boolean = true) => {
-    const saved = loadUserData(userId);
-    hadLocalSaveRef.current = !!saved;
-    localSavedAtRef.current = saved?.savedAt ?? 0;
-    applyMissions(normalizeMissions(saved?.missions));
-    applyTutorial(normalizeTutorial(saved?.tutorial));
-    {
-      // the installation you built survives a reload (it used to reset to the starter kit)
-      const unlocked = new Set<string>(['tent_starter', ...(Array.isArray(saved?.unlockedFacilities) ? saved!.unlockedFacilities! : [])]);
-      const list = INITIAL_FACILITIES.map(f => ({ ...f, unlocked: f.unlocked || unlocked.has(f.id) }));
-      setFacilities(list);
-      setCurrentFacility(list.find(f => f.id === saved?.facilityId && f.unlocked) ?? list[0]);
-      setConstruction(normalizeConstruction(saved?.construction));
-      setDormantPlants(Array.isArray(saved?.dormantPlants) ? saved!.dormantPlants! : []);
-      const roster = normalizeRoster(saved?.staff);
-      setStaff(roster);
-      setStaffAssign(normalizeAssignments(saved?.staffAssign, roster));
-      setStaffPity(saved?.staffPity ?? EMPTY_STAFF_PITY);
-      setMarketDepth(saved?.marketDepth && typeof saved.marketDepth.sold === 'number' ? saved.marketDepth : EMPTY_DEPTH);
-      setFaucetAt(typeof saved?.faucetAt === 'number' ? saved.faucetAt : 0);
-    }
-    if (saved) {
-      if (typeof saved.floraBalance === 'number') setFloraBalance(saved.floraBalance);
-      if (typeof saved.solBalance === 'number') setSolBalance(saved.solBalance);
-      if (typeof saved.totalFloraBurned === 'number') setTotalFloraBurned(saved.totalFloraBurned);
-      if (Array.isArray(saved.indoorPlants) && saved.indoorPlants.length > 0) {
-        setIndoorPlants(saved.indoorPlants.map((pl: PlantInGrow) => ({ ...pl, stage: stageFromProgress(pl.progressPercent) })));
-      } else if (saved.activePlant) {
-        setActivePlant(saved.activePlant);
-      }
-      if (typeof saved.selectedPlantIndex === 'number') {
-        setSelectedPlantIndex(saved.selectedPlantIndex);
-      }
-      if (saved.seedInventory) setSeedInventory(saved.seedInventory);
-      if (saved.suppliesMarket) setSuppliesMarket(saved.suppliesMarket);
-      if (saved.mothersFathers) setMothersFathers(saved.mothersFathers);
-      if (saved.patents) setPatents(saved.patents);
-      if (saved.transactions) setTransactions(saved.transactions);
-      if (saved.quests) setQuests(saved.quests);
-      if (typeof saved.playerLevel === 'number') setPlayerLevel(saved.playerLevel);
-      if (typeof saved.playerXp === 'number') setPlayerXp(saved.playerXp);
-      if (typeof saved.rawFlowerGrams === 'number') setRawFlowerGrams(saved.rawFlowerGrams);
-      if (typeof saved.trimGrams === 'number') setTrimGrams(saved.trimGrams);
-      // materials and forge jobs: only what the catalogue knows, never negative
-      if (saved.materials && typeof saved.materials === 'object') {
-        const m: Materials = {};
-        for (const [k, v] of Object.entries(saved.materials as Record<string, unknown>)) if (k in MATERIAL_BY_ID && typeof v === 'number' && v > 0) m[k as keyof Materials] = Math.floor(v);
-        setMaterials(m);
-      } else setMaterials({});
-      setForgeJobs(Array.isArray(saved.forgeJobs) ? (saved.forgeJobs as ForgeJob[]).filter(j => j && FORGE_RECIPE_BY_ID[j.recipeId] && Number.isFinite(j.endsAt)).slice(0, 3) : []);
-      setBreedingJobs(Array.isArray(saved.breedingJobs) ? (saved.breedingJobs as BreedingJob[]).filter(j => j && Number.isFinite(j.endsAt)).slice(0, BREEDING_LIMITS.jobs) : []);
-      setBreedingLog(Array.isArray(saved.breedingLog) ? (saved.breedingLog as BreedingLogEntry[]).slice(0, 100) : []);
-      if (saved.brand) setBrand(saved.brand);
-      if (Array.isArray(saved.machines)) setMachines(INITIAL_MACHINES.map(m => saved.machines!.find(x => x.id === m.id) ?? m));
-      if (Array.isArray(saved.processedProducts)) setProcessedProducts(saved.processedProducts);
-      if (typeof saved.autoWaterActive === 'boolean') setAutoWaterActive(saved.autoWaterActive);
-      if (typeof saved.autoClimateActive === 'boolean') setAutoClimateActive(saved.autoClimateActive);
-      // saves from before the asset economy get the starter kit
-      const loadedAssets = Array.isArray(saved.assets) ? saved.assets : starterAssets();
-      // saves from before plagues existed get a one-off treatment kit
-      setAssets(Array.isArray(saved.assets) && !saved.care ? [...loadedAssets, ...starterPestKit()] : loadedAssets);
-      if (saved.care) setCare(saved.care);
-      setPlots(Array.isArray(saved.plots) ? saved.plots.map((pl: OwnedPlot) => ({ ...pl, plants: (pl.plants ?? []).map((x: PlantInGrow) => ({ ...x, stage: stageFromProgress(x.progressPercent) })) })) : []);
-      setAvatars(Array.isArray(saved.avatars) ? saved.avatars : []);
-      setChestPity(saved.chestPity ?? EMPTY_PITY);
-      lastSimRef.current = saved.lastSimAt ?? saved.savedAt ?? Date.now();
-    } else if (seedIfMissing) {
-      // Seed preset demo data
-      if (userId === 'usr-satoshi') {
-        setFloraBalance(12500);
-        setSolBalance(4.25);
-        setPlayerLevel(14);
-        setPlayerXp(420);
-        setSeedInventory({ seed_chrono_og: 5, seed_gelato_auto: 3, seed_amnesia_haze: 2 });
-      } else if (userId === 'usr-elena') {
-        setFloraBalance(8200);
-        setSolBalance(3.10);
-        setPlayerLevel(9);
-        setPlayerXp(310);
-        setSeedInventory({ seed_gelato_auto: 4, seed_purple_punch: 2 });
-      } else if (userId === 'usr-novice') {
-        setFloraBalance(500);
-        setSolBalance(1.50);
-        setPlayerLevel(2);
-        setPlayerXp(45);
-        setSeedInventory({ seed_chrono_og: 1 });
-      }
-    }
-  }, [applyMissions, applyTutorial]);
-
-  // --- SOLANA NETWORKS & WALLETS ---
-  const refreshLiveBalance = useCallback(async (): Promise<number> => {
-    if (!walletAddress) return solBalance;
-    try {
-      const liveSol = await fetchLiveSolBalance(walletAddress, solanaNetwork);
-      if (liveSol > 0) {
-        setSolBalance(liveSol);
-      }
-      return liveSol;
-    } catch {
-      return solBalance;
-    }
-  }, [walletAddress, solanaNetwork, solBalance]);
-
-  const setSolanaNetwork = useCallback((network: SolanaNetwork) => {
-    setSolanaNetworkState(network);
-    const netConfig = SOLANA_NETWORKS[network];
-    showNotification(tr('Red Solana cambiada a: {name}', { name: netConfig.name }), 'info');
-    setTimeout(() => {
-      fetchLiveSolBalance(walletAddress, network).then(bal => {
-        if (bal > 0) setSolBalance(bal);
-      });
-    }, 400);
-  }, [walletAddress, showNotification]);
-
-  const connectSpecificWallet = useCallback(async (providerType: 'phantom' | 'solflare' | 'backpack' | 'injected' | 'virtual'): Promise<boolean> => {
+  /* ── Solana wallet connection (this session only) ── */
+  const setSolanaNetwork = (network: SolanaNetwork) => { wallet.setSolanaNetworkState(network); showNotification(tr('Red Solana cambiada a: {name}', { name: SOLANA_NETWORKS[network].name }), 'info'); };
+  const connectSpecificWallet = async (providerType: 'phantom' | 'solflare' | 'backpack' | 'injected' | 'virtual'): Promise<boolean> => {
     try {
       if (providerType === 'virtual') {
         const kp = generateSolanaKeypair();
-        setWalletAddress(kp.publicKey);
-        setConnectedWalletType(tr('Virtual Keypair'));
-        setIsWalletConnected(true);
-        setActiveProviderInstance(null);
+        wallet.setWalletAddress(kp.publicKey); wallet.setConnectedWalletType(tr('Virtual Keypair')); wallet.setIsWalletConnected(true); wallet.setActiveProviderInstance(null);
         showNotification(tr('Billetera Virtual Solana generada: {v0}...{v1}', { v0: kp.publicKey.slice(0, 4), v1: kp.publicKey.slice(-4) }), 'success');
         return true;
       }
-
       const res = await connectBrowserWallet(providerType);
-      setWalletAddress(res.publicKey);
-      setConnectedWalletType(res.providerName);
-      setActiveProviderInstance(res.provider);
-      setIsWalletConnected(true);
+      wallet.setWalletAddress(res.publicKey); wallet.setConnectedWalletType(res.providerName); wallet.setActiveProviderInstance(res.provider); wallet.setIsWalletConnected(true);
       showNotification(tr('Billetera {providerName} conectada: {v1}...{v2}', { providerName: res.providerName, v1: res.publicKey.slice(0, 4), v2: res.publicKey.slice(-4) }), 'success');
-      
-      fetchLiveSolBalance(res.publicKey, solanaNetwork).then(bal => {
-        if (bal > 0) setSolBalance(bal);
-      });
       return true;
-    } catch (err: any) {
-      showNotification(err.message || tr('Error al conectar billetera'), 'burn');
+    } catch (err) {
+      showNotification((err as Error).message || tr('Error al conectar billetera'), 'burn');
       return false;
     }
-  }, [solanaNetwork, showNotification]);
-
-  const generateVirtualKeypair = useCallback(() => {
+  };
+  const generateVirtualKeypair = () => {
     const kp = generateSolanaKeypair();
-    setWalletAddress(kp.publicKey);
-    setConnectedWalletType(tr('Virtual Keypair'));
-    setIsWalletConnected(true);
+    wallet.setWalletAddress(kp.publicKey); wallet.setConnectedWalletType(tr('Virtual Keypair')); wallet.setIsWalletConnected(true);
     showNotification(tr('Nueva clave Solana Ed25519 generada: {v0}...', { v0: kp.publicKey.slice(0, 6) }), 'success');
     return { publicKey: kp.publicKey, secretKeyHex: kp.secretKeyHex };
-  }, [showNotification]);
-
-  const signAuthMessageTest = useCallback(async (): Promise<boolean> => {
+  };
+  const signAuthMessageTest = async (): Promise<boolean> => {
     try {
-      const msg = `Yield Bud Empire Botanical Web3 Auth | Cultivador: ${currentUser?.displayName || 'Anónimo'} | Red: ${solanaNetwork} | Timestamp: ${Date.now()}`;   // lo que se firma: no se traduce
-      const res = await signSolanaMessage(activeProviderInstance, msg);
+      const msg = `Yield Bud Empire Botanical Web3 Auth | Cultivador: ${currentUser?.displayName || 'Anónimo'} | Red: ${wallet.solanaNetwork} | Timestamp: ${Date.now()}`;   // lo que se firma: no se traduce
+      const res = await signSolanaMessage(wallet.activeProviderInstance as never, msg);
       showNotification(tr('¡Firma criptográfica verificada con éxito! Hash: {v0}...', { v0: res.signature.slice(0, 10) }), 'success');
       return true;
-    } catch (err: any) {
-      showNotification(tr('Firma cancelada: {v0}', { v0: err.message || tr('Error') }), 'burn');
+    } catch (err) {
+      showNotification(tr('Firma cancelada: {v0}', { v0: (err as Error).message || tr('Error') }), 'burn');
       return false;
     }
-  }, [activeProviderInstance, currentUser, solanaNetwork, showNotification]);
-
-  // The wallet's devnet airdrop only fills the (simulated-network) wallet; it no longer creates $FLORA or game SOL out of thin air.
-  const requestAirdrop = useCallback(async () => {
-    const netConfig = SOLANA_NETWORKS[solanaNetwork];
-    if (solanaNetwork === 'mainnet-beta') {
-      showNotification(tr('Mainnet: no hay airdrop. El $FLORA se gana cultivando y vendiendo; hay un reclamo diario en la barra superior.'), 'info');
-      return;
-    }
+  };
+  /** the live SOL of the connected wallet (shown only; the game's SOL is the server's) */
+  const refreshLiveBalance = async (): Promise<number> => {
+    if (!wallet.walletAddress) return s.solBalance;
+    try { return await fetchLiveSolBalance(wallet.walletAddress, wallet.solanaNetwork); } catch { return s.solBalance; }
+  };
+  const requestAirdrop = async () => {
+    const netConfig = SOLANA_NETWORKS[wallet.solanaNetwork];
+    if (wallet.solanaNetwork === 'mainnet-beta') { showNotification(tr('Mainnet: no hay airdrop. El $FLORA se gana cultivando y vendiendo; hay un reclamo diario en la barra superior.'), 'info'); return; }
     try {
       showNotification(tr('Solicitando 1.0 SOL de prueba en {name}...', { name: netConfig.name }), 'info');
-      await requestSolanaAirdrop(walletAddress, solanaNetwork, 1.0);
+      await requestSolanaAirdrop(wallet.walletAddress, wallet.solanaNetwork, 1.0);
       showNotification(tr('Llegó SOL de prueba a tu billetera en {badgeLabel}. El $FLORA del juego no cambia.', { badgeLabel: netConfig.badgeLabel }), 'success');
-    } catch (err: any) {
-      showNotification(tr('No se pudo pedir el airdrop de {badgeLabel}: {v1}. Inténtalo más tarde.', { badgeLabel: netConfig.badgeLabel, v1: err?.message || tr('la red no respondió') }), 'info');
+    } catch (err) {
+      showNotification(tr('No se pudo pedir el airdrop de {badgeLabel}: {v1}. Inténtalo más tarde.', { badgeLabel: netConfig.badgeLabel, v1: (err as Error)?.message || tr('la red no respondió') }), 'info');
     }
-  }, [solanaNetwork, walletAddress, showNotification]);
+  };
+  const connectWallet = () => { void connectSpecificWallet('injected'); };
+  const disconnectWallet = () => { wallet.setIsWalletConnected(false); wallet.setConnectedWalletType(tr('Ninguna')); showNotification(tr('Billetera Solana desconectada'), 'info'); };
 
-  // One small claim every 24 h (replaces the unlimited +500 faucet: see sim/economy.ts)
-  const claimDaily = async (): Promise<void> => {
-    if (ledgerRef.current) {
-      const r = await intent<{ amount: number }>('claim_daily');
-      if (!r.ok) {
-        const left = Number((r.extra as { leftMs?: number } | undefined)?.leftMs ?? 0);
-        if (r.error === 'too_early' && left > 0) showNotification(tr('El reclamo diario vuelve en {v0} h {v1} min.', { v0: Math.floor(left / 3600_000), v1: Math.ceil((left % 3600_000) / 60_000) }), 'info');
-        else showNotification(reasonText(r.error) ?? tr('No se pudo reclamar ({error})', { error: r.error }), 'info');
-        void fetchState().then(x => x && applySnapshot(x));
-        return;
-      }
-      applySnapshot(r.snapshot);
-      showNotification(tr('Reclamo diario: +{amount} $FLORA. Vuelve mañana; lo demás se gana cultivando.', { amount: r.result.amount }), 'success');
-      return;
-    }
-    const st = claimStatus(faucetAt, Date.now());
-    if (!st.ok) {
-      const h = Math.floor(st.leftMs / 3600_000), m = Math.ceil((st.leftMs % 3600_000) / 60_000);
-      showNotification(tr('El reclamo diario vuelve en {v0}.', { v0: h > 0 ? tr('{h} h {m} min', { h, m }) : `${m} min` }), 'info');
-      return;
-    }
-    setFaucetAt(Date.now());
-    setFloraBalance(prev => prev + ECON.dailyClaim);
-    setTransactions(prev => [{
-      id: `tx-claim-${Date.now()}`, signature: generateSolanaSignature(), type: 'AIRDROP', amountFlora: ECON.dailyClaim, amountSol: 0,
-      timestamp: Date.now(), status: 'confirmed', blockSlot: 248925100, memo: `Yield Bud Empire: reclamo diario +${ECON.dailyClaim} $FLORA`,
-    }, ...prev.slice(0, 24)]);
-    showNotification(tr('Reclamo diario: +{dailyClaim} $FLORA. Vuelve mañana; lo demás se gana cultivando.', { dailyClaim: ECON.dailyClaim }), 'success');
+  /* ── account ── */
+  const logoutUser = () => { void logoutServer().finally(() => window.location.reload()); };
+  const updateUserProfile = (updates: Partial<UserProfile>) => {
+    const u: Record<string, unknown> = {};
+    for (const k of ['displayName', 'avatar', 'avatarImage', 'avatarNft', 'bio', 'facilityName', 'role'] as const) if (k in updates) u[k] = updates[k] ?? null;
+    void onProfile(u).then((done) => { if (done) showNotification(tr('Perfil de cultivador actualizado con éxito.'), 'success'); });
   };
 
-  const connectWallet = useCallback(() => {
-    connectSpecificWallet('injected');
-  }, [connectSpecificWallet]);
-
-  const disconnectWallet = useCallback(() => {
-    setIsWalletConnected(false);
-    setConnectedWalletType(tr('Ninguna'));
-    showNotification(tr('Billetera Solana desconectada'), 'info');
-  }, [showNotification]);
-
-  // --- USER AUTHENTICATION & MULTI-ACCOUNT ACTIONS ---
-  const switchUserAccount = useCallback((userId: string): boolean => {
-    if (currentUser?.id) {
-      saveCurrentUserDataForUser(currentUser.id);
-    }
-    const targetUser = allUserProfiles.find(u => u.id === userId);
-    if (!targetUser) return false;
-
-    setActiveUserId(userId);
-    setCurrentUser(targetUser);
-    setIsAuthenticated(true);
-    if (targetUser.walletAddress) {
-      setWalletAddress(targetUser.walletAddress);
-      setIsWalletConnected(true);
-    }
-    if (targetUser.preferredNetwork) {
-      setSolanaNetworkState(targetUser.preferredNetwork);
-    }
-    loadUserDataForUser(userId);
-    showNotification(tr('Sesión cambiada a: {displayName} ({role})', { displayName: targetUser.displayName, role: targetUser.role }), 'success');
-    return true;
-  }, [currentUser, allUserProfiles, saveCurrentUserDataForUser, loadUserDataForUser, showNotification]);
-
-  /** Bring a save that lives in this browser (another local profile) into the active account. The original stays as a hidden backup. */
-  const importLocalSave = useCallback((fromUserId: string): boolean => {
-    if (!currentUser?.id || fromUserId === currentUser.id) return false;
-    const saved = loadUserData(fromUserId);
-    if (!saved || saved.migratedTo) return false;
-    saveUserData(currentUser.id, { ...saved, profile: currentUser, migratedTo: undefined });
-    loadUserDataForUser(currentUser.id, false);
-    saveUserData(fromUserId, { ...saved, migratedTo: currentUser.id });
-    showNotification(tr('Partida recuperada: {v0} parcela(s), {v1} $FLORA, nivel {v2}', { v0: saved.plots?.length ?? 0, v1: Math.round(saved.floraBalance ?? 0), v2: saved.playerLevel ?? 1 }), 'success');
-    return true;
-  }, [currentUser, loadUserDataForUser, showNotification]);
-
-  const loginUser = useCallback((usernameOrEmail: string): boolean => {
-    const clean = usernameOrEmail.trim().toLowerCase();
-    const found = allUserProfiles.find(u => 
-      u.username.toLowerCase() === clean || 
-      u.email.toLowerCase() === clean ||
-      (u.walletAddress && u.walletAddress.toLowerCase() === clean)
-    );
-
-    if (found) {
-      return switchUserAccount(found.id);
-    } else {
-      showNotification(tr('Usuario o correo no encontrado. Puedes registrarte en la pestaña de Registro.'), 'burn');
-      return false;
-    }
-  }, [allUserProfiles, switchUserAccount, showNotification]);
-
-  const registerUser = useCallback((profileData: Omit<UserProfile, 'id' | 'createdAt'>): boolean => {
-    if (!profileData.username || !profileData.displayName) {
-      showNotification(tr('Por favor completa nombre y usuario.'), 'burn');
-      return false;
-    }
-
-    const newId = `usr-${Date.now()}`;
-    const newProfile: UserProfile = {
-      ...profileData,
-      id: newId,
-      createdAt: Date.now(),
-      walletAddress: profileData.walletAddress || walletAddress
-    };
-
-    saveUserProfile(newProfile);
-    setAllUserProfiles(prev => [...prev, newProfile]);
-    
-    // Save fresh starter data for new user
-    saveUserData(newId, {
-      profile: newProfile,
-      floraBalance: 500,
-      solBalance: 2.0,
-      totalFloraBurned: 0,
-      activePlant: {
-        strain: INITIAL_STRAINS[0],
-        plantedAt: Date.now(),
-        stage: 'seed',
-        progressPercent: 0,
-        health: 100,
-        soilMoisture: 80,
-        temperatureC: 24.0,
-        relativeHumidity: 60,
-        vpdKpa: calculateVpd(24.0, 60),
-        ppfdLightIntensity: 550,
-        luxLumens: 550 * 54,
-        co2Ppm: 600,
-        currentRoom: 'vegetative',
-        lightSchedule: '18/6',
-        ecLevel: 1.4,
-        phLevel: 6.2,
-        nutrientBrand: 'general_hydroponics',
-        autoWateringEnabled: false,
-        autoClimateEnabled: false,
-        trichomeMaturity: { clear: 100, milky: 0, amber: 0 },
-        lastWatered: Date.now(),
-        lastFed: Date.now(),
-        estimatedDryYieldGrams: 65
-      },
-      seedInventory: { seed_chrono_og: 2 },
-      suppliesMarket: INITIAL_GROW_SUPPLIES,
-      mothersFathers: [],
-      patents: [],
-      transactions: [],
-      quests: INITIAL_QUESTS,
-      playerLevel: 1,
-      playerXp: 0,
-      rawFlowerGrams: 0,
-      trimGrams: 0,
-      brand: {
-        name: `${newProfile.displayName}'s Craft Botanicals`,
-        tagline: tr('Genéticas puras cultivadas en Yield Bud Empire'),
-        level: 1,
-        reputation: 100,
-        dispensaryOpen: true,
-        totalSalesFlora: 0,
-        totalV2pShipped: 0,
-        accentColor: '#10b981'
-      },
-      savedAt: Date.now()
-    });
-
-    switchUserAccount(newId);
-    showNotification(tr('¡Bienvenido a Yield Bud Empire, {displayName}! Paquete de inicio activado (+500 $FLORA, 2.0 SOL).', { displayName: newProfile.displayName }), 'success');
-    return true;
-  }, [walletAddress, switchUserAccount, showNotification]);
-
-  const loginWithSolanaWallet = useCallback((): boolean => {
-    if (!walletAddress) {
-      showNotification(tr('Conecta tu billetera Solana primero para iniciar sesión con Web3.'), 'burn');
-      return false;
-    }
-
-    const existingUser = allUserProfiles.find(u => u.walletAddress?.toLowerCase() === walletAddress.toLowerCase());
-    if (existingUser) {
-      return switchUserAccount(existingUser.id);
-    }
-
-    const web3Username = `sol_${walletAddress.slice(0, 4)}_${walletAddress.slice(-4)}`.toLowerCase();
-    return registerUser({
-      username: web3Username,
-      email: `${web3Username}@solana.id`,
-      displayName: `Grower ${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`,
-      avatar: '⚡',
-      role: 'Inversionista Web3',
-      walletAddress: walletAddress,
-      preferredNetwork: solanaNetwork,
-      bio: `Cultivador verificado on-chain con billetera Solana ${walletAddress}.`,
-      experienceLevel: 1,
-      facilityName: `Instalación Solana #${walletAddress.slice(-4)}`
-    });
-  }, [walletAddress, allUserProfiles, solanaNetwork, switchUserAccount, registerUser, showNotification]);
-
-  const logoutUser = useCallback(() => {
-    if (currentUser?.id) {
-      saveCurrentUserDataForUser(currentUser.id);
-    }
-    setIsAuthenticated(false);
-    showNotification(tr('Has cerrado sesión. Puedes ingresar con otra cuenta o con tu billetera Solana.'), 'info');
-  }, [currentUser, saveCurrentUserDataForUser, showNotification]);
-
-  const updateUserProfile = useCallback((updates: Partial<UserProfile>) => {
-    if (!currentUser) return;
-    const updated: UserProfile = { ...currentUser, ...updates };
-    setCurrentUser(updated);
-    saveUserProfile(updated);
-    setAllUserProfiles(prev => prev.map(u => u.id === updated.id ? updated : u));
-    showNotification(tr('Perfil de cultivador actualizado con éxito.'), 'success');
-  }, [currentUser, showNotification]);
-
-  // Real-time world clock: advances every plant by the *real* time elapsed (also after being away).
-  const runTick = useCallback((extraSeconds: number = 0) => {
-    const now = Date.now();
-    const dt = (now - lastSimRef.current) / 1000 + extraSeconds;
-    lastSimRef.current = now;
-    if (dt < 0.5) return;
-    // consumables the simulation may spend during this span (electricity, tank water, nutrients, treatments, the
-    // gardener's contract days); applied to the NFT lots afterwards
-    const stock = assetsRef.current;
-    const treat0 = pestStock(stock);
-    const budget = { waterL: stockOf(stock, 'water'), energyKwh: stockOf(stock, 'energy'), nutrientMl: stockOf(stock, 'nutrient'), treatMl: { ...treat0 }, gardenerDays: stockOf(stock, 'service') };
-    const plotsBefore = plotsRef.current;
-    const plotList = plotsBefore.flatMap(pl => pl.plants);
-    const env: SimEnv = {
-      ...simEnvRef.current,
-      budget: { ...budget, treatMl: { ...treat0 } },
-      // plots: the weather is a pure function of region + time, so catch-up replays exactly what happened
-      clockMs: now - Math.min(dt, BALANCE.maxCatchUpSeconds) * 1000,
-      site: (siteId, ms) => { const pl = plotsBefore.find(x => x.id === siteId); return pl ? siteConditions(pl.region, pl.ratings, ms) : undefined; },
-    };
-    const before = indoorRef.current;
-    const everything = advanceWorld([...before, ...plotList], dt, env);
-    const after = everything.slice(0, before.length);
-    let off = before.length;
-    const plotsAfter = plotsBefore.map(pl => { const plants = everything.slice(off, off + pl.plants.length); off += pl.plants.length; return { ...pl, plants }; });
-    const plotAfterList = plotsAfter.flatMap(pl => pl.plants);
-    const eb = env.budget!;
-    const usedWater = budget.waterL - eb.waterL;
-    const usedEnergy = budget.energyKwh - eb.energyKwh;
-    const usedNutrient = budget.nutrientMl - (eb.nutrientMl ?? 0);
-    const usedDays = budget.gardenerDays - (eb.gardenerDays ?? 0);
-    const usedTreat = (['mites', 'mold', 'rot'] as const).map(k => [k, treat0[k] - (eb.treatMl?.[k] ?? 0)] as const).filter(([, v]) => v > 1e-6);
-    const days = Math.min(dt, BALANCE.maxCatchUpSeconds) / 86400;
-    if (usedWater > 1e-6 || usedEnergy > 1e-6 || usedNutrient > 1e-6 || usedDays > 1e-9 || usedTreat.length || stock.some(a => a.equipped && CATALOG_BY_ID[a.catalogId]?.kind === 'equipment')) {
-      setAssets(prev => {
-        let next = prev;
-        if (usedWater > 1e-6) next = spendResource(next, 'water', Math.min(usedWater, stockOf(next, 'water'))) ?? next;
-        if (usedEnergy > 1e-6) next = spendResource(next, 'energy', Math.min(usedEnergy, stockOf(next, 'energy'))) ?? next;
-        if (usedNutrient > 1e-6) next = spendResource(next, 'nutrient', Math.min(usedNutrient, stockOf(next, 'nutrient'))) ?? next;
-        if (usedDays > 1e-9) next = spendResource(next, 'service', Math.min(usedDays, stockOf(next, 'service'))) ?? next;
-        for (const [k, v] of usedTreat) next = spendPest(next, k, v).assets;
-        // installed gear wears with time (a lamp only while there was power to run it)
-        return next.map(a => {
-          const it = CATALOG_BY_ID[a.catalogId];
-          if (!a.equipped || it?.kind !== 'equipment' || (a.durability ?? 0) <= 0) return a;
-          const running = it.category === 'lamp' ? usedEnergy > 1e-6 || (env.equip?.solarKw ?? 0) > 0 : true;
-          if (!running) return a;
-          return { ...a, durability: Math.max(0, Number(((a.durability ?? 100) - (it.wearPerDay ?? 0) * days).toFixed(3))) };
-        });
-      });
-    }
-    // gardener rating: falls with neglect and garbage while there are plants (a master gardener nearly stops it)
-    if (before.length > 0 || plotList.length > 0) {
-      const decay = (USE.ratingDecayPerDay + USE.garbageDecayPerDay * garbageOf(stock).length) * days * (gardenerLevelOf(stock) >= 2 ? 0.1 : 1);
-      if (decay > 0) setCare(c => ({ ...c, rating: Math.max(0, Number((c.rating - decay).toFixed(3))) }));
-    }
-    const newPests = [...after.filter((p, i) => p.pest && !before[i]?.pest), ...plotAfterList.filter((p, i) => p.pest && !plotList[i]?.pest)];
-    if (budget.energyKwh > 0 && eb.energyKwh <= 0 && (env.equip?.lampWatts ?? 0) > 0 && (env.equip?.solarKw ?? 0) * 0.25 < 0.3) {
-      showNotification(tr('⚡ Se acabó la electricidad: las lámparas se apagaron y las plantas dejan de crecer. Compra un Bono de Energía en el Grow Market.'), 'burn');
-    } else if (budget.waterL > 0 && eb.waterL <= 0 && (env.autoWater || env.gardener?.water)) {
-      showNotification(tr('💧 El tanque de agua está vacío: el riego automático se detuvo.'), 'burn');
-    } else if (budget.gardenerDays > 0 && (eb.gardenerDays ?? 0) <= 0 && before.length > 0) {
-      showNotification(tr('🧑‍🌾 Terminó el contrato de tu jardinero. Renuévalo en el Grow Market → Servicios de vivero.'), 'info');
-    } else if (newPests.length > 0 && dt <= 1800) {
-      const kinds = newPests.reduce<Record<string, number>>((m, p) => { const k = PEST_INFO[p.pest!.kind].label; m[k] = (m[k] ?? 0) + 1; return m; }, {});
-      showNotification(tr('🐛 Plaga detectada en {length} planta{v1} ({v2}). Trátalas desde el botón Cuidado.', { length: newPests.length, v1: newPests.length > 1 ? 's' : '', v2: Object.entries(kinds).map(([k, n]) => `${k} ×${n}`).join(', ') }), 'burn');
-    }
-    const allBefore = [...before, ...plotList];
-    const allAfter = [...after, ...plotAfterList];
-    const newMales = allAfter.filter((p, i) => isMale(p) && sexRevealed(p) && !(allBefore[i] && isMale(allBefore[i]) && sexRevealed(allBefore[i])));
-    const newPollinated = allAfter.filter((p, i) => p.pollinated && !allBefore[i]?.pollinated);
-    if (dt <= 1800 && newPollinated.length > 0) {
-      showNotification(tr('🐝 ¡Polinización! {length} hembra{v1} recibieron polen: darán un 40 % menos de flor pero también semillas. Habrá que quitar el macho a tiempo la próxima vez.', { length: newPollinated.length, v1: newPollinated.length > 1 ? 's' : '' }), 'burn');
-    } else if (dt <= 1800 && newMales.length > 0) {
-      showNotification(tr('♂ ¡Macho detectado en {length} planta{v1}! Quítalo antes de que llegue a flor (55 %) o polinizará a las hembras. También puedes guardarlo como padre.', { length: newMales.length, v1: newMales.length > 1 ? 's' : '' }), 'burn');
-    }
-    if (dt > 1800) {
-      // welcome-back summary for long absences
-      const avg = (arr: PlantInGrow[], f: (p: PlantInGrow) => number) => arr.reduce((a, p) => a + f(p), 0) / Math.max(1, arr.length);
-      const grew = avg(after, p => p.progressPercent) - avg(before, p => p.progressPercent);
-      const thirsty = after.filter(p => p.stage !== 'ready_harvest' && p.soilMoisture < BALANCE.thirstyBelow).length;
-      const ready = after.filter(p => p.stage === 'ready_harvest').length;
-      const sick = pestCount(after);
-      showNotification(
-        tr('Han pasado {v0}: tus plantas crecieron +{v1}%{v2}{v3}{v4}{v5}{v6}', { v0: formatDuration(Math.min(dt, BALANCE.maxCatchUpSeconds)), v1: grew.toFixed(1), v2: ready ? tr(' ({ready} listas para cosechar)', { ready }) : '', v3: thirsty ? tr('. ¡{thirsty} necesitan agua!', { thirsty }) : '.', v4: sick ? tr(' 🐛 {sick} con plaga.', { sick }) : '', v5: newMales.length ? tr(' ♂ {length} macho{v1} por quitar.', { length: newMales.length, v1: newMales.length > 1 ? 's' : '' }) : '', v6: newPollinated.length ? tr(' 🐝 {length} polinizada{v1}.', { length: newPollinated.length, v1: newPollinated.length > 1 ? 's' : '' }) : '' }),
-        thirsty || sick ? 'info' : 'success'
-      );
-    }
-    setIndoorPlants(after);
-    if (plotsBefore.length > 0) setPlots(plotsAfter);
-  }, [showNotification]);
-
-  useEffect(() => {
-    const id = window.setInterval(() => runTick(), BALANCE.liveTickSeconds * 1000);
-    const onVisible = () => { if (!document.hidden) runTick(); };
-    document.addEventListener('visibilitychange', onVisible);
-    // DEV: window.__cfWarp(seconds) fast-forwards the world clock (days of play in one call)
-    if (import.meta.env.DEV) (window as unknown as { __cfWarp?: (s: number) => void }).__cfWarp = (s: number) => runTick(s);
-    return () => {
-      window.clearInterval(id);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [runTick]);
-
-  // Restore the saved game when the page opens (the game used to start from scratch on every reload)
-  useEffect(() => {
-    if (!currentUser) return;
-    if (loadUserData(currentUser.id)) {
-      loadUserDataForUser(currentUser.id, false);
-      runTick(); // offline catch-up right away
-    } else {
-      lastSimRef.current = Date.now();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Autosave: every 20 s, when the tab is hidden and when it closes
-  const saveNowRef = useRef<() => void>(() => {});
-  const cloudPushedAtRef = useRef(0);
-  saveNowRef.current = () => { if (currentUser?.id) saveCurrentUserDataForUser(currentUser.id); };
-  currentUserIdRef.current = currentUser?.id;
-  loadUserDataRef.current = loadUserDataForUser;
-  runTickRef.current = runTick;
-  showNotificationRef.current = showNotification;
-  /** copia a la nube: cada minuto como mucho, y siempre al esconder o cerrar la pestaña */
-  const pushCloud = (force: boolean) => {
-    const uid = currentUserIdRef.current;
-    if (!uid || !cloudReadyRef.current || (!force && Date.now() - cloudPushedAtRef.current < 60_000)) return;
-    const data = loadUserData(uid);
-    if (!data?.savedAt) return;
-    cloudPushedAtRef.current = Date.now();
-    void pushCloudSave(data as Record<string, unknown>, data.savedAt).then(r => {
-      if (r?.stale) { cloudReadyRef.current = false; showNotificationRef.current(tr('Hay una partida más nueva guardada desde otro dispositivo: recarga la página para traerla.'), 'info'); }
-    });
-  };
-  useEffect(() => {
-    const save = (force = false) => { saveNowRef.current(); pushCloud(force); };
-    const id = window.setInterval(() => save(false), 20000);
-    const onHide = () => { if (document.hidden) save(true); };
-    document.addEventListener('visibilitychange', onHide);
-    const onPageHide = () => save(true);
-    window.addEventListener('pagehide', onPageHide);
-    return () => {
-      window.clearInterval(id);
-      document.removeEventListener('visibilitychange', onHide);
-      window.removeEventListener('pagehide', onPageHide);
-    };
-  }, []);
-
-  // Actions on active plant & room-wide batch actions
-  /** Takes `amount` of a consumable from the NFT lots, or explains what is missing. */
-  const takeResource = (kind: 'water' | 'nutrient', amount: number): boolean => {
-    const next = spendResource(assets, kind, amount);
-    if (!next) {
-      showNotification(
-        kind === 'water'
-          ? tr('Sin agua suficiente ({v0} L necesarios, quedan {v1} L). Compra agua en el Grow Market.', { v0: amount.toFixed(1), v1: stockOf(assets, 'water').toFixed(1) })
-          : tr('Sin nutrientes suficientes ({amount} ml necesarios, quedan {v1} ml). Compra fertilizante en el Grow Market.', { amount, v1: Math.floor(stockOf(assets, 'nutrient')) }),
-        'burn'
-      );
-      return false;
-    }
-    setAssets(prev => spendResource(prev, kind, amount) ?? prev);
-    return true;
-  };
-
-  /** Lab cycle gate: the station licence NFT must be owned and the electricity is drawn from the stock. */
-  const takeStation = (stationId: string | undefined): boolean => {
-    if (!stationId) return true;
-    if (!ownsStation(assets, stationId)) {
-      showNotification(tr('Esta estación necesita su licencia NFT. Cómprala en el Grow Market → Licencias de laboratorio.'), 'info');
-      return false;
-    }
-    const kwh = USE.labKwhPerCycle[stationId] ?? 0;
-    if (kwh > 0) {
-      if (stockOf(assets, 'energy') + 1e-9 < kwh) {
-        showNotification(tr('Sin electricidad: el ciclo necesita {kwh} kWh y quedan {v1} kWh. Compra un Bono de Energía.', { kwh, v1: stockOf(assets, 'energy').toFixed(1) }), 'burn');
-        return false;
-      }
-      setAssets(prev => spendResource(prev, 'energy', kwh) ?? prev);
-    }
-    return true;
-  };
-
-  const waterPlant = () => {
-    if (!takeResource('water', USE.waterPerPlantManual)) return;
-    playWaterSound();
-    setIndoorPlants(prev => prev.map((p, idx) => {
-      if (idx !== selectedPlantIndex) return p;
-      return {
-        ...p,
-        soilMoisture: Math.min(100, p.soilMoisture + 55),
-        health: Math.min(100, p.health + 5),
-        lastWatered: Date.now()
-      };
-    }));
-    updateQuestProgress('quest_water_micro', 1);
-    reportEvent('water', 1);
-    addXp(20, tr('Riego y Calibración'));
-    showNotification(tr('Riego completado en Planta #{v0} (+20 XP)', { v0: selectedPlantIndex + 1 }), 'info');
-  };
-
-  const waterAllPlants = () => {
-    if (!takeResource('water', USE.waterPerPlantManual * indoorPlants.length)) return;
-    playWaterSound();
-    setIndoorPlants(prev => prev.map(p => ({
-      ...p,
-      soilMoisture: Math.min(100, p.soilMoisture + 55),
-      health: Math.min(100, p.health + 5),
-      lastWatered: Date.now()
-    })));
-    updateQuestProgress('quest_water_micro', 5);
-    reportEvent('water', indoorPlants.length);
-    addXp(60, tr('Riego Masivo Sala Indoor'));
-    showNotification(tr('¡Riego por goteo activado en las 3 filas (30 plantas de la sala)! (+60 XP)'), 'info');
-  };
-
-  const feedNutrients = () => {
-    if (!takeResource('nutrient', USE.nutrientPerPlant)) return;
-    playClickSound();
-    const feedBonus = bestFeedBonus(assets);
-    setIndoorPlants(prev => prev.map((p, idx) => {
-      if (idx !== selectedPlantIndex) return p;
-      return {
-        ...p,
-        feedBonus,
-        ecLevel: 2.1,
-        phLevel: 6.2,
-        health: Math.min(100, p.health + 10),
-        lastFed: Date.now()
-      };
-    }));
-    reportEvent('feed', 1);
-    addXp(25, tr('Nutrición N-P-K'));
-    showNotification(tr('Nutrición N-P-K optimizada en Planta #{v0} (+25 XP)', { v0: selectedPlantIndex + 1 }), 'info');
-  };
-
-  const feedAllPlants = () => {
-    if (!takeResource('nutrient', USE.nutrientPerPlant * indoorPlants.length)) return;
-    playClickSound();
-    const feedBonus = bestFeedBonus(assets);
-    setIndoorPlants(prev => prev.map(p => ({
-      ...p,
-      feedBonus,
-      ecLevel: 2.1,
-      phLevel: 6.2,
-      health: Math.min(100, p.health + 10),
-      lastFed: Date.now()
-    })));
-    reportEvent('feed', indoorPlants.length);
-    addXp(75, tr('Fertirriego Masivo'));
-    showNotification(tr('Fertirriego N-P-K aplicado a las 30 plantas de la sala (+75 XP)'), 'info');
-  };
-
-  const setTemperature = (temp: number) => {
-    setIndoorPlants(prev => prev.map((p, idx) => {
-      if (idx !== selectedPlantIndex) return p;
-      const vpd = calculateVpd(temp, p.relativeHumidity);
-      return { ...p, temperatureC: temp, vpdKpa: vpd };
-    }));
-  };
-
-  const setHumidity = (rh: number) => {
-    setIndoorPlants(prev => prev.map((p, idx) => {
-      if (idx !== selectedPlantIndex) return p;
-      const vpd = calculateVpd(p.temperatureC, rh);
-      return { ...p, relativeHumidity: rh, vpdKpa: vpd };
-    }));
-  };
-
-  const setPpfd = (ppfd: number) => {
-    // Light fixtures illuminate the entire indoor room canopy
-    setIndoorPlants(prev => prev.map(p => ({
-      ...p,
-      ppfdLightIntensity: ppfd,
-      luxLumens: Math.round(ppfd * 54)
-    })));
-  };
-
-  const setLightSchedule = (schedule: '18/6' | '12/12' | '24/0') => {
-    playClickSound();
-    setIndoorPlants(prev => prev.map(p => ({
-      ...p,
-      lightSchedule: schedule
-    })));
-    showNotification(tr('Ciclo fotoperiódico de la sala indoor ajustado a {schedule}', { schedule }), 'info');
-  };
-
-  const PHASE_NAMES: Record<string, string> = Object.fromEntries(PHASES.map(x => [x.id, x.label]));
-  const trainPlant = (technique: TechniqueId): boolean => {
-    const target = indoorPlants[selectedPlantIndex];
-    if (!target) return false;
-    const check = canTrain(target, technique, PHASE_NAMES);
-    if (!check.ok) { showNotification(check.message, 'info'); return false; }
-    const t = TECHNIQUE_BY_ID[technique];
-    playClickSound();
-    setIndoorPlants(prev => prev.map((p, idx) => (idx === selectedPlantIndex ? applyTechnique(p, technique) : p)));
-    addXp(t.xp, t.label);
-    showNotification(tr('{label} en la planta #{v1}: +{v2}% de rendimiento (+{xp} XP)', { label: t.label, v1: selectedPlantIndex + 1, v2: Math.round(t.yieldBonus * 100), xp: t.xp }), 'info');
-    return true;
-  };
-
-  const trainIndoorCanopy = () => {
-    const eligible = indoorPlants.filter(p => canTrain(p, 'scrog', PHASE_NAMES).ok);
-    if (eligible.length === 0) {
-      showNotification(tr('El SCROG solo se instala en el vegetativo y una vez por planta: ahora ninguna planta de la sala cumple.'), 'info');
-      return;
-    }
-    playClickSound();
-    setIndoorPlants(prev => prev.map(p => (canTrain(p, 'scrog', PHASE_NAMES).ok ? applyTechnique(p, 'scrog') : p)));
-    addXp(TECHNIQUE_BY_ID.scrog.xp + eligible.length * 5, tr('Entrenamiento Canopia SCROG'));
-    showNotification(tr('SCROG instalado en {length} planta{v1} en vegetativo (+{v2}% de rendimiento cada una)', { length: eligible.length, v1: eligible.length > 1 ? 's' : '', v2: Math.round(TECHNIQUE_BY_ID.scrog.yieldBonus * 100) }), 'info');
-  };
-
-  // Speed up growth by burning 25 $FLORA
-  const speedUpGrowth = (): boolean => {
-    const target = indoorPlants[selectedPlantIndex];
-    if (!target || isHarvestable(target)) { showNotification(tr('Esta planta ya terminó de crecer: solo falta cosecharla.'), 'info'); return false; }
-    if (boostWithinPhase(target.progressPercent, 35) - target.progressPercent < 1) {
-      showNotification(tr('Está al final de la fase de {v0}: entra en la siguiente y vuelve a acelerar. Nada se cobró.', { v0: phaseOf(target.stage)?.label ?? 'crecimiento' }), 'info');
-      return false;
-    }
-    if (floraBalance < 25) {
-      showNotification(tr('Saldo insuficiente: Necesitas al menos 25 $FLORA para acelerar el cultivo'), 'info');
-      return false;
-    }
-
-    recordBurnTransaction('BURN_SPEEDUP', 25, tr('Yield Bud Empire: Aceleración Fotónica Planta Individual (Quema de 25 $FLORA)'), ledgerRef.current);
-    growSpeedup('plant');
-    
-    setIndoorPlants(prev => prev.map((p, idx) => {
-      if (idx !== selectedPlantIndex) return p;
-      const nextProgress = boostWithinPhase(p.progressPercent, 35);
-      return { ...p, progressPercent: nextProgress, stage: stageFromProgress(nextProgress) };
-    }));
-
-    showNotification(tr('¡25 $FLORA quemados! Planta #{v0} avanza dentro de su fase actual (nunca se salta una).', { v0: selectedPlantIndex + 1 }), 'burn');
-    return true;
-  };
-
-  const speedUpIndoorRoom = (): boolean => {
-    if (!indoorPlants.some(p => !isHarvestable(p) && boostWithinPhase(p.progressPercent, 30) - p.progressPercent >= 1)) {
-      showNotification(tr('Ninguna planta puede avanzar ahora: las que están al final de su fase deben entrar en la siguiente. Nada se cobró.'), 'info');
-      return false;
-    }
-    if (floraBalance < 50) {
-      showNotification(tr('Saldo insuficiente: Necesitas al menos 50 $FLORA para acelerar la sala completa'), 'info');
-      return false;
-    }
-
-    recordBurnTransaction('BURN_SPEEDUP', 50, tr('Yield Bud Empire: Aceleración Fotónica Sala Indoor Completa (30 Plantas)'), ledgerRef.current);
-    growSpeedup('room');
-
-    setIndoorPlants(prev => prev.map(p => {
-      const nextProgress = boostWithinPhase(p.progressPercent, 30);
-      return { ...p, progressPercent: nextProgress, stage: stageFromProgress(nextProgress) };
-    }));
-
-    showNotification(tr('¡50 $FLORA quemados! Aceleración cuántica aplicada a las 3 filas (30 plantas de la sala)'), 'burn');
-    return true;
-  };
-
-  // Harvest single plant
-  /**
-   * A harvest enters the warehouse. With the server, it decides how much of it is real (it can't exceed what the account's facility
-   * and plots can grow: sim/harvestCap.ts) and its answer is what the player gets; without it (local demo) the grams are added here.
-   */
-  const addHarvest = (flower: number, trim: number, source: 'room' | 'plot') => {
-    if (flower <= 0 && trim <= 0) return;
-    if (!ledgerRef.current) {
-      setRawFlowerGrams(prev => prev + flower);
-      setTrimGrams(prev => prev + trim);
-      if (flower > 0) setMaterials(prev => addMaterials(prev, { fibra_cruda: Math.round(flower * FIBRE_PER_FLOWER_GRAM) }));
-      return;
-    }
-    void intent<{ flower: number; trim: number; fibre: number; clipped: boolean }>('harvest', { flower, trim, source }).then(r => {
-      if (r.ok) {
-        applySnapshot(r.snapshot);
-        if (r.result.clipped) showNotification(tr('Tu instalación todavía no da para tanta cosecha: se guardaron {v0} g de flor. Con el tiempo (o acelerando) vuelve a rendir.', { v0: Math.round(r.result.flower) }), 'info');
-      } else if (r.error !== 'offline') showNotification(reasonText(r.error) ?? tr('No se pudo guardar la cosecha ({error})', { error: r.error }), 'info');
-    });
-  };
-
-  /** with the server, a grow speed-up is its own intent: it charges and adds harvest allowance for the plants it pushes */
-  const growSpeedup = (scope: 'plant' | 'room') => {
-    if (!ledgerRef.current) return;
-    void intent('grow_speedup', { scope }).then(r => { if (r.ok) applySnapshot(r.snapshot); else if (r.error !== 'offline') { showNotification(reasonText(r.error) ?? tr('No se pudo acelerar ({error})', { error: r.error }), 'info'); void fetchState().then(x => x && applySnapshot(x)); } });
-  };
-
-  /** with the server, a lab batch is only real once it accepts it (it can't give more than the recipe's yield); if it refuses, the batch goes away */
-  const serverProcess = (batch: ProcessedProduct, inputGrams: number) => {
-    if (!ledgerRef.current) return;
-    pendingBatchesRef.current.add(batch.id);
-    void intent('process', { product: productKey(batch.type, batch.recipeId), grams: inputGrams, out: batch.quantityGrams }).then(r => {
-      pendingBatchesRef.current.delete(batch.id);
-      if (r.ok) { applySnapshot(r.snapshot); return; }
-      if (r.error === 'offline') return;
-      setProcessedProducts(prev => prev.filter(p => p.id !== batch.id));
-      showNotification(reasonText(r.error) ?? tr('El servidor no aceptó el lote ({error})', { error: r.error }), 'info');
-      void fetchState().then(x => x && applySnapshot(x));
-    });
-  };
-
-  const harvestPlant = () => {
-    const target = indoorPlants[selectedPlantIndex];
-    if (!target) return;
-    if (!isHarvestable(target)) {
-      const ph = phaseOf(target.stage);
-      const order = PHASES.map(x => x.label).join(' → ');
-      showNotification(tr('Aún no se puede cortar: la planta está en {v0}. Debe pasar por {order} y terminar la maduración.', { v0: ph?.label ?? 'crecimiento', order }), 'info');
-      return;
-    }
-    playHarvestChime();
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#10b981', '#34d399', '#f59e0b', '#a855f7']
-    });
-
-    const maleTarget = target.sex === 'male';
-    const flowerHarvested = maleTarget ? 0 : Math.round(target.estimatedDryYieldGrams * (target.health / 100) * (1 + staffMods.roomYield));
-    const trimHarvested = Math.round(flowerHarvested * 0.4);
-    const seedsGot = !maleTarget && target.pollinated ? giveSeeds(target.strain, SEEDS_PER_POLLINATED) : 0;
-
-    addHarvest(flowerHarvested, trimHarvested, 'room');
-
-    updateQuestProgress('quest_harvest_run', 1);
-    if (!maleTarget) reportEvent('harvest', 1);
-    addXp(180, tr('Cosecha F2P'));
-
-    showNotification(maleTarget ? tr('Planta #{v0} era macho: no da flor. La sala queda libre para una hembra.', { v0: selectedPlantIndex + 1 }) : tr('¡Cosecha exitosa! Planta #{v0}: +{flowerHarvested}g Flor Seca y +{trimHarvested}g Biomasa{v3} (+180 XP)', { v0: selectedPlantIndex + 1, flowerHarvested, trimHarvested, v3: seedsGot ? tr(' y 🌰 {seedsGot} semillas (fue polinizada)', { seedsGot }) : '' }), 'success');
-
-    // Reset plant to fresh seedling
-    setIndoorPlants(prev => prev.map((p, idx) => {
-      if (idx !== selectedPlantIndex) return p;
-      return {
-        ...p,
-        stage: 'seed' as GrowStage,
-        progressPercent: 0,
-        health: 98,
-        soilMoisture: 80,
-        plantedAt: Date.now(),
-        trichomeMaturity: { clear: 100, milky: 0, amber: 0 },
-        sex: 'female' as const,
-        pollinated: false
-      };
-    }));
-  };
-
-  // Harvest all ready plants in the room
-  const harvestAllReadyPlants = () => {
-    const readyIndices = indoorPlants
-      .map((p, idx) => ({ p, idx }))
-      .filter(({ p }) => isHarvestable(p));
-
-    if (readyIndices.length === 0) {
-      showNotification(tr('Aún no hay plantas listas para corte en la sala indoor.'), 'info');
-      return;
-    }
-
-    playHarvestChime();
-    confetti({
-      particleCount: 120,
-      spread: 80,
-      origin: { y: 0.6 },
-      colors: ['#10b981', '#34d399', '#f59e0b', '#a855f7', '#6366f1']
-    });
-
-    let totalFlower = 0;
-    let totalTrim = 0;
-    let totalSeeds = 0;
-    let maleCut = 0;
-    const readySet = new Set(readyIndices.map(r => r.idx));
-    readyIndices.forEach(({ p }) => {
-      if (p.sex === 'male') { maleCut++; return; }
-      const flower = Math.round(p.estimatedDryYieldGrams * (p.health / 100) * (1 + staffMods.roomYield));
-      totalFlower += flower;
-      totalTrim += Math.round(flower * 0.4);
-      if (p.pollinated) totalSeeds += giveSeeds(p.strain, SEEDS_PER_POLLINATED);
-    });
-
-    setIndoorPlants(prev => prev.map((p, idx) => readySet.has(idx) ? {
-      ...p,
-      stage: 'seed' as GrowStage,
-      progressPercent: 0,
-      health: 98,
-      soilMoisture: 80,
-      plantedAt: Date.now(),
-      trichomeMaturity: { clear: 100, milky: 0, amber: 0 },
-      sex: 'female' as const,
-      pollinated: false
-    } : p));
-
-    addHarvest(totalFlower, totalTrim, 'room');
-    updateQuestProgress('quest_harvest_run', readyIndices.length);
-    reportEvent('harvest', readyIndices.length - maleCut);
-    addXp(readyIndices.length * 150, tr('Cosecha Sala Indoor'));
-    showNotification(tr('¡Cosecha de Sala Completa! {length} plantas cosechadas: +{totalFlower}g Flor Seca y +{totalTrim}g Biomasa{v3}{v4}', { length: readyIndices.length, totalFlower, totalTrim, v3: totalSeeds ? tr(' · 🌰 +{totalSeeds} semillas', { totalSeeds }) : '', v4: maleCut ? tr(' · {maleCut} macho{v1} (sin flor)', { maleCut, v1: maleCut > 1 ? 's' : '' }) : '' }), 'success');
-  };
-
-  /** seeds of a strain go back to the seed bank inventory (pollinated females give seeds at harvest) */
-  const giveSeeds = (strain: Strain, n: number): number => {
-    const item = seedBank.find(s => s.strainTemplate.id === strain.id);
-    if (!item) return 0;
-    setSeedInventory(prev => ({ ...prev, [item.id]: (prev[item.id] || 0) + n }));
-    return n;
-  };
-
-  const plantNewSeed = (strain: Strain, seedType?: string) => {
-    playClickSound();
-    setIndoorPlants(prev => prev.map((p, idx) => {
-      if (idx !== selectedPlantIndex) return p;
-      return {
-        ...p,
-        strain,
-        plantedAt: Date.now(),
-        stage: 'seed' as GrowStage,
-        progressPercent: 0,
-        health: 100,
-        soilMoisture: 85,
-        temperatureC: 24.0,
-        relativeHumidity: 65,
-        vpdKpa: calculateVpd(24.0, 65),
-        ppfdLightIntensity: 450,
-        luxLumens: Math.round(450 * 54),
-        co2Ppm: co2Ppm || 700,
-        currentRoom,
-        lightSchedule: '18/6',
-        ecLevel: 1.4,
-        phLevel: 6.2,
-        nutrientBrand: selectedNutrientBrand,
-        autoWateringEnabled: autoWaterActive,
-        autoClimateEnabled: autoClimateActive,
-        trichomeMaturity: { clear: 100, milky: 0, amber: 0 },
-        lastWatered: Date.now(),
-        lastFed: Date.now(),
-        estimatedDryYieldGrams: Math.round(75 * strain.resinYieldMultiplier * currentFacility.environmentBonus),
-        sex: sexFor(`${p.id ?? idx}-${Date.now()}`, seedType),
-        pollinated: false,
-        pest: undefined
-      };
-    }));
-    reportEvent('plant', 1);
-    showNotification(tr('Semilla plantada en Planta #{v0}: {name}. ¡Inicia el monitoreo de microclima!', { v0: selectedPlantIndex + 1, name: strain.name }), 'info');
-  };
-
-  const plantIndoorBatch = (strain: Strain) => {
-    playClickSound();
-    const cap = currentFacility.capacityPlants;
-    setIndoorPlants(createInitialIndoorRoom(strain).slice(0, cap));
-    setDormantPlants([]);
-    setSelectedPlantIndex(0);
-    addXp(50, tr('Siembra Sala Completa'));
-    showNotification(tr('Sala resembrada con {cap} {v1} de {name}{v3}', { cap, v1: cap === 1 ? tr('planta') : tr('plantas'), name: strain.name, v3: cap < 30 ? tr(' (tu instalación da para {cap})', { cap }) : tr(' (3 filas en pares de 2)') }), 'info');
-  };
-
-  // --- SEED BANK & INVENTORY ---
-  const buySeed = (seedId: string, currency: 'FLORA' | 'SOL' = 'FLORA'): boolean => {
-    const seed = seedBank.find(s => s.id === seedId);
-    if (!seed) return false;
-
-    if (currency === 'FLORA') {
-      if (floraBalance < seed.priceFlora) {
-        showNotification(tr('Saldo insuficiente: Requiere {priceFlora} $FLORA', { priceFlora: seed.priceFlora }), 'info');
-        return false;
-      }
-      recordBurnTransaction('BURN_PATENT', seed.priceFlora, tr('Yield Bud Empire: Compra de Pack de Semillas ({name})', { name: seed.name }));
-    } else {
-      if (solBalance < seed.priceSol) {
-        showNotification(tr('Saldo insuficiente: Requiere {priceSol} SOL', { priceSol: seed.priceSol }), 'info');
-        return false;
-      }
-      setSolBalance(prev => Number(Math.max(0, prev - seed.priceSol).toFixed(3)));
-      const sig = generateSolanaSignature();
-      const newTx: SolanaTransaction = {
-        id: `tx-seed-${Date.now()}`,
-        signature: sig,
-        type: 'BURN_PATENT',
-        amountFlora: 0,
-        amountSol: seed.priceSol,
-        timestamp: Date.now(),
-        status: 'confirmed',
-        blockSlot: 248926000,
-        memo: `Yield Bud Empire: Adquisición de Semillas ${seed.name} con SOL`
-      };
-      setTransactions(prev => [newTx, ...prev]);
-    }
-
-    setSeedInventory(prev => ({
-      ...prev,
-      [seedId]: (prev[seedId] || 0) + seed.seedsPerPack
-    }));
-
-    playHarvestChime();
-    reportEvent('seedbuy', 1);
-    addXp(35, tr('Adquisición de Genética'));
-    showNotification(tr('¡Pack de {seedsPerPack}x semillas de {name} añadido a tu inventario! (+35 XP)', { seedsPerPack: seed.seedsPerPack, name: seed.name }), 'success');
-    return true;
-  };
-
-  const plantFromSeedBank = (seedId: string): boolean => {
-    const available = seedInventory[seedId] || 0;
-    if (available <= 0) {
-      showNotification(tr('No tienes semillas disponibles de este tipo. Adquiere más en el Banco de Semillas.'), 'info');
-      return false;
-    }
-
-    const seedItem = seedBank.find(s => s.id === seedId);
-    if (!seedItem) return false;
-
-    // Decrement inventory
-    setSeedInventory(prev => ({
-      ...prev,
-      [seedId]: Math.max(0, prev[seedId] - 1)
-    }));
-
-    // Plant new plant
-    plantNewSeed(seedItem.strainTemplate, seedItem.seedType);
-    return true;
-  };
-
-  // --- GROW SUPPLIES MARKET & HARDWARE ---
-  const buySupply = (supplyId: string, currency: 'FLORA' | 'SOL' = 'FLORA'): boolean => {
-    const supply = suppliesMarket.find(s => s.id === supplyId);
-    if (!supply) return false;
-    if (supply.installed) {
-      showNotification(tr('Este equipo ya está instalado en tu instalación.'), 'info');
-      return false;
-    }
-
-    if (currency === 'FLORA') {
-      if (floraBalance < supply.priceFlora) {
-        showNotification(tr('Saldo insuficiente: Requiere {priceFlora} $FLORA', { priceFlora: supply.priceFlora }), 'info');
-        return false;
-      }
-      recordBurnTransaction('BURN_REPAIR', supply.priceFlora, tr('Yield Bud Empire: Instalación de Equipo de Cultivo ({name})', { name: supply.name }));
-    } else {
-      if (solBalance < supply.priceSol) {
-        showNotification(tr('Saldo insuficiente: Requiere {priceSol} SOL', { priceSol: supply.priceSol }), 'info');
-        return false;
-      }
-      setSolBalance(prev => Number(Math.max(0, prev - supply.priceSol).toFixed(3)));
-      const sig = generateSolanaSignature();
-      const newTx: SolanaTransaction = {
-        id: `tx-supply-${Date.now()}`,
-        signature: sig,
-        type: 'BURN_REPAIR',
-        amountFlora: 0,
-        amountSol: supply.priceSol,
-        timestamp: Date.now(),
-        status: 'confirmed',
-        blockSlot: 248928000,
-        memo: `Yield Bud Empire: Compra de Hardware Botánico ${supply.name}`
-      };
-      setTransactions(prev => [newTx, ...prev]);
-    }
-
-    // Install supply
-    setSuppliesMarket(prev => prev.map(s => s.id === supplyId ? { ...s, installed: true } : s));
-
-    // Activate automatic capabilities if applicable
-    if (supply.category === 'irrigation') {
-      setAutoWaterActive(true);
-    } else if (supply.category === 'climate') {
-      setAutoClimateActive(true);
-    } else if (supply.category === 'co2') {
-      setCo2PpmState(1200);
-      setActivePlant(p => p ? { ...p, co2Ppm: 1200 } : null);
-    }
-
-    confetti({ particleCount: 60, spread: 70 });
-    addXp(60, tr('Mejora de Equipamiento'));
-    showNotification(tr('¡Hardware instalado: {name}! Automatización y sensores activos (+60 XP)', { name: supply.name }), 'success');
-    return true;
-  };
-
-  // --- NFT ASSETS: buy / install / repair ---
-  const SINGLE_SLOT = ['lamp', 'ac', 'irrigation'];
-
-  const buyAsset = (catalogId: string, currency: 'FLORA' | 'SOL' = 'FLORA', qty: number = 1): boolean => {
-    const item = CATALOG_BY_ID[catalogId];
-    if (!item) return false;
-    // only consumables come in stacks; equipment and licences are bought one at a time
-    const n = item.kind === 'consumable' ? Math.max(1, Math.min(20, Math.floor(qty) || 1)) : 1;
-    if (item.kind === 'license' && item.stationId && ownsStation(assets, item.stationId)) {
-      showNotification(tr('Ya tienes esta licencia.'), 'info');
-      return false;
-    }
-    const totalFlora = Math.round(item.priceFlora * n * (1 - staffMods.shopDiscount));
-    const totalSol = Number((item.priceSol * n * (1 - staffMods.shopDiscount)).toFixed(3));
-    const label = `${n > 1 ? `${n}× ` : ''}${item.name}`;
-    if (currency === 'FLORA') {
-      if (floraBalance < totalFlora) {
-        showNotification(tr('Saldo insuficiente: requiere {totalFlora} $FLORA', { totalFlora }), 'info');
-        return false;
-      }
-      recordBurnTransaction('BURN_PURCHASE', totalFlora, tr('Yield Bud Empire: Mint NFT {label} ({v1})', { label, v1: item.kind === 'consumable' ? 'consumible' : item.kind === 'license' ? 'licencia' : 'equipo' }));
-    } else {
-      if (solBalance < totalSol) {
-        showNotification(tr('Saldo insuficiente: requiere {totalSol} SOL', { totalSol }), 'info');
-        return false;
-      }
-      setSolBalance(prev => Number(Math.max(0, prev - totalSol).toFixed(3)));
-      setTransactions(prev => [{
-        id: `tx-asset-${Date.now()}`,
-        signature: generateSolanaSignature(),
-        type: 'BURN_PURCHASE',
-        amountFlora: 0,
-        amountSol: totalSol,
-        timestamp: Date.now(),
-        status: 'confirmed',
-        blockSlot: 248928000 + Math.floor(Math.random() * 5000),
-        memo: `Yield Bud Empire: Mint NFT ${label}`
-      }, ...prev.slice(0, 24)]);
-    }
-    // equipment goes straight into an empty slot (lamp / AC / irrigation); racks like solar, CO₂ and meters always install
-    const slotTaken = assets.some(a => a.equipped && CATALOG_BY_ID[a.catalogId]?.category === item.category);
-    const equip = item.kind === 'equipment' && (!SINGLE_SLOT.includes(item.category) || !slotTaken);
-    setAssets(prev => [...prev, ...Array.from({ length: n }, () => newAsset(catalogId, { equipped: equip || undefined }))]);
-    if (equip && item.category === 'irrigation') setAutoWaterActive(true);
-    if (equip && item.category === 'ac') setAutoClimateActive(true);
-    confetti({ particleCount: 40, spread: 60 });
-    reportEvent('buy', 1);
-    addXp(item.tier * 15 * n, tr('Compra de Equipamiento'));
-    showNotification(tr('NFT minteado: {label}{v1}{v2}', { label, v1: equip ? tr(' — instalado') : '', v2: item.kind === 'consumable' ? ` (+${(item.amount ?? 0) * n} ${item.unit})` : '' }), 'success');
-    return true;
-  };
-
-  const setAssetEquipped = (assetId: string, equipped: boolean) => {
-    playClickSound();
-    setAssets(prev => {
-      const target = prev.find(a => a.id === assetId);
-      const item = target && CATALOG_BY_ID[target.catalogId];
-      if (!target || item?.kind !== 'equipment') return prev;
-      return prev.map(a => {
-        if (a.id === assetId) return { ...a, equipped };
-        // one lamp / AC / irrigation system at a time
-        if (equipped && SINGLE_SLOT.includes(item.category) && CATALOG_BY_ID[a.catalogId]?.category === item.category) return { ...a, equipped: false };
-        return a;
-      });
-    });
-    const item = CATALOG_BY_ID[assets.find(a => a.id === assetId)?.catalogId ?? ''];
-    if (equipped && item?.category === 'irrigation') setAutoWaterActive(true);
-    if (equipped && item?.category === 'ac') setAutoClimateActive(true);
-  };
-
-  const repairAsset = (assetId: string): boolean => {
-    const asset = assets.find(a => a.id === assetId);
-    const item = asset && CATALOG_BY_ID[asset.catalogId];
-    if (!asset || !item || asset.durability === undefined) return false;
-    if (asset.durability >= 99) {
-      showNotification(tr('Este equipo está como nuevo.'), 'info');
-      return false;
-    }
-    const cost = repairCostOf(asset);
-    if (floraBalance < cost) {
-      showNotification(tr('Saldo insuficiente: la reparación cuesta {cost} $FLORA', { cost }), 'info');
-      return false;
-    }
-    recordBurnTransaction('BURN_REPAIR', cost, tr('Yield Bud Empire: Reparación de {name} (quema permanente)', { name: item.name }));
-    setAssets(prev => prev.map(a => a.id === assetId ? { ...a, durability: 100 } : a));
-    showNotification(tr('{name} reparado al 100 % ({cost} $FLORA quemados)', { name: item.name, cost }), 'success');
-    return true;
-  };
-
-  // --- PLAGUES, GARDENER RATING AND CLEANING ---
-  const treatPests = (scope: 'selected' | 'all', plotId?: string) => {
-    if (plotId) { treatPlot(plotId); return; }
-    const targets = indoorPlants.map((p, i) => ({ p, i })).filter(({ p, i }) => p.pest && (scope === 'all' || i === selectedPlantIndex));
-    if (targets.length === 0) {
-      showNotification(scope === 'selected' ? tr('Esta planta no tiene plagas.') : tr('No hay plagas que tratar. ¡Bien cuidado!'), 'info');
-      return;
-    }
-    // dry-run on a copy of the stock: a plant is treated only if there is enough product for it
-    let cur = assets;
-    const jobs: Array<{ i: number; kind: PestKind; guard: number }> = [];
-    const missing = new Set<string>();
-    for (const { p, i } of targets) {
-      const r = spendPest(cur, p.pest!.kind, USE.pestPerPlant);
-      if (r.spent + 1e-9 >= USE.pestPerPlant) { cur = r.assets; jobs.push({ i, kind: p.pest!.kind, guard: r.guardHours || 48 }); }
-      else missing.add(PEST_INFO[p.pest!.kind].cure);
-    }
-    if (jobs.length === 0) {
-      showNotification(tr('No tienes tratamiento: necesitas {v0}. Cómpralo en el Grow Market → Control de plagas.', { v0: [...missing].join(' / ') }), 'burn');
-      return;
-    }
-    setAssets(prev => jobs.reduce((acc, j) => spendPest(acc, j.kind, USE.pestPerPlant).assets, prev));
-    setIndoorPlants(prev => prev.map((p, i) => {
-      const j = jobs.find(x => x.i === i);
-      return j && p.pest ? { ...p, pest: undefined, guard: j.guard, health: Math.min(100, p.health + 5) } : p;
-    }));
-    playClickSound();
-    addXp(15 * jobs.length, tr('Control de plagas'));
-    showNotification(tr('🧴 {length} planta{v1} tratada{v1} y protegida{v1} {v3} h{v4}.', { length: jobs.length, v1: jobs.length > 1 ? 's' : '', v3: Math.max(...jobs.map(j => j.guard)), v4: missing.size ? tr('. Faltó: {v0}', { v0: [...missing].join(' / ') }) : '' }), missing.size ? 'info' : 'success');
-  };
-
-  const cleanRoom = (): boolean => {
-    const since = (Date.now() - care.lastCleanAt) / 3600000;
-    if (since < USE.cleanCooldownHours) {
-      const left = USE.cleanCooldownHours - since;
-      showNotification(tr('La sala ya está limpia. Podrás volver a limpiar en {v0}.', { v0: left >= 1 ? tr('{v0} h {v1} min', { v0: Math.floor(left), v1: Math.round((left % 1) * 60) }) : `${Math.max(1, Math.round(left * 60))} min` }), 'info');
-      return false;
-    }
-    playClickSound();
-    setCare({ rating: Math.min(100, care.rating + USE.cleanGain), lastCleanAt: Date.now() });
-    addXp(20, tr('Limpieza de la sala'));
-    showNotification(tr('🧹 Sala limpia: calificación de jardinero +{v0}.', { v0: Math.min(USE.cleanGain, 100 - Math.round(care.rating)) }), 'success');
-    return true;
-  };
-
-  const recycleGarbage = () => {
-    const trash = garbageOf(assets);
-    if (trash.length === 0) {
-      showNotification(tr('No hay basura que reciclar.'), 'info');
-      return;
-    }
-    const ids = new Set(trash.map(a => a.id));
-    playClickSound();
-    setAssets(prev => prev.filter(a => !ids.has(a.id)));
-    setCare(c => ({ ...c, rating: Math.min(100, c.rating + trash.length * USE.recycleGain) }));
-    showNotification(tr('♻️ Reciclaste {length} objeto{v1} (frascos vacíos y equipo averiado): +{v2} de calificación.', { length: trash.length, v1: trash.length > 1 ? 's' : '', v2: trash.length * USE.recycleGain }), 'success');
-  };
-
-  // --- LAND PLOTS (the planet) ---
-  const plotsForSale = (region: RegionId): { offers: PlotOffer[]; left: number } => {
-    // with the server, the plots for sale are the ones nobody in the world owns yet (its answer); without it, the local formula
-    if (ledgerOn && srvOffers?.[region]) {
-      const o = srvOffers[region];
-      return { offers: o.ids.map(id => plotOffer(region, Number(id.split('-').pop()))), left: o.left };
-    }
-    return landOffers(region, new Set(plots.map(pl => pl.id)));
-  };
-
-  const buyPlot = async (offerId: string, currency: 'FLORA' | 'SOL' = 'FLORA'): Promise<boolean> => {
-    if (ledgerRef.current && currency === 'FLORA') {
-      const r = await intent<{ plot: { name: string; landRating: number; region: RegionId; priceFlora?: number } }>('buy_plot', { offerId });
-      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo comprar la tierra ({error})', { error: r.error }), 'info'); void fetchState().then(x => x && applySnapshot(x)); return false; }
-      applySnapshot(r.snapshot);
-      const offer = plotOffer(r.result.plot.region, Number(offerId.split('-').pop()));
-      recordBurnTransaction('BURN_PURCHASE', offer.priceFlora, tr('Yield Bud Empire Planeta: Mint NFT parcela {name}', { name: offer.name }), true);
-      confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
-      reportEvent('plot', 1);
-      addXp(80, tr('Compra de parcela'));
-      showNotification(tr('🌎 Parcela minteada: {name} en {v1} · nota {landRating}/10 · 36 plantas', { name: offer.name, v1: REGION_BY_ID[offer.region].name, landRating: offer.landRating }), 'success');
-      return true;
-    }
-    const m = /^plot-([a-z_]+)-(\d+)$/.exec(offerId);
-    const region = m?.[1] as RegionId | undefined;
-    if (!m || !region || !REGION_BY_ID[region]) return false;
-    const offer = plotOffer(region, Number(m[2]));
-    if (!plotsForSale(region).offers.some(o => o.id === offer.id)) {
-      showNotification(tr('Esa parcela ya no está a la venta.'), 'info');
-      return false;
-    }
-    const r = REGION_BY_ID[region];
-    if (currency === 'FLORA') {
-      if (floraBalance < offer.priceFlora) {
-        showNotification(tr('Saldo insuficiente: la parcela {name} cuesta {priceFlora} $FLORA', { name: offer.name, priceFlora: offer.priceFlora }), 'info');
-        return false;
-      }
-      recordBurnTransaction('BURN_PURCHASE', offer.priceFlora, tr('Yield Bud Empire Planeta: Mint NFT parcela {name} ({v1}, nota {landRating}/10)', { name: offer.name, v1: r.name, landRating: offer.landRating }));
-    } else {
-      if (solBalance < offer.priceSol) {
-        showNotification(tr('Saldo insuficiente: la parcela cuesta {priceSol} SOL', { priceSol: offer.priceSol }), 'info');
-        return false;
-      }
-      setSolBalance(prev => Number(Math.max(0, prev - offer.priceSol).toFixed(3)));
-      setTransactions(prev => [{
-        id: `tx-plot-${Date.now()}`, signature: generateSolanaSignature(), type: 'BURN_PURCHASE', amountFlora: 0, amountSol: offer.priceSol,
-        timestamp: Date.now(), status: 'confirmed', blockSlot: 248928000 + Math.floor(Math.random() * 5000), memo: `Yield Bud Empire Planeta: Mint NFT parcela ${offer.name}`
-      }, ...prev.slice(0, 24)]);
-    }
-    setPlots(prev => [...prev, { id: offer.id, region, index: offer.index, name: offer.name, ratings: offer.ratings, landRating: offer.landRating, mintedAt: Date.now(), plants: [] }]);
-    confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
-    reportEvent('plot', 1);
-    addXp(80, tr('Compra de parcela'));
-    showNotification(tr('🌎 Parcela minteada: {name} en {v1} · nota {landRating}/10 · 36 plantas', { name: offer.name, v1: r.name, landRating: offer.landRating }), 'success');
-    return true;
-  };
-
-  const plantPlot = (plotId: string, seedId: string, count?: number): boolean => {
-    const plot = plots.find(pl => pl.id === plotId);
-    const seedItem = seedBank.find(s => s.id === seedId);
-    if (!plot || !seedItem) return false;
-    const have = seedInventory[seedId] || 0;
-    const taken = new Set(plot.plants.map(p => p.slotIndex));
-    const empty = Array.from({ length: PLOT_SIZE }, (_, i) => i).filter(i => !taken.has(i));
-    const n = Math.min(count ?? empty.length, have, empty.length);
-    if (n <= 0) {
-      showNotification(empty.length === 0 ? tr('La parcela está llena: cosecha antes de sembrar.') : tr('No tienes semillas de esa genética. Cómpralas en el Banco de Semillas.'), 'info');
-      return false;
-    }
-    const strain = seedItem.strainTemplate;
-    const ter = terroirOf(strain.origin, plot.region, plot.ratings);
-    const now = Date.now();
-    const yieldEach = Math.round(seedItem.yieldGramsPerPlant * 0.32 * ter.yield);
-    const fresh: PlantInGrow[] = empty.slice(0, n).map(slot => ({
-      id: `${plot.id}-s${slot}-${now}`, slotIndex: slot, siteId: plot.id, strain, plantedAt: now, stage: 'seed' as GrowStage, progressPercent: 0, health: 100, soilMoisture: 80,
-      temperatureC: 24, relativeHumidity: 60, vpdKpa: calculateVpd(24, 60), ppfdLightIntensity: 900, luxLumens: 900 * 54, co2Ppm: 420, currentRoom: 'vegetative', lightSchedule: '24/0',
-      ecLevel: 1.6, phLevel: 6.2, nutrientBrand: selectedNutrientBrand, trichomeMaturity: { clear: 100, milky: 0, amber: 0 }, lastWatered: now, lastFed: now, estimatedDryYieldGrams: yieldEach,
-      sex: sexFor(`${plot.id}-s${slot}-${now}`, seedItem.seedType), pollinated: false,
-    }));
-    setSeedInventory(prev => ({ ...prev, [seedId]: Math.max(0, (prev[seedId] || 0) - n) }));
-    setPlots(prev => prev.map(pl => pl.id === plotId ? { ...pl, plants: [...pl.plants, ...fresh] } : pl));
-    playClickSound();
-    reportEvent('plant', n);
-    addXp(n * 5, tr('Siembra en parcela'));
-    showNotification(tr('🌱 {n} semilla{v1} de {name} en {v3}: {label}. ~{yieldEach} g por planta.', { n, v1: n > 1 ? 's' : '', name: strain.name, v3: plot.name, label: ter.label, yieldEach }), ter.tone === 'down' ? 'info' : 'success');
-    return true;
-  };
-
-  const waterPlot = (plotId: string, all = false) => {
-    const plot = plots.find(pl => pl.id === plotId);
-    if (!plot) return;
-    const targets = plot.plants.filter(p => p.stage !== 'ready_harvest' && (all || p.soilMoisture < 60));
-    if (targets.length === 0) {
-      showNotification(plot.plants.length ? tr('Ninguna planta necesita riego ahora (todas ≥ 60 % de humedad).') : tr('La parcela está vacía.'), 'info');
-      return;
-    }
-    if (!takeResource('water', USE.waterPerPlantManual * targets.length)) return;
-    const slots = new Set(targets.map(p => p.slotIndex));
-    playWaterSound();
-    setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.map(p => slots.has(p.slotIndex) ? { ...p, soilMoisture: Math.min(100, p.soilMoisture + 55), health: Math.min(100, p.health + 3), lastWatered: Date.now() } : p) }));
-    reportEvent('water', targets.length);
-    addXp(targets.length * 3, tr('Riego de parcela'));
-    showNotification(tr('💧 {length} planta{v1} regada{v1} en {name} ({v3} L)', { length: targets.length, v1: targets.length > 1 ? 's' : '', name: plot.name, v3: (USE.waterPerPlantManual * targets.length).toFixed(1) }), 'info');
-  };
-
-  const feedPlot = (plotId: string) => {
-    const plot = plots.find(pl => pl.id === plotId);
-    if (!plot) return;
-    const targets = plot.plants.filter(p => p.stage !== 'ready_harvest' && p.ecLevel < 1.6);
-    if (targets.length === 0) {
-      showNotification(tr('Ninguna planta necesita abono ahora.'), 'info');
-      return;
-    }
-    if (!takeResource('nutrient', USE.nutrientPerPlant * targets.length)) return;
-    const slots = new Set(targets.map(p => p.slotIndex));
-    const feedBonus = bestFeedBonus(assets);
-    playClickSound();
-    setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.map(p => slots.has(p.slotIndex) ? { ...p, ecLevel: 2.1, phLevel: 6.2, feedBonus, health: Math.min(100, p.health + 5), lastFed: Date.now() } : p) }));
-    reportEvent('feed', targets.length);
-    addXp(targets.length * 4, tr('Abonado de parcela'));
-    showNotification(tr('🧪 {length} planta{v1} abonada{v1} en {name}', { length: targets.length, v1: targets.length > 1 ? 's' : '', name: plot.name }), 'info');
-  };
-
-  const treatPlot = (plotId: string) => {
-    const plot = plots.find(pl => pl.id === plotId);
-    if (!plot) return;
-    const targets = plot.plants.filter(p => p.pest);
-    if (targets.length === 0) {
-      showNotification(tr('No hay plagas en esta parcela.'), 'info');
-      return;
-    }
-    let cur = assets;
-    const jobs: Array<{ slot: number; kind: PestKind; guard: number }> = [];
-    const missing = new Set<string>();
-    for (const p of targets) {
-      const r = spendPest(cur, p.pest!.kind, USE.pestPerPlant);
-      if (r.spent + 1e-9 >= USE.pestPerPlant) { cur = r.assets; jobs.push({ slot: p.slotIndex ?? -1, kind: p.pest!.kind, guard: r.guardHours || 48 }); }
-      else missing.add(PEST_INFO[p.pest!.kind].cure);
-    }
-    if (jobs.length === 0) {
-      showNotification(tr('No tienes tratamiento: necesitas {v0}. Cómpralo en el Grow Market → Control de plagas.', { v0: [...missing].join(' / ') }), 'burn');
-      return;
-    }
-    setAssets(prev => jobs.reduce((acc, j) => spendPest(acc, j.kind, USE.pestPerPlant).assets, prev));
-    setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.map(p => { const j = jobs.find(x => x.slot === p.slotIndex); return j && p.pest ? { ...p, pest: undefined, guard: j.guard, health: Math.min(100, p.health + 5) } : p; }) }));
-    playClickSound();
-    addXp(15 * jobs.length, tr('Control de plagas'));
-    showNotification(tr('🧴 {length} planta{v1} tratada{v1} en {name}{v3}.', { length: jobs.length, v1: jobs.length > 1 ? 's' : '', name: plot.name, v3: missing.size ? tr('. Faltó: {v0}', { v0: [...missing].join(' / ') }) : '' }), missing.size ? 'info' : 'success');
-  };
-
-  const harvestPlot = (plotId: string) => {
-    const plot = plots.find(pl => pl.id === plotId);
-    if (!plot) return;
-    const ready = plot.plants.filter(p => p.stage === 'ready_harvest');
-    if (ready.length === 0) {
-      showNotification(tr('Aún no hay plantas listas para cosechar en esta parcela.'), 'info');
-      return;
-    }
-    let flower = 0, trim = 0, seeds = 0, maleCut = 0;
-    for (const p of ready) {
-      if (isMale(p)) { maleCut++; continue; }
-      const f = Math.round(p.estimatedDryYieldGrams * (p.health / 100) * (1 + staffMods.plotYield));
-      flower += f;
-      trim += Math.round(f * 0.4);
-      if (p.pollinated) seeds += giveSeeds(p.strain, SEEDS_PER_POLLINATED);
-    }
-    setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.filter(p => p.stage !== 'ready_harvest') }));
-    addHarvest(flower, trim, 'plot');
-    updateQuestProgress('quest_harvest_run', ready.length);
-    reportEvent('harvest', ready.length - maleCut);
-    addXp(ready.length * 180, tr('Cosecha en parcela'));
-    playHarvestChime();
-    confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 }, colors: ['#10b981', '#34d399', '#f59e0b', '#a855f7', '#6366f1'] });
-    showNotification(tr('🌾 Cosecha en {name}: {length} plantas → +{flower} g de flor y +{trim} g de biomasa{v4}{v5}. La parcela queda libre para sembrar.', { name: plot.name, length: ready.length, flower, trim, v4: seeds ? tr(' · 🌰 +{seeds} semillas', { seeds }) : '', v5: maleCut ? tr(' · {maleCut} macho{v1} sin flor', { maleCut, v1: maleCut > 1 ? 's' : '' }) : '' }), 'success');
-  };
-
-  const plotEta = (plot: OwnedPlot, plant: PlantInGrow) => plotEtaSeconds(plant, plot.region, plot.ratings);
-
-  // --- PROFILE: chests that mint seasonal NFT avatars ---
-  const openChest = async (id: ChestId, currency: 'FLORA' | 'SOL' = 'FLORA'): Promise<{ design: AvatarDesign; isNew: boolean; refund: number; owned: OwnedAvatar } | null> => {
-    const chest = CHESTS[id];
-    if (ledgerRef.current && currency === 'FLORA') {
-      const r = await intent<{ designId: string; isNew: boolean; refund: number; owned: { designId: string; count: number; firstAt: number; serial: number } }>('avatar_chest', { chestId: id });
-      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo abrir el cofre ({error})', { error: r.error }), 'info'); return null; }
-      applySnapshot(r.snapshot);
-      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, tr('Yield Bud Empire: {name} (mint de avatar NFT)', { name: chest.name }), true);
-      const design = DESIGN_BY_ID[r.result.designId];
-      playLevelUpSound();
-      addXp(design.rarity === 'legendary' ? 200 : design.rarity === 'epic' ? 80 : 30, tr('Cofre de avatar'));
-      return { design, isNew: r.result.isNew, refund: r.result.refund, owned: { ...r.result.owned, mint: mintAddressFor(`av-${design.id}`) } };
-    }
-    if (currency === 'FLORA') {
-      if (floraBalance < chest.priceFlora) { showNotification(tr('Saldo insuficiente: el {name} cuesta {priceFlora} $FLORA', { name: chest.name, priceFlora: chest.priceFlora }), 'info'); return null; }
-      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, tr('Yield Bud Empire: {name} (mint de avatar NFT)', { name: chest.name }));
-    } else {
-      if (solBalance < chest.priceSol) { showNotification(tr('Saldo insuficiente: el {name} cuesta {priceSol} SOL', { name: chest.name, priceSol: chest.priceSol }), 'info'); return null; }
-      setSolBalance(prev => Number(Math.max(0, prev - chest.priceSol).toFixed(3)));
-      setTransactions(prev => [{ id: `tx-chest-${Date.now()}`, signature: generateSolanaSignature(), type: 'BURN_PURCHASE', amountFlora: 0, amountSol: chest.priceSol, timestamp: Date.now(), status: 'confirmed', blockSlot: 248928000 + Math.floor(Math.random() * 5000), memo: `Yield Bud Empire: ${chest.name}` }, ...prev.slice(0, 24)]);
-    }
-    // fair randomness: the browser's cryptographic generator, not Math.random
-    const rng = () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
-    const { design, pity } = rollChest(chest, chestPity[id], seasonOf(new Date()), rng);
-    setChestPity(prev => ({ ...prev, [id]: pity }));
-    const have = avatars.find(a => a.designId === design.id);
-    const refund = have ? DUPLICATE_REFUND[design.rarity] : 0;
-    const owned: OwnedAvatar = have
-      ? { ...have, count: have.count + 1 }
-      : { designId: design.id, count: 1, firstAt: Date.now(), mint: generateSolanaSignature().slice(0, 44), serial: 1000 + Math.floor(rng() * 9000) };
-    setAvatars(prev => (have ? prev.map(a => (a.designId === design.id ? owned : a)) : [...prev, owned]));
-    if (refund) setFloraBalance(prev => prev + refund);
-    playLevelUpSound();
-    addXp(design.rarity === 'legendary' ? 200 : design.rarity === 'epic' ? 80 : 30, tr('Cofre de avatar'));
-    return { design, isNew: !have, refund, owned };
-  };
-
-  const equipAvatar = (designId: string | null) => {
-    if (designId && !avatars.some(a => a.designId === designId)) return;
-    updateUserProfile({ avatarNft: designId ?? undefined });
-    showNotification(designId ? tr('Avatar equipado: {v0}', { v0: DESIGN_BY_ID[designId]?.name ?? designId }) : tr('Avatar NFT desequipado.'), 'success');
-  };
-
-  const removeMales = (plotId?: string) => {
-    if (plotId) {
-      const plot = plots.find(pl => pl.id === plotId);
-      const males = plot?.plants.filter(p => isMale(p) && sexRevealed(p)) ?? [];
-      if (!plot || males.length === 0) { showNotification(tr('No hay machos por quitar en esta parcela.'), 'info'); return; }
-      const slots = new Set(males.map(p => p.slotIndex));
-      setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.filter(p => !slots.has(p.slotIndex)) }));
-      playClickSound();
-      addXp(males.length * 10, tr('Machos retirados'));
-      showNotification(tr('♂ {length} macho{v1} arrancado{v2} de {name}. Las hembras están a salvo de la polinización.', { length: males.length, v1: males.length > 1 ? 's' : '', v2: males.length > 1 ? 's' : '', name: plot.name }), 'success');
-      return;
-    }
-    const idx = indoorPlants.map((p, i) => ({ p, i })).filter(({ p }) => isMale(p) && sexRevealed(p)).map(x => x.i);
-    if (idx.length === 0) { showNotification(tr('No hay machos por quitar en la sala.'), 'info'); return; }
-    const set = new Set(idx);
-    setIndoorPlants(prev => prev.map((p, i) => set.has(i) ? { ...p, stage: 'seed' as GrowStage, progressPercent: 0, health: 98, soilMoisture: 80, plantedAt: Date.now(), trichomeMaturity: { clear: 100, milky: 0, amber: 0 }, sex: 'female' as const, pollinated: false, pest: undefined } : p));
-    playClickSound();
-    addXp(idx.length * 10, tr('Machos retirados'));
-    showNotification(tr('♂ {length} macho{v1} retirado{v2} de la sala; su hueco vuelve a empezar como hembra.', { length: idx.length, v1: idx.length > 1 ? 's' : '', v2: idx.length > 1 ? 's' : '' }), 'success');
-  };
-
-  const keepMaleAsFather = (plotId: string, slot: number) => {
-    const plot = plots.find(pl => pl.id === plotId);
-    const plant = plot?.plants.find(p => p.slotIndex === slot);
-    if (!plot || !plant || !isMale(plant)) return;
-    const donor: MotherFatherPlant = {
-      id: `donor_${Date.now()}`,
-      role: 'Padre (Donante de Polen)',
-      strain: plant.strain,
-      name: tr('Padre Donante {name}', { name: plant.strain.name }),
-      health: plant.health,
-      clonesCutCount: 0,
-      pollenCollectedMg: 250,
-      savedAt: Date.now(),
-      traits: [`THC: ${plant.strain.thcPercentage}%`, tr('Terpeno Dominante: {v0}', { v0: Object.keys(plant.strain.terpenes)[0] }), plant.strain.origin ? tr('Landrace de {name}', { name: REGION_BY_ID[plant.strain.origin].name }) : tr('Híbrido adaptable')],
-    };
-    setMothersFathers(prev => [donor, ...prev]);
-    setPlots(prev => prev.map(pl => pl.id !== plotId ? pl : { ...pl, plants: pl.plants.filter(p => p.slotIndex !== slot) }));
-    playLevelUpSound();
-    addXp(75, tr('Conservación Genética'));
-    showNotification(tr('♂ {name} guardado en el Santuario de Madres & Padres: ya puedes cruzarlo en Genética (+75 XP).', { name: donor.name }), 'success');
-  };
-
-
+  /* ── derived numbers ── */
   const careInfo = {
-    rating: Math.round(care.rating),
-    cleanReadyInHours: Math.max(0, USE.cleanCooldownHours - (Date.now() - care.lastCleanAt) / 3600000),
+    rating: Math.round(s.care.rating),
+    cleanReadyInHours: Math.max(0, USE.cleanCooldownHours - (now - s.care.lastCleanAt) / 3600000),
     pests: pestCount(indoorPlants),
     plotPests: plots.reduce((n, pl) => n + pestCount(pl.plants), 0),
     males: maleCount(indoorPlants),
     plotMales: plots.reduce((n, pl) => n + maleCount(pl.plants), 0),
-    pollinated: indoorPlants.filter(p => p.pollinated).length + plots.reduce((n, pl) => n + pl.plants.filter(p => p.pollinated).length, 0),
-    garbage: garbageOf(assets).length,
-    gardenerLevel: gardenerLevelOf(assets),
-    gardenerDays: stockOf(assets, 'service'),
+    pollinated: indoorPlants.filter((p) => p.pollinated).length + plots.reduce((n, pl) => n + pl.plants.filter((p) => p.pollinated).length, 0),
+    garbage: garbageOf(s.assets).length,
+    gardenerLevel: gardenerLevelOf(s.assets),
+    gardenerDays: stockOf(s.assets, 'service'),
   };
-
   const resources = (() => {
-    const flags = { autoClimate: simEnvRef.current.autoClimate, autoWater: simEnvRef.current.autoWater };
-    const { kwhPerDay, solarKwhPerDay } = powerDraw(equipStats, indoorPlants[0], flags);
-    const energy = stockOf(assets, 'energy');
+    const { kwhPerDay, solarKwhPerDay } = powerDraw(equipStats, indoorPlants[0], { autoClimate: simEnv.autoClimate, autoWater: simEnv.autoWater });
+    const energy = stockOf(s.assets, 'energy');
     const net = kwhPerDay - solarKwhPerDay;
-    return { water: stockOf(assets, 'water'), nutrient: stockOf(assets, 'nutrient'), energy, kwhPerDay, solarKwhPerDay, energyDays: net <= 0.001 ? Infinity : energy / net };
+    return { water: stockOf(s.assets, 'water'), nutrient: stockOf(s.assets, 'nutrient'), energy, kwhPerDay, solarKwhPerDay, energyDays: net <= 0.001 ? Infinity : energy / net };
   })();
-
-  // --- NUTRIENT DOSING & BRAND FEEDING TABLES ---
-  /** Apply a prepared solution: spends abono + water from the warehouse and sets the plant's measured EC / pH / growth bonus. */
-  const applyFertigation = (f: FertigationInput): boolean => {
-    if (indoorPlants.length === 0) { showNotification(tr('Siembra una planta para aplicarle la solución'), 'info'); return false; }
-    const n = f.scope === 'all' ? indoorPlants.length : 1;
-    if (!takeResource('nutrient', USE.nutrientPerPlant * n)) return false;
-    playWaterSound();
-    // un abono NFT premium en la bodega suma la mitad de su bonus por encima de la calidad de la mezcla
-    const feedBonus = Math.min(1.15, f.feedBonus * (1 + (bestFeedBonus(assets) - 1) * 0.5));
-    const now = Date.now();
-    setIndoorPlants(prev => prev.map((p, idx) => (f.scope === 'all' || idx === selectedPlantIndex)
-      ? { ...p, feedBonus, ecLevel: f.ec, phLevel: f.ph, health: Math.max(30, Math.min(100, p.health + f.healthDelta)), lastFed: now, nutrientBrand: f.brandName ?? p.nutrientBrand }
-      : p));
-    const xp = Math.round(10 + f.score / 5);
-    reportEvent('fertigate', 1);
-    addXp(xp, tr('Fertirriego con receta propia'));
-    showNotification(tr('{label}: EC {ec} mS/cm · pH {ph} · calidad {score}/100 (+{xp} XP)', { label: f.label, ec: f.ec, ph: f.ph, score: f.score, xp }), f.score >= 55 ? 'success' : 'info');
-    return true;
-  };
-
-  /** Tabla de una marca aplicada con la ciencia real: proporciones de la tabla ajustadas a su EC objetivo con agua de grifo blando y pH corregido. */
-  const applyNutrientStage = (stageIndex: number) => {
-    if (!activePlant) return;
-    const brand = nutrientBrands.find(b => b.id === selectedNutrientBrand);
-    const stage = brand?.stages[stageIndex];
-    if (!brand || !stage) return;
-    const mid = (s: string) => { const v = (s.match(/[\d.]+/g) ?? []).map(Number); return v.length ? v.reduce((a, x) => a + x, 0) / v.length : NaN; };
-    const ecMid = mid(stage.targetEc) || 1.8;
-    const phMid = mid(stage.targetPh) || 6.2;
-    const strength = strengthForEc(stage.dosageMlPerLiter, 'soft', ecMid);
-    const base: Mix = { waterId: 'soft', liters: 1, doses: dosesFromTable(stage.dosageMlPerLiter, strength) };
-    const corr = phCorrection(base, phMid, 'acid_nitric');
-    if (corr.ingredient) base.doses[corr.ingredient] = corr.dose;
-    const sol = solveMix(base);
-    const d = diagnoseMix(sol, stageOfProgress(activePlant.progressPercent), 'soil');
-    const e = feedEffect(sol, d);
-    applyFertigation({ ...e, score: d.score, label: `${brand.name} · ${stage.stageName}`, scope: 'one', brandName: brand.name });
-  };
-
-  // --- ROOMS & MICROCLIMATE ---
-  const switchGrowRoom = (roomId: GrowRoomId) => {
-    playClickSound();
-    setCurrentRoom(roomId);
-    const roomConfig = GROW_ROOMS_CONFIG.find(r => r.id === roomId);
-    if (roomConfig) {
-      setActivePlant(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          currentRoom: roomId,
-          lightSchedule: roomConfig.recommendedLightSchedule,
-          ppfdLightIntensity: roomConfig.targetPpfd,
-          luxLumens: Math.round(roomConfig.targetPpfd * 54),
-          co2Ppm: roomConfig.targetCo2Ppm
-        };
-      });
-      showNotification(tr('Traslado de sala: {name}. Ajustando microclima a {recommendedLightSchedule} ({targetTempC}°C)', { name: roomConfig.name, recommendedLightSchedule: roomConfig.recommendedLightSchedule, targetTempC: roomConfig.targetTempC }), 'info');
-    }
-  };
-
-  const setCo2Ppm = (ppm: number) => {
-    setCo2PpmState(ppm);
-    setActivePlant(prev => {
-      if (!prev) return null;
-      return { ...prev, co2Ppm: ppm };
-    });
-  };
-
-  const toggleAutoWater = () => {
-    playClickSound();
-    setAutoWaterActive(prev => {
-      const next = !prev;
-      showNotification(tr('Riego Automático: {v0}', { v0: next ? tr('ACTIVADO (Goteo inteligente cuando sustrato < 45%)') : tr('DESACTIVADO (Manual)') }), 'info');
-      return next;
-    });
-  };
-
-  const toggleAutoClimate = () => {
-    playClickSound();
-    setAutoClimateActive(prev => {
-      const next = !prev;
-      showNotification(tr('Control Climático Autónomo: {v0}', { v0: next ? tr('ACTIVADO (Termostato / Higrostato PID)') : tr('DESACTIVADO (Manual)') }), 'info');
-      return next;
-    });
-  };
-
-  const calibrateMeter = (meterType: 'ph' | 'ec' | 'par' | 'lux') => {
-    playClickSound();
-    addXp(15, tr('Calibración Científica'));
-    const descriptions = {
-      ph: 'Sonda de pH calibrada con buffer patrón 4.01 / 7.01 (Precisión ±0.01 pH)',
-      ec: 'Electroconductímetro calibrado en 1413 μS/cm (Lectura exacta mS/cm)',
-      par: 'Sensor Apogee Quantum nivelado a 180° y calibrado en ePAR 400-750nm',
-      lux: 'Luxómetro calibrado contra sensor fotométrico CIE (Factor x54)'
-    };
-    showNotification(descriptions[meterType] + ' (+15 XP)', 'success');
-  };
-
-  // --- MOTHERS, FATHERS & BOTANICAL HYBRIDIZATION ---
-  const saveCurrentPlantAsMotherOrFather = (role: 'Madre (Esquejes / Clones)' | 'Padre (Donante de Polen)'): boolean => {
-    if (!activePlant) {
-      showNotification(tr('No hay planta activa para conservar como donante.'), 'info');
-      return false;
-    }
-
-    const newDonor: MotherFatherPlant = {
-      id: `donor_${Date.now()}`,
-      role,
-      strain: activePlant.strain,
-      name: `${role.includes('Madre') ? tr('Madre Élite') : tr('Padre Donante')} ${activePlant.strain.name}`,
-      health: activePlant.health,
-      clonesCutCount: 0,
-      pollenCollectedMg: role.includes('Padre') ? 250 : 0,
-      savedAt: Date.now(),
-      traits: [
-        `THC: ${activePlant.strain.thcPercentage}%`,
-        tr('Terpeno Dominante: {v0}', { v0: Object.keys(activePlant.strain.terpenes)[0] }),
-        tr('Resistencia a plagas')
-      ]
-    };
-
-    setMothersFathers(prev => [newDonor, ...prev]);
-    playLevelUpSound();
-    addXp(75, tr('Conservación Genética'));
-    showNotification(tr('¡{name} guardado en el Santuario de Madres & Padres! (+75 XP)', { name: newDonor.name }), 'success');
-    return true;
-  };
-
-  const takeCloneFromMother = (motherId: string): boolean => {
-    const mother = mothersFathers.find(m => m.id === motherId);
-    if (!mother) return false;
-
-    setMothersFathers(prev => prev.map(m => m.id === motherId ? { ...m, clonesCutCount: m.clonesCutCount + 1 } : m));
-    playHarvestChime();
-    addXp(40, tr('Corte de Esquejes'));
-
-    // Plant the clone as seedling
-    plantNewSeed(mother.strain);
-    showNotification(tr('¡Esqueje enraizado cortado de {name}! Plantado exitosamente (+40 XP)', { name: mother.name }), 'success');
-    return true;
-  };
-
-  const collectPollenFromFather = (fatherId: string): number => {
-    const father = mothersFathers.find(f => f.id === fatherId);
-    if (!father) return 0;
-
-    const collectedMg = 150;
-    setMothersFathers(prev => prev.map(f => f.id === fatherId ? { ...f, pollenCollectedMg: f.pollenCollectedMg + collectedMg } : f));
-    playClickSound();
-    addXp(35, tr('Recolección de Polen'));
-    showNotification(tr('Se recolectaron +{collectedMg}mg de polen fértil de {name} (+35 XP)', { collectedMg, name: father.name }), 'success');
-    return collectedMg;
-  };
-
-  const hybridizeParents = (motherId: string, fatherId: string, newStrainName: string): Strain | null => {
-    const mother = mothersFathers.find(m => m.id === motherId);
-    const father = mothersFathers.find(f => f.id === fatherId);
-    if (!mother || !father) {
-      showNotification(tr('Selecciona una Madre receptora y un Padre donante de polen válidos.'), 'info');
-      return null;
-    }
-
-    if (mother.id === father.id) {
-      showNotification(tr('Debes seleccionar dos individuos distintos para cruzar.'), 'info');
-      return null;
-    }
-
-    const hybridStrain = breedStrains(mother.strain, father.strain, newStrainName || `${mother.strain.name} x ${father.strain.name}`);
-    
-    // Add 5 seeds of this new hybrid to user's seed inventory
-    const hybridSeedId = `hybrid_seed_${hybridStrain.id}`;
-    const newSeedItem: SeedBankItem = {
-      id: hybridSeedId,
-      name: tr('{name} (F1 Hybrid)', { name: hybridStrain.name }),
-      breeder: `${brand.name} Lab Master`,
-      seedType: 'Regular',
-      lineage: `${mother.strain.name} x ${father.strain.name}`,
-      thcPercentage: hybridStrain.thcPercentage,
-      cbdPercentage: hybridStrain.cbdPercentage,
-      floweringWeeks: 9,
-      yieldGramsPerPlant: 165,
-      difficulty: 'Avanzado',
-      dominantTerpenes: [tr('Mirceno'), tr('Limoneno'), tr('Cariofileno')],
-      priceFlora: 200,
-      priceSol: 0.25,
-      description: tr('Cruzamiento botánico F1 estabilizado entre {name} y {v1}.', { name: mother.strain.name, v1: father.strain.name }),
-      seedsPerPack: 5,
-      imageTheme: 'emerald',
-      inStock: true,
-      strainTemplate: hybridStrain
-    };
-
-    setSeedBank(prev => [newSeedItem, ...prev]);
-    setSeedInventory(prev => ({ ...prev, [hybridSeedId]: (prev[hybridSeedId] || 0) + 5 + staffMods.seedBonus }));
-
-    confetti({ particleCount: 150, spread: 100 });
-    addXp(160, tr('Hibridación F1 Exitosa'));
-    showNotification(tr('¡Hibridación F1 Completada! Se generaron 5 semillas exclusivas de "{name}" en tu inventario (+160 XP)', { name: hybridStrain.name }), 'success');
-    return hybridStrain;
-  };
-
-  // Facilities are built, not bought: each rung costs $FLORA (burned) and real time, you cannot skip a rung, and speeding up is capped
-  const upgradeFacility = async (facilityId: string): Promise<void> => {
-    const target = facilities.find(f => f.id === facilityId);
-    if (!target) return;
-    if (ledgerRef.current) {
-      // the server owns the ladder: it checks the rung, the money and the single build at a time, and starts the clock
-      if (target.unlocked) { showNotification(target.tier < currentFacility.tier ? tr('{name} ya la superaste: tu instalación actual es mejor.', { name: target.name }) : tr('Esa es tu instalación actual.'), 'info'); return; }
-      const r = await intent<{ hours: number }>('start_build', { facilityId });
-      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo empezar la obra ({error})', { error: r.error }), 'info'); return; }
-      applySnapshot(r.snapshot);
-      recordBurnTransaction('BURN_SPEEDUP', target.costFlora, tr('Yield Bud Empire: Obra de {name}', { name: target.name }), true);
-      const h = r.result.hours;
-      showNotification(tr('¡Obra iniciada: {name}! Tardará {v1}. Puedes seguir cultivando mientras tanto.', { name: target.name, v1: h >= 24 ? tr('{v0} días', { v0: Math.round(h / 24 * 10) / 10 }) : `${h} h` }), 'success');
-      return;
-    }
-    if (target.unlocked) {
-      if (target.tier < currentFacility.tier) showNotification(tr('{name} ya la superaste: tu instalación actual es mejor.', { name: target.name }), 'info');
-      else setCurrentFacility(target);
-      return;
-    }
-    if (construction) {
-      const b = facilities.find(f => f.id === construction.facilityId);
-      showNotification(tr('Ya hay una obra en marcha ({v0}). Termínala antes de empezar otra.', { v0: b?.name ?? tr('instalación') }), 'info');
-      return;
-    }
-    if (target.tier !== currentFacility.tier + 1) {
-      showNotification(tr('No se salta ningún escalón: construye primero la instalación anterior.'), 'info');
-      return;
-    }
-    if (floraBalance < target.costFlora) {
-      showNotification(tr('Saldo insuficiente: la obra cuesta {costFlora} $FLORA', { costFlora: target.costFlora }), 'info');
-      return;
-    }
-    const c = startConstruction(facilityId, Date.now());
-    if (!c) return;
-    recordBurnTransaction('BURN_SPEEDUP', target.costFlora, tr('Yield Bud Empire: Obra de {name}', { name: target.name }));
-    setConstruction(c);
-    const h = buildHoursOf(facilityId);
-    showNotification(tr('¡Obra iniciada: {name}! Tardará {v1}. Puedes seguir cultivando mientras tanto.', { name: target.name, v1: h >= 24 ? tr('{v0} días', { v0: Math.round(h / 24 * 10) / 10 }) : `${h} h` }), 'success');
-  };
-
-  const finishConstruction = useCallback((c: Construction) => {
-    const target = INITIAL_FACILITIES.find(f => f.id === c.facilityId);
-    setConstruction(null);
-    if (!target) return;
-    setFacilities(prev => prev.map(f => f.id === c.facilityId ? { ...f, unlocked: true } : f));
-    setCurrentFacility({ ...target, unlocked: true });
-    confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } });
-    showNotification(tr('¡Obra terminada! {name}: ahora caben {capacityPlants} {v2}.', { name: target.name, capacityPlants: target.capacityPlants, v2: target.capacityPlants === 1 ? tr('planta') : tr('plantas') }), 'success');
-  }, [showNotification]);
-
-  // --- STAFF NFTs ---
-  const staffRef = useRef<StaffNft[]>(staff); staffRef.current = staff;
-  const floraRef = useRef<number>(floraBalance); floraRef.current = floraBalance;
-  const unpaidToldRef = useRef<Set<string>>(new Set());
-
   const staffIn = (role: StaffRole) => {
-    const st = staff.find(x => x.id === staffAssign[role]);
-    return st ? { staff: st, working: staffIsActive(st, staffNow) } : null;
+    const st = snap.staff.find((x) => x.id === snap.staffAssign[role]);
+    return st ? { staff: st, working: staffIsActive(st, now) } : null;
   };
-  const staffWagesPerDay = STAFF_ROLES.reduce((sum, r) => { const st = staff.find(x => x.id === staffAssign[r]); return sum + (st ? wageOf(st) : 0); }, 0);
+  const staffWagesPerDay = STAFF_ROLES.reduce((sum, r) => { const st = snap.staff.find((x) => x.id === snap.staffAssign[r]); return sum + (st ? wageOf(st) : 0); }, 0);
   const shopPrice = (flora: number) => Math.round(flora * (1 - staffMods.shopDiscount));
-
-  // wages: one day at a time, only for the assigned; a hire that cannot be paid stops working (see sim/staff.ts settleWages)
-  useEffect(() => {
-    const settle = () => {
-      const now = Date.now();
-      if (ledgerRef.current) { setStaffNow(now); return; }   // with the server, wages are settled there
-      const ids = STAFF_ROLES.map(r => staffAssign[r]).filter((x): x is string => !!x);
-      if (ids.length) {
-        const r = settleWages(staffRef.current, ids, floraRef.current, now);
-        if (r.spent > 0) {
-          setStaff(r.roster);
-          recordBurnTransaction('BURN_PURCHASE', r.spent, tr('Yield Bud Empire: Sueldos del personal ({length} {v1})', { length: ids.length, v1: ids.length === 1 ? 'asistente' : 'asistentes' }));
-        }
-        const fresh = r.unpaid.filter(id => !unpaidToldRef.current.has(id));
-        if (fresh.length) {
-          fresh.forEach(id => unpaidToldRef.current.add(id));
-          const names = fresh.map(id => staffRef.current.find(x => x.id === id)?.name).filter(Boolean).join(', ');
-          showNotification(tr('Sin saldo para pagar el sueldo de {names}: deja de trabajar hasta que puedas pagarle.', { names }), 'info');
-        }
-      }
-      setStaffNow(now);
-    };
-    settle();
-    const t = setInterval(settle, 60000);
-    return () => clearInterval(t);
-  }, [staffAssign, staff.length, ledgerOn, recordBurnTransaction, showNotification]);
-
-  const hireCandidate = async (c: Candidate): Promise<StaffNft | null> => {
-    if (ledgerRef.current) {
-      const r = await intent<{ staff: StaffNft }>('hire', { candidateId: c.id });
-      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo contratar ({error})', { error: r.error }), 'info'); return null; }
-      applySnapshot(r.snapshot);
-      recordBurnTransaction('BURN_PURCHASE', c.priceFlora, tr('Yield Bud Empire: Mint NFT de personal ({label} {name})', { label: ROLE_INFO[r.result.staff.role].label, name: r.result.staff.name }), true);
-      confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
-      showNotification(tr('¡{name} se une como {label}! Asígnale su puesto en el Maletín → Plantilla.', { name: r.result.staff.name, label: ROLE_INFO[r.result.staff.role].label }), 'success');
-      return r.result.staff;
-    }
-    if (staff.some(x => x.id === c.id)) { showNotification(tr('Ese candidato ya es tuyo.'), 'info'); return null; }
-    if (floraBalance < c.priceFlora) { showNotification(tr('Saldo insuficiente: contratar cuesta {priceFlora} $FLORA', { priceFlora: c.priceFlora }), 'info'); return null; }
-    const hire = hireFromBoard(c, Date.now());
-    recordBurnTransaction('BURN_PURCHASE', c.priceFlora, tr('Yield Bud Empire: Mint NFT de personal ({label} {name})', { label: ROLE_INFO[hire.role].label, name: hire.name }));
-    setStaff(prev => [...prev, hire]);
-    confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
-    showNotification(tr('¡{name} se une como {label}! Asígnale su puesto en el Maletín → Plantilla.', { name: hire.name, label: ROLE_INFO[hire.role].label }), 'success');
-    return hire;
+  const plotsForSale = (region: RegionId): { offers: PlotOffer[]; left: number } => {
+    const o = snap.offers?.[region];
+    return o ? { offers: o.ids.map((id) => plotOffer(region, Number(id.split('-').pop()))), left: o.left } : { offers: [], left: 0 };
   };
-
-  const openStaffChest = async (id: StaffChestId): Promise<StaffNft | null> => {
-    const chest = STAFF_CHESTS[id];
-    if (ledgerRef.current) {
-      const r = await intent<{ staff: StaffNft }>('staff_chest', { chestId: id });
-      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo abrir el cofre ({error})', { error: r.error }), 'info'); return null; }
-      applySnapshot(r.snapshot);
-      recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, tr('Yield Bud Empire: {name}', { name: chest.name }), true);
-      return r.result.staff;
-    }
-    if (floraBalance < chest.priceFlora) { showNotification(tr('Saldo insuficiente: {name} cuesta {priceFlora} $FLORA', { name: chest.name, priceFlora: chest.priceFlora }), 'info'); return null; }
-    recordBurnTransaction('BURN_PURCHASE', chest.priceFlora, tr('Yield Bud Empire: {name}', { name: chest.name }));
-    const r = rollStaff(chest, staffPity[id], Date.now() % 1_000_000_000 + staff.length, Date.now());
-    setStaffPity(prev => ({ ...prev, [id]: r.pity }));
-    setStaff(prev => [...prev, r.staff]);
-    return r.staff;
-  };
-
-  const openGift = async (giftId: number): Promise<{ amount: number; note: string } | null> => {
-    const r = await intent<{ amount: number; note: string }>('open_gift', { giftId });
-    if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo abrir el cofre ({error})', { error: r.error }), 'info'); void fetchState().then(x => x && applySnapshot(x)); return null; }
-    applySnapshot(r.snapshot);
-    return r.result;
-  };
-  const listNft = async (ref: { nftId?: string; designId?: string }, price: number): Promise<boolean> => {
-    if (!ledgerRef.current) { showNotification(tr('El mercado entre jugadores necesita conexión con el servidor.'), 'info'); return false; }
-    const r = await intent<{ listingId: number; price: number }>('list', { ...ref, price });
-    if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo listar ({error})', { error: r.error }), 'info'); return false; }
-    applySnapshot(r.snapshot);
-    showNotification(tr('Puesto en el mercado por {price} $FLORA. Queda en depósito hasta que se venda o lo retires.', { price: r.result.price }), 'success');
-    return true;
-  };
-  const cancelListing = async (listingId: number): Promise<boolean> => {
-    const r = await intent('cancel_listing', { listingId });
-    if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo retirar ({error})', { error: r.error }), 'info'); return false; }
-    applySnapshot(r.snapshot);
-    showNotification(tr('Oferta retirada: el NFT vuelve a tu colección.'), 'success');
-    return true;
-  };
-  const buyListing = async (listingId: number): Promise<ListingView | null> => {
-    const r = await intent<{ kind: ListingView['kind']; nftId: string; price: number; fee: number; data: Record<string, unknown> }>('buy_listing', { listingId });
-    if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo comprar ({error})', { error: r.error }), 'info'); return null; }
-    applySnapshot(r.snapshot);
-    recordBurnTransaction('BURN_PROCESS', r.result.fee, tr('Mercado entre jugadores: comisión de la venta'), true);
-    showNotification(tr('¡Compra hecha! −{price} $FLORA (la comisión de {fee} se quema).', { price: r.result.price, fee: r.result.fee }), 'success');
-    return { id: listingId, nftId: r.result.nftId, kind: r.result.kind, rarity: '', price: r.result.price, createdAt: 0, sellerId: 0, data: r.result.data };
-  };
-
-  const assignStaff = async (role: StaffRole, staffId: string | null): Promise<void> => {
-    if (ledgerRef.current) {
-      const r = await intent('assign', { role, staffId });
-      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo asignar ({error})', { error: r.error }), 'info'); return; }
-      applySnapshot(r.snapshot);
-      const st = staffId ? r.snapshot.staff.find(x => x.id === staffId) : null;
-      if (st) showNotification(tr('{name} ocupa el puesto de {label} · sueldo {v2} $FLORA/día', { name: st.name, label: ROLE_INFO[role].label, v2: wageOf(st) }), 'success');
-      return;
-    }
-    const st = staffId ? staff.find(x => x.id === staffId) : null;
-    if (staffId && (!st || st.role !== role)) return;
-    setStaffAssign(prev => { const n = { ...prev }; if (staffId) n[role] = staffId; else delete n[role]; return n; });
-    if (st) showNotification(tr('{name} ocupa el puesto de {label} · sueldo {v2} $FLORA/día', { name: st.name, label: ROLE_INFO[role].label, v2: wageOf(st) }), 'success');
-  };
-
-  const rankUpStaff = async (staffId: string): Promise<boolean> => {
-    if (ledgerRef.current) {
-      const r = await intent<{ staff: StaffNft }>('rank_up', { staffId });
-      if (!r.ok) { showNotification(reasonText(r.error) ?? tr('No se pudo ascender ({error})', { error: r.error }), 'info'); return false; }
-      applySnapshot(r.snapshot);
-      showNotification(tr('{name} asciende a rango {rank}. Su sueldo sube a {v2} $FLORA/día.', { name: r.result.staff.name, rank: r.result.staff.rank, v2: wageOf(r.result.staff) }), 'success');
-      return true;
-    }
-    const st = staff.find(x => x.id === staffId);
-    const cost = st ? rankUpCost(st) : null;
-    if (!st || cost === null) { showNotification(tr('Ya está en el rango máximo.'), 'info'); return false; }
-    if (floraBalance < cost) { showNotification(tr('Saldo insuficiente: subir de rango cuesta {cost} $FLORA', { cost }), 'info'); return false; }
-    recordBurnTransaction('BURN_PURCHASE', cost, tr('Yield Bud Empire: Ascenso de {name} a rango {v1}', { name: st.name, v1: st.rank + 1 }));
-    setStaff(prev => prev.map(x => x.id === staffId ? { ...x, rank: x.rank + 1 } : x));
-    showNotification(tr('{name} asciende a rango {v1}. Su sueldo sube a {v2} $FLORA/día.', { name: st.name, v1: st.rank + 1, v2: wageOf({ rarity: st.rarity, rank: st.rank + 1 }) }), 'success');
-    return true;
-  };
-
-  const speedUpConstruction = async (): Promise<boolean> => {
-    if (!construction) return false;
-    if (ledgerRef.current) {
-      const r = await intent<{ cutMs: number; cost: number; left: number }>('speedup_build');
-      if (!r.ok) { showNotification(r.error === 'speedup_limit' ? tr('Ya usaste todas las aceleraciones de hoy. Mañana podrás recortar más; el resto lo pone el tiempo.') : reasonText(r.error) ?? tr('No se pudo acelerar ({error})', { error: r.error }), 'info'); return false; }
-      applySnapshot(r.snapshot);
-      const cutH = Math.round(r.result.cutMs / 360000) / 10;
-      recordBurnTransaction('BURN_SPEEDUP', r.result.cost, tr('Yield Bud Empire: Aceleración de obra (−{cutH} h)', { cutH }), true);
-      showNotification(tr('Obra acelerada: −{cutH} h por {cost} $FLORA quemados. Te quedan {left} aceleraciones hoy.', { cutH, cost: r.result.cost, left: r.result.left }), 'burn');
-      return true;
-    }
-    const q = speedUpQuote(construction, Date.now());
-    if (!q) { showNotification(tr('Ya usaste todas las aceleraciones de hoy. Mañana podrás recortar más; el resto lo pone el tiempo.'), 'info'); return false; }
-    if (floraBalance < q.costFlora) { showNotification(tr('Saldo insuficiente: acelerar cuesta {costFlora} $FLORA', { costFlora: q.costFlora }), 'info'); return false; }
-    const r = applySpeedUp(construction, Date.now());
-    if (!r) return false;
-    const cutH = Math.round(q.cutMs / 360000) / 10;
-    recordBurnTransaction('BURN_SPEEDUP', q.costFlora, tr('Yield Bud Empire: Aceleración de obra (−{cutH} h)', { cutH }));
-    setConstruction(r.state);
-    showNotification(tr('Obra acelerada: −{cutH} h por {costFlora} $FLORA quemados. Te quedan {v2} aceleraciones hoy.', { cutH, costFlora: q.costFlora, v2: q.leftToday - 1 }), 'burn');
-    return true;
-  };
-
-  // the build finishes by itself (also when you were away)
-  useEffect(() => {
-    if (!ledgerOn || !construction) return;
-    // with the server the build finishes there: ask for the new state when the time is up
-    const t = setTimeout(async () => {
-      const snap = await fetchState();
-      if (snap) { applySnapshot(snap); if (!snap.construction) { confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 } }); showNotification(tr('¡Obra terminada! Tu nueva instalación ya está lista.'), 'success'); } }
-    }, Math.min(2_000_000_000, Math.max(1500, construction.endsAt - Date.now() + 1500)));
-    return () => clearTimeout(t);
-  }, [ledgerOn, construction?.endsAt]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (ledgerRef.current || !construction) return;
-    if (isDone(construction, Date.now())) { finishConstruction(construction); return; }
-    const t = setInterval(() => { if (isDone(construction, Date.now())) finishConstruction(construction); }, 5000);
-    return () => clearInterval(t);
-  }, [construction, finishConstruction]);
-
-  // the room is exactly as big as the installation; plants past its capacity wait (frozen) and come back when it grows
-  useEffect(() => {
-    const cap = currentFacility.capacityPlants;
-    if (indoorPlants.length === cap) return;
-    const fresh = createInitialIndoorRoom(strains[0] ?? INITIAL_STRAINS[0]);
-    const r = fitToCapacity<PlantInGrow>(indoorPlants, dormantPlants, cap, (slot) => ({
-      ...fresh[slot], stage: 'seed' as GrowStage, progressPercent: 0, health: 100, soilMoisture: 85, plantedAt: Date.now(), trichomeMaturity: { clear: 100, milky: 0, amber: 0 },
-    }));
-    setIndoorPlants(r.active);
-    setDormantPlants(r.dormant);
-    setSelectedPlantIndex(i => Math.min(i, r.active.length - 1));
-  }, [currentFacility.capacityPlants, indoorPlants, dormantPlants, strains]);
-
-  // Process raw flower in Extraction Lab
-  const processRawFlower = (type: 'cured_flower' | 'live_rosin' | 'full_spec_oil' | 'pure_terpenes', gramsInput: number): boolean => {
-    if (rawFlowerGrams < gramsInput) {
-      showNotification(tr('No tienes suficiente flor cruda (requiere {gramsInput}g)', { gramsInput }), 'info');
-      return false;
-    }
-
-    // Check machine wear
-    let requiredMachineId = 'rosin_press_10t';
-    if (type === 'pure_terpenes') requiredMachineId = 'rotovap_extractor';
-    if (type === 'cured_flower') requiredMachineId = 'freeze_dryer_subzero';
-    if (type === 'full_spec_oil') requiredMachineId = 'rotovap_extractor';
-
-    const machine = machines.find(m => m.id === requiredMachineId);
-    if (machine && machine.wearPercentage <= 15) {
-      showNotification(tr('La máquina {name} está averiada (desgaste crítico). ¡Repárala primero quemando $FLORA!', { name: machine.name }), 'info');
-      return false;
-    }
-
-    playClickSound();
-    setRawFlowerGrams(prev => prev - gramsInput);
-
-    // Degrade machine wear
-    setMachines(prev => prev.map(m => {
-      if (m.id === requiredMachineId) {
-        const nextWear = Math.max(0, m.wearPercentage - m.wearRatePerCycle);
-        return {
-          ...m,
-          wearPercentage: nextWear,
-          status: nextWear <= 20 ? 'averiado' : (nextWear <= 40 ? 'mantenimiento_requerido' : 'operativo')
-        };
-      }
-      return m;
-    }));
-
-    // Generate output product (the lab scientist's bonus raises the grams that come out)
-    const labMul = 1 + staffMods.labYield;
-    let productYieldGrams = 0;
-    let name = '';
-    let potency = '';
-    let value = 0;
-
-    const currentStrainName = activePlant?.strain.name || strains[0].name;
-
-    if (type === 'live_rosin') {
-      productYieldGrams = Number((gramsInput * labMul * 0.22).toFixed(2));
-      name = tr('{currentStrainName} Live Rosin Sin Solventes (90u)', { currentStrainName });
-      potency = tr('82.4% THC | 7.8% Terpenos');
-      value = Math.round(productYieldGrams * ECON.priceScale * 45);
-    } else if (type === 'cured_flower') {
-      productYieldGrams = Number((gramsInput * labMul).toFixed(2));
-      name = tr('{currentStrainName} Flor Curada Prémium en Frío', { currentStrainName });
-      potency = tr('23.8% THC | 3.2% Terpenos');
-      value = Math.round(productYieldGrams * ECON.priceScale * 9);
-    } else if (type === 'full_spec_oil') {
-      productYieldGrams = Number((gramsInput * labMul * 0.4).toFixed(2));
-      name = tr('{currentStrainName} Aceite Concentrado Full Spectrum', { currentStrainName });
-      potency = tr('65.0% Cannabinoides Totales');
-      value = Math.round(productYieldGrams * ECON.priceScale * 25);
-    } else {
-      productYieldGrams = Number((gramsInput * labMul * 0.08).toFixed(2));
-      name = tr('Terpenos Puros Aislados de {currentStrainName}', { currentStrainName });
-      potency = tr('99.2% Terpenos Volátiles Preservados');
-      value = Math.round(productYieldGrams * ECON.priceScale * 85);
-    }
-
-    const newProd: ProcessedProduct = {
-      id: `prod-${Date.now()}`,
-      name,
-      type,
-      strainOrigin: currentStrainName,
-      quantityGrams: productYieldGrams,
-      potency,
-      qualityScore: 92 + Math.floor(Math.random() * 8),
-      marketValueFlora: value,
-      createdAt: Date.now(),
-      batchHash: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`
-    };
-
-    setProcessedProducts(prev => [newProd, ...prev]);
-    serverProcess(newProd, gramsInput);
-    reportEvent('lab', 1);
-    addXp(80, tr('Extracción Industrial'));
-    showNotification(tr('¡Extracción completada! Se crearon {productYieldGrams}g de {name} (Valor: {value} $FLORA, +80 XP)', { productYieldGrams, name, value }), 'success');
-    return true;
-  };
-
-
-  // Industrial lab cycle: consumes flower/trim, burns a $FLORA fee (deflationary sink), wears the machine
-  // and mints a product batch. Used by the animated Planta Industrial stations.
-  /* ───────── forge: real-time crafting of materials and derived products ───────── */
-  const forgeJobsRef = useRef<ForgeJob[]>([]); forgeJobsRef.current = forgeJobs;
-  const forgeDone = useRef<Set<string>>(new Set());
-  const forgeCraft = (recipeId: string, qty: number): boolean => {
-    const r = FORGE_RECIPE_BY_ID[recipeId];
-    if (!r) return false;
-    const check = canCraft({ flower: rawFlowerGrams, trim: trimGrams, materials, flora: floraBalance, tier: currentFacility.tier, hasForge: ownsStation(assets, 'forge'), jobs: forgeJobs.length }, r, qty);
-    if (!check.ok) { showNotification(check.message, 'info'); return false; }
-    if (!takeStation('forge')) return false;      // licence checked again + electricity
-    const t = craftTotals(r, qty);
-    playClickSound();
-    if (ledgerRef.current) {
-      // with the server the job is its own: it takes the inputs and the fee and delivers when the timer ends (forge_collect)
-      void intent('forge_start', { recipe: recipeId, qty }).then(res => {
-        if (res.ok) {
-          applySnapshot(res.snapshot);
-          recordBurnTransaction('BURN_PROCESS', t.fee, tr('Yield Bud Empire Forja: {name} ×{qty}', { name: r.name, qty }), true);
-          showNotification(tr('Forja: {name} ×{qty} en marcha ({minutes} min). Se quemaron {fee} $FLORA.', { name: r.name, qty, minutes: t.minutes, fee: t.fee }), 'success');
-        } else if (res.error !== 'offline') showNotification(reasonText(res.error) ?? tr('No se pudo empezar la forja ({error})', { error: res.error }), 'info');
-      });
-      return true;
-    }
-    if (t.flower > 0) setRawFlowerGrams(prev => Math.max(0, Number((prev - t.flower).toFixed(2))));
-    if (t.trim > 0) setTrimGrams(prev => Math.max(0, Number((prev - t.trim).toFixed(2))));
-    if (Object.keys(t.materials).length) setMaterials(prev => addMaterials(prev, t.materials, -1));
-    recordBurnTransaction('BURN_PROCESS', t.fee, tr('Yield Bud Empire Forja: {name} ×{qty}', { name: r.name, qty }));
-    const now = Date.now();
-    setForgeJobs(prev => [...prev, { id: `fj-${now}-${Math.random().toString(36).slice(2, 6)}`, recipeId, qty, startedAt: now, endsAt: now + t.minutes * 60_000 }]);
-    showNotification(tr('Forja: {name} ×{qty} en marcha ({minutes} min). Se quemaron {fee} $FLORA.', { name: r.name, qty, minutes: t.minutes, fee: t.fee }), 'success');
-    return true;
-  };
-  const forgeCollecting = useRef(false);
-  // finished jobs deliver their materials or products (also the ones that finished while the player was away)
-  useEffect(() => {
-    const tick = () => {
-      const now = Date.now();
-      const done = forgeJobsRef.current.filter(j => j.endsAt <= now && !forgeDone.current.has(j.id));
-      if (done.length === 0) return;
-      if (ledgerRef.current) {
-        // the server delivers: ask it once, draw the batches it handed over, then take its word for the warehouse
-        if (forgeCollecting.current) return;
-        forgeCollecting.current = true;
-        void intent<{ delivered: ForgeJob[] }>('forge_collect', {}).then(res => {
-          forgeCollecting.current = false;
-          if (!res.ok) return;
-          for (const j of res.result.delivered) {
-            if (forgeDone.current.has(j.id)) continue;
-            forgeDone.current.add(j.id);
-            const r = FORGE_RECIPE_BY_ID[j.recipeId];
-            if (!r) continue;
-            if (r.out.product) {
-              const pr = r.out.product; const grams = craftTotals(r, j.qty).outProductGrams;
-              setProcessedProducts(prev => [{
-                id: `prod-forge-${j.id}`, name: `${pr.name.replace(/ \(.*\)$/, '')} ×${j.qty}`, type: pr.type, recipeId: r.id, strainOrigin: 'Forja',
-                quantityGrams: grams, potency: pr.potency, qualityScore: 90, marketValueFlora: Math.round(grams * PRODUCT_PRICE[pr.type] * ECON.priceScale),
-                createdAt: Date.now(), batchHash: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`,
-              }, ...prev]);
-            }
-            addXp(40 * j.qty, tr('Forja'));
-            reportEvent('lab', 1);
-            showNotification(tr('Forja terminada: {name} ×{qty}. Míralo en el Maletín.', { name: r.name, qty: j.qty }), 'success');
-          }
-          applySnapshot(res.snapshot);
-        });
-        return;
-      }
-      for (const j of done) {
-        forgeDone.current.add(j.id);
-        const r = FORGE_RECIPE_BY_ID[j.recipeId];
-        if (!r) continue;
-        const t = craftTotals(r, j.qty);
-        if (Object.keys(t.outMaterials).length) setMaterials(prev => addMaterials(prev, t.outMaterials));
-        if (r.out.product) {
-          const pr = r.out.product;
-          const grams = t.outProductGrams;
-          setProcessedProducts(prev => [{
-            id: `prod-forge-${j.id}`, name: `${pr.name.replace(/ \(.*\)$/, '')} ×${j.qty}`, type: pr.type, recipeId: r.id, strainOrigin: 'Forja',
-            quantityGrams: grams, potency: pr.potency, qualityScore: 90, marketValueFlora: Math.round(grams * PRODUCT_PRICE[pr.type] * ECON.priceScale),
-            createdAt: now, batchHash: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`,
-          }, ...prev]);
-        }
-        addXp(40 * j.qty, tr('Forja'));
-        reportEvent('lab', 1);
-        showNotification(tr('Forja terminada: {name} ×{qty}. Míralo en el Maletín.', { name: r.name, qty: j.qty }), 'success');
-      }
-      const ids = new Set(done.map(j => j.id));
-      setForgeJobs(prev => prev.filter(j => !ids.has(j.id)));
-    };
-    tick();
-    const t = setInterval(tick, 2000);
-    return () => clearInterval(t);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ───────── cría: real-time chamber cross, gated by the Cámara de cría, materials and generation stability ─────────
-   * Simplification vs. the plan's letter: a Madre/Padre in the sanctuary (`mothersFathers`) is already a preserved, ready
-   * specimen (not a live plant going through phases), so "she only pollinates in flowering, seeds mature in maturation" is
-   * modelled as the cross's own real-time duration (CROSS_MINUTES) rather than a separate stage on the sanctuary record. */
-  const breedingJobsRef = useRef<BreedingJob[]>([]); breedingJobsRef.current = breedingJobs;
-  const breedingDone = useRef<Set<string>>(new Set());
-  const crossBreed = (motherId: string, fatherId: string, name: string, useReagent: boolean): boolean => {
-    const mother = mothersFathers.find(m => m.id === motherId);
-    const father = mothersFathers.find(f => f.id === fatherId);
-    if (!mother || !father) { showNotification(tr('Selecciona una Madre y un Padre válidos.'), 'info'); return false; }
-    const stock = { tier: currentFacility.tier, hasChamber: ownsStation(assets, 'breeding'), jobs: breedingJobs.length, materials };
-    const check = canBreed(stock, motherId, fatherId, useReagent);
-    if (!check.ok) { showNotification(check.message, 'info'); return false; }
-    if (!takeStation('breeding')) return false; // licence checked again + electricity
-    const generation = capGeneration(Math.max(mother.generation ?? 1, father.generation ?? 1));
-    setMaterials(prev => addMaterials(prev, breedingCost(useReagent), -1));
-    if (ledgerRef.current) {
-      // the server keeps the materials: the cross uses them up there too
-      const items = Object.fromEntries(Object.entries(breedingCost(useReagent)).map(([m, n]) => [`mat:${m}`, n]));
-      void intent('consume', { items }).then(r => { if (r.ok) applySnapshot(r.snapshot); else if (r.error !== 'offline') void fetchState().then(x => x && applySnapshot(x)); });
-    }
-    recordBurnTransaction('BURN_PROCESS', CHAMBER_FEE, tr('Yield Bud Empire Cría: cruce en cámara {v0}', { v0: lineageLabel(mother.strain, father.strain, generation) }));
-    const now = Date.now();
-    const seed = (now ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
-    setBreedingJobs(prev => [...prev, {
-      id: `bj-${now}-${Math.random().toString(36).slice(2, 6)}`, motherId, fatherId, generation, useReagent, seed,
-      name: name.trim() || `${mother.strain.name} x ${father.strain.name}`, startedAt: now, endsAt: now + CROSS_MINUTES * 60_000,
-    }]);
-    showNotification(tr('Cría: cruce en cámara de {name} x {v1} en marcha ({v2} h). Se quemaron {CHAMBER_FEE} $FLORA.', { name: mother.name, v1: father.name, v2: Math.round(CROSS_MINUTES / 60), CHAMBER_FEE }), 'success');
-    return true;
-  };
-  // finished chamber crosses deliver a new stabilised strain and a seed batch (also the ones that finished while away)
-  useEffect(() => {
-    const tick = () => {
-      const now = Date.now();
-      const done = breedingJobsRef.current.filter(j => j.endsAt <= now && !breedingDone.current.has(j.id));
-      if (done.length === 0) return;
-      for (const j of done) {
-        breedingDone.current.add(j.id);
-        const mother = mothersFathers.find(m => m.id === j.motherId);
-        const father = mothersFathers.find(f => f.id === j.fatherId);
-        if (!mother || !father) continue; // the sanctuary record was removed/listed away meanwhile
-        const rng = mulberry32(j.seed);
-        const { traits, mutated } = inheritTraits(mother.strain, father.strain, j.generation, j.useReagent, rng);
-        const newStrain: Strain = {
-          id: `strain-cria-${j.id}`,
-          name: j.name,
-          lineage: lineageLabel(mother.strain, father.strain, j.generation),
-          type: 'Híbrido',
-          thcPercentage: traits.thcPercentage,
-          cbdPercentage: traits.cbdPercentage,
-          terpenes: traits.terpenes,
-          difficulty: 'Maestro',
-          cycleDurationSeconds: traits.cycleDurationSeconds,
-          resinYieldMultiplier: traits.resinYieldMultiplier,
-          colorTheme: mutated ? '#fb7185' : '#c084fc',
-          description: tr('Cruce de cámara {v0}{v1}.', { v0: lineageLabel(mother.strain, father.strain, j.generation), v1: mutated ? tr(' · mutación detectada') : '' }),
-        };
-        const seeds = seedBatchSize(mother.vigorRating ?? 60, true, staffMods.seedBonus, rng);
-        const seedId = `cria_seed_${j.id}`;
-        const newSeedItem: SeedBankItem = {
-          id: seedId, name: `${newStrain.name} (${GEN_LABEL[j.generation]})`, breeder: `${brand.name} Cámara de Cría`,
-          seedType: 'Regular', lineage: newStrain.lineage, thcPercentage: newStrain.thcPercentage, cbdPercentage: newStrain.cbdPercentage,
-          floweringWeeks: 9, yieldGramsPerPlant: 165, difficulty: 'Avanzado', dominantTerpenes: [tr('Mirceno'), tr('Limoneno'), tr('Cariofileno')],
-          priceFlora: 0, priceSol: 0, description: newStrain.description, seedsPerPack: seeds, imageTheme: 'emerald', inStock: true, strainTemplate: newStrain,
-        };
-        setStrains(prev => [...prev, newStrain]);
-        setSeedBank(prev => [newSeedItem, ...prev]);
-        setSeedInventory(prev => ({ ...prev, [seedId]: (prev[seedId] || 0) + seeds }));
-        setBreedingLog(prev => [{
-          id: j.id, label: `${mother.name} x ${father.name}`, strainName: newStrain.name, generation: j.generation, mutated, seeds, createdAt: now,
-        }, ...prev].slice(0, 100));
-        addXp(260, tr('Cría en cámara'));
-        reportEvent('breed', 1);
-        showNotification(tr('Cría terminada: "{name}" ({v1}{v2}) — {seeds} semillas en tu inventario.', { name: newStrain.name, v1: GEN_LABEL[j.generation], v2: mutated ? tr(', mutación') : '', seeds }), 'success');
-      }
-      const ids = new Set(done.map(j => j.id));
-      setBreedingJobs(prev => prev.filter(j => !ids.has(j.id)));
-    };
-    tick();
-    const t = setInterval(tick, 2000);
-    return () => clearInterval(t);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const runLabProcess = (spec: LabRunSpec): ProcessedProduct | null => {
-    const stock = spec.inputKind === 'flower' ? rawFlowerGrams : trimGrams;
-    if (spec.grams <= 0 || stock < spec.grams) {
-      showNotification(tr('No tienes suficiente {v0} (requiere {grams}g)', { v0: spec.inputKind === 'flower' ? tr('flor seca') : tr('biomasa trim'), grams: spec.grams }), 'info');
-      return null;
-    }
-    const machine = machines.find(m => m.id === spec.machineId);
-    if (machine && machine.wearPercentage <= 15) {
-      showNotification(tr('{name} está averiada (desgaste crítico). ¡Repárala primero quemando $FLORA!', { name: machine.name }), 'info');
-      return null;
-    }
-    if (floraBalance < spec.feeFlora) {
-      showNotification(tr('Saldo insuficiente: el ciclo quema {feeFlora} $FLORA', { feeFlora: spec.feeFlora }), 'info');
-      return null;
-    }
-    if (!takeStation(spec.stationId)) return null;
-
-    playClickSound();
-    if (spec.inputKind === 'flower') setRawFlowerGrams(prev => Math.max(0, Number((prev - spec.grams).toFixed(2))));
-    else setTrimGrams(prev => Math.max(0, Number((prev - spec.grams).toFixed(2))));
-    recordBurnTransaction('BURN_PROCESS', spec.feeFlora, tr('Yield Bud Empire Lab: {label} ({grams}g)', { label: spec.label, grams: spec.grams }));
-
-    const wear = machine?.wearPercentage ?? 100;
-    setMachines(prev => prev.map(m => {
-      if (m.id !== spec.machineId) return m;
-      const next = Math.max(0, m.wearPercentage - m.wearRatePerCycle);
-      return { ...m, wearPercentage: next, status: next <= 20 ? 'averiado' : (next <= 40 ? 'mantenimiento_requerido' : 'operativo') };
-    }));
-
-    // worn machines lose yield and quality
-    const wearFactor = wear > 60 ? 1 : wear > 40 ? 0.93 : 0.85;
-    const strainName = activePlant?.strain.name || strains[0].name;
-    const outGrams = Number((spec.grams * spec.yieldRatio * wearFactor).toFixed(2));
-    const quality = Math.min(100, Math.round((90 + Math.random() * 9) * (wear > 40 ? 1 : 0.94)));
-    // the market pays the list price scaled like everything else (the server uses the same table); quality is shown but does not change the price
-    const value = Math.round(outGrams * spec.pricePerGram * ECON.priceScale);
-
-    const prod: ProcessedProduct = {
-      id: `prod-lab-${Date.now()}`,
-      name: `${strainName} · ${spec.label}`,
-      type: spec.type,
-      recipeId: spec.recipeId,
-      strainOrigin: strainName,
-      quantityGrams: outGrams,
-      potency: spec.potency,
-      qualityScore: quality,
-      marketValueFlora: value,
-      createdAt: Date.now(),
-      batchHash: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 6)}`
-    };
-    setProcessedProducts(prev => [prod, ...prev]);
-    serverProcess(prod, spec.grams);
-    reportEvent('lab', 1);
-    addXp(spec.xp ?? 90, tr('Laboratorio Industrial'));
-    showNotification(tr('Lote acuñado: {outGrams}g de {label} (valor {value} $FLORA, calidad {quality}%). Se quemaron {feeFlora} $FLORA.', { outGrams, label: spec.label, value, quality, feeFlora: spec.feeFlora }), 'success');
-    return prod;
-  };
-
-  // HPLC certification: burns a fee and stamps a certificate of analysis (+18% market value) on a batch
-  const certifyProduct = (productId: string, feeFlora: number = 15): ProcessedProduct | null => {
-    const prod = processedProducts.find(p => p.id === productId);
-    if (!prod || prod.certified) return null;
-    const machine = machines.find(m => m.id === 'hplc_analyzer');
-    if (machine && machine.wearPercentage <= 15) {
-      showNotification(tr('El cromatógrafo está averiado. ¡Repáralo primero quemando $FLORA!'), 'info');
-      return null;
-    }
-    if (floraBalance < feeFlora) {
-      showNotification(tr('Saldo insuficiente: el análisis quema {feeFlora} $FLORA', { feeFlora }), 'info');
-      return null;
-    }
-    if (!takeStation('hplc')) return null;
-    recordBurnTransaction('BURN_PROCESS', feeFlora, tr('Yield Bud Empire Lab: Análisis HPLC de {name}', { name: prod.name }));
-    setMachines(prev => prev.map(m => {
-      if (m.id !== 'hplc_analyzer') return m;
-      const next = Math.max(0, m.wearPercentage - m.wearRatePerCycle);
-      return { ...m, wearPercentage: next, status: next <= 20 ? 'averiado' : (next <= 40 ? 'mantenimiento_requerido' : 'operativo') };
-    }));
-
-    // realistic cannabinoid fingerprint per product family (deterministic-ish jitter)
-    const jitter = (base: number, spread: number) => Number((base + (Math.random() - 0.5) * spread).toFixed(1));
-    const family: Record<string, { thc: number; cbd: number; cbn: number; cbg: number; terpenes: number }> = {
-      cured_flower: { thc: 23, cbd: 0.6, cbn: 0.2, cbg: 0.9, terpenes: 2.8 },
-      preroll: { thc: 22, cbd: 0.6, cbn: 0.3, cbg: 0.8, terpenes: 2.4 },
-      cigar: { thc: 30, cbd: 0.5, cbn: 0.3, cbg: 1.0, terpenes: 2.6 },
-      live_rosin: { thc: 78, cbd: 1.8, cbn: 0.6, cbg: 2.1, terpenes: 7.4 },
-      bubble_hash: { thc: 62, cbd: 1.2, cbn: 0.5, cbg: 1.6, terpenes: 5.2 },
-      kief: { thc: 52, cbd: 1.0, cbn: 0.4, cbg: 1.4, terpenes: 3.9 },
-      terpene_sauce: { thc: 68, cbd: 1.4, cbn: 0.4, cbg: 1.8, terpenes: 11.5 },
-      rso: { thc: 76, cbd: 2.2, cbn: 1.6, cbg: 2.4, terpenes: 1.1 },
-      full_spec_oil: { thc: 58, cbd: 4.5, cbn: 0.8, cbg: 2.0, terpenes: 2.2 },
-      gummies: { thc: 8, cbd: 0.3, cbn: 0.1, cbg: 0.2, terpenes: 0.2 },
-      pure_terpenes: { thc: 0.1, cbd: 0, cbn: 0, cbg: 0, terpenes: 97 },
-    };
-    const base = family[prod.type] ?? family.cured_flower;
-    const coa = { thc: jitter(base.thc, 3), cbd: jitter(base.cbd, 0.4), cbn: jitter(base.cbn, 0.2), cbg: jitter(base.cbg, 0.3), terpenes: jitter(base.terpenes, 0.8) };
-    const updated: ProcessedProduct = {
-      ...prod,
-      certified: true,
-      coa,
-      coaHash: `COA-${Math.random().toString(16).substring(2, 8).toUpperCase()}-${Math.random().toString(16).substring(2, 6).toUpperCase()}`,
-      qualityScore: Math.min(100, prod.qualityScore + 2),
-      marketValueFlora: Math.round(prod.marketValueFlora * 1.18),
-    };
-    setProcessedProducts(prev => prev.map(p => (p.id === productId ? updated : p)));
-    reportEvent('certify', 1);
-    addXp(70, tr('Análisis de Laboratorio'));
-    showNotification(tr('Certificado {coaHash} emitido: THC {thc}%, CBD {cbd}% (+18% valor, quema {feeFlora} $FLORA)', { coaHash: updated.coaHash, thc: coa.thc, cbd: coa.cbd, feeFlora }), 'success');
-    return updated;
-  };
-
-  // Manual interactive arcade press from LabVisualizer
-  const executeManualRosinPress = (yieldBonus: number, quality: number, isCritical: boolean) => {
-    const gramsInput = 20;
-    if (rawFlowerGrams < gramsInput) {
-      showNotification(tr('Se requieren al menos {gramsInput}g de flor seca para prensar', { gramsInput }), 'info');
-      return;
-    }
-
-    setRawFlowerGrams(prev => Math.max(0, prev - gramsInput));
-
-    // Degrade rosin press
-    setMachines(prev => prev.map(m => {
-      if (m.id === 'rosin_press_10t') {
-        const next = Math.max(0, m.wearPercentage - (isCritical ? 3 : 5));
-        return {
-          ...m,
-          wearPercentage: next,
-          status: next <= 20 ? 'averiado' : (next <= 40 ? 'mantenimiento_requerido' : 'operativo')
-        };
-      }
-      return m;
-    }));
-
-    const currentStrainName = activePlant?.strain.name || strains[0].name;
-    const baseGrams = Number((gramsInput * 0.22).toFixed(2));
-    const finalGrams = Number((baseGrams * (1 + yieldBonus / 100)).toFixed(2));
-    const marketVal = Math.round(finalGrams * (isCritical ? 65 : 45));
-
-    const newProd: ProcessedProduct = {
-      id: `prod-manual-${Date.now()}`,
-      name: isCritical 
-        ? tr('{currentStrainName} Live Rosin 90u (Prensado Crítico Zona Dorada)', { currentStrainName }) 
-        : tr('{currentStrainName} Live Rosin Artesanal (Prensado Manual)', { currentStrainName }),
-      type: 'live_rosin',
-      strainOrigin: currentStrainName,
-      quantityGrams: finalGrams,
-      potency: isCritical ? tr('86.8% THC | 9.1% Terpenos Puros') : tr('81.4% THC | 7.2% Terpenos'),
-      qualityScore: quality,
-      marketValueFlora: marketVal,
-      createdAt: Date.now(),
-      batchHash: `0x${Math.random().toString(16).substring(2, 8)}...gold`
-    };
-
-    setProcessedProducts(prev => [newProd, ...prev]);
-    serverProcess(newProd, gramsInput);
-
-    if (isCritical) {
-      updateQuestProgress('quest_rosin_gold', 1);
-      addXp(140, tr('Extracción Crítica en Zona Dorada'));
-    } else {
-      addXp(70, tr('Prensado Manual'));
-    }
-
-    showNotification(
-      tr('¡Prensado guardado en inventario! Obtenido +{finalGrams}g de Live Rosin (Valor: {marketVal} $FLORA)', { finalGrams, marketVal }), 
-      'success'
-    );
-  };
-
-  // Repair machine by burning $FLORA
-  const repairMachine = (machineId: string): boolean => {
-    const machine = machines.find(m => m.id === machineId);
-    if (!machine) return false;
-    if (floraBalance < machine.repairCostFlora) {
-      showNotification(tr('Saldo insuficiente: Requiere {repairCostFlora} $FLORA para reparar', { repairCostFlora: machine.repairCostFlora }), 'info');
-      return false;
-    }
-
-    recordBurnTransaction('BURN_REPAIR', machine.repairCostFlora, tr('Yield Bud Empire: Mantenimiento y Restauración de {name}', { name: machine.name }));
-
-    setMachines(prev => prev.map(m => {
-      if (m.id === machineId) {
-        return {
-          ...m,
-          wearPercentage: 100,
-          status: 'operativo'
-        };
-      }
-      return m;
-    }));
-
-    updateQuestProgress('quest_machine_repair', 1);
-    addXp(120, tr('Mantenimiento Deflacionario'));
-
-    showNotification(tr('¡{name} reparada al 100%! Se quemaron {repairCostFlora} $FLORA de forma permanente (+120 XP)', { name: machine.name, repairCostFlora: machine.repairCostFlora }), 'burn');
-    return true;
-  };
-
-  // Breed two strains in Genetics Lab
-  const breedStrains = (parentA: Strain, parentB: Strain, name: string): Strain => {
-    playHarvestChime();
-    const hybridThc = Number(((parentA.thcPercentage + parentB.thcPercentage) / 2 + (Math.random() * 2 - 0.5)).toFixed(1));
-    const hybridCbd = Number(((parentA.cbdPercentage + parentB.cbdPercentage) / 2 + (Math.random() * 0.8 - 0.2)).toFixed(1));
-
-    const hybridTerpenes = {
-      myrcene: Number(((parentA.terpenes.myrcene + parentB.terpenes.myrcene) / 2).toFixed(2)),
-      limonene: Number(((parentA.terpenes.limonene + parentB.terpenes.limonene) / 2).toFixed(2)),
-      caryophyllene: Number(((parentA.terpenes.caryophyllene + parentB.terpenes.caryophyllene) / 2).toFixed(2)),
-      pinene: Number(((parentA.terpenes.pinene + parentB.terpenes.pinene) / 2).toFixed(2)),
-      linalool: Number(((parentA.terpenes.linalool + parentB.terpenes.linalool) / 2).toFixed(2))
-    };
-
-    const newStrain: Strain = {
-      id: `strain-hybrid-${Date.now()}`,
-      name: name.trim() || tr('Gen {v0} x {v1}', { v0: parentA.name.slice(0, 4), v1: parentB.name.slice(0, 4) }),
-      lineage: `${parentA.name} x ${parentB.name}`,
-      type: 'Híbrido',
-      thcPercentage: Math.min(32, Math.max(16, hybridThc)),
-      cbdPercentage: Math.max(0.2, hybridCbd),
-      terpenes: hybridTerpenes,
-      difficulty: 'Maestro',
-      cycleDurationSeconds: Math.round((parentA.cycleDurationSeconds + parentB.cycleDurationSeconds) / 2),
-      resinYieldMultiplier: Number((Math.max(parentA.resinYieldMultiplier, parentB.resinYieldMultiplier) * 1.15).toFixed(2)),
-      colorTheme: '#ec4899',
-      description: tr('Cruzamiento genético experimental desarrollado en el laboratorio Yield Bud Empire entre {name} y {v1}.', { name: parentA.name, v1: parentB.name })
-    };
-
-    setStrains(prev => [...prev, newStrain]);
-    updateQuestProgress('quest_genomic_breed', 1);
-    reportEvent('breed', 1);
-    addXp(220, tr('Hibridación Genética'));
-    showNotification(tr('¡Nueva genética creada con éxito: {name}! (+220 XP)', { name: newStrain.name }), 'success');
-    return newStrain;
-  };
-
-  // Register patent on Solana (Burns 250 $FLORA)
-  const registerPatent = (strain: Strain): boolean => {
-    if (floraBalance < 250) {
-      showNotification(tr('Saldo insuficiente: Registrar una patente genómica on-chain requiere quemar 250 $FLORA'), 'info');
-      return false;
-    }
-
-    const sig = generateSolanaSignature();
-    recordBurnTransaction('BURN_PATENT', 250, tr('Yield Bud Empire: Registro On-Chain de Patente Genómica ({name})', { name: strain.name }));
-
-    const newPatent: GenomicPatent = {
-      id: `pat-${Date.now()}`,
-      strainName: strain.name,
-      patentNumber: `SOL-PAT-${Math.floor(1000 + Math.random() * 9000)}-CF`,
-      solanaSignature: sig,
-      parentA: strain.lineage.split(' x ')[0] || tr('Genética Silvestre'),
-      parentB: strain.lineage.split(' x ')[1] || tr('Cultivar Solana'),
-      creatorWallet: `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`,
-      registeredDate: new Date().toISOString().split('T')[0],
-      thc: strain.thcPercentage,
-      cbd: strain.cbdPercentage,
-      dominantTerpene: 'Limoneno y Cariofileno',
-      floraBurnedFee: 250
-    };
-
-    setPatents(prev => [newPatent, ...prev]);
-    setStrains(prev => prev.map(s => s.id === strain.id ? { ...s, isPatented: true, patentId: newPatent.patentNumber } : s));
-
-    confetti({
-      particleCount: 90,
-      spread: 80,
-      origin: { y: 0.5 },
-      colors: ['#3b82f6', '#10b981', '#f59e0b']
-    });
-
-    updateQuestProgress('quest_genomic_breed', 1);
-    reportEvent('patent', 1);
-    addXp(300, tr('Patente Genómica On-Chain'));
-
-    showNotification(tr('¡Patente {patentNumber} registrada en Solana! Se quemaron 250 $FLORA (+300 XP)', { patentNumber: newPatent.patentNumber }), 'burn');
-    return true;
-  };
-
-  // Brand update
-  const updateBrand = (name: string, tagline: string) => {
-    setBrand(prev => ({
-      ...prev,
-      name,
-      tagline
-    }));
-    showNotification(tr('Marca virtual actualizada correctamente'), 'info');
-  };
-
-  // Sell product in Virtual Dispensary
-  /** what selling this batch would pay now: the market pays less per gram the more was sold recently */
   const quoteSale = (productId: string) => {
-    const prod = processedProducts.find(p => p.id === productId);
+    const prod = s.products.find((p) => p.id === productId);
     if (!prod) return null;
     const per = prod.marketValueFlora / Math.max(0.01, prod.quantityGrams);
-    const sale = saleRevenue(per, prod.quantityGrams, marketDepth, Date.now());
+    const sale = saleRevenue(per, prod.quantityGrams, snap.depth as Depth, now);
     const gross = Math.round(sale.revenue * (1 + staffMods.sellBonus));
-    const fee = Math.max(1, Math.round(gross * burnRateOfSale(currentFacility.tier)));
+    const fee = Math.max(1, Math.round(gross * burnRateOfSale(snap.tier)));
     return { gross, fee, net: gross - fee, ratio: prod.marketValueFlora > 0 ? gross / prod.marketValueFlora : 1 };
   };
 
-  const sellProduct = async (productId: string): Promise<void> => {
-    const prod = processedProducts.find(p => p.id === productId);
-    const q = quoteSale(productId);
-    if (!prod || !q) return;
-    if (ledgerRef.current) {
-      // the server prices the sale (its market depth is the one that counts); the batch leaves the warehouse right away and comes back if refused
-      playHarvestChime();
-      setProcessedProducts(prev => prev.filter(p => p.id !== productId));
-      const r = await intent<{ gross: number; fee: number; net: number; ratio: number }>('sell', { type: prod.type, recipe: prod.recipeId, grams: prod.quantityGrams });
-      if (!r.ok) { setProcessedProducts(prev => [prod, ...prev]); showNotification(reasonText(r.error) ?? tr('No se pudo vender ({error})', { error: r.error }), 'info'); return; }
-      applySnapshot(r.snapshot);
-      setBrand(prev => ({ ...prev, totalSalesFlora: prev.totalSalesFlora + r.result.gross, reputation: Math.min(100, prev.reputation + 1) }));
-      reportEvent('sell', 1);
-      recordBurnTransaction('BURN_PROCESS', r.result.fee, tr('Yield Bud Empire Dispensario: comisión y licencia ({name})', { name: prod.name }), true);
-      const sat = r.result.ratio < 0.8 ? tr(' · el mercado está saturado: pagó al {v0} % del precio', { v0: Math.round(r.result.ratio * 100) }) : '';
-      showNotification(tr('¡Venta realizada en el Dispensario! Recibiste +{net} $FLORA (comisión y licencia {fee} quemados{sat})', { net: r.result.net, fee: r.result.fee, sat }), 'success');
-      return;
-    }
-
-    playHarvestChime();
-    // the depth is updated with the sale itself (splitting a sale never pays more), then the fee and the licence are burned
-    setMarketDepth(saleRevenue(prod.marketValueFlora / Math.max(0.01, prod.quantityGrams), prod.quantityGrams, marketDepth, Date.now()).depth);
-    setFloraBalance(prev => prev + q.gross);
-    const rate = burnRateOfSale(currentFacility.tier);
-    recordBurnTransaction('BURN_PROCESS', q.fee, tr('Yield Bud Empire Dispensario: comisión de mercado y licencia {v0} % ({name})', { v0: (rate * 100).toFixed(1), name: prod.name }));
-    setProcessedProducts(prev => prev.filter(p => p.id !== productId));
-    setBrand(prev => ({
-      ...prev,
-      totalSalesFlora: prev.totalSalesFlora + q.gross,
-      reputation: Math.min(100, prev.reputation + 1)
-    }));
-
-    reportEvent('sell', 1);
-    const saturated = q.ratio < 0.8 ? tr(' · el mercado está saturado: pagó al {v0} % del precio', { v0: Math.round(q.ratio * 100) }) : '';
-    showNotification(tr('¡Venta realizada en el Dispensario! Recibiste +{net} $FLORA{v1} (comisión y licencia {fee} quemados{saturated})', { net: q.net, v1: staffMods.sellBonus > 0 ? tr(' (incluye +{v0} % de tu dispensaria)', { v0: Math.round(staffMods.sellBonus * 100) }) : '', fee: q.fee, saturated }), 'success');
+  /* ── server-only actions (awaited) ── */
+  const openChest = async (id: ChestId, currency: 'FLORA' | 'SOL' = 'FLORA') => {
+    const r = await send<{ designId: string; isNew: boolean; refund: number; owned: { designId: string; count: number; firstAt: number; serial: number } }>('openChest', { chestId: id, currency });
+    if (!r) return null;
+    const design = DESIGN_BY_ID[r.designId];
+    return { design, isNew: r.isNew, refund: r.refund, owned: { ...r.owned, mint: mintAddressFor(`av-${design.id}`) } };
   };
 
-  // Redeem V2P (Virtual to Physical)
-  const redeemV2p = (item: V2pRedemptionItem, shippingDetails: { name: string; country: string }): boolean => {
-    if (floraBalance < item.requiredFlora) {
-      showNotification(tr('Saldo insuficiente: Requiere {requiredFlora} $FLORA para canjear este producto físico', { requiredFlora: item.requiredFlora }), 'info');
-      return false;
-    }
-    if (item.stockPhysical <= 0) {
-      showNotification(tr('Agotado temporalmente en el almacén físico'), 'info');
-      return false;
-    }
+  const value: GameContextType = {
+    walletAddress: wallet.walletAddress, isWalletConnected: wallet.isWalletConnected, solanaNetwork: wallet.solanaNetwork, setSolanaNetwork,
+    connectedWalletType: wallet.connectedWalletType, connectWallet, connectSpecificWallet, generateVirtualKeypair, signAuthMessageTest, refreshLiveBalance, disconnectWallet,
+    floraBalance: snap.flora, solBalance: s.solBalance, totalFloraBurned: s.totalFloraBurned, burnStats: s.burnStats, transactions: s.transactions, requestAirdrop,
+    ledgerOn: online, myListings: snap.listings ?? [], gifts: snap.gifts ?? [], p2pInfo: snap.p2p,
+    openGift: (giftId) => send('openGift', { giftId }),
+    listNft: async (ref, price) => (await send('listNft', { ...ref, price })) !== null,
+    cancelListing: async (listingId) => (await send('cancelListing', { listingId })) !== null,
+    buyListing: async (listingId) => {
+      const r = await send<{ kind: ListingView['kind']; nftId: string; price: number; fee: number; data: Record<string, unknown> }>('buyListing', { listingId });
+      return r ? { id: listingId, nftId: r.nftId, kind: r.kind, rarity: '', price: r.price, createdAt: 0, sellerId: 0, data: r.data } : null;
+    },
+    claimDaily: async () => { await send('claimDaily'); },
+    faucetAt: snap.faucetAt, quoteSale,
 
-    const sig = generateSolanaSignature();
-    recordBurnTransaction('V2P_CLAIM', item.requiredFlora, tr('Yield Bud Empire: Canje Físico V2P ({title}) a {country}', { title: item.title, country: shippingDetails.country }));
+    currentUser, isAuthenticated: true, logoutUser, updateUserProfile,
 
-    setV2pItems(prev => prev.map(i => i.id === item.id ? { ...i, stockPhysical: i.stockPhysical - 1 } : i));
-    setRedeemedV2pList(prev => [
-      { item, timestamp: Date.now(), txSig: sig, recipient: `${shippingDetails.name} (${shippingDetails.country})` },
-      ...prev
-    ]);
-    setBrand(prev => ({ ...prev, totalV2pShipped: prev.totalV2pShipped + 1 }));
+    facilities, currentFacility,
+    upgradeFacility: async (facilityId) => { await send('upgradeFacility', { facilityId }); },
+    construction: snap.construction,
+    speedUpConstruction: async () => (await send('speedUpConstruction')) !== null,
+    staff: snap.staff, staffAssign: snap.staffAssign, staffPity: snap.staffPity, staffMods, shopPrice, staffIn,
+    hireCandidate: (c) => send<StaffNft>('hireCandidate', { candidateId: c.id }),
+    openStaffChest: (id) => send<StaffNft>('openStaffChest', { chestId: id }),
+    assignStaff: async (role, staffId) => { await send('assignStaff', { role, staffId }); },
+    rankUpStaff: async (staffId) => (await send('rankUpStaff', { staffId })) !== null,
+    staffWagesPerDay,
+    strains, activePlant, indoorPlants, selectedPlantIndex,
+    selectPlant: (i) => { if (i >= 0 && i < indoorPlants.length) ui.setSelectedPlantIndex(i); },
+    waterAllPlants: () => { act('waterAllPlants'); },
+    feedAllPlants: () => { act('feedAllPlants'); },
+    harvestAllReadyPlants: () => { act('harvestAllReadyPlants'); },
+    speedUpIndoorRoom: () => ok(act('speedUpIndoorRoom')),
+    trainIndoorCanopy: () => { act('trainIndoorCanopy'); },
+    plantNewSeed: (strain) => { act('plantNewSeed', { idx, strainId: strain.id }); },
+    waterPlant: () => { act('waterPlant', { idx }); },
+    feedNutrients: () => { act('feedNutrients', { idx }); },
+    setTemperature: (temp) => { act('setTemperature', { idx, temp }); },
+    setHumidity: (rh) => { act('setHumidity', { idx, rh }); },
+    setPpfd: (ppfd) => { act('setPpfd', { ppfd }); },
+    setLightSchedule: (schedule) => { act('setLightSchedule', { schedule }); },
+    trainPlant: (technique) => ok(act('trainPlant', { idx, technique })),
+    speedUpGrowth: () => ok(act('speedUpGrowth', { idx })),
+    harvestPlant: () => { act('harvestPlant', { idx }); },
 
-    confetti({
-      particleCount: 120,
-      spread: 90,
-      origin: { y: 0.5 }
-    });
+    rawFlowerGrams: inv.flower, trimGrams: inv.trim, materials: inv.materials as Materials, forgeJobs: snap.forgeJobs ?? [],
+    forgeCraft: (recipeId, qty) => ok(act('forgeCraft', { recipeId, qty })),
+    breedingJobs: s.breedingJobs, breedingLog: s.breedingLog,
+    crossBreed: (motherId, fatherId, name, useReagent) => ok(act('crossBreed', { motherId, fatherId, name, useReagent })),
+    processedProducts: s.products, machines,
+    processRawFlower: (type, grams) => ok(act('processRawFlower', { type, grams })),
+    runLabProcess: (spec) => act('runLabProcess', { recipeId: spec.recipeId, grams: spec.grams }).result as ProcessedProduct | null,
+    getPlantEta: (plant) => etaSeconds(plant, simEnv),
+    certifyProduct: (productId) => act('certifyProduct', { productId }).result as ProcessedProduct | null,
+    repairMachine: (machineId) => ok(act('repairMachine', { machineId })),
 
-    showNotification(tr('¡Orden V2P confirmada! Se quemaron {requiredFlora} $FLORA. Certificado emitido en Solana', { requiredFlora: item.requiredFlora }), 'success');
-    return true;
+    patents: s.patents,
+    breedStrains: (a, b, name) => act('breedStrains', { parentAId: a.id, parentBId: b.id, name }).result as Strain | null,
+    registerPatent: (strain) => ok(act('registerPatent', { strainId: strain.id, wallet: wallet.walletAddress })),
+
+    seedBank, seedInventory: s.seedInventory,
+    buySeed: (seedId, currency = 'FLORA') => ok(act('buySeed', { seedId, currency })),
+    plantFromSeedBank: (seedId) => ok(act('plantFromSeedBank', { idx, seedId })),
+    suppliesMarket,
+    buySupply: (supplyId, currency = 'FLORA') => ok(act('buySupply', { supplyId, currency, idx })),
+
+    assets: s.assets, equipStats, resources,
+    buyAsset: (catalogId, currency = 'FLORA', qty = 1) => ok(act('buyAsset', { catalogId, currency, qty })),
+    setAssetEquipped: (assetId, equipped) => { act('setAssetEquipped', { assetId, equipped }); },
+    repairAsset: (assetId) => ok(act('repairAsset', { assetId })),
+    ownsStation: (stationId) => ownsStation(s.assets, stationId),
+
+    missions: s.missions,
+    reportEvent: (event) => { if (UI_EVENTS.has(event)) act('reportEvent', { event }); },
+    claimStoryMission: (id) => act('claimStoryMission', { id }).result as string | null,
+    claimErrandMission: (npc) => act('claimErrandMission', { npc }).result as string | null,
+    tutorial: s.tutorial,
+    startTutorial: () => { act('startTutorial'); },
+    claimTutorialStep: () => act('claimTutorialStep').result as string | null,
+    skipTutorialStep: () => { act('skipTutorialStep'); },
+    patchTutorial: (p) => { act('patchTutorial', p); },
+    care: careInfo,
+    treatPests: (scope, plotId) => { act('treatPests', { scope, idx, plotId }); },
+    cleanRoom: () => ok(act('cleanRoom')),
+    recycleGarbage: () => { act('recycleGarbage'); },
+
+    plots, plotsForSale,
+    buyPlot: async (offerId, currency = 'FLORA') => (await send('buyPlot', { offerId, currency })) !== null,
+    plantPlot: (plotId, seedId, count) => ok(act('plantPlot', { plotId, seedId, count, brand: ui.selectedNutrientBrand })),
+    waterPlot: (plotId, all = false) => { act('waterPlot', { plotId, all }); },
+    feedPlot: (plotId) => { act('feedPlot', { plotId }); },
+    harvestPlot: (plotId) => { act('harvestPlot', { plotId }); },
+    plotEta: (plot, plant) => plotEtaSeconds(plant, plot.region, plot.ratings),
+    removeMales: (plotId) => { act('removeMales', { plotId }); },
+    avatars, chestPity: snap.avatarPity, showNotification, openChest,
+    equipAvatar: (designId) => { act('equipAvatar', { designId }); },
+    keepMaleAsFather: (plotId, slot) => { act('keepMaleAsFather', { plotId, slot }); },
+
+    nutrientBrands: NUTRIENT_BRANDS_DATABASE, selectedNutrientBrand: ui.selectedNutrientBrand, setSelectedNutrientBrand: ui.setSelectedNutrientBrand,
+    applyNutrientStage: (stageIndex) => { act('applyNutrientStage', { idx, brandId: ui.selectedNutrientBrand, stageIndex }); },
+    applyFertigation: (f) => ok(act('applyFertigation', { idx, scope: f.scope, mix: f.mix, stage: f.stage, medium: f.medium, label: f.label, brandName: f.brandName })),
+    quizCorrect: (symptomId) => { act('quizXp', { symptomId, answer: symptomId }); },
+    claimChallenge: (challengeId, mix) => ok(act('challengeXp', { challengeId, mix })),
+    ufoCaught: () => (act('ufoCaught').result as number | null) ?? 0,
+
+    currentRoom: s.currentRoom,
+    switchGrowRoom: (roomId) => { act('switchGrowRoom', { idx, roomId }); },
+    co2Ppm: s.co2Ppm,
+    setCo2Ppm: (ppm) => { act('setCo2Ppm', { idx, ppm }); },
+    autoWaterActive: s.autoWaterActive, toggleAutoWater: () => { act('toggleAutoWater'); },
+    autoClimateActive: s.autoClimateActive, toggleAutoClimate: () => { act('toggleAutoClimate'); },
+    calibrateMeter: (meter) => { act('calibrateMeter', { meter }); },
+
+    mothersFathers: s.mothersFathers,
+    saveCurrentPlantAsMotherOrFather: (role) => ok(act('saveCurrentPlantAsMotherOrFather', { idx, role })),
+    takeCloneFromMother: (motherId) => ok(act('takeCloneFromMother', { motherId, idx })),
+    collectPollenFromFather: (fatherId) => (act('collectPollenFromFather', { fatherId }).result as number | null) ?? 0,
+    hybridizeParents: (motherId, fatherId, name) => act('hybridizeParents', { motherId, fatherId, name }).result as Strain | null,
+
+    brand: s.brand,
+    updateBrand: (name, tagline) => { act('updateBrand', { name, tagline }); },
+    sellProduct: (productId) => { act('sellProduct', { productId }); },
+    v2pItems,
+    redeemV2p: (item, d) => ok(act('redeemV2p', { itemId: item.id, name: d.name, country: d.country })),
+    redeemedV2pList: s.redeemed,
+
+    playerLevel: s.playerLevel, playerXp: s.playerXp, xpNeeded: XP_NEEDED(s.playerLevel), rankTitle: rankTitleOf(s.playerLevel), quests,
+    claimQuestReward: (questId) => { void send('claimQuestReward', { questId }); },
+    executeManualRosinPress: (yieldBonus, _quality, isCritical) => { if (yieldBonus > 0) act('executeManualRosinPress', { result: isCritical ? 'critical' : 'good' }); },
+
+    soundEnabled: ui.sound,
+    toggleSound: () => { const next = !ui.sound; ui.setSound(next); setSoundEnabled(next); },
+    notification: ui.notification, clearNotification: ui.clearNotification,
   };
 
-  // --- NPC MISSIONS: resources for playing, never free $FLORA ---
-  const grantReward = (r: MissionReward, title: string) => {
-    const lots = (r.lots ?? []).flatMap(l => Array.from({ length: l.qty ?? 1 }, () => newAsset(l.id)));
-    if (lots.length) setAssets(prev => [...prev, ...lots]);
-    if (r.seeds) {
-      const seeds = r.seeds;
-      setSeedInventory(prev => {
-        const next = { ...prev };
-        for (const [id, n] of Object.entries(seeds)) next[id] = (next[id] || 0) + n;
-        return next;
-      });
-    }
-    addXp(Math.round(r.xp * (1 + staffMods.missionBonus)), tr('Misión: {title}', { title }));
-    playHarvestChime();
-    confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#fbbf24', '#38bdf8'] });
-    const list = rewardSummary(r, id => CATALOG_BY_ID[id]?.name ?? id, id => seedBank.find(x => x.id === id)?.name ?? id).join(' · ');
-    showNotification(tr('🎁 Misión cumplida: {title} — {list}', { title, list }), 'success');
-  };
-
-  const claimStoryMission = (id: string): string | null => {
-    const c = claimStory(missionsRef.current, id);
-    if (!c) return null;
-    applyMissions(c.state);
-    grantReward(c.reward, tr(c.title));
-    return tr(c.say);
-  };
-
-  const claimErrandMission = (npc: NpcKind): string | null => {
-    const c = claimErrand(missionsRef.current, npc);
-    if (!c) return null;
-    applyMissions(c.state);
-    grantReward(c.reward, tr(c.title));
-    return tr(c.say);
-  };
-
-  // --- CHRONO'S TUTORIAL ---
-  const startTutorial = () => applyTutorial(startTutState(tutorialRef.current, missionsRef.current));
-  const claimTutorialStep = (): string | null => {
-    const c = claimTutStep(tutorialRef.current, missionsRef.current);
-    if (!c) return null;
-    applyTutorial(c.state);
-    grantReward(c.reward, tr(c.title));
-    return tr(c.say);
-  };
-  const skipTutorialStep = () => applyTutorial(skipTutStep(tutorialRef.current, missionsRef.current));
-  const patchTutorial = (p: Partial<TutorialState>) => applyTutorial({ ...tutorialRef.current, ...p });
+  // the functions keep their identity between renders (screens use them in effects), and always call the latest version
+  const latest = useRef(value); latest.current = value;
+  const stable = useRef<Record<string, (...a: unknown[]) => unknown>>({});
+  const out = {} as Record<string, unknown>;
+  for (const [k, v] of Object.entries(value)) {
+    out[k] = typeof v === 'function' ? (stable.current[k] ??= (...a: unknown[]) => ((latest.current as unknown as Record<string, (...x: unknown[]) => unknown>)[k])(...a)) : v;
+  }
 
   return (
-    <GameContext.Provider
-      value={{
-        walletAddress,
-        isWalletConnected,
-        solanaNetwork,
-        setSolanaNetwork,
-        connectedWalletType,
-        connectWallet,
-        connectSpecificWallet,
-        generateVirtualKeypair,
-        signAuthMessageTest,
-        refreshLiveBalance,
-        disconnectWallet,
-        floraBalance,
-        solBalance,
-        totalFloraBurned,
-        burnStats,
-        transactions,
-        requestAirdrop,
-        ledgerOn, gifts, openGift, myListings, p2pInfo, listNft, cancelListing, buyListing,
-        claimDaily,
-        faucetAt,
-        quoteSale,
-
-        // User Accounts & Data Isolation
-        currentUser,
-        isAuthenticated,
-        allUserProfiles,
-        loginUser,
-        registerUser,
-        loginWithSolanaWallet,
-        switchUserAccount,
-        importLocalSave,
-        logoutUser,
-        updateUserProfile,
-
-        facilities,
-        currentFacility,
-        upgradeFacility,
-        construction,
-        speedUpConstruction,
-        staff,
-        staffAssign,
-        staffPity,
-        staffMods,
-        shopPrice,
-        staffIn,
-        hireCandidate,
-        openStaffChest,
-        assignStaff,
-        rankUpStaff,
-        staffWagesPerDay,
-        strains,
-        activePlant,
-        indoorPlants,
-        selectedPlantIndex,
-        selectPlant,
-        waterAllPlants,
-        feedAllPlants,
-        harvestAllReadyPlants,
-        plantIndoorBatch,
-        speedUpIndoorRoom,
-        trainIndoorCanopy,
-        plantNewSeed,
-        waterPlant,
-        assets,
-        equipStats,
-        resources,
-        buyAsset,
-        setAssetEquipped,
-        repairAsset,
-        ownsStation: (stationId: string) => ownsStation(assets, stationId),
-        care: careInfo,
-        missions,
-        reportEvent,
-        claimStoryMission,
-        claimErrandMission,
-        tutorial,
-        startTutorial,
-        claimTutorialStep,
-        skipTutorialStep,
-        patchTutorial,
-        plots,
-        plotsForSale,
-        buyPlot,
-        plantPlot,
-        waterPlot,
-        feedPlot,
-        harvestPlot,
-        plotEta,
-        removeMales,
-        avatars,
-        chestPity,
-        showNotification,
-        openChest,
-        equipAvatar,
-        keepMaleAsFather,
-        treatPests,
-        cleanRoom,
-        recycleGarbage,
-        feedNutrients,
-        setTemperature,
-        setHumidity,
-        setPpfd,
-        setLightSchedule,
-        trainPlant,
-        speedUpGrowth,
-        harvestPlant,
-
-        rawFlowerGrams,
-        trimGrams,
-        materials,
-        forgeJobs,
-        forgeCraft,
-        breedingJobs,
-        breedingLog,
-        crossBreed,
-        processedProducts,
-        machines,
-        processRawFlower,
-        runLabProcess,
-        getPlantEta: (plant: PlantInGrow) => etaSeconds(plant, simEnvRef.current),
-        certifyProduct,
-        repairMachine,
-
-        patents,
-        breedStrains,
-        registerPatent,
-
-        // Seed Bank & Supplies
-        seedBank,
-        seedInventory,
-        buySeed,
-        plantFromSeedBank,
-        suppliesMarket,
-        buySupply,
-
-        // Nutrients
-        nutrientBrands,
-        selectedNutrientBrand,
-        setSelectedNutrientBrand,
-        applyNutrientStage,
-        applyFertigation,
-
-        // Rooms & Microclimate Automation
-        currentRoom,
-        switchGrowRoom,
-        co2Ppm,
-        setCo2Ppm,
-        autoWaterActive,
-        toggleAutoWater,
-        autoClimateActive,
-        toggleAutoClimate,
-        calibrateMeter,
-
-        // Mothers & Fathers
-        mothersFathers,
-        saveCurrentPlantAsMotherOrFather,
-        takeCloneFromMother,
-        collectPollenFromFather,
-        hybridizeParents,
-
-        brand,
-        updateBrand,
-        sellProduct,
-        v2pItems,
-        redeemV2p,
-        redeemedV2pList,
-
-        soundEnabled: sound,
-        toggleSound,
-
-        // Gaming Progression
-        playerLevel,
-        playerXp,
-        xpNeeded,
-        rankTitle,
-        addXp,
-        quests,
-        claimQuestReward,
-        executeManualRosinPress,
-
-        notification,
-        clearNotification
-      }}
-    >
+    <GameContext.Provider value={out as unknown as GameContextType}>
       {children}
+      {!online && (
+        <div role="status" className="fixed top-2 left-1/2 -translate-x-1/2 z-[500] px-3 py-1.5 rounded-full bg-amber-400/95 text-neutral-950 text-xs font-bold shadow-lg flex items-center gap-1.5">
+          <WifiOff className="w-3.5 h-3.5" /> {tr('Sin conexión, reintentando…')}
+        </div>
+      )}
     </GameContext.Provider>
   );
 };
 
 export const useGame = () => {
   const context = useContext(GameContext);
-  if (!context) {
-    throw new Error('useGame must be used within a GameProvider');
-  }
+  if (!context) throw new Error('useGame must be used within a GameProvider');
   return context;
 };
 
@@ -3856,3 +792,5 @@ export const useAssignedStaff = (role: StaffRole): { staff: StaffNft; working: b
   const c = useContext(GameContext);
   return c ? c.staffIn(role) : null;
 };
+
+export { CATALOG_BY_ID };

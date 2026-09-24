@@ -11,6 +11,7 @@ import {
   makeChallenge, parseCookies, passwordProblem, pkcePair, rand, readJson, reservedUsername, safeEqual, usernameKey, validEmail, validUsername, verifyPasswordAsync,
 } from './lib.mjs';
 import { installEconomy } from './economy.mjs';
+import { installGame } from './game.mjs';
 import { createPrereg } from './prereg.mjs';
 import { installWallet } from './wallet.mjs';
 
@@ -568,6 +569,7 @@ function finishOAuth(ctx, name, data, fail, rawInvite, terms) {
 
 export const economy = installEconomy({ db, route, HttpError, sessionAccount, audit, limit, readJson });
 export const wallet = installWallet({ db, route, HttpError, sessionAccount, audit, limit, readJson });
+export const game = installGame({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy });
 
 /* ───────────────────────────── server ───────────────────────────── */
 

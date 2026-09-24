@@ -31,3 +31,20 @@ El juego abre en el idioma del navegador (español → ES, cualquier otro → EN
 - `src/i18n/core.ts` no usa React (lo importan la simulación y el servidor); el hook `useLang()` está en `src/i18n/index.ts`.
 - Codemod para archivos nuevos: `TS5_DIR=<carpeta con typescript@5> node scripts/i18n-wrap.mjs [--mark --all-props] [--data] archivo…`
   (el proyecto usa TypeScript 7, que no trae la API de compilador) y revisar el diff.
+
+## El juego corre en el servidor
+
+Nada de la partida vive en el navegador. El navegador es una pantalla: pide el estado y manda acciones; el servidor decide.
+
+- **Núcleo** (`src/core/`, sin React): `state.ts` (la partida y su normalización con topes), `actions.ts` (cada acción, validada),
+  `tick.ts` (el reloj del mundo: crecimiento, consumo, plagas, entregas de forja y cría), `run.ts` (XP, misiones, quemas, insumos).
+  Se empaqueta para el servidor en `server/gen/sim.mjs` (`npm run build:server`).
+- **Servidor** (`server/game.mjs`): tabla `game_state`; `GET /api/game/state` y `POST /api/game/action {type, params, idem}`, cada una
+  en una transacción con la economía (`server/economy.mjs`: $FLORA, NFT, inventario). La clave `idem` evita aplicar dos veces un doble clic.
+  El azar lo pone el servidor; el tiempo, su reloj. Las acciones que la economía hacía por pedido del navegador (cosechar, procesar,
+  premios, gastos sueltos) ya no se pueden pedir desde afuera: solo corren dentro de una acción del juego.
+- **Navegador** (`src/context/GameContext.tsx` + `src/core/predict.ts`): predice cada acción con el mismo núcleo para que la pantalla
+  responda al instante, la manda, y la respuesta del servidor reemplaza la predicción. Sin conexión muestra «Sin conexión, reintentando…».
+- **Migración**: al arrancar, las cuentas con la partida vieja del navegador (tabla `saves`) pasan al servidor con topes (nivel ≤ el ya
+  pagado, semillas y lotes con máximo, plantas dentro de lo posible). `node server/admin.mjs games` muestra cómo quedó cada una.
+- **Pruebas**: `npm run auth:test` (servidor, incluye ataques: mandar estado, acciones inventadas, adelantar el reloj, rendimientos falsos).

@@ -35,7 +35,9 @@ export const LabFloor: React.FC = () => {
   const recipe: LabRecipe | undefined = station.recipes[Math.min(recipeIdx, Math.max(0, station.recipes.length - 1))];
   const [grams, setGrams] = useState(20);
   const [phase, setPhase] = useState<'idle' | 'running' | 'done'>('idle');
-  const [result, setResult] = useState<ProcessedProduct | null>(null);
+  const [shown, setResult] = useState<ProcessedProduct | null>(null);
+  // the card shows the batch as the server confirmed it (its dice decide the quality), right after the instant prediction
+  const result = shown ? processedProducts.find((p) => p.id === shown.id) ?? shown : null;
   const [profile, setProfile] = useState<CoaProfile | null>(null);
   const [hplcId, setHplcId] = useState<string | null>(null);
   const npc = useNpc(t('¡Bienvenido a la Planta Industrial! Soy la Dra. Lucía. Elige una estación y cuéntame qué vamos a procesar.'));

@@ -11,3 +11,7 @@ export * as products from '../src/sim/products';
 export * as harvestCap from '../src/sim/harvestCap';
 export * as forge from '../src/sim/forge';
 export * as breeding from '../src/sim/breeding';
+// the whole game core (server/game.mjs runs it) and the language switch for the messages it writes
+export * as core from '../src/core/index';
+export { useLangNow } from '../src/i18n/core';
+export { EN } from '../src/i18n/en';

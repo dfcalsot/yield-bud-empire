@@ -32,7 +32,7 @@ export const LabTab: React.FC<{
   prefs: NutriPrefs; setPrefs: (p: Partial<NutriPrefs> | ((p: NutriPrefs) => Partial<NutriPrefs>)) => void;
   seed: { doses: Record<string, number>; stage: StageId; key: number } | null; onOpenSymptom: (id: string) => void;
 }> = ({ prefs, setPrefs, seed, onOpenSymptom }) => {
-  const { nutrientBrands, selectedNutrientBrand, activePlant, applyFertigation, addXp, showNotification, resources } = useGame();
+  const { nutrientBrands, selectedNutrientBrand, activePlant, applyFertigation, claimChallenge, showNotification, resources } = useGame();
   const brand = nutrientBrands.find((b) => b.id === selectedNutrientBrand) ?? nutrientBrands[0];
   const medium = MEDIUM_BY_ID[prefs.medium];
   const [stage, setStage] = useState<StageId>(() => (activePlant ? stageOfProgress(activePlant.progressPercent) : 'veg_late'));
@@ -112,9 +112,9 @@ export const LabTab: React.FC<{
   };
   const claim = () => {
     if (!challenge || !goal?.ok || done) return;
+    // the server checks the mix itself and gives the XP once
+    if (!claimChallenge(challenge.id, mix)) return;
     setPrefs((p) => ({ challengesDone: [...p.challengesDone, challenge.id] }));
-    addXp(challenge.xp, tr('Reto: {title}', { title: challenge.title }));
-    showNotification(tr('Reto superado: {title} (+{xp} XP)', { title: challenge.title, xp: challenge.xp }), 'success');
     npc.speak(tr('¡Eso es ciencia de verdad! Anótalo: esta receta funciona en la vida real igual que aquí.'), 'happy');
   };
 
@@ -126,8 +126,7 @@ export const LabTab: React.FC<{
   };
   const apply = (scope: 'one' | 'all') => {
     if (used.length === 0) { showNotification(tr('Prepara una solución en el vaso primero'), 'info'); return; }
-    const e = feedEffect(sol, d);
-    applyFertigation({ ...e, score: d.score, label: challenge ? challenge.title : tr('Receta propia'), scope, brandName: 'Receta propia' });
+    applyFertigation({ mix, stage, medium: prefs.medium, label: challenge ? challenge.title : tr('Receta propia'), scope, brandName: 'Receta propia' });
   };
 
   const group = (title: string, list: Ingredient[]) => (

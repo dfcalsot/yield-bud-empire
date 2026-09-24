@@ -5,7 +5,6 @@ import { Navbar } from './components/Navbar';
 import { CultivationView } from './components/CultivationView';
 import { PlanetView } from './components/planet/PlanetView';
 import { ProfileView } from './components/profile/ProfileView';
-import { LocalSavesBanner } from './components/profile/LocalSaves';
 import { AuthGate } from './auth/AuthGate';
 import { SeedBankView } from './components/SeedBankView';
 import { GrowMarketView } from './components/GrowMarketView';
@@ -19,7 +18,6 @@ import { TokenomicsView } from './components/TokenomicsView';
 import { WhitepaperView } from './components/WhitepaperView';
 import { WalletModal } from './components/wallet/WalletModal';
 import { GiftChest } from './components/wallet/GiftChest';
-import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { NotificationToast } from './components/NotificationToast';
 import { TxToast } from './components/TxToast';
@@ -37,10 +35,9 @@ import { NAV_GROUPS, TAB_ZONE, groupOfTab, type TabId } from './nav';
 import { t, useLang } from './i18n';
 
 function YieldBudEmpireApp() {
-  const { indoorPlants, reportEvent } = useGame();
+  const { indoorPlants, reportEvent, logoutUser } = useGame();
   const [currentTab, setCurrentTab] = useState<string>('cultivo');
   const [isWalletModalOpen, setIsWalletModalOpen] = useState<boolean>(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [bagOpen, setBagOpen] = useState<boolean>(false);
   const [bagTab, setBagTab] = useState<string | undefined>(undefined);
@@ -112,7 +109,7 @@ function YieldBudEmpireApp() {
       <Navbar 
         setCurrentTab={goToTab}
         onOpenWalletModal={() => setIsWalletModalOpen(true)}
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenAuthModal={() => window.location.reload()}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
       />
 
@@ -125,8 +122,6 @@ function YieldBudEmpireApp() {
             <QuestProgressBar />
           </div>
         </div>
-
-        <LocalSavesBanner onOpenProfile={() => goToTab('perfil')} />
 
         {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && currentTab !== 'cultivo' && <ResourceBar onOpenMarket={openMarket} />}
 
@@ -159,20 +154,11 @@ function YieldBudEmpireApp() {
       {/* Game wallet: in-game address, balances, and linked Solana / Ronin wallets */}
       <WalletModal isOpen={isWalletModalOpen} onClose={() => setIsWalletModalOpen(false)} />
 
-      {/* User Login & Registration Modal (Data Isolation per User) */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-      />
-
       {/* User Profile & Account Settings Modal */}
       <UserProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
-        onOpenSwitchAccounts={() => {
-          setIsProfileModalOpen(false);
-          setIsAuthModalOpen(true);
-        }}
+        onOpenSwitchAccounts={() => logoutUser()}
         onOpenWalletModal={() => {
           setIsProfileModalOpen(false);
           setIsWalletModalOpen(true);
@@ -197,8 +183,8 @@ export default function App() {
   // the game only opens for a signed-in session (see server/ and SECURITY.md)
   return (
     <AuthGate>
-      {() => (
-        <GameProvider>
+      {(account) => (
+        <GameProvider account={account}>
           <YieldBudEmpireApp key={lang} />
         </GameProvider>
       )}

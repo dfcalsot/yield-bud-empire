@@ -23,7 +23,7 @@ const GLOSSARY: { t: string; d: string }[] = localize([
 ], ['t', 'd']);
 
 export const GuideTab: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<NutriPrefs> | ((p: NutriPrefs) => Partial<NutriPrefs>)) => void; focus: { id: string; key: number } | null }> = ({ prefs, setPrefs, focus }) => {
-  const { addXp, showNotification } = useGame();
+  const { quizCorrect } = useGame();
   const [sel, setSel] = useState<string>(SYMPTOMS[0].id);
   const [mode, setMode] = useState<'explore' | 'quiz'>('explore');
   const s = SYMPTOM_BY_ID[sel];
@@ -55,7 +55,7 @@ export const GuideTab: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<Nutri
           </section>
         </div>
       ) : (
-        <Quiz prefs={prefs} setPrefs={setPrefs} onXp={(n, why) => { addXp(n, why); showNotification(`${why} (+${n} XP)`, 'success'); }} npcSpeak={npc.speak} npc={npc} />
+        <Quiz prefs={prefs} setPrefs={setPrefs} onXp={quizCorrect} npcSpeak={npc.speak} npc={npc} />
       )}
 
       <section className="hud-panel p-4 sm:p-5">
@@ -72,7 +72,7 @@ const Fact: React.FC<{ k: string; v: string; good?: boolean }> = ({ k, v, good }
 
 const shuffle = <T,>(a: T[], seed: number): T[] => { const r = [...a]; let x = seed; for (let i = r.length - 1; i > 0; i--) { x = (x * 1664525 + 1013904223) % 4294967296; const j = x % (i + 1); [r[i], r[j]] = [r[j], r[i]]; } return r; };
 
-const Quiz: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<NutriPrefs> | ((p: NutriPrefs) => Partial<NutriPrefs>)) => void; onXp: (n: number, why: string) => void; npcSpeak: (t: string, m?: 'idle' | 'happy' | 'sad' | 'busy') => void; npc: ReturnType<typeof useNpc> }> = ({ prefs, setPrefs, onXp, npcSpeak, npc }) => {
+const Quiz: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<NutriPrefs> | ((p: NutriPrefs) => Partial<NutriPrefs>)) => void; onXp: (symptomId: string) => void; npcSpeak: (t: string, m?: 'idle' | 'happy' | 'sad' | 'busy') => void; npc: ReturnType<typeof useNpc> }> = ({ prefs, setPrefs, onXp, npcSpeak, npc }) => {
   const [round, setRound] = useState(0);
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1e6));
   const [picked, setPicked] = useState<string | null>(null);
@@ -88,7 +88,7 @@ const Quiz: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<NutriPrefs> | ((
     setPicked(id);
     if (id === cur.id) {
       setScore((v) => v + 1);
-      if (!prefs.quizDone.includes(cur.id)) { setPrefs((p) => ({ quizDone: [...p.quizDone, cur.id] })); onXp(12, tr('Diagnóstico acertado: {title}', { title: cur.title })); }
+      if (!prefs.quizDone.includes(cur.id)) { setPrefs((p) => ({ quizDone: [...p.quizDone, cur.id] })); onXp(cur.id); }
       npcSpeak(tr('¡Correcto! {look}', { look: cur.look }), 'happy');
     } else npcSpeak(tr('Casi. Era «{title}»: {confirm}', { title: cur.title, confirm: cur.confirm }), 'sad');
   };

@@ -47,8 +47,7 @@ export const TablesTab: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<Nutr
   const nutrientStock = resources.nutrient;
   const canApply = !!activePlant;
   const apply = (scope: 'one' | 'all') => {
-    const e = feedEffect(sel.sol, sel.d);
-    applyFertigation({ ...e, score: sel.d.score, label: `${brand.name} · ${sel.name}`, scope, brandName: brand.name });
+    applyFertigation({ mix: sel.mix, stage: sel.stageId, medium: prefs.medium, label: `${brand.name} · ${sel.name}`, scope, brandName: brand.name });
   };
 
   return (
