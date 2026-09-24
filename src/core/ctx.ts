@@ -25,6 +25,8 @@ export interface Ext {
   forgeJobs: ForgeJobView[];
   /** empire rank and its perks (null before the server has counted them) */
   empire: EmpireView | null;
+  /** a developer account (test balance): it can play, but never take anything real out with $FLORA */
+  dev?: boolean;
 }
 
 export interface Ctx {

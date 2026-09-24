@@ -29,13 +29,14 @@ CREATE TABLE IF NOT EXISTS game_idem (account_id INTEGER NOT NULL, idem TEXT NOT
   const rng = () => crypto.randomInt(0, 2 ** 32) / 2 ** 32;
 
   /** the economy's side of the account, as the core reads it */
+  const isDev = (id) => /(^|,)dev,/.test(db.prepare('SELECT flags FROM accounts WHERE id = ?').get(id)?.flags ?? '');
   function extOf(id, now) {
     const st = econ.stateOf(id), w = econ.wallet(id);
     const facility = C.facilityOfTier(st.tier);
     return {
       flora: w.flora, tier: st.tier, facility, mods: econ.activeMods(id, st, now),
       plots: econ.free(id, 'land'), avatars: econ.free(id, 'avatar').map((a) => a.designId),
-      inventory: econ.inventoryOf(id), forgeJobs: Array.isArray(st.forgeJobs) ? st.forgeJobs : [], empire: econ.empireOf(id),
+      inventory: econ.inventoryOf(id), forgeJobs: Array.isArray(st.forgeJobs) ? st.forgeJobs : [], empire: econ.empireOf(id), dev: isDev(id),
     };
   }
 

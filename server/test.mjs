@@ -807,6 +807,19 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   await call('GET', '/api/game/state', { jar: EQ.jar, ip: EQ.ip });
   ok('imperio: el nivel de jugador y lo del juego llegan al desglose', (await state(EQ)).snapshot.empire.breakdown.tier === 450);
 }
+// ── cuentas de desarrollador: juegan con su saldo de prueba, pero nada real sale con $FLORA
+{
+  const DV = await mkPlayer(95); await state(DV); setFlora(DV, 2_000_000);
+  db.prepare("UPDATE accounts SET flags = flags || 'dev,' WHERE id = ?").run(DV.id);
+  const r = await call('POST', '/api/game/action', { jar: DV.jar, ip: DV.ip, body: { type: 'redeemV2p', params: { itemId: 'v2p_cbd_drops', name: 'X', country: 'CR' } } });
+  ok('desarrollador: no puede canjear productos reales (V2P) y no se le cobra', r.status === 400 && /desarrollador/.test(r.json.text ?? '') && wallet(DV).flora === 2_000_000);
+  ok('desarrollador: el estado lo dice', (await state(DV)).snapshot.dev === true);
+  const w = await call('POST', '/api/game/action', { jar: DV.jar, ip: DV.ip, body: { type: 'waterPlant', params: { idx: 0 } } });
+  ok('desarrollador: puede jugar normal', w.status === 200);
+  const NP = await mkPlayer(96); await state(NP); setFlora(NP, 5000);
+  const n = await call('POST', '/api/game/action', { jar: NP.jar, ip: NP.ip, body: { type: 'redeemV2p', params: { itemId: 'v2p_grow_hoodie', name: 'Y', country: 'CR' } } });
+  ok('una cuenta normal sí canjea', n.status === 200 && (await state(NP)).snapshot.dev === false);
+}
 // ── idioma de la cuenta: correos en inglés para quien juega en inglés
 {
   cfg.inviteOnly = false;

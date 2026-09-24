@@ -59,6 +59,7 @@ export function extOfSnapshot(snap: Snapshot, now: number): Ext {
     inventory: snap.inventory ?? { flower: 0, trim: 0, materials: {}, products: {} },
     forgeJobs: snap.forgeJobs ?? [],
     empire: snap.empire ?? null,
+    dev: snap.dev,
   };
 }
 

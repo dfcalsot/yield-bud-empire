@@ -1,4 +1,4 @@
-// Operator tool: node server/admin.mjs stats | games | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
+// Operator tool: node server/admin.mjs stats | games | dev <username> [off] | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
 //                | invite [cantidad] [usos] [nota] | invites | revoke <código> | seats <N> | wave <N> | waiting | prereg
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
@@ -31,6 +31,14 @@ if (cmd === 'stats') {
   console.table(db.prepare("SELECT id, username, email, source, email_verified AS ok, flags, datetime(created_at/1000,'unixepoch') AS creada FROM accounts WHERE flags != '' ORDER BY created_at DESC LIMIT 100").all());
 } else if (cmd === 'audit') {
   console.table(db.prepare("SELECT datetime(ts/1000,'unixepoch') AS cuando, event, account_id AS cuenta, ip_hash, detail FROM audit ORDER BY ts DESC LIMIT ?").all(Number(arg ?? 30)));
+} else if (cmd === 'dev') {
+  // developer account: keeps its test balance for playing, but can never take anything real out with $FLORA (V2P, future withdrawals)
+  const a = db.prepare('SELECT id, flags FROM accounts WHERE username = ?').get(arg);
+  if (!a) { console.error('no existe ese usuario'); process.exit(1); }
+  if (extra === 'off') db.prepare("UPDATE accounts SET flags = replace(flags, 'dev,', '') WHERE id = ?").run(a.id);
+  else if (!/(^|,)dev,/.test(a.flags)) db.prepare("UPDATE accounts SET flags = flags || 'dev,' WHERE id = ?").run(a.id);
+  console.log(extra === 'off' ? `${arg}: ya no es cuenta de desarrollador` : `${arg}: cuenta de desarrollador (sin canjes reales con $FLORA)`);
+  console.table(db.prepare("SELECT id, username, flags FROM accounts WHERE flags LIKE '%dev,%'").all());
 } else if (cmd === 'ban' || cmd === 'unban') {
   const a = db.prepare('SELECT id FROM accounts WHERE username = ?').get(arg);
   if (!a) { console.error('no existe ese usuario'); process.exit(1); }

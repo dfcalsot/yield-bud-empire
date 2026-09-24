@@ -27,6 +27,8 @@ export interface Snapshot {
   forgeJobs?: Array<{ id: string; recipeId: string; qty: number; startedAt: number; endsAt: number }>;
   /** empire rank, its points by source and its perks (sim/empire.ts) */
   empire?: EmpireView;
+  /** developer account: it plays, but nothing real can be taken out with $FLORA */
+  dev?: boolean;
   gifts: Array<{ id: number; amount: number; note: string; createdAt: number }>;
   listings: ListingView[]; p2p: { feeRate: number; minPrice: number; maxPrice: number; maxListings: number };
 }

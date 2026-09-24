@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     invItem: db.prepare('SELECT grams FROM inventory WHERE account_id = ? AND item = ?'),
     putInv: db.prepare('INSERT INTO inventory (account_id, item, grams) VALUES (?,?,?) ON CONFLICT(account_id, item) DO UPDATE SET grams = excluded.grams'),
     save: db.prepare('SELECT data, saved_at FROM saves WHERE account_id = ?'),
+    flagsOf: db.prepare('SELECT flags FROM accounts WHERE id = ?'),
     salesOf: db.prepare("SELECT COALESCE(SUM(delta), 0) s FROM ledger WHERE account_id = ? AND kind = 'sale'"),
     putSave: db.prepare('INSERT INTO saves (account_id, data, saved_at, updated_at) VALUES (?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET data = excluded.data, saved_at = excluded.saved_at, updated_at = excluded.updated_at'),
   };
@@ -227,6 +228,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       // el nivel más alto que el servidor ya pagó: el juego nunca muestra menos (antes se perdía al cambiar de navegador)
       level: Math.max(1, ...(st.levelsClaimed ?? [1]).filter(Number.isFinite)),
       empire: empireOf(id),
+      dev: /(^|,)dev,/.test(q.flagsOf.get(id)?.flags ?? ''),
       gifts: q.giftsOf.all(id).map((g) => ({ id: g.id, amount: g.amount, note: g.note, createdAt: g.created_at })),
       listings: q.activeOf.all(id).map(listingView), p2p: { feeRate: P2P.feeRate, minPrice: P2P.minPrice, maxPrice: P2P.maxPrice, maxListings: P2P.maxListings },
     };

@@ -1022,6 +1022,7 @@ export const ACTIONS: Record<string, Action> = {
   redeemV2p(r, p) {
     const item = v2pItemsOf(r.s).find((x) => x.id === p.itemId);
     if (!item) throw new GameError('bad_params');
+    if (r.ctx.ext().dev) no(tr('Las cuentas de desarrollador no pueden canjear productos reales con $FLORA.'));
     if (r.ctx.ext().flora < item.requiredFlora) no(tr('Saldo insuficiente: Requiere {requiredFlora} $FLORA para canjear este producto físico', { requiredFlora: item.requiredFlora }));
     if (item.stockPhysical <= 0) no(tr('Agotado temporalmente en el almacén físico'));
     const name = P.opt(p.name, 60), country = P.opt(p.country, 40);
