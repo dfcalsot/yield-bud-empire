@@ -9,7 +9,7 @@ import { ROLE_INFO, variantOf, type StaffRole } from '../../../sim/staff';
 import { PremiumBust } from '../../staff/premium/PremiumBust';
 import { RARITY_STYLE } from '../../game/GameUI';
 import { t, k } from '../../../i18n';
-import { useNpcArt3d } from '../art3d';
+import { NPC_ART3D, staffArt3d, useNpcArt3d } from '../art3d';
 import { Portrait3d } from '../Portrait3d';
 
 /**
@@ -75,10 +75,12 @@ export const NpcV2: React.FC<{
   return (
     <div className={`flex items-end gap-1 min-w-0 ${className}`}>
       {hired ? (
-        <div ref={ref} className={`shrink-0 rounded-2xl overflow-hidden ring-1 ${bare ? 'w-[92px] h-[115px]' : 'w-[132px] h-[165px] sm:w-[156px] sm:h-[195px]'}`} style={{ ['--tw-ring-color' as string]: aura, boxShadow: hired.staff.rarity === 'common' ? undefined : `0 0 22px -6px ${aura}` }} data-staff={hired.staff.id}>
-          <PremiumBust role={kind as StaffRole} variant={variantOf(hired.staff)} rarity={hired.staff.rarity} seed={hired.staff.seed} mood={mood} talking={talking} viseme={visemeOf(shown[shown.length - 1])} crop />
+        <div ref={ref} className={`relative shrink-0 rounded-2xl overflow-hidden ring-1 ${bare ? 'w-[92px] h-[115px]' : 'w-[132px] h-[165px] sm:w-[156px] sm:h-[195px]'}`} style={{ ['--tw-ring-color' as string]: aura, boxShadow: hired.staff.rarity === 'common' ? undefined : `0 0 22px -6px ${aura}` }} data-staff={hired.staff.id}>
+          {art3d && staffArt3d(kind, variantOf(hired.staff))
+            ? <img className={`staff3d ${talking ? 'staff3d--talk' : ''}`} src={staffArt3d(kind, variantOf(hired.staff))!} alt="" draggable={false} />
+            : <PremiumBust role={kind as StaffRole} variant={variantOf(hired.staff)} rarity={hired.staff.rarity} seed={hired.staff.seed} mood={mood} talking={talking} viseme={visemeOf(shown[shown.length - 1])} crop />}
         </div>
-      ) : art3d ? (
+      ) : art3d && NPC_ART3D.has(kind === 'merchant' ? shop : kind) ? (
         <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d shrink-0 ${bare ? 'w-[96px] h-[96px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
           <Portrait3d id={kind === 'merchant' ? shop : kind} talking={talking} />
         </div>

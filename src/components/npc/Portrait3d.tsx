@@ -6,7 +6,6 @@ import React from 'react';
  */
 type Fx = 'sparkles' | 'glint' | 'neon' | 'bubbles' | 'dna' | 'sun';
 const FX: Record<string, { fx: Fx[]; at?: [number, number] }> = {
-  chrono: { fx: ['sparkles'] },
   foreman: { fx: ['glint'], at: [37, 54] },
   flora: { fx: ['neon'] },
   floro: { fx: ['neon'] },

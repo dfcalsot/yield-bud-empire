@@ -3,6 +3,7 @@ import { Star } from 'lucide-react';
 import { RarityFrame, RARITY_STYLE } from '../game/GameUI';
 import { PremiumBust } from './premium/PremiumBust';
 import { LOOKS } from './premium/looks';
+import { staffArt3d, useNpcArt3d } from '../npc/art3d';
 import { effectsOf, ROLE_INFO, STAT_LABEL, TRAITS, variantOf, wageOf, type StaffNft, type StatId } from '../../sim/staff';
 import { mintAddressFor, serialFor, shortAddress } from '../../utils/nft';
 import { t as tr } from '../../i18n';
@@ -11,11 +12,17 @@ import { t as tr } from '../../i18n';
 export const fmtStat = (k: StatId, v: number): string => (k === 'seedBonus' ? `+${v}` : `${k === 'shopDiscount' ? '−' : '+'}${(v * 100).toFixed(v * 100 < 10 ? 1 : 0)} %`);
 
 /** The hire's portrait: one of the six premium characters of its job (which one depends on its rarity and seed). */
-export const StaffPortrait: React.FC<{ staff: StaffNft; className?: string; animated?: boolean }> = ({ staff, className = '', animated = true }) => (
-  <div className={`overflow-hidden ${/\b(absolute|fixed)\b/.test(className) ? '' : 'relative'} ${className}`}>
-    <PremiumBust role={staff.role} variant={variantOf(staff)} rarity={staff.rarity} seed={staff.seed} animated={animated} crop />
-  </div>
-);
+export const StaffPortrait: React.FC<{ staff: StaffNft; className?: string; animated?: boolean }> = ({ staff, className = '', animated = true }) => {
+  const art3d = useNpcArt3d();
+  const src = art3d ? staffArt3d(staff.role, variantOf(staff)) : null;
+  return (
+    <div className={`overflow-hidden ${/\b(absolute|fixed)\b/.test(className) ? '' : 'relative'} ${className}`}>
+      {src
+        ? <img className="staff3d" src={src} alt="" loading="lazy" draggable={false} />
+        : <PremiumBust role={staff.role} variant={variantOf(staff)} rarity={staff.rarity} seed={staff.seed} animated={animated} crop />}
+    </div>
+  );
+};
 
 /** The staff NFT as a collectible card: portrait, rarity, rank stars, effects, traits, wage and its (simulated) mint. */
 export const StaffCard: React.FC<{ staff: StaffNft; faceDown?: boolean; selected?: boolean; footer?: React.ReactNode; badge?: React.ReactNode; onClick?: () => void; className?: string }> = ({ staff, faceDown, selected, footer, badge, onClick, className = '' }) => {
