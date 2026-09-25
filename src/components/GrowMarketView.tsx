@@ -268,7 +268,7 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
       {art3d && <div className="mk-scene" style={{ backgroundImage: `url(${sceneArt3d('merchant')})` }} aria-hidden />}
       {!art3d && <Awning />}
 
-      <div className="relative z-10 px-4 sm:px-6 pt-14 pb-6 space-y-5">
+      <div className={`relative z-10 px-4 sm:px-6 ${art3d ? 'pt-4' : 'pt-14'} pb-6 space-y-5`}>
         {/* keeper + sign + wallet */}
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-end">
           <div className="min-w-0">
