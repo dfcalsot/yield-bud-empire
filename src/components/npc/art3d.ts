@@ -15,11 +15,6 @@ const read = (): boolean => {
   } catch { return false; }
 };
 
-export const NPC_ART_3D: Record<string, string> = {
-  chrono: '/npc3d/chrono.webp', foreman: '/npc3d/foreman.webp', flora: '/npc3d/flora.webp', floro: '/npc3d/floro.webp',
-  farmer: '/npc3d/farmer.webp', scientist: '/npc3d/scientist.webp', geneticist: '/npc3d/geneticist.webp', budtender: '/npc3d/budtender.webp',
-};
-
 export function useNpcArt3d(): boolean {
   const [on, setOn] = useState<boolean>(read);
   useEffect(() => {
