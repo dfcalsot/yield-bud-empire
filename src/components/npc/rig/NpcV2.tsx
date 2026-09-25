@@ -67,13 +67,18 @@ export const NpcV2: React.FC<{
   }, [text]);
 
   const talking = shown.length < text.length;
+  // 3D trial: the character's scene fills the whole panel behind the portrait and the bubble (a hire's portrait is one flat image, so it is blurred)
+  const scene = bare || !art3d ? null
+    : hired ? { src: staffArt3d(kind, variantOf(hired.staff)), blur: true }
+    : NPC_ART3D.has(kind === 'merchant' ? shop : kind) ? { src: `/npc3d/${kind === 'merchant' ? shop : kind}-bg.webp`, blur: false } : null;
   const Fig = kind === 'merchant' && shop === 'floro' ? Floro : FIGURES[kind];
   const label = hired
     ? `${hired.staff.name} · ${t(ROLE_INFO[kind as StaffRole].label)} ${'★'.repeat(hired.staff.rank)}${hired.working ? '' : t(' · sin pagar')}`
     : kind === 'merchant' ? t('{v0} · Grow Shop', { v0: shopkeeperName(shop) }) : t(NPC_NAMES_V2[kind]);
 
   return (
-    <div className={`flex items-end gap-1 min-w-0 ${className}`}>
+    <div className={`flex items-end gap-1 min-w-0 ${scene ? 'npc-scene' : ''} ${className}`}>
+      {scene && <div className={`npc-scene-bg ${scene.blur ? 'npc-scene-bg--blur' : ''}`} style={{ backgroundImage: `url(${scene.src})` }} aria-hidden />}
       {hired ? (
         <div ref={ref} className={`relative shrink-0 rounded-2xl overflow-hidden ring-1 ${bare ? 'w-[92px] h-[115px]' : 'w-[132px] h-[165px] sm:w-[156px] sm:h-[195px]'}`} style={{ ['--tw-ring-color' as string]: aura, boxShadow: hired.staff.rarity === 'common' ? undefined : `0 0 22px -6px ${aura}` }} data-staff={hired.staff.id}>
           {art3d

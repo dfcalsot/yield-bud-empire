@@ -102,3 +102,10 @@
 .p3d-spark { position: absolute; width: 9px; height: 9px; transform: translate(-50%, -50%); z-index: 3; pointer-events: none; background: radial-gradient(circle, #fff 0 18%, rgba(255, 230, 150, 0.9) 30%, transparent 62%); clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%); animation: p3dSpark 2.2s ease-in-out infinite; opacity: 0; }
 @keyframes p3dSpark { 0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(0); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.3) rotate(45deg); } }
 @media (prefers-reduced-motion: reduce) { .p3d *, .p3d *::after { animation: none !important; } }
+
+/* 3D trial: the character's own scene as the background of the whole row (portrait + bubble), darker on the bubble side */
+.npc-scene { position: relative; isolation: isolate; overflow: hidden; border-radius: 14px; padding: 8px 8px 0; }
+.npc-scene-bg { position: absolute; inset: 0; z-index: -1; background-size: cover; background-position: center; animation: p3dDrift 20s ease-in-out infinite alternate; }
+.npc-scene-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(3, 10, 8, 0.1) 0%, rgba(3, 10, 8, 0.45) 45%, rgba(3, 10, 8, 0.65) 100%); }
+.npc-scene-bg--blur { filter: blur(14px) saturate(1.15); inset: -12%; }
+@media (prefers-reduced-motion: reduce) { .npc-scene-bg { animation: none; } }
