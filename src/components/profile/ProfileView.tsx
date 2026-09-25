@@ -168,7 +168,7 @@ export const ProfileView: React.FC<{ onOpenAccountModal: () => void }> = ({ onOp
 
         {tab === 'chests' && (
           <div className="space-y-4 shop-swap">
-            <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="merchant" text={t(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>
+            <div className="hud-panel px-3 pt-3 pb-1"><Npc kind="merchant" scene="perfil" text={t(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>
             <div className="rounded-2xl border p-4 flex flex-wrap items-center justify-between gap-3" style={{ borderColor: `${season.colors[0]}66`, background: `linear-gradient(120deg, ${season.colors[0]}22, transparent)` }}>
               <div><div className="text-[10px] font-mono uppercase tracking-[0.2em]" style={{ color: season.colors[0] }}>{t('Temporada actual')}</div><div className="font-serif text-xl font-black text-white">{season.emoji} {t(season.name)}</div><div className="text-xs text-neutral-400">{t(season.tagline)}</div></div>
               <div className="text-right"><div className="text-[10px] font-mono text-neutral-400">{t('termina en')}</div><div className="text-2xl font-black font-mono text-white">{daysLeftInSeason(now)} d</div></div>

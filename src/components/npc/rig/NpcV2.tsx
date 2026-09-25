@@ -44,7 +44,9 @@ export const NpcV2: React.FC<{
   plain?: boolean;
   /** 3D trial: the page already paints the scene behind (e.g. the whole market), so the row draws none */
   noScene?: boolean;
-}> = ({ kind, text, mood, moodKey, bare, className = '', variant, plain, noScene }) => {
+  /** 3D trial: a page's own scene instead of the job's (e.g. 'perfil', 'tablas') */
+  scene?: string;
+}> = ({ kind, text, mood, moodKey, bare, className = '', variant, plain, noScene, scene: pageScene }) => {
   const [chosen] = useShopkeeper();
   // when a hired NFT holds this character's job, its portrait (a personal variation of the character) replaces the default one
   const hiredRaw = useAssignedStaff(kind as StaffRole);
@@ -73,7 +75,7 @@ export const NpcV2: React.FC<{
   // its own portrait blurred); characters without a scene stand on the plain panel
   const who = kind === 'merchant' ? shop : kind;
   const scene = bare || !art3d || noScene ? null
-    : sceneArt3d(hired ? kind : who) ? { src: sceneArt3d(hired ? kind : who)!, blur: false }
+    : sceneArt3d(pageScene ?? (hired ? kind : who)) ? { src: sceneArt3d(pageScene ?? (hired ? kind : who))!, blur: false }
     : hired ? { src: staffArt3d(kind, variantOf(hired.staff)), blur: true } : null;
   // the 3D characters are always cut-outs (no box, no backdrop of their own), in panels and in the small cameos alike
   const cutout = true;

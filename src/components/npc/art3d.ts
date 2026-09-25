@@ -7,8 +7,8 @@ import { useEffect, useState } from 'react';
  */
 export const NPC_ART3D = new Set(['chrono', 'foreman', 'flora', 'floro', 'farmer', 'scientist', 'geneticist', 'budtender']);
 
-/** wide scenes painted for the panel behind a character (`public/npc3d/<file>-scene.webp`), by job; the rest use their portrait's backdrop */
-const SCENES: Record<string, string> = { foreman: 'foreman', merchant: 'growshop', flora: 'growshop', floro: 'growshop', geneticist: 'geneticist', scientist: 'scientist', budtender: 'budtender' };
+/** wide scenes painted for the panel behind a character (`public/npc3d/<file>-scene.webp`): by job, plus a few by page (`perfil`, `tablas`) */
+const SCENES: Record<string, string> = { foreman: 'foreman', merchant: 'growshop', flora: 'growshop', floro: 'growshop', geneticist: 'geneticist', scientist: 'scientist', budtender: 'budtender', farmer: 'farmer', perfil: 'perfil', tablas: 'tablas' };
 export const sceneArt3d = (id: string): string | null => (SCENES[id] ? `/npc3d/${SCENES[id]}-scene.webp` : null);
 
 /** the 3D portrait of a staff design (`public/staff3d/<role>-<variant>.webp`; merchant-1 is retired, see RETIRED_VARIANTS) */
