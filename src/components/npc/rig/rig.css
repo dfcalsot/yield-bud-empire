@@ -109,3 +109,7 @@
 .npc-scene-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(3, 10, 8, 0.1) 0%, rgba(3, 10, 8, 0.45) 45%, rgba(3, 10, 8, 0.65) 100%); }
 .npc-scene-bg--blur { filter: blur(14px) saturate(1.15); inset: -12%; }
 @media (prefers-reduced-motion: reduce) { .npc-scene-bg { animation: none; } }
+/* over a painted scene the character stands on it: no box, no frame, just a soft ground shadow */
+.npc3d--cutout { border-radius: 0; box-shadow: none; }
+.p3d--cutout { overflow: visible; border-radius: 0; }
+.p3d--cutout .p3d-fg { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.6)); }

@@ -17,13 +17,14 @@ const FX: Record<string, { fx: Fx[]; at?: [number, number] }> = {
 
 const SPARKS: Array<[number, number, number]> = [[12, 18, 0], [84, 14, 0.7], [90, 62, 1.4], [8, 70, 2.1], [70, 88, 0.4], [26, 90, 1.8], [52, 6, 1.1]];
 
-export const Portrait3d: React.FC<{ id: string; talking: boolean; className?: string }> = ({ id, talking, className = '' }) => {
+/** `cutout`: only the character (no backdrop, no frame), for when the panel behind already paints the scene */
+export const Portrait3d: React.FC<{ id: string; talking: boolean; className?: string; cutout?: boolean }> = ({ id, talking, className = '', cutout }) => {
   const def = FX[id] ?? { fx: [] };
   const at = def.at ?? [50, 50];
   return (
-    <div className={`p3d p3d--${id} ${talking ? 'p3d--talk' : ''} ${def.fx.map((f) => `p3d-fx-${f}`).join(' ')} ${className}`}>
-      <div className="p3d-bg" style={{ backgroundImage: `url(/npc3d/${id}-bg.webp)` }} />
-      {def.fx.includes('sun') && <div className="p3d-sun" />}
+    <div className={`p3d p3d--${id} ${cutout ? 'p3d--cutout' : ''} ${talking ? 'p3d--talk' : ''} ${def.fx.map((f) => `p3d-fx-${f}`).join(' ')} ${className}`}>
+      {!cutout && <div className="p3d-bg" style={{ backgroundImage: `url(/npc3d/${id}-bg.webp)` }} />}
+      {!cutout && def.fx.includes('sun') && <div className="p3d-sun" />}
       {def.fx.includes('dna') && <div className="p3d-glow" style={{ left: `${at[0]}%`, top: `${at[1]}%` }} />}
       <img className="p3d-fg" src={`/npc3d/${id}-fg.webp`} alt="" draggable={false} />
       {def.fx.includes('glint') && <div className="p3d-glint" style={{ left: `${at[0]}%`, top: `${at[1]}%` }} />}

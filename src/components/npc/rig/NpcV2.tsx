@@ -89,8 +89,8 @@ export const NpcV2: React.FC<{
             : <PremiumBust role={kind as StaffRole} variant={variantOf(hired.staff)} rarity={hired.staff.rarity} seed={hired.staff.seed} mood={mood} talking={talking} viseme={visemeOf(shown[shown.length - 1])} crop />}
         </div>
       ) : art3d && NPC_ART3D.has(kind === 'merchant' ? shop : kind) ? (
-        <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d shrink-0 ${bare ? 'w-[96px] h-[96px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
-          <Portrait3d id={kind === 'merchant' ? shop : kind} talking={talking} />
+        <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d ${scene ? 'npc3d--cutout' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
+          <Portrait3d id={kind === 'merchant' ? shop : kind} talking={talking} cutout={!!scene} />
         </div>
       ) : (
       <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} shrink-0`}>
