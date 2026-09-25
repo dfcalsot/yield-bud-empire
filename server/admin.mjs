@@ -91,7 +91,10 @@ if (cmd === 'stats') {
   const amount = Math.floor(Number(extra));
   if (!a) { console.error('no existe una cuenta con ese correo'); process.exit(1); }
   if (!Number.isFinite(amount) || amount < 1 || amount > 10_000_000) { console.error('monto inválido (1 a 10 000 000)'); process.exit(1); }
-  const note = process.argv.slice(5).join(' ').slice(0, 120) || 'Regalo de la casa';
+  // "texto en español | text in English" → the chest shows each player the note in their language
+  const raw = process.argv.slice(5).join(' ');
+  const [es, en] = raw.split(' | ').map((s) => s.trim().slice(0, 120));
+  const note = en ? JSON.stringify({ es, en }) : (es || 'Regalo de la casa');
   const r = db.prepare('INSERT INTO gifts (account_id, amount, note, created_at) VALUES (?,?,?,?)').run(a.id, amount, note, Date.now());
   db.prepare('INSERT INTO audit (ts, event, account_id, ip_hash, detail) VALUES (?,?,?,?,?)').run(Date.now(), 'admin_gift', a.id, null, String(amount));
   console.log(`cofre #${r.lastInsertRowid} enviado a la cuenta #${a.id} (${a.username}): ${amount} $FLORA · «${note}»`);
@@ -151,4 +154,4 @@ if (cmd === 'stats') {
 } else if (cmd === 'revoke') {
   const r = db.prepare('UPDATE invites SET revoked = 1 WHERE code = ?').run(String(arg ?? '').toUpperCase().trim());
   console.log(r.changes ? 'código anulado' : 'no existe ese código');
-} else console.log('uso: node server/admin.mjs stats | flagged | audit [n] | ban <usuario> | unban <usuario> | setpass <correo> | gift <correo> <monto> [nota] | invite [cantidad] [usos] [nota] | invites | revoke <código> | seats <N> | wave <N> | waiting | prereg');
+} else console.log('uso: node server/admin.mjs stats | flagged | audit [n] | ban <usuario> | unban <usuario> | setpass <correo> | gift <correo> <monto> [nota ES | nota EN] | invite [cantidad] [usos] [nota] | invites | revoke <código> | seats <N> | wave <N> | waiting | prereg');

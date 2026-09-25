@@ -4,7 +4,15 @@ import { Flame, X } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { playHarvestChime } from '../../utils/audio';
 import '../hud/hud.css';
-import { t } from '../../i18n';
+import { getLang, t } from '../../i18n';
+
+/** the house's note: plain text, or `{"es": "…", "en": "…"}` for both languages (see `admin.mjs gift`) */
+const noteText = (note?: string): string => {
+  if (note && note.startsWith('{')) {
+    try { const n = JSON.parse(note) as Record<string, string>; return n[getLang()] || n.es || n.en || t('Regalo de la casa'); } catch { /* plain text */ }
+  }
+  return note || t('Regalo de la casa');
+};
 
 /** The treasure chest itself: body, iron bands, lock, and a lid that swings open over a pile of coins. */
 const ChestArt: React.FC<{ open?: boolean; shaking?: boolean; onClick?: () => void; small?: boolean }> = ({ open, shaking, onClick, small }) => {
@@ -75,14 +83,14 @@ export const GiftChest: React.FC = () => {
             </div>
             {phase !== 'open' && (
               <>
-                <p className="text-[12px] text-neutral-300 leading-snug">{t('{v0}. Toca el cofre para abrirlo.', { v0: first?.note || t('Regalo de la casa') })}</p>
+                <p className="text-[12px] text-neutral-300 leading-snug">{t('{v0}. Toca el cofre para abrirlo.', { v0: noteText(first?.note) })}</p>
                 <button type="button" className="fp-cta w-full justify-center" disabled={phase === 'shaking'} onClick={doOpen} data-gift-open>{phase === 'shaking' ? t('Abriendo…') : t('Abrir cofre')}</button>
               </>
             )}
             {phase === 'open' && got && (
               <div className="gc-amount space-y-2">
                 <div className="text-3xl font-black font-mono text-amber-300 flex items-center justify-center gap-2" data-testid="gift-amount"><Flame className="w-6 h-6" />+{got.amount.toLocaleString()} $FLORA</div>
-                <p className="text-[12px] text-neutral-300">{t('{v0}. Ya está en tu cartera.', { v0: got.note || t('Regalo de la casa') })}</p>
+                <p className="text-[12px] text-neutral-300">{t('{v0}. Ya está en tu cartera.', { v0: noteText(got.note) })}</p>
                 <button type="button" className="fp-cta w-full justify-center" onClick={close}>{t('¡Gracias!')}</button>
               </div>
             )}
