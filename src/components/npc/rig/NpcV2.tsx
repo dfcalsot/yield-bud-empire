@@ -9,6 +9,7 @@ import { ROLE_INFO, variantOf, type StaffRole } from '../../../sim/staff';
 import { PremiumBust } from '../../staff/premium/PremiumBust';
 import { RARITY_STYLE } from '../../game/GameUI';
 import { t, k } from '../../../i18n';
+import { NPC_ART_3D, useNpcArt3d } from '../art3d';
 
 /**
  * NPC rig v2. Same contract as `Npc` (kind, text, mood, moodKey, bare) so it can replace it call site by call site,
@@ -50,6 +51,7 @@ export const NpcV2: React.FC<{
   const [shown, setShown] = useState(text);
   const ref = useRef<HTMLDivElement>(null);
   const gaze = useLook(ref);
+  const art3d = useNpcArt3d();
 
   useEffect(() => {
     if (reducedMotion()) { setShown(text); return; }
@@ -74,6 +76,10 @@ export const NpcV2: React.FC<{
       {hired ? (
         <div ref={ref} className={`shrink-0 rounded-2xl overflow-hidden ring-1 ${bare ? 'w-[92px] h-[115px]' : 'w-[132px] h-[165px] sm:w-[156px] sm:h-[195px]'}`} style={{ ['--tw-ring-color' as string]: aura, boxShadow: hired.staff.rarity === 'common' ? undefined : `0 0 22px -6px ${aura}` }} data-staff={hired.staff.id}>
           <PremiumBust role={kind as StaffRole} variant={variantOf(hired.staff)} rarity={hired.staff.rarity} seed={hired.staff.seed} mood={mood} talking={talking} viseme={visemeOf(shown[shown.length - 1])} crop />
+        </div>
+      ) : art3d ? (
+        <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d ${talking ? 'npc3d--talk' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
+          <img src={NPC_ART_3D[kind === 'merchant' ? shop : kind]} alt="" draggable={false} className="w-full h-full object-cover rounded-2xl" />
         </div>
       ) : (
       <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} shrink-0`}>

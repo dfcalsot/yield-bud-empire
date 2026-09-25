@@ -70,3 +70,11 @@
 @media (prefers-reduced-motion: reduce) {
   .v2-npc *, .v2-npc { animation: none !important; transition: none !important; }
 }
+
+/* trial: 3D-mascot portraits (?arte=3d) — a soft frame, a slow breath, and a small bob while talking */
+.npc3d { border-radius: 1rem; box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(185, 220, 85, 0.35); }
+.npc3d img { transform-origin: 50% 90%; animation: npc3dBreath 3.6s ease-in-out infinite; }
+.npc3d--talk img { animation: npc3dTalk 0.32s ease-in-out infinite alternate; }
+@keyframes npc3dBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.018); } }
+@keyframes npc3dTalk { from { transform: scale(1) translateY(0); } to { transform: scale(1.025) translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { .npc3d img, .npc3d--talk img { animation: none; } }
