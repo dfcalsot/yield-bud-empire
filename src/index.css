@@ -809,11 +809,6 @@ body::before {
 .care-btn--gold { border-color: rgba(251, 191, 36, 0.6); background: rgba(245, 158, 11, 0.14); color: #fde68a; }
 @media (prefers-reduced-motion: reduce) { .pl-stage *, .pl-field * { animation: none !important; } }
 
-/* ───────── cameos ───────── */
-.cameo-chip { max-width: 15rem; margin: 0 0 -6px 46px; padding: 6px 10px; border-radius: 12px; border: 1px solid rgba(217, 249, 157, 0.4); background: rgba(24, 19, 50, 0.92);
-  font: 600 11px/1.3 ui-monospace, monospace; color: #d1fae5; animation: mkBubbleIn 0.3s ease-out; transform-origin: 20% 100%; box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.8); }
-.cameo-chip::after { content: ''; position: absolute; left: 24px; bottom: -6px; width: 10px; height: 10px; transform: rotate(45deg); background: rgba(24, 19, 50, 0.92); border-right: 1px solid rgba(217, 249, 157, 0.4); border-bottom: 1px solid rgba(217, 249, 157, 0.4); }
-.cameo-chip { position: relative; }
 .pl-badge--male { right: -1px; bottom: 1px; width: 13px; height: 13px; display: grid; place-items: center; border-radius: 50%; background: #38bdf8; color: #04121c; font-size: 10px; font-weight: 900; }
 .pl-badge--bee { left: -1px; bottom: 0; }
 .care-btn--male { border-color: rgba(56, 189, 248, 0.55); background: rgba(14, 165, 233, 0.12); color: #bae6fd; }

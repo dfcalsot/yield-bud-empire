@@ -3,7 +3,6 @@ import { Droplet, Scissors, Flame, Zap, Crown, Sprout, Hand } from 'lucide-react
 import { useGame } from '../context/GameContext';
 import { GROW_ROOMS_CONFIG } from '../data/initialData';
 import { PlantView } from './PlantView';
-import { GardenerCameo } from './npc/GardenerCameo';
 import { NutrientBottle, FlaskLeaf, CannabisLeaf } from './icons/CannabisIcons';
 import { formatDuration, isHungry, isThirsty, PEST_INFO } from '../sim/engine';
 import { nextActionFor } from '../sim/nextAction';
@@ -190,7 +189,6 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
         ))}
       </div>
 
-      {care.gardenerLevel > 0 && <GardenerCameo />}
       {techOpen && activePlant && <TechniqueMenu plant={activePlant} onClose={() => setTechOpen(false)} />}
 
       {/* ── skill hotbar (keys 1–6) ── */}
