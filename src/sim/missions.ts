@@ -43,7 +43,7 @@ export interface MissionDef {
 /* ───────────────────────────── story lines (ordered per NPC) ───────────────────────────── */
 
 export const STORY: MissionDef[] = localize<MissionDef[]>([
-  // Flora · Grow Shop
+  // Flor · Grow Shop
   { id: 'flora_1', npc: 'merchant', title: k('Primera compra'), event: 'buy', goal: 1, reward: { lots: [{ id: 'water_50' }], xp: 30 },
     ask: k('Mire, jefe, un cultivador que no compra no crece. Llévese cualquier cosa de la tienda y le regalo agua.'), thanks: k('¡Trato hecho! Agua limpia de la casa.') },
   { id: 'flora_2', npc: 'merchant', title: k('Cliente de confianza'), event: 'buy', goal: 3, reward: { lots: [{ id: 'nut_biobizz' }], xp: 50 },

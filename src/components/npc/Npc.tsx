@@ -21,7 +21,7 @@ export const NPC_NAMES: Record<NpcKind, string> = {
   budtender: NPC_NAMES_V2.budtender,
 };
 
-/** Display name of a character; the grow-shop keeper depends on the player's choice (Flora / Floro). */
+/** Display name of a character; the grow-shop keeper depends on the player's choice (Flor / Rudy; internal ids 'flora' / 'floro'). */
 export const npcName = (kind: NpcKind, shop: Shopkeeper = 'flora') => (kind === 'merchant' ? t('{v0} · Grow Shop', { v0: shopkeeperName(shop) }) : NPC_NAMES[kind]);
 
 /** Speech state for a character: `speak(text, mood)` restarts the reaction animation even when the mood repeats. */

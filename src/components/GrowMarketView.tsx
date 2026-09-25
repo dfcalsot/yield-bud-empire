@@ -269,7 +269,7 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-end">
           <div className="min-w-0">
             <Merchant text={t(say.text)} mood={say.mood} moodKey={say.key} />
-            <button type="button" onClick={() => setShop(shop === 'flora' ? 'floro' : 'flora')} className="mt-1 ml-1 text-[10.5px] font-mono text-neutral-400 hover:text-white underline underline-offset-2 cursor-pointer">{t('⇄ Cambiar de tendero ({v0})', { v0: shop === 'flora' ? t('Floro') : t('Flora') })}</button>
+            <button type="button" onClick={() => setShop(shop === 'flora' ? 'floro' : 'flora')} className="mt-1 ml-1 text-[10.5px] font-mono text-neutral-400 hover:text-white underline underline-offset-2 cursor-pointer">{t('⇄ Cambiar de tendero ({v0})', { v0: shop === 'flora' ? t('Rudy') : t('Flor') })}</button>
           </div>
           <div className="space-y-3">
             <div className="mk-sign">

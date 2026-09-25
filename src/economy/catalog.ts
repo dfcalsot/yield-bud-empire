@@ -136,11 +136,11 @@ export const CATALOG: CatalogItem[] = localize<CatalogItem[]>([
     description: k('Amplio espectro: cura ácaros, moho y pudrición. Protege 96 h.'), specs: [{ label: k('Contenido'), value: '500 ml' }, { label: k('Trata'), value: k('Las 3 plagas') }, { label: k('Protección'), value: '96 h' }] },
 
   /* ── Servicios de vivero (modo vivero: jardineros contratados) ── */
-  { id: 'svc_apprentice_7', category: 'service', kind: 'consumable', name: k('Jardinero Aprendiz · 7 días'), brand: 'Vivero de Flora', tier: 2, priceFlora: 90, priceSol: 0.09, amount: 7, unit: 'días', gardener: 1,
+  { id: 'svc_apprentice_7', category: 'service', kind: 'consumable', name: k('Jardinero Aprendiz · 7 días'), brand: 'Vivero de Flor', tier: 2, priceFlora: 90, priceSol: 0.09, amount: 7, unit: 'días', gardener: 1,
     description: k('Riega y abona a tus plantas por ti con lo que haya en tu almacén. Tú solo cosechas.'), specs: [{ label: k('Duración'), value: k('7 días') }, { label: k('Hace'), value: k('Riega y abona') }] },
-  { id: 'svc_master_7', category: 'service', kind: 'consumable', name: k('Jardinero Maestro · 7 días'), brand: 'Vivero de Flora', tier: 3, priceFlora: 260, priceSol: 0.26, amount: 7, unit: 'días', gardener: 2,
+  { id: 'svc_master_7', category: 'service', kind: 'consumable', name: k('Jardinero Maestro · 7 días'), brand: 'Vivero de Flor', tier: 3, priceFlora: 260, priceSol: 0.26, amount: 7, unit: 'días', gardener: 2,
     description: k('Además de regar y abonar, trata las plagas y mantiene la sala impecable (la calificación no baja).'), specs: [{ label: k('Duración'), value: k('7 días') }, { label: k('Hace'), value: k('Riega, abona, trata y limpia') }] },
-  { id: 'svc_master_30', category: 'service', kind: 'consumable', name: k('Jardinero Maestro · 30 días'), brand: 'Vivero de Flora', tier: 4, priceFlora: 900, priceSol: 0.9, amount: 30, unit: 'días', gardener: 2,
+  { id: 'svc_master_30', category: 'service', kind: 'consumable', name: k('Jardinero Maestro · 30 días'), brand: 'Vivero de Flor', tier: 4, priceFlora: 900, priceSol: 0.9, amount: 30, unit: 'días', gardener: 2,
     description: k('Un mes de cuidado profesional completo. El mejor precio por día.'), specs: [{ label: k('Duración'), value: k('30 días') }, { label: k('Hace'), value: k('Riega, abona, trata y limpia') }] },
 
   /* ── Licencias de estaciones del laboratorio ── */

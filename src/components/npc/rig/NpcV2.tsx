@@ -24,7 +24,7 @@ const FIGURES: Record<NpcKindV2, FigureV2> = { chrono: Chrono, foreman: Nico, me
 export const NPC_NAMES_V2: Record<NpcKindV2, string> = {
   chrono: k('Chrono · Guía'),
   foreman: k('Nico · Capataz'),
-  merchant: k('Flora · Grow Shop'),
+  merchant: k('Flor · Grow Shop'),
   farmer: k('Tomás · Cultivador'),
   scientist: k('Dra. Lucía · Laboratorio'),
   geneticist: k('Prof. Rafa · Genetista'),
@@ -76,8 +76,8 @@ export const NpcV2: React.FC<{
     <div className={`flex items-end gap-1 min-w-0 ${className}`}>
       {hired ? (
         <div ref={ref} className={`relative shrink-0 rounded-2xl overflow-hidden ring-1 ${bare ? 'w-[92px] h-[115px]' : 'w-[132px] h-[165px] sm:w-[156px] sm:h-[195px]'}`} style={{ ['--tw-ring-color' as string]: aura, boxShadow: hired.staff.rarity === 'common' ? undefined : `0 0 22px -6px ${aura}` }} data-staff={hired.staff.id}>
-          {art3d && staffArt3d(kind, variantOf(hired.staff))
-            ? <img className={`staff3d ${talking ? 'staff3d--talk' : ''}`} src={staffArt3d(kind, variantOf(hired.staff))!} alt="" draggable={false} />
+          {art3d
+            ? <img className={`staff3d ${talking ? 'staff3d--talk' : ''}`} src={staffArt3d(kind, variantOf(hired.staff))} alt="" draggable={false} />
             : <PremiumBust role={kind as StaffRole} variant={variantOf(hired.staff)} rarity={hired.staff.rarity} seed={hired.staff.seed} mood={mood} talking={talking} viseme={visemeOf(shown[shown.length - 1])} crop />}
         </div>
       ) : art3d && NPC_ART3D.has(kind === 'merchant' ? shop : kind) ? (

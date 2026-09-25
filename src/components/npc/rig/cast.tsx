@@ -57,7 +57,7 @@ const GrowShop: React.FC<FigProps & { male?: boolean }> = ({ male, ...p }) => (
   <g className="v2-tilt">
     <Shadow />
     <g className="v2-breath">
-      {/* ponytail (Flora) */}
+      {/* ponytail (Flor) */}
       {!male && <path d="M108 64 Q146 60 138 108 Q134 128 122 132 Q128 106 114 90Z" fill="url(#v2HairDark)" stroke={OUTLINE} strokeWidth="2" strokeLinejoin="round" />}
       <Torso fill="url(#v2Purple)" shade="#1e0a4a" rim="#d8c9ff" />
       {/* bunched hood */}
@@ -71,7 +71,7 @@ const GrowShop: React.FC<FigProps & { male?: boolean }> = ({ male, ...p }) => (
       <rect x="61" y="172" width="38" height="17" rx="3" fill="#6b7a35" stroke="#39441a" strokeWidth="1.6" />
       <rect x="66" y="162" width="5" height="19" rx="2" fill="#38bdf8" stroke={OUTLINE} strokeWidth="1.2" /><rect x="66" y="160" width="5" height="5" rx="2" fill="#a3e635" stroke={OUTLINE} strokeWidth="1.2" />
       <path d="M86 176 L90 162 M92 176 L97 164" stroke="#dc2626" strokeWidth="3.6" strokeLinecap="round" />
-      {/* Floro's dreadlocks: twisted locks that come out from under the cap and fall over the shoulders, tipped with gold beads */}
+      {/* Rudy's dreadlocks: twisted locks that come out from under the cap and fall over the shoulders, tipped with gold beads */}
       {male && (
         <g>
           {[-1, 1].map((side) => (
@@ -129,7 +129,7 @@ const GrowShop: React.FC<FigProps & { male?: boolean }> = ({ male, ...p }) => (
 );
 
 export const Flora: FigureV2 = (p) => <GrowShop {...p} />;
-/** Floro: the male version of the grow-shop owner (the player picks who runs the shop). */
+/** Rudy (id 'floro'): the male version of the grow-shop owner (the player picks who runs the shop). */
 export const Floro: FigureV2 = (p) => <GrowShop {...p} male />;
 
 /* ═════════════ TOMÁS · cultivador de exterior ═════════════ */

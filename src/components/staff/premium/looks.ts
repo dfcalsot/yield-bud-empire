@@ -37,7 +37,7 @@ const H = {
   red: ['#8a3018', '#d3683c'] as [string, string], plum: ['#4a2340', '#a84d8f'] as [string, string], teal: ['#155e63', '#4fd1c5'] as [string, string],
 };
 
-export const LOOKS: Record<StaffRole, Look[]> = localize<Record<StaffRole, Look[]>>({
+const TABLE: Record<StaffRole, Look[]> = {
   foreman: [
     { title: k('Obrero de turno'), skin: 'tan', face: 'square', hair: 'short', hairColor: H.black, beard: 'mustache', beardColor: '#2a2019', brow: '#231a14', eye: '#5a3a22', glasses: 'none', gear: 'hardhat', gearColor: ['#f5c518', '#b8900a'], outfit: 'hivis', colors: ['#f26b1d', '#2b3340', '#e8edf2'], prop: 'clipboard' },
     { title: k('Capataz veterano'), skin: 'light', face: 'square', hair: 'short', hairColor: H.gray, beard: 'full', beardColor: '#b9bcc4', brow: '#8f9299', eye: '#3f6a86', glasses: 'none', gear: 'cap', gearColor: ['#2f5d3a', '#1d3d26'], outfit: 'flannel', colors: ['#a3352b', '#2b2320', '#e8d9b8'], prop: 'clipboard', age: 'old' },
@@ -56,7 +56,6 @@ export const LOOKS: Record<StaffRole, Look[]> = localize<Record<StaffRole, Look[
   ],
   merchant: [
     { title: k('Dependiente'), skin: 'light', face: 'round', hair: 'short', hairColor: H.chestnut, beard: 'none', brow: '#4a2a18', eye: '#4a6a8a', glasses: 'none', gear: 'cap', gearColor: ['#1f8a5a', '#0f5a3a'], outfit: 'apron', colors: ['#1f8a5a', '#2b3340', '#f4efe2'], prop: 'jar', freckles: true },
-    { title: k('Tendera de barrio'), skin: 'brown', face: 'round', hair: 'bun', hairColor: H.black, beard: 'none', brow: '#1c1512', eye: '#3a2618', lashes: true, lips: '#a14a44', glasses: 'round', glassColor: '#b9852a', gear: 'none', outfit: 'tee', colors: ['#8a4fb8', '#f1e7d0', '#e9c46a'], prop: 'jar', age: 'mid' },
     { title: k('Dueño de grow shop'), skin: 'deep', face: 'square', hair: 'dreads', hairColor: H.black, beard: 'goatee', beardColor: '#15100e', brow: '#15100e', eye: '#2a1a12', glasses: 'none', gear: 'beanie', gearColor: ['#d94a2b', '#f2c12e'], outfit: 'tee', colors: ['#2a8f4a', '#141a17', '#f2c12e'], prop: 'jar' },
     { title: k('Comerciante'), skin: 'olive', face: 'oval', hair: 'slick', hairColor: H.black, beard: 'mustache', beardColor: '#1f1712', brow: '#1c1512', eye: '#3a2a1c', glasses: 'monocle', glassColor: '#d9b13a', gear: 'none', outfit: 'suit', colors: ['#5a2a3f', '#e8dcc0', '#d9b13a'], prop: 'coin' },
     { title: k('Magnate del mercado'), skin: 'tan', face: 'square', hair: 'slick', hairColor: H.gray, beard: 'stubble', beardColor: '#8d8f96', brow: '#6a6d75', eye: '#2b6a8f', glasses: 'sun', glassColor: '#101418', gear: 'none', outfit: 'coat', colors: ['#1d2a3a', '#d9c38a', '#f4d35e'], prop: 'coin', glow: '#f4d35e', age: 'mid' },
@@ -86,7 +85,11 @@ export const LOOKS: Record<StaffRole, Look[]> = localize<Record<StaffRole, Look[
     { title: k('Curadora premium'), skin: 'tan', face: 'oval', hair: 'long', hairColor: H.chestnut, beard: 'none', brow: '#4a2a18', eye: '#e0a53a', lashes: true, lips: '#b5445a', glasses: 'none', gear: 'laurel', gearColor: ['#d9b13a', '#8a6a1a'], outfit: 'dress', colors: ['#1f6a5a', '#0d2a26', '#f4d35e'], prop: 'jar', glow: '#f4d35e' },
     { title: k('Leyenda del dispensario'), skin: 'deep', face: 'square', hair: 'afro', hairColor: H.black, beard: 'goatee', beardColor: '#15100e', brow: '#15100e', eye: '#ffd54a', glasses: 'sun', glassColor: '#ffb703', gear: 'crown', gearColor: ['#ffe27a', '#b8860b'], outfit: 'coat', colors: ['#7a1f3a', '#2a0a14', '#ffd54a'], prop: 'preroll', glow: '#ffd54a' },
   ],
-}, ['title']);
+};
+// merchant #1 was retired (see RETIRED_VARIANTS in sim/staff.ts): the slot repeats #0 only so the other indexes don't shift; no hire gets it
+TABLE.merchant.splice(1, 0, TABLE.merchant[0]);
+
+export const LOOKS: Record<StaffRole, Look[]> = localize(TABLE, ['title']);
 
 export const SKINS: Record<SkinKey, { base: string; light: string; shadow: string; blush: string; ear: string }> = {
   fair: { base: '#f0cdb6', light: '#fbe8da', shadow: '#d3a088', blush: '#f0968a', ear: '#e6b9a2' },
