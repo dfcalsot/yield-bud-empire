@@ -62,4 +62,5 @@ export const Npc: React.FC<{
   /** figure only, no speech bubble (small corner cameo) */
   bare?: boolean;
   className?: string;
+  noScene?: boolean;
 }> = (props) => <NpcV2 {...props} />;

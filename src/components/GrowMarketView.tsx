@@ -19,6 +19,7 @@ import {
   CATALOG, CATALOG_BY_ID, CATEGORY_LABEL, RARITY_BY_TIER, AssetCategory, CatalogItem, OwnedAsset, repairCostOf, USE,
 } from '../economy/catalog';
 import { t, k, localize } from '../i18n';
+import { sceneArt3d, useNpcArt3d } from './npc/art3d';
 
 type IconType = React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
 const CAT_ICON: Record<AssetCategory, IconType> = {
@@ -159,6 +160,7 @@ const Slot: React.FC<{
 /* ───────────────────────── main view ───────────────────────── */
 
 export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () => void; onOpenBag?: () => void }> = ({ initialCat, onOpenPlanet, onOpenBag }) => {
+  const art3d = useNpcArt3d();
   const {
     assets, resources, equipStats, buyAsset, setAssetEquipped, repairAsset, floraBalance, solBalance, calibrateMeter, care, recycleGarbage, shopPrice, staffMods,
   } = useGame();
@@ -262,13 +264,15 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
   return (
     <div className="mk-stage animate-fade-in">
       <Ambience />
+      {/* 3D trial: the grow shop's painted scene covers the whole market stage */}
+      {art3d && <div className="mk-scene" style={{ backgroundImage: `url(${sceneArt3d('merchant')})` }} aria-hidden />}
       <Awning />
 
       <div className="relative z-10 px-4 sm:px-6 pt-14 pb-6 space-y-5">
         {/* keeper + sign + wallet */}
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-end">
           <div className="min-w-0">
-            <Merchant text={t(say.text)} mood={say.mood} moodKey={say.key} />
+            <Merchant text={t(say.text)} mood={say.mood} moodKey={say.key} noScene={art3d} />
             <button type="button" onClick={() => setShop(shop === 'flora' ? 'floro' : 'flora')} className="mt-1 ml-1 text-[10.5px] font-mono text-neutral-400 hover:text-white underline underline-offset-2 cursor-pointer">{t('⇄ Cambiar de tendero ({v0})', { v0: shop === 'flora' ? t('Rudy') : t('Flor') })}</button>
           </div>
           <div className="space-y-3">

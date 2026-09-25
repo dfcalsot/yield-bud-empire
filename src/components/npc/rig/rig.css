@@ -113,3 +113,6 @@
 .npc3d--cutout { border-radius: 0; box-shadow: none; }
 .p3d--cutout { overflow: visible; border-radius: 0; }
 .p3d--cutout .p3d-fg { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.6)); }
+.p3d--chrono .p3d-fg { animation: p3dFloat 3.4s ease-in-out infinite; }
+.p3d--chrono.p3d--talk .p3d-fg { animation: p3dFloat 1.2s ease-in-out infinite; }
+@keyframes p3dFloat { 0%, 100% { transform: translateY(1.5%) rotate(-1.5deg); } 50% { transform: translateY(-3%) rotate(1.5deg); } }

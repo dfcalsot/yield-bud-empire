@@ -1095,3 +1095,9 @@ body::before {
 .pl-wave { animation: plWave 6s ease-in-out infinite; }
 @keyframes plWave { 50% { opacity: 0.5; transform: translateX(4px); } }
 @media (prefers-reduced-motion: reduce) { .pl-blink, .pl-wake, .pl-whale, .pl-spout, .pl-ufo, .pl-city, .pl-wave { animation: none; } }
+
+/* 3D trial: the grow shop's painted scene across the top of the market stage (keeper, sign, room), fading into the stage below */
+.mk-scene { position: absolute; top: 0; left: 0; right: 0; height: 680px; z-index: 0; pointer-events: none; background-size: cover; background-position: center 30%;
+  -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%); mask-image: linear-gradient(180deg, #000 55%, transparent 100%); }
+.mk-scene::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4, 8, 6, 0.05) 0%, rgba(4, 8, 6, 0.25) 45%, rgba(4, 8, 6, 0.6) 100%); }
+@media (max-width: 1023px) { .mk-scene { height: 820px; } }

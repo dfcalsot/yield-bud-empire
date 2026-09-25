@@ -42,7 +42,9 @@ export const NpcV2: React.FC<{
   variant?: Shopkeeper;
   /** draw the base character even when a hired NFT holds the job (used by the NFT card's own portrait) */
   plain?: boolean;
-}> = ({ kind, text, mood, moodKey, bare, className = '', variant, plain }) => {
+  /** 3D trial: the page already paints the scene behind (e.g. the whole market), so the row draws none */
+  noScene?: boolean;
+}> = ({ kind, text, mood, moodKey, bare, className = '', variant, plain, noScene }) => {
   const [chosen] = useShopkeeper();
   // when a hired NFT holds this character's job, its portrait (a personal variation of the character) replaces the default one
   const hiredRaw = useAssignedStaff(kind as StaffRole);
@@ -67,13 +69,14 @@ export const NpcV2: React.FC<{
   }, [text]);
 
   const talking = shown.length < text.length;
-  // 3D trial: the character's scene fills the whole panel behind the portrait and the bubble: the job's painted scene when there is one,
-  // else the portrait's own backdrop (a hire's portrait is one flat image, so that one is blurred)
+  // 3D trial: the job's painted scene fills the whole panel behind the portrait and the bubble (a hire of a job without one gets
+  // its own portrait blurred); characters without a scene stand on the plain panel
   const who = kind === 'merchant' ? shop : kind;
-  const scene = bare || !art3d ? null
+  const scene = bare || !art3d || noScene ? null
     : sceneArt3d(hired ? kind : who) ? { src: sceneArt3d(hired ? kind : who)!, blur: false }
-    : hired ? { src: staffArt3d(kind, variantOf(hired.staff)), blur: true }
-    : NPC_ART3D.has(who) ? { src: `/npc3d/${who}-bg.webp`, blur: false } : null;
+    : hired ? { src: staffArt3d(kind, variantOf(hired.staff)), blur: true } : null;
+  // the 3D characters are always cut-outs (no box, no backdrop of their own), in panels and in the small cameos alike
+  const cutout = true;
   const Fig = kind === 'merchant' && shop === 'floro' ? Floro : FIGURES[kind];
   const label = hired
     ? `${hired.staff.name} · ${t(ROLE_INFO[kind as StaffRole].label)} ${'★'.repeat(hired.staff.rank)}${hired.working ? '' : t(' · sin pagar')}`
@@ -89,8 +92,8 @@ export const NpcV2: React.FC<{
             : <PremiumBust role={kind as StaffRole} variant={variantOf(hired.staff)} rarity={hired.staff.rarity} seed={hired.staff.seed} mood={mood} talking={talking} viseme={visemeOf(shown[shown.length - 1])} crop />}
         </div>
       ) : art3d && NPC_ART3D.has(kind === 'merchant' ? shop : kind) ? (
-        <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d ${scene ? 'npc3d--cutout' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
-          <Portrait3d id={kind === 'merchant' ? shop : kind} talking={talking} cutout={!!scene} />
+        <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d ${cutout ? 'npc3d--cutout' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
+          <Portrait3d id={kind === 'merchant' ? shop : kind} talking={talking} cutout={cutout} />
         </div>
       ) : (
       <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} shrink-0`}>
