@@ -1121,3 +1121,16 @@ body::before {
 .mk-stage--3d .mk-swap { display: inline-flex; align-items: center; gap: 6px; margin: 10px 0 0; padding: 6px 14px; border-radius: 999px; text-decoration: none; font-size: 11px; color: #e0e7ff;
   background: rgba(12, 10, 36, 0.72); border: 1px solid rgba(165, 180, 252, 0.5); backdrop-filter: blur(6px); box-shadow: 0 0 16px -6px rgba(139, 92, 246, 0.8); }
 .mk-stage--3d .mk-swap:hover { border-color: #a5b4fc; color: #fff; }
+
+/* 3D trial of the planet: Tomás's field across the top of the stage, and the land stats on a glass board to the right */
+.pl-scene { position: absolute; top: 0; left: 0; right: 0; height: 640px; z-index: 0; pointer-events: none; background-size: cover; background-position: center 40%;
+  -webkit-mask-image: linear-gradient(180deg, #000 50%, transparent 100%); mask-image: linear-gradient(180deg, #000 50%, transparent 100%); }
+.pl-scene::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4, 8, 12, 0.05) 0%, rgba(4, 8, 12, 0.3) 45%, rgba(4, 8, 12, 0.65) 100%); }
+@media (max-width: 1023px) { .pl-scene { height: 820px; } }
+.pl-stage--3d .p3d-fg { -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 98%); mask-image: linear-gradient(180deg, #000 72%, transparent 98%); }
+.pl-stage--3d .pl-board { padding: 16px; border-radius: 18px; border: 1px solid rgba(125, 211, 252, 0.45); backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(8, 30, 48, 0.62), rgba(4, 12, 22, 0.8)); box-shadow: 0 0 44px -14px rgba(56, 189, 248, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.16); }
+.pl-stage--3d .pl-board > h1 { text-shadow: 0 0 16px rgba(56, 189, 248, 0.8); }
+.pl-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; margin-bottom: 4px; }
+.pl-stats > span { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px !important; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(4, 12, 22, 0.6); }
+.pl-stats > span > b { font-size: 22px; line-height: 1.1; letter-spacing: 0; }

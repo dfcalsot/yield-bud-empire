@@ -13,6 +13,7 @@ import type { OwnedPlot, RegionId } from '../../types';
 import { LandCard } from '../LandCard';
 import { byRarityThenRating, landCardOf } from '../../utils/land';
 import { t as tr } from '../../i18n';
+import { sceneArt3d, useNpcArt3d } from '../npc/art3d';
 
 const useNow = (ms: number) => {
   const [now, setNow] = useState(() => Date.now());
@@ -47,6 +48,7 @@ const readGlobe = () => { try { return webglOk && localStorage.getItem(GLOBE_KEY
 export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (cat?: string) => void }> = ({ onOpenSeedBank, onOpenMarket }) => {
   const { plots, plotsForSale, buyPlot, floraBalance, solBalance, seedBank, ufoCaught } = useGame();
   const now = useNow(30000);
+  const art3d = useNpcArt3d();
   const [region, setRegion] = useState<RegionId | null>(null);
   const [hover, setHover] = useState<RegionId | null>(null);
   const [plotId, setPlotId] = useState<string | null>(null);
@@ -130,18 +132,22 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
   };
 
   return (
-    <div className="pl-stage animate-fade-in">
+    <div className={`pl-stage animate-fade-in ${art3d ? 'pl-stage--3d' : ''}`}>
       <div className="pl-stars" />
+      {/* 3D trial: Tomás's field covers the top of the whole planet stage */}
+      {art3d && <div className="pl-scene" style={{ backgroundImage: `url(${sceneArt3d('farmer')})` }} aria-hidden />}
       <div className="relative z-10 p-4 sm:p-6 space-y-5">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-end">
-          <Npc kind="farmer" text={tr(say.text)} mood={say.mood} moodKey={say.key} />
-          <div className="space-y-2.5">
+          <Npc kind="farmer" text={tr(say.text)} mood={say.mood} moodKey={say.key} noScene={art3d} large={art3d} />
+          <div className={`space-y-2.5 ${art3d ? 'pl-board' : ''}`}>
             <h1 className="font-serif text-2xl sm:text-3xl font-black tracking-[0.12em] text-sky-100 leading-none">{tr('PLANETA YIELD')}</h1>
             <p className="text-[10.5px] font-mono uppercase tracking-[0.2em] text-sky-300/70">{tr('Parcelas NFT · 7 regiones · clima real')}</p>
             <div className="flex flex-wrap gap-2 text-[11px] font-mono">
+              <div className={art3d ? 'pl-stats' : 'contents'}>
               <span className="mk-panel px-2.5 py-1.5 text-neutral-200">🗺️ <b className="text-amber-300">{plots.length}</b>{' '}{tr('parcelas')}</span>
               <span className="mk-panel px-2.5 py-1.5 text-neutral-200">🌱 <b className="text-emerald-300">{totalPlants}</b>{' '}{tr('plantas')}</span>
               <span className={`mk-panel px-2.5 py-1.5 ${totalReady ? 'text-amber-300 border-amber-400/50' : 'text-neutral-200'}`}>🌾 <b>{totalReady}</b>{' '}{tr('listas')}</span>
+              </div>
               <button onClick={nextSkin} className="mk-panel px-2.5 py-1.5 text-amber-200 cursor-pointer hover:border-amber-400/60" title={tr('Cambia el estilo del mapa · ahora: {v0}', { v0: SKIN_LABEL[skin] })} data-testid="skin-toggle">{SKIN_LABEL[NEXT_SKIN[skin]]}</button>
               {webglOk && <button onClick={toggleGlobe} className="mk-panel px-2.5 py-1.5 text-sky-200 cursor-pointer hover:border-sky-400/60" title={tr('Cambia entre el mapa plano y un globo 3D (usa más GPU)')}>{globe ? tr('🗺️ Mapa plano') : tr('🌐 Globo 3D')}</button>}
               <button onClick={() => onOpenMarket('service')} className="mk-panel px-2.5 py-1.5 text-emerald-200 cursor-pointer hover:border-emerald-400/60" title={tr('Grow Market → Servicios de vivero')}>{tr('🧑‍🌾 Contratar jardinero')}</button>
