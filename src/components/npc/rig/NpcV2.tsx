@@ -9,7 +9,7 @@ import { ROLE_INFO, variantOf, type StaffRole } from '../../../sim/staff';
 import { PremiumBust } from '../../staff/premium/PremiumBust';
 import { RARITY_STYLE } from '../../game/GameUI';
 import { t, k } from '../../../i18n';
-import { NPC_ART3D, staffArt3d, useNpcArt3d } from '../art3d';
+import { NPC_ART3D, sceneArt3d, staffArt3d, useNpcArt3d } from '../art3d';
 import { Portrait3d } from '../Portrait3d';
 
 /**
@@ -67,10 +67,13 @@ export const NpcV2: React.FC<{
   }, [text]);
 
   const talking = shown.length < text.length;
-  // 3D trial: the character's scene fills the whole panel behind the portrait and the bubble (a hire's portrait is one flat image, so it is blurred)
+  // 3D trial: the character's scene fills the whole panel behind the portrait and the bubble: the job's painted scene when there is one,
+  // else the portrait's own backdrop (a hire's portrait is one flat image, so that one is blurred)
+  const who = kind === 'merchant' ? shop : kind;
   const scene = bare || !art3d ? null
+    : sceneArt3d(hired ? kind : who) ? { src: sceneArt3d(hired ? kind : who)!, blur: false }
     : hired ? { src: staffArt3d(kind, variantOf(hired.staff)), blur: true }
-    : NPC_ART3D.has(kind === 'merchant' ? shop : kind) ? { src: `/npc3d/${kind === 'merchant' ? shop : kind}-bg.webp`, blur: false } : null;
+    : NPC_ART3D.has(who) ? { src: `/npc3d/${who}-bg.webp`, blur: false } : null;
   const Fig = kind === 'merchant' && shop === 'floro' ? Floro : FIGURES[kind];
   const label = hired
     ? `${hired.staff.name} · ${t(ROLE_INFO[kind as StaffRole].label)} ${'★'.repeat(hired.staff.rank)}${hired.working ? '' : t(' · sin pagar')}`
