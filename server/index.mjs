@@ -1,4 +1,4 @@
-// Yield Bud Empire account service: e-mail sign-up with verification, Google / X login, sessions, anti-bot and abuse protection.
+// Yield Bud Empire account service: e-mail sign-up with verification, Google login, sessions, anti-bot and abuse protection.
 // Zero runtime dependencies (Node ≥ 22: http, crypto, sqlite, dns). Optional: nodemailer for real e-mail delivery.
 import http from 'node:http';
 import fs from 'node:fs';
@@ -36,8 +36,6 @@ export const cfg = {
   siteOrigins: new Set(String(env.SITE_ORIGINS ?? 'https://yieldbudempire.com,https://www.yieldbudempire.com').split(',').map((x) => x.trim().replace(/\/$/, '')).filter(Boolean)),
   /** base vieja del pre-registro del sitio, para migrarla una vez */
   preregDb: env.PREREG_DB ?? '',
-  xMinAgeDays: Number(env.X_MIN_AGE_DAYS ?? 60),
-  xMinFollowers: Number(env.X_MIN_FOLLOWERS ?? 0),
   smtpUrl: env.SMTP_URL ?? '',
   mailFrom: env.MAIL_FROM ?? 'Yield Bud Empire <no-reply@yieldbudempire.local>',
 };
@@ -258,7 +256,6 @@ const route = (method, p, fn) => routes.set(`${method} ${p}`, fn);
 
 const providers = {
   google: { id: env.GOOGLE_CLIENT_ID, secret: env.GOOGLE_CLIENT_SECRET, authUrl: env.GOOGLE_AUTH_URL ?? 'https://accounts.google.com/o/oauth2/v2/auth', tokenUrl: env.GOOGLE_TOKEN_URL ?? 'https://oauth2.googleapis.com/token', userUrl: env.GOOGLE_USER_URL ?? 'https://openidconnect.googleapis.com/v1/userinfo', scope: 'openid email profile', basic: false, extra: { access_type: 'online', prompt: 'select_account' } },
-  x: { id: env.X_CLIENT_ID, secret: env.X_CLIENT_SECRET, authUrl: env.X_AUTH_URL ?? 'https://x.com/i/oauth2/authorize', tokenUrl: env.X_TOKEN_URL ?? 'https://api.x.com/2/oauth2/token', userUrl: env.X_USER_URL ?? 'https://api.x.com/2/users/me?user.fields=created_at,public_metrics', scope: 'users.read tweet.read', basic: true, extra: {} },
 };
 const redirectUri = (name) => `${cfg.publicUrl}/api/auth/${name}/callback`;
 
@@ -266,7 +263,6 @@ route('GET', '/api/health', () => ({ ok: true, uptime: Math.round(process.uptime
 
 route('GET', '/api/auth/config', () => ({
   google: !!(providers.google.id && providers.google.secret),
-  x: !!(providers.x.id && providers.x.secret),
   emailDelivery: !!cfg.smtpUrl,
   inviteOnly: cfg.inviteOnly,
   devLinks: cfg.devLinks,
@@ -521,18 +517,8 @@ for (const name of Object.keys(providers)) {
 
 function finishOAuth(ctx, name, data, fail, rawInvite, terms) {
   let subject, email = null, display = '', verifiedEmail = false;
-  if (name === 'google') {
-    subject = String(data.sub ?? ''); email = data.email ? String(data.email) : null; verifiedEmail = data.email_verified === true; display = data.name ?? data.given_name ?? '';
-    if (!subject || !email || !verifiedEmail) return fail('email_not_verified');
-  } else {
-    const u = data.data ?? data;
-    subject = String(u.id ?? ''); display = u.username ?? u.name ?? '';
-    if (!subject) return fail('profile');
-    // X gives no e-mail: the only sybil signals are the age and reach of the X account
-    const ageDays = u.created_at ? (Date.now() - Date.parse(u.created_at)) / 86400_000 : 0;
-    if (ageDays < cfg.xMinAgeDays) { audit('x_too_new', null, ctx.ipHash, `${Math.round(ageDays)}d`); return fail('x_account_too_new'); }
-    if ((u.public_metrics?.followers_count ?? 0) < cfg.xMinFollowers) return fail('x_account_too_small');
-  }
+  subject = String(data.sub ?? ''); email = data.email ? String(data.email) : null; verifiedEmail = data.email_verified === true; display = data.name ?? data.given_name ?? '';
+  if (!subject || !email || !verifiedEmail) return fail('email_not_verified');
   const eKey = email ? emailKey(email) : null;
   if (eKey && isDisposable(eKey)) return fail('email_disposable');
   let accountId = q.identity.get(name, subject)?.account_id;
@@ -646,6 +632,6 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (cfg.devLinks) console.warn('⚠  DEV_EXPOSE_LINKS=1: los enlaces de verificación se devuelven a la web. La verificación de correo NO protege nada. Solo para desarrollo.');
   if (!cfg.smtpUrl) console.warn('⚠  SMTP_URL sin configurar: los correos se guardan en data/outbox.log y no llegan a nadie.');
   if (!secure) console.warn('⚠  PUBLIC_URL sin HTTPS: las cookies de sesión no llevan el atributo Secure. Ponlo detrás de HTTPS en producción.');
-  createServer().listen(cfg.port, cfg.host, () => console.log(`Yield Bud Empire accounts on http://${cfg.host}:${cfg.port} (public ${cfg.publicUrl}) · google=${!!providers.google.id} x=${!!providers.x.id} smtp=${!!cfg.smtpUrl}`));
+  createServer().listen(cfg.port, cfg.host, () => console.log(`Yield Bud Empire accounts on http://${cfg.host}:${cfg.port} (public ${cfg.publicUrl}) · google=${!!providers.google.id} smtp=${!!cfg.smtpUrl}`));
 }
 export { db, q, limiter };

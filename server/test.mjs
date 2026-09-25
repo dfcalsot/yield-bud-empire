@@ -10,11 +10,11 @@ const PORT = 30000 + Math.floor(Math.random() * 2000), MOCK = PORT + 1;
 Object.assign(process.env, {
   PORT: String(PORT), HOST: '127.0.0.1', DATA_DIR: dir, PUBLIC_URL: `http://localhost:${PORT}`, TRUST_PROXY: '1', SKIP_MX: '1', DEV_EXPOSE_LINKS: '1', POW_BITS: '8', MAX_ACCOUNTS_PER_IP: '3',
   GOOGLE_CLIENT_ID: 'gid', GOOGLE_CLIENT_SECRET: 'gsec', GOOGLE_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, GOOGLE_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, GOOGLE_USER_URL: `http://127.0.0.1:${MOCK}/user/google`,
-  BRIDGE_FAKE: '1', X_CLIENT_ID: 'xid', X_CLIENT_SECRET: 'xsec', X_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, X_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, X_USER_URL: `http://127.0.0.1:${MOCK}/user/x`,
+  BRIDGE_FAKE: '1',
 });
 const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg, economy, bridge } = await import('./index.mjs');
 
-// mock identity provider (NOT Google or X: it only proves that our OAuth code paths behave)
+// mock identity provider (NOT Google: it only proves that our OAuth code paths behave)
 const profiles = { google: {}, x: {} };
 const mock = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://m');
@@ -52,7 +52,7 @@ const count = () => db.prepare('SELECT COUNT(*) n FROM accounts').get().n;
 
 // ── config / basics
 const cfgRes = await call('GET', '/api/auth/config');
-ok('config: Google y X configurados, captcha PoW', cfgRes.json.google && cfgRes.json.x && cfgRes.json.captcha.type === 'pow');
+ok('config: Google configurado, sin X, captcha PoW', cfgRes.json.google && !('x' in cfgRes.json) && cfgRes.json.captcha.type === 'pow');
 const hdr = await fetch(base + '/api/health');
 ok('cabeceras de seguridad presentes', hdr.headers.get('x-content-type-options') === 'nosniff' && hdr.headers.get('x-frame-options') === 'DENY' && /frame-ancestors 'none'/.test(hdr.headers.get('content-security-policy') ?? '') && hdr.headers.get('cache-control') === 'no-store');
 
@@ -210,11 +210,9 @@ const vict = db.prepare("SELECT * FROM accounts WHERE email_key = 'victima@gmail
 ok('anti pre-hijack: al vincular Google se anula la contraseña del atacante', vict.pass_hash === null && vict.email_verified === 1);
 r = await call('POST', '/api/auth/login', { ip: newIp(), body: { identifier: 'victima@gmail.com', password: 'Attacker-Password-12' } });
 ok('anti pre-hijack: el atacante ya no puede entrar', r.status === 401 || r.status === 400);
-// X
-let xo = await oauth('x', { data: { id: 'x-9', username: 'nuevita', name: 'Nuevita', created_at: new Date(Date.now() - 5 * 86400_000).toISOString(), public_metrics: { followers_count: 50 } } });
-ok('X: cuenta de 5 días → rechazada (filtro anti-bots)', /auth_error=x_account_too_new/.test(xo.cb.loc ?? ''));
-xo = await oauth('x', { data: { id: 'x-10', username: 'veterana', name: 'Veterana', created_at: new Date(Date.now() - 900 * 86400_000).toISOString(), public_metrics: { followers_count: 120 } } });
-ok('X: cuenta antigua → alta sin correo y con sesión', /#auth=ok$/.test(xo.cb.loc ?? '') && db.prepare("SELECT source, email FROM accounts WHERE source = 'x'").get()?.email === null);
+// X ya no existe como proveedor
+r = await call('GET', '/api/auth/x/start', { ip: newIp() });
+ok('X: el inicio de sesión con X no existe', r.status === 404);
 // provider not configured
 // bad callback params
 r = await call('GET', '/api/auth/google/callback?error=access_denied&state=x', { ip: newIp() });

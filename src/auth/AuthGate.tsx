@@ -18,7 +18,7 @@ const LEGAL = {
   cookies: 'https://yieldbudempire.com/cookies/', legal: 'https://yieldbudempire.com/aviso-legal/',
 };
 
-interface AuthConfig { google: boolean; x: boolean; emailDelivery: boolean; devLinks: boolean; inviteOnly?: boolean; captcha: { bits: number } }
+interface AuthConfig { google: boolean; emailDelivery: boolean; devLinks: boolean; inviteOnly?: boolean; captcha: { bits: number } }
 
 const strength = (pw: string) => {
   let s = 0;
@@ -51,7 +51,6 @@ const Social: React.FC<{ href: string; enabled: boolean; label: string; icon: Re
 );
 
 const GoogleG = () => (<svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden><path fill="#4285F4" d="M23 12.3c0-.8-.1-1.5-.2-2.3H12v4.4h6.2a5.3 5.3 0 0 1-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.5Z" /><path fill="#34A853" d="M12 23.5c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.5-2-6.4-4.7H1.8v3A11.5 11.5 0 0 0 12 23.5Z" /><path fill="#FBBC05" d="M5.6 14.2a6.9 6.9 0 0 1 0-4.4v-3H1.8a11.5 11.5 0 0 0 0 10.4l3.8-3Z" /><path fill="#EA4335" d="M12 5.4c1.7 0 3.2.6 4.4 1.7l3.3-3.3A11.5 11.5 0 0 0 1.8 6.8l3.8 3C6.5 7.4 9 5.4 12 5.4Z" /></svg>);
-const XMark = () => (<svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" aria-hidden><path d="M18.2 2h3.3l-7.2 8.3L23 22h-6.6l-5.2-6.8L5.2 22H1.9l7.7-8.8L1.4 2h6.8l4.7 6.2L18.2 2Zm-1.2 18h1.8L7.3 3.9H5.4L17 20Z" /></svg>);
 
 type Mode = 'login' | 'register' | 'pending' | 'forgot' | 'forgot_sent' | 'reset';
 
@@ -127,7 +126,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
     if (r.status !== 200) setErr(errText(r.data)); else { setDevLink(here(r.data.devLink) || devLink); npc.speak(t('Te envié otro correo.'), 'happy'); }
   });
 
-  // alfa cerrada: para crear una cuenta nueva (también con Google/X) hace falta el código
+  // alfa cerrada: para crear una cuenta nueva (también con Google) hace falta el código
   const needInvite = !!config.inviteOnly && mode === 'register' && !invite.trim();
   const needTerms = mode === 'register' && !accepted;
   const socialHref = (p: string) => {
@@ -158,9 +157,8 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
           {(mode === 'login' || mode === 'register') && (
             <>
               <div className="flex gap-1 p-1 rounded-lg bg-neutral-950 border border-neutral-800" role="tablist">{tabBtn('login', t('Ya tengo cuenta'))}{tabBtn('register', t('Soy nuevo'))}</div>
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid gap-2.5">
                 <Social href={socialHref('google')} enabled={config.google} label={t('Google')} icon={<GoogleG />} onBlocked={blocked ? () => setErr(blocked) : undefined} />
-                <Social href={socialHref('x')} enabled={config.x} label="X" icon={<XMark />} onBlocked={blocked ? () => setErr(blocked) : undefined} />
               </div>
               <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-wider text-neutral-600"><span className="flex-1 h-px bg-neutral-800" />{t('o con tu correo')}<span className="flex-1 h-px bg-neutral-800" /></div>
             </>
@@ -273,7 +271,7 @@ export const AuthGate: React.FC<{ children: (account: ServerAccount | null) => R
   const lang = useLang();   // al cambiar de idioma se vuelve a dibujar
   const [state, setState] = useState<'loading' | 'anon' | 'ready' | 'down'>('loading');
   const [account, setAccount] = useState<ServerAccount | null>(null);
-  const [config, setConfig] = useState<AuthConfig>({ google: false, x: false, emailDelivery: false, devLinks: false, captcha: { bits: 20 } });
+  const [config, setConfig] = useState<AuthConfig>({ google: false, emailDelivery: false, devLinks: false, captcha: { bits: 20 } });
   const [msg, setMsg] = useState('');
   const [resetToken, setResetToken] = useState<string | undefined>();
 
@@ -281,8 +279,7 @@ export const AuthGate: React.FC<{ children: (account: ServerAccount | null) => R
     // idioma: el de la cuenta manda si el jugador no eligió otro en este navegador; una cuenta sin idioma (p. ej. Google) toma el actual
     if ((a.lang === 'es' || a.lang === 'en') && !hasChosenLang()) void setLang(a.lang, false);
     else if (!a.lang || (hasChosenLang() && a.lang !== getLang())) void saveAccountLang(getLang());
-    const ok = a.verified || a.providers.includes('x');
-    if (!ok) { setAccount(a); setState('anon'); return; }
+    if (!a.verified) { setAccount(a); setState('anon'); return; }
     clearOldLocalGame(); setAccount(a); setState('ready');
   };
 
