@@ -3688,5 +3688,6 @@
  "Solana tarda en confirmar. Vuelve a intentarlo en un minuto: la reliquia no se pierde.": "Solana is slow to confirm. Try again in a minute: the relic isn't lost.",
  "Las reliquias ganadas jugando pueden salir como NFT a tu billetera Solana vinculada (Metaplex Core, con 5 % de regalía en cada reventa) y volver al juego. Hoy funciona en devnet.": "Relics earned by playing can go out as NFTs to your linked Solana wallet (Metaplex Core, with a 5% royalty on each resale) and come back into the game. Live on devnet today.",
  "Todo se valida en el servidor": "Everything is validated on the server",
- "Reliquias → Solana devnet (opcional)": "Relics → Solana devnet (optional)"
+ "Reliquias → Solana devnet (opcional)": "Relics → Solana devnet (optional)",
+ "Al confirmarlo, esta pantalla entra sola al juego. Si no lo ves en unos minutos, revisa la carpeta de spam o correo no deseado.": "Once you confirm it, this screen enters the game by itself. If you don't see it within a few minutes, check your spam or junk folder."
 }

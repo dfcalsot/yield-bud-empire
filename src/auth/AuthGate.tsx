@@ -68,6 +68,21 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
   const [prog, setProg] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const abort = useRef<AbortController | null>(null);
+  // "check your e-mail": the link usually opens in another tab or on the phone, so this screen checks by itself
+  // (every few seconds and whenever the player comes back to the tab) and enters as soon as the address is confirmed
+  useEffect(() => {
+    if (mode !== 'pending') return;
+    let done = false;
+    const check = async () => {
+      if (done || document.visibilityState === 'hidden') return;
+      const me = await api('GET', '/api/auth/me').catch(() => null);
+      if (!done && me?.status === 200 && me.data.account.verified) { done = true; onAccount(me.data.account); }
+    };
+    const id = window.setInterval(check, 4000);
+    const onBack = () => { if (document.visibilityState === 'visible') void check(); };
+    document.addEventListener('visibilitychange', onBack); window.addEventListener('focus', onBack);
+    return () => { done = true; window.clearInterval(id); document.removeEventListener('visibilitychange', onBack); window.removeEventListener('focus', onBack); };
+  }, [mode, onAccount]);
   useEffect(() => {
     if (prog === null) { setElapsed(0); return; }
     const t0 = Date.now();
@@ -209,6 +224,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
               <Mail className="w-10 h-10 mx-auto text-emerald-300" />
               <h2 className="font-serif text-lg font-black text-white">{t('Revisa tu correo')}</h2>
               <p className="text-sm text-neutral-300">{t('Te enviamos un enlace a')}{' '}<b>{email}</b>{t('. Ábrelo para confirmar tu cuenta (vale 24 horas).')}</p>
+              <p className="text-[11.5px] text-neutral-400">{t('Al confirmarlo, esta pantalla entra sola al juego. Si no lo ves en unos minutos, revisa la carpeta de spam o correo no deseado.')}</p>
               {devLink && <a href={devLink} className="block text-[11px] font-mono text-amber-300 break-all border border-amber-400/30 rounded-lg p-2">{t('Modo desarrollo (sin servidor de correo): {devLink}', { devLink })}</a>}
               <div className="flex gap-2"><button className="care-btn flex-1" disabled={busy} onClick={resend}>{busy ? t('Enviando…') : t('Reenviar correo')}</button><button className="care-btn care-btn--gold flex-1" onClick={async () => { const me = await api('GET', '/api/auth/me'); if (me.status === 200 && me.data.account.verified) onAccount(me.data.account); else setErr(t('Todavía no está confirmada. Abre el enlace del correo.')); }}>{t('Ya la confirmé')}</button></div>
               <button className="text-[11px] font-mono text-neutral-500 hover:text-white cursor-pointer" onClick={async () => { await logoutServer(); setMode('login'); }}>{t('Usar otra cuenta')}</button>
