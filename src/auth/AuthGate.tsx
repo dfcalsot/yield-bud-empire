@@ -273,6 +273,7 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
           <a href={LEGAL.cookies} target="_blank" rel="noopener" className="hover:text-emerald-300">{t('Cookies')}</a>
           <a href={LEGAL.legal} target="_blank" rel="noopener" className="hover:text-emerald-300">{t('Aviso legal')}</a>
           <span>{t('· Solo mayores de 18')}</span>
+          <span className="basis-full text-center">{t('© 2026 WOLI CBD S.A. · Yield Bud Empire. Todos los derechos reservados.')}</span>
         </nav>
         <p className="text-center text-[10px] font-mono text-neutral-600">{t('Tus contraseñas se guardan con scrypt; nunca las vemos. La verificación anti-bots corre en tu navegador, sin rastreadores.')}</p>
       </div>

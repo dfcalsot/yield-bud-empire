@@ -289,6 +289,7 @@ export const ProfileView: React.FC<{ onOpenAccountModal: () => void }> = ({ onOp
           )}
         </div>
       )}
+      <p className="pt-4 text-center text-[10.5px] font-mono text-neutral-500">{t('© 2026 WOLI CBD S.A. · Yield Bud Empire. Todos los derechos reservados.')}</p>
     </div>
   );
 };
