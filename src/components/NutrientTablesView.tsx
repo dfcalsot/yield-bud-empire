@@ -20,8 +20,10 @@ export const NutrientTablesView: React.FC = () => {
   const [prefs, setPrefs] = useNutriPrefs(currentUser?.id);
   const [tab, setTab] = useState<Tab>('tables');
   const art3d = useNpcArt3d();
-  // Mixing lab: its painted lab fills the whole hero and Dr. Lucía stands in the middle, full body (3D art only)
-  const lab = tab === 'lab' && art3d;
+  // Dynamic tables and Mixing lab: their painted scene fills the whole hero and Dr. Lucía stands in the middle, full body,
+  // in a different pose on each tab so she doesn't repeat (3D art only)
+  const hero = !art3d ? null : tab === 'tables' ? { scene: 'tablas', art: undefined } : tab === 'lab' ? { scene: 'mezclas', art: 'scientist-lab' } : null;
+  const lab = !!hero;
   const [seed, setSeed] = useState<{ doses: Record<string, number>; stage: StageId; key: number } | null>(null);
   const [focus, setFocus] = useState<{ id: string; key: number } | null>(null);
   const npc = useNpc(tr('Soy la Dra. Lucía. Aquí aprendes lo que un grower de verdad domina: EC, pH, agua y qué le falta a cada hoja.'));
@@ -41,7 +43,7 @@ export const NutrientTablesView: React.FC = () => {
   return (
     <div className="space-y-5 animate-fade-in">
       <section className={`hud-panel nu-hero p-4 sm:p-6 ${lab ? 'nu-hero--lab' : ''}`}>
-        {lab && <div className="nu-hero-scene" style={{ backgroundImage: `url(${sceneArt3d('mezclas')})` }} aria-hidden />}
+        {hero && <div className="nu-hero-scene" style={{ backgroundImage: `url(${sceneArt3d(hero.scene)})` }} aria-hidden />}
         <div className="nu-molecules" aria-hidden>{Array.from({ length: 10 }, (_, i) => <i key={i} style={{ left: `${(i * 37) % 100}%`, animationDelay: `${i * 0.7}s`, ['--s' as string]: 6 + (i % 4) * 3 }} />)}</div>
         <div className={`relative grid gap-4 items-center ${lab ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)_minmax(0,1fr)] lg:items-end' : 'md:grid-cols-[minmax(0,1fr)_auto]'}`}>
           <div className="space-y-2 min-w-0">
@@ -50,7 +52,7 @@ export const NutrientTablesView: React.FC = () => {
             <p className="text-sm text-neutral-300 leading-relaxed max-w-2xl">{tr('Mezcla como un grower de verdad: tu agua manda en el pH, los nutrientes se bloquean o compiten entre sí y cada etapa pide una receta distinta. Lo que aprendes aquí funciona igual en un cultivo real.')}</p>
             {!lab && <div className="mk-panel px-2 pt-2 max-w-xl"><Npc kind="scientist" scene="tablas" text={tr(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>}
           </div>
-          {lab && <div className="nu-hero-npc"><Npc kind="scientist" art="scientist-lab" noScene center full text={tr(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>}
+          {hero && <div className="nu-hero-npc"><Npc key={hero.scene} kind="scientist" art={hero.art} noScene center full text={tr(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>}
           <div className="nu-plantcard" aria-label={tr('Estado de la planta')}>
             <div className="nu-lbl">{tr('Planta seleccionada')}</div>
             {activePlant ? (<>
