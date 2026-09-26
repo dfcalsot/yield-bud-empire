@@ -1134,3 +1134,16 @@ body::before {
 .pl-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; margin-bottom: 4px; }
 .pl-stats > span { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px !important; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(4, 12, 22, 0.6); }
 .pl-stats > span > b { font-size: 22px; line-height: 1.1; letter-spacing: 0; }
+/* the board on the left and Tomás on the right, facing the centre (his bubble on his left) */
+@media (min-width: 1024px) { .pl-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); } .pl-hero > :first-child { order: 2; } }
+.pl-hero > :first-child { flex-direction: row-reverse; }
+.pl-hero > :first-child .v2-bubble { transform-origin: 100% 100%; }
+.pl-hero > :first-child .v2-bubble::before { left: auto; right: -7px; border-left: 0; border-bottom: 0; border-top: 1px solid var(--bubble-line, rgba(184, 243, 90, 0.5)); border-right: 1px solid var(--bubble-line, rgba(184, 243, 90, 0.5)); }
+
+/* 3D trial: the speech bubble takes the mood of the scene behind it (frosted glass tinted like the backdrop) */
+.npc-scene .v2-bubble, .mk-stage--3d .v2-bubble, .pl-stage--3d .v2-bubble { backdrop-filter: blur(10px) saturate(1.2); -webkit-backdrop-filter: blur(10px) saturate(1.2); }
+.npc-scene { --bubble-bg: rgba(14, 16, 34, 0.72); --bubble-line: rgba(199, 210, 254, 0.55); --bubble-ink: #f1f5f9; }
+.mk-stage--3d { --bubble-bg: rgba(30, 24, 78, 0.74); --bubble-line: rgba(165, 180, 252, 0.75); --bubble-ink: #eef2ff; }
+.pl-stage--3d { --bubble-bg: rgba(58, 28, 10, 0.72); --bubble-line: rgba(253, 186, 116, 0.8); --bubble-ink: #fff7ed; }
+.pl-stage--3d .v2-bubble { box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.8), 0 0 26px -8px rgba(251, 146, 60, 0.6); }
+.mk-stage--3d .v2-bubble { box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.8), 0 0 26px -8px rgba(139, 92, 246, 0.7); }

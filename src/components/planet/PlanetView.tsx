@@ -137,7 +137,7 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
       {/* 3D trial: Tomás's field covers the top of the whole planet stage */}
       {art3d && <div className="pl-scene" style={{ backgroundImage: `url(${sceneArt3d('farmer')})` }} aria-hidden />}
       <div className="relative z-10 p-4 sm:p-6 space-y-5">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-end">
+        <div className={`grid gap-4 items-end ${art3d ? 'pl-hero' : 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]'}`}>
           <Npc kind="farmer" text={tr(say.text)} mood={say.mood} moodKey={say.key} noScene={art3d} large={art3d} />
           <div className={`space-y-2.5 ${art3d ? 'pl-board' : ''}`}>
             <h1 className="font-serif text-2xl sm:text-3xl font-black tracking-[0.12em] text-sky-100 leading-none">{tr('PLANETA YIELD')}</h1>
