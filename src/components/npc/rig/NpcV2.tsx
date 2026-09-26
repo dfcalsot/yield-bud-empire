@@ -97,7 +97,7 @@ export const NpcV2: React.FC<{
         </div>
       ) : art3d && NPC_ART3D.has(kind === 'merchant' ? shop : kind) ? (
         <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d ${cutout ? 'npc3d--cutout' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : large ? 'w-[168px] h-[168px] sm:w-[220px] sm:h-[220px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
-          <Portrait3d id={kind === 'merchant' ? shop : kind} talking={talking} cutout={cutout} />
+          <Portrait3d id={kind === 'merchant' ? shop : kind} talking={talking} cutout={cutout} mood={mood} />
         </div>
       ) : (
       <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} shrink-0`}>
