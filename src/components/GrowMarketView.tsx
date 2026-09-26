@@ -271,10 +271,9 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
       <div className={`relative z-10 px-4 sm:px-6 ${art3d ? 'pt-4' : 'pt-14'} pb-6 space-y-5`}>
         {/* keeper + sign + wallet */}
         {art3d ? (
-          // 3D trial: the shop sign hangs in the top-right corner over the keeper, who stands on the right behind the counter
-          // facing the centre; the currency choice has its own card on the left
-          <div className="mk-hero grid gap-4 items-end">
-            <div className="mk-keeper min-w-0">
+          // 3D trial: sign top-left, wallets top-right; the keeper stands by the shop's till (right of centre) facing the centre
+          <div className="mk-hero3 space-y-3">
+            <div className="mk-top">
               <div className="mk-sign">
                 <span className="mk-chain mk-chain--l" /><span className="mk-chain mk-chain--r" />
                 <div className="mk-board">
@@ -282,33 +281,35 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
                   <div className="text-[9.5px] font-mono uppercase tracking-[0.22em] text-amber-200/70 mt-1">{t('Suministros para cultivadores')}</div>
                 </div>
               </div>
+              <div className="mk-shopcard">
+                <div className="grid grid-cols-2 gap-2.5">
+                  {(['FLORA', 'SOL'] as const).map((c) => (
+                    <button
+                      key={c}
+                      data-mk-wallet={c}
+                      onClick={() => setCurrency(c)}
+                      className={`mk-wallet ${currency === c ? 'is-on' : ''}`}
+                      title={t('Pagar en {v0}', { v0: c === 'FLORA' ? '$FLORA' : 'SOL' })}
+                    >
+                      <span className={`mk-coin mk-coin--${c}`}>{c === 'FLORA' ? 'F' : '◎'}</span>
+                      <span className="leading-tight text-left">
+                        <span className="block text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-400">{c === 'FLORA' ? '$FLORA' : 'SOL'}{currency === c ? t(' · pago') : ''}</span>
+                        <span className={`block font-mono font-bold text-lg ${c === 'FLORA' ? 'text-amber-200' : 'text-purple-200'}`}>
+                          <Bump value={c === 'FLORA' ? floraBalance.toLocaleString() : String(solBalance)} />
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="mk-keeper min-w-0">
               <div className="relative">
                 <Merchant text={t(say.text)} mood={say.mood} moodKey={say.key} noScene={art3d} />
                 {/* 3D trial: the keeper stands behind a glass counter instead of floating as a half-body */}
                 {art3d && <div className="mk-counter" aria-hidden />}
               </div>
               <button type="button" onClick={() => setShop(shop === 'flora' ? 'floro' : 'flora')} className="mk-swap mt-1 ml-1 text-[10.5px] font-mono text-neutral-400 hover:text-white underline underline-offset-2 cursor-pointer">{t('⇄ Cambiar de tendero ({v0})', { v0: shop === 'flora' ? t('Rudy') : t('Flor') })}</button>
-            </div>
-            <div className="mk-shopcard">
-              <div className="grid grid-cols-2 gap-2.5">
-                {(['FLORA', 'SOL'] as const).map((c) => (
-                  <button
-                    key={c}
-                    data-mk-wallet={c}
-                    onClick={() => setCurrency(c)}
-                    className={`mk-wallet ${currency === c ? 'is-on' : ''}`}
-                    title={t('Pagar en {v0}', { v0: c === 'FLORA' ? '$FLORA' : 'SOL' })}
-                  >
-                    <span className={`mk-coin mk-coin--${c}`}>{c === 'FLORA' ? 'F' : '◎'}</span>
-                    <span className="leading-tight text-left">
-                      <span className="block text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-400">{c === 'FLORA' ? '$FLORA' : 'SOL'}{currency === c ? t(' · pago') : ''}</span>
-                      <span className={`block font-mono font-bold text-lg ${c === 'FLORA' ? 'text-amber-200' : 'text-purple-200'}`}>
-                        <Bump value={c === 'FLORA' ? floraBalance.toLocaleString() : String(solBalance)} />
-                      </span>
-                    </span>
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         ) : (
