@@ -44,17 +44,21 @@ if (cmd === 'stats') {
   try { console.table(db.prepare("SELECT id, account_id AS cuenta, nft_id, dir, status, tries, substr(error, 1, 60) AS error, datetime(created_at/1000,'unixepoch') AS creado FROM bridge_jobs ORDER BY id DESC LIMIT 15").all()); } catch { /* no jobs yet */ }
 } else if (cmd === 'aviso') {
   // aviso por correo a todas las cuentas verificadas, en su idioma: admin.mjs aviso <archivo.json> [enviar]
-  // el archivo trae { "es": { "subject", "text" }, "en": { ... } }; {usuario} se reemplaza por el nombre. Sin "enviar" solo muestra.
+  // el archivo trae { "es": { "subject", "text", "html"? }, "en": { ... }, "solo"?: [ids] }; {usuario} se reemplaza por el nombre.
+  // "html" es opcional (el texto va igual como alternativa); "solo" limita el envío a esas cuentas. Sin "enviar" solo muestra.
   const msg = JSON.parse(fs.readFileSync(arg, 'utf8'));
-  const rows = db.prepare('SELECT id, username, email, lang FROM accounts WHERE email_verified = 1 AND email IS NOT NULL ORDER BY id').all();
+  const only = Array.isArray(msg.solo) ? new Set(msg.solo.map(Number)) : null;
+  const rows = db.prepare('SELECT id, username, email, lang FROM accounts WHERE email_verified = 1 AND email IS NOT NULL ORDER BY id').all().filter((r) => !only || only.has(r.id));
   let mailer = null, ok = 0;
   for (const r of rows) {
     const m = msg[r.lang === 'en' ? 'en' : 'es'];
     const text = m.text.replaceAll('{usuario}', r.username);
+    const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    const html = m.html ? m.html.replaceAll('{usuario}', esc(r.username)) : undefined;
     if (extra !== 'enviar') { console.log(`#${r.id} ${r.username} (${r.lang ?? 'es'}) → ${m.subject}`); continue; }
     if (!process.env.SMTP_URL) { console.log('falta SMTP_URL (cargar /data/oauth.env)'); break; }
     mailer ??= (await import('nodemailer')).default.createTransport(process.env.SMTP_URL);
-    try { await mailer.sendMail({ from: process.env.MAIL_FROM ?? 'Yield Bud Empire <info@yieldbudempire.com>', to: r.email, subject: m.subject, text }); ok++; console.log(`#${r.id} ${r.username}: enviado`); }
+    try { await mailer.sendMail({ from: process.env.MAIL_FROM ?? 'Yield Bud Empire <info@yieldbudempire.com>', to: r.email, subject: m.subject, text, ...(html ? { html } : {}) }); ok++; console.log(`#${r.id} ${r.username}: enviado`); }
     catch (e) { console.log(`#${r.id} ${r.username}: no se pudo (${e.code ?? e.message})`); }
   }
   if (extra === 'enviar') console.log(`enviados ${ok} de ${rows.length}`);
