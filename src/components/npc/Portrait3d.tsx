@@ -9,7 +9,7 @@ const FX: Record<string, { fx: Fx[]; at?: [number, number] }> = {
   chrono: { fx: ['sparkles'] },
   flora: { fx: ['neon'] },
   floro: { fx: ['neon'] },
-  farmer: { fx: ['sun', 'glint'], at: [91, 60] },
+  farmer: { fx: ['sun', 'glint'], at: [86, 47] },   // the glint sits on his magnifying glass
   scientist: { fx: ['bubbles'], at: [86, 50] },
   geneticist: { fx: ['dna'], at: [8, 45] },
   budtender: { fx: ['neon'] },
@@ -20,7 +20,10 @@ const FX: Record<string, { fx: Fx[]; at?: [number, number] }> = {
  * the mouth open to flap while talking, a blink, and one face per mood. Any frame a character lacks falls back to `base`.
  */
 type Frame = 'base' | 'talk' | 'blink' | 'happy' | 'think' | 'alert';
-const EXPR: Record<string, Frame[]> = { floro: ['base', 'talk', 'blink', 'happy', 'think', 'alert'] };
+const EXPR: Record<string, Frame[]> = {
+  floro: ['base', 'talk', 'blink', 'happy', 'think', 'alert'],
+  farmer: ['base', 'talk', 'blink', 'happy', 'think', 'alert'],
+};
 const MOOD_FRAME: Record<string, Frame> = { happy: 'happy', wave: 'happy', think: 'think', busy: 'think', sad: 'think' };
 
 /** which frame shows now: mouth flaps while talking, a blink every few seconds, otherwise the mood's face */
