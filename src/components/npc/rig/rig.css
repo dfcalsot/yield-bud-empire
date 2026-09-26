@@ -109,6 +109,12 @@
 .npc-scene-bg { position: absolute; inset: 0; z-index: -1; background-size: cover; background-position: center; animation: p3dDrift 20s ease-in-out infinite alternate; }
 .npc-scene-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(3, 10, 8, 0.1) 0%, rgba(3, 10, 8, 0.45) 45%, rgba(3, 10, 8, 0.65) 100%); }
 .npc-scene-bg--blur { filter: blur(14px) saturate(1.15); inset: -12%; }
+/* centred: the character on the stage in the middle of the scene, the bubble above pointing down at them */
+.npc-center { padding: 12px 12px 0; }
+.npc-center .npc-scene-bg { background-position: center 80%; }
+.npc-center .npc-scene-bg::after { background: linear-gradient(180deg, rgba(3, 10, 8, 0.55) 0%, rgba(3, 10, 8, 0.25) 45%, rgba(3, 10, 8, 0.05) 100%); }
+.npc-center .v2-bubble { flex: none; width: 100%; max-width: 420px; margin-bottom: 8px; transform-origin: 50% 100%; }
+.npc-center .v2-bubble::before { left: 50%; bottom: -7px; margin-left: -6px; transform: rotate(-45deg); }
 @media (prefers-reduced-motion: reduce) { .npc-scene-bg { animation: none; } }
 /* over a painted scene the character stands on it: no box, no frame, just a soft ground shadow */
 .npc3d--cutout { border-radius: 0; box-shadow: none; }

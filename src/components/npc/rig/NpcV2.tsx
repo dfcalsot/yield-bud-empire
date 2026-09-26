@@ -48,7 +48,9 @@ export const NpcV2: React.FC<{
   scene?: string;
   /** 3D trial: a bigger figure (the market keeper, who has the whole shop behind) */
   large?: boolean;
-}> = ({ kind, text, mood, moodKey, bare, className = '', variant, plain, noScene, scene: pageScene, large }) => {
+  /** the character stands in the middle of the scene with the bubble above (scenes painted with a stage in the centre) */
+  center?: boolean;
+}> = ({ kind, text, mood, moodKey, bare, className = '', variant, plain, noScene, scene: pageScene, large, center }) => {
   const [chosen] = useShopkeeper();
   // when a hired NFT holds this character's job, its portrait (a personal variation of the character) replaces the default one
   const hiredRaw = useAssignedStaff(kind as StaffRole);
@@ -87,7 +89,7 @@ export const NpcV2: React.FC<{
     : kind === 'merchant' ? t('{v0} · Grow Shop', { v0: shopkeeperName(shop) }) : t(NPC_NAMES_V2[kind]);
 
   return (
-    <div className={`flex items-end gap-1 min-w-0 ${scene ? 'npc-scene' : ''} ${className}`}>
+    <div className={`${center && !bare ? 'npc-center flex flex-col-reverse items-center' : 'flex items-end'} gap-1 min-w-0 ${scene ? 'npc-scene' : ''} ${className}`}>
       {scene && <div className={`npc-scene-bg ${scene.blur ? 'npc-scene-bg--blur' : ''}`} style={{ backgroundImage: `url(${scene.src})` }} aria-hidden />}
       {hired ? (
         <div ref={ref} className={`relative shrink-0 rounded-2xl overflow-hidden ring-1 ${bare ? 'w-[92px] h-[115px]' : 'w-[132px] h-[165px] sm:w-[156px] sm:h-[195px]'}`} style={{ ['--tw-ring-color' as string]: aura, boxShadow: hired.staff.rarity === 'common' ? undefined : `0 0 22px -6px ${aura}` }} data-staff={hired.staff.id}>
@@ -96,7 +98,7 @@ export const NpcV2: React.FC<{
             : <PremiumBust role={kind as StaffRole} variant={variantOf(hired.staff)} rarity={hired.staff.rarity} seed={hired.staff.seed} mood={mood} talking={talking} viseme={visemeOf(shown[shown.length - 1])} crop />}
         </div>
       ) : art3d && NPC_ART3D.has(kind === 'merchant' ? shop : kind) ? (
-        <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d ${cutout ? 'npc3d--cutout' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : large ? 'w-[168px] h-[168px] sm:w-[220px] sm:h-[220px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
+        <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d ${cutout ? 'npc3d--cutout' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : large || center ? 'w-[168px] h-[168px] sm:w-[220px] sm:h-[220px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
           <Portrait3d id={kind === 'merchant' ? shop : kind} talking={talking} cutout={cutout} mood={mood} />
         </div>
       ) : (

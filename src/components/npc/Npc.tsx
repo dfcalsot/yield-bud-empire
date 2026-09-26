@@ -65,4 +65,5 @@ export const Npc: React.FC<{
   noScene?: boolean;
   scene?: string;
   large?: boolean;
+  center?: boolean;
 }> = (props) => <NpcV2 {...props} />;
