@@ -10,6 +10,7 @@ import { TablesTab } from './nutrition/TablesTab';
 import { LabTab } from './nutrition/LabTab';
 import { GuideTab } from './nutrition/GuideTab';
 import { t as tr } from '../i18n';
+import { sceneArt3d, useNpcArt3d } from './npc/art3d';
 
 type Tab = 'tables' | 'lab' | 'guide';
 
@@ -18,6 +19,9 @@ export const NutrientTablesView: React.FC = () => {
   const { currentUser, activePlant } = useGame();
   const [prefs, setPrefs] = useNutriPrefs(currentUser?.id);
   const [tab, setTab] = useState<Tab>('tables');
+  const art3d = useNpcArt3d();
+  // Mixing lab: its painted lab fills the whole hero and Dr. Lucía stands in the middle, full body (3D art only)
+  const lab = tab === 'lab' && art3d;
   const [seed, setSeed] = useState<{ doses: Record<string, number>; stage: StageId; key: number } | null>(null);
   const [focus, setFocus] = useState<{ id: string; key: number } | null>(null);
   const npc = useNpc(tr('Soy la Dra. Lucía. Aquí aprendes lo que un grower de verdad domina: EC, pH, agua y qué le falta a cada hoja.'));
@@ -36,15 +40,17 @@ export const NutrientTablesView: React.FC = () => {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <section className="hud-panel nu-hero p-4 sm:p-6">
+      <section className={`hud-panel nu-hero p-4 sm:p-6 ${lab ? 'nu-hero--lab' : ''}`}>
+        {lab && <div className="nu-hero-scene" style={{ backgroundImage: `url(${sceneArt3d('mezclas')})` }} aria-hidden />}
         <div className="nu-molecules" aria-hidden>{Array.from({ length: 10 }, (_, i) => <i key={i} style={{ left: `${(i * 37) % 100}%`, animationDelay: `${i * 0.7}s`, ['--s' as string]: 6 + (i % 4) * 3 }} />)}</div>
-        <div className="relative grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] items-center">
+        <div className={`relative grid gap-4 items-center ${lab ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)_minmax(0,1fr)] lg:items-end' : 'md:grid-cols-[minmax(0,1fr)_auto]'}`}>
           <div className="space-y-2 min-w-0">
             <span className="nu-pill" style={{ color: '#6ee7b7', borderColor: '#34d399' }}>{tr('Nutrición científica · EC · pH · N-P-K')}</span>
             <h1 className="font-serif text-2xl sm:text-3xl font-black text-white tracking-tight">{tr('Centro de Nutrición')}</h1>
             <p className="text-sm text-neutral-300 leading-relaxed max-w-2xl">{tr('Mezcla como un grower de verdad: tu agua manda en el pH, los nutrientes se bloquean o compiten entre sí y cada etapa pide una receta distinta. Lo que aprendes aquí funciona igual en un cultivo real.')}</p>
-            <div className="mk-panel px-2 pt-2 max-w-xl"><Npc kind="scientist" scene={tab === 'lab' ? 'mezclas' : 'tablas'} center={tab === 'lab'} text={tr(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>
+            {!lab && <div className="mk-panel px-2 pt-2 max-w-xl"><Npc kind="scientist" scene="tablas" text={tr(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>}
           </div>
+          {lab && <div className="nu-hero-npc"><Npc kind="scientist" noScene center full text={tr(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>}
           <div className="nu-plantcard" aria-label={tr('Estado de la planta')}>
             <div className="nu-lbl">{tr('Planta seleccionada')}</div>
             {activePlant ? (<>

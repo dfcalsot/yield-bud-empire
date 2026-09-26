@@ -878,6 +878,16 @@ body::before {
 
 /* ───────────── Centro de Nutrición (components/nutrition) ───────────── */
 .nu-hero { position: relative; overflow: hidden; }
+/* Mixing lab: the painted lab behind the whole hero, darker on the left for the title; Dr. Lucía stands on the bottom edge */
+.nu-hero--lab { padding-bottom: 0 !important; min-height: 25rem; }
+.nu-hero-scene { position: absolute; inset: 0; background-size: cover; background-position: center 70%; animation: p3dDrift 22s ease-in-out infinite alternate; }
+.nu-hero-scene::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8, 6, 20, 0.88) 0%, rgba(8, 6, 20, 0.45) 38%, rgba(8, 6, 20, 0.12) 62%, rgba(8, 6, 20, 0.55) 100%), linear-gradient(0deg, rgba(8, 6, 20, 0.35), transparent 30%); }
+.nu-hero--lab .nu-molecules { opacity: 0.5; }
+.nu-hero-npc { display: flex; justify-content: center; align-self: end; }
+.nu-hero-npc .npc-center { padding: 0; }
+.nu-hero--lab .nu-plantcard { align-self: center; justify-self: end; margin-bottom: 1rem; }
+.nu-hero--lab .grid > div:first-child { align-self: center; }
+@media (max-width: 1023px) { .nu-hero-scene::after { background: linear-gradient(180deg, rgba(8, 6, 20, 0.85) 0%, rgba(8, 6, 20, 0.35) 45%, rgba(8, 6, 20, 0.2) 100%); } .nu-hero--lab .nu-plantcard { order: 3; justify-self: stretch; } }
 .nu-molecules { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .nu-molecules i { position: absolute; bottom: -20px; width: calc(var(--s) * 1px); height: calc(var(--s) * 1px); border-radius: 50%; border: 1px solid rgba(184, 243, 90, 0.5); background: radial-gradient(circle at 30% 30%, rgba(236, 252, 203, 0.35), transparent 70%); animation: nuFloat 9s ease-in infinite; }
 @keyframes nuFloat { 0% { transform: translateY(0) translateX(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-260px) translateX(18px); opacity: 0; } }

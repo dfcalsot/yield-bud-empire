@@ -5,12 +5,12 @@ import React, { useEffect, useState } from 'react';
  * that move a little differently, plus a small effect per character. No blinking or lip-sync yet (that needs extra frames).
  */
 type Fx = 'sparkles' | 'glint' | 'neon' | 'bubbles' | 'dna' | 'sun';
-const FX: Record<string, { fx: Fx[]; at?: [number, number] }> = {
+const FX: Record<string, { fx: Fx[]; at?: [number, number]; fullAt?: [number, number] }> = {
   chrono: { fx: ['sparkles'] },
   flora: { fx: ['neon'] },
   floro: { fx: ['neon'] },
   farmer: { fx: ['sun', 'glint'], at: [86, 47] },   // the glint sits on his magnifying glass
-  scientist: { fx: ['bubbles'], at: [79, 52] },   // the bubbles rise from her flask
+  scientist: { fx: ['bubbles'], at: [79, 52], fullAt: [86, 27] },   // the bubbles rise from her flask
   geneticist: { fx: ['dna'], at: [12, 40] },   // the glow sits on his DNA tube
   budtender: { fx: ['neon'] },
 };
@@ -56,19 +56,21 @@ function useExpression(id: string, talking: boolean, mood?: string): Frame | nul
 const SPARKS: Array<[number, number, number]> = [[12, 18, 0], [84, 14, 0.7], [90, 62, 1.4], [8, 70, 2.1], [70, 88, 0.4], [26, 90, 1.8], [52, 6, 1.1]];
 
 /** `cutout`: only the character (no backdrop, no frame), for when the panel behind already paints the scene */
-export const Portrait3d: React.FC<{ id: string; talking: boolean; className?: string; cutout?: boolean; mood?: string }> = ({ id, talking, className = '', cutout, mood }) => {
+/** `full`: the whole body (`public/npc3d/<id>/full/<frame>.webp`), for scenes where the character stands in the middle */
+export const Portrait3d: React.FC<{ id: string; talking: boolean; className?: string; cutout?: boolean; mood?: string; full?: boolean }> = ({ id, talking, className = '', cutout, mood, full }) => {
   const def = FX[id] ?? { fx: [] };
   const frame = useExpression(id, talking, mood);
-  const at = def.at ?? [50, 50];
+  const dir = full && frame ? `/npc3d/${id}/full` : `/npc3d/${id}`;
+  const at = (full ? def.fullAt : undefined) ?? def.at ?? [50, 50];
   return (
-    <div className={`p3d p3d--${id} ${cutout ? 'p3d--cutout' : ''} ${talking ? 'p3d--talk' : ''} ${def.fx.map((f) => `p3d-fx-${f}`).join(' ')} ${className}`}>
+    <div className={`p3d p3d--${id} ${full ? 'p3d--full' : ''} ${cutout ? 'p3d--cutout' : ''} ${talking ? 'p3d--talk' : ''} ${def.fx.map((f) => `p3d-fx-${f}`).join(' ')} ${className}`}>
       {!cutout && <div className="p3d-bg" style={{ backgroundImage: `url(/npc3d/${id}-bg.webp)` }} />}
       {!cutout && def.fx.includes('sun') && <div className="p3d-sun" />}
       {def.fx.includes('dna') && <div className="p3d-glow" style={{ left: `${at[0]}%`, top: `${at[1]}%` }} />}
       {frame ? (
         // every frame stays loaded; only the current one is visible, so switching never flickers
         <div className="p3d-fg">
-          {EXPR[id].map((f) => <img key={f} className="p3d-frame" src={`/npc3d/${id}/${f}.webp`} alt="" draggable={false} style={{ opacity: f === frame ? 1 : 0 }} />)}
+          {EXPR[id].map((f) => <img key={f} className="p3d-frame" src={`${dir}/${f}.webp`} alt="" draggable={false} style={{ opacity: f === frame ? 1 : 0 }} />)}
         </div>
       ) : <img className="p3d-fg" src={`/npc3d/${id}-fg.webp`} alt="" draggable={false} />}
       {def.fx.includes('glint') && <div className="p3d-glint" style={{ left: `${at[0]}%`, top: `${at[1]}%` }} />}
