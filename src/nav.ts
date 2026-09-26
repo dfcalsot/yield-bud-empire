@@ -15,6 +15,7 @@ import {
   PlanetGlobe,
   ProfileBadge,
   BreedingChamber,
+  FounderCrown,
 } from './components/icons/CannabisIcons';
 import { k } from './i18n';
 
@@ -31,6 +32,7 @@ export type TabId =
   | 'dispensario'
   | 'tokenomica'
   | 'whitepaper'
+  | 'fundadores'
   | 'perfil';
 
 export interface NavTab {
@@ -61,6 +63,7 @@ export const NAV_TABS: Record<TabId, NavTab> = {
   dispensario: { id: 'dispensario', label: k('Dispensario'), icon: Dispensary },
   tokenomica: { id: 'tokenomica', label: k('Tokenómica'), icon: LeafCoin },
   whitepaper: { id: 'whitepaper', label: k('Libro Blanco'), icon: BookLeaf },
+  fundadores: { id: 'fundadores', label: k('Fundadores'), icon: FounderCrown, hint: k('El Pack de Fundador y los créditos') },
   perfil: { id: 'perfil', label: k('Perfil'), icon: ProfileBadge },
 };
 
@@ -70,7 +73,7 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: 'semillas', label: k('Semillas'), icon: Seed, tabs: ['semillas'] },
   { id: 'laboratorio', label: k('Laboratorio'), icon: FlaskLeaf, tabs: ['extraccion', 'forja', 'cria', 'genetica'] },
   { id: 'mercado', label: k('Mercado'), icon: CuringJar, tabs: ['market', 'dispensario'] },
-  { id: 'cripto', label: k('Cripto'), icon: LeafCoin, tabs: ['tokenomica', 'whitepaper'] },
+  { id: 'cripto', label: k('Cripto'), icon: LeafCoin, tabs: ['tokenomica', 'whitepaper', 'fundadores'] },
   { id: 'perfil', label: k('Perfil'), icon: ProfileBadge, tabs: ['perfil'] },
 ];
 
@@ -88,6 +91,7 @@ export const TAB_ZONE: Record<TabId, string> = {
   dispensario: '#fdba74',  // peach
   tokenomica: '#fcd34d',   // gold
   whitepaper: '#c4b5fd',   // violet
+  fundadores: '#fbbf24',   // gold
   perfil: '#b8f35a',       // lime
 };
 

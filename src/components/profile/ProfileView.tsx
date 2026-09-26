@@ -1,4 +1,6 @@
 import { EmpireCard } from '../empire/EmpireCard';
+import { FounderBadge } from '../founder/FounderView';
+import { useFounder } from '../../economy/founderApi';
 import React, { useMemo, useRef, useState } from 'react';
 import { Check, Coins, Flame, LogOut, Lock, Pencil, Settings, Upload, X } from 'lucide-react';
 import { logoutServer } from '../../auth/api';
@@ -76,6 +78,7 @@ export const ProfileView: React.FC<{ onOpenAccountModal: () => void }> = ({ onOp
   const [opening, setOpening] = useState<Opening | null>(null);
   const [seasonFilter, setSeasonFilter] = useState<SeasonId | 'all'>('all');
   const fileRef = useRef<HTMLInputElement>(null);
+  const { status: founder } = useFounder();
   const npc = useNpc(t('¡Bienvenido a mi puesto de cofres! Cada uno guarda un avatar NFT de la temporada. Hay garantía: nunca te quedas sin premio gordo.'));
 
   const now = new Date();
@@ -142,7 +145,7 @@ export const ProfileView: React.FC<{ onOpenAccountModal: () => void }> = ({ onOp
                 <button className="care-btn" onClick={async () => { await logoutServer(); window.location.reload(); }}><LogOut className="w-3.5 h-3.5" />{' '}{t('Salir')}</button>
               </div>
               {nickErr && <p className="text-[11px] font-mono text-red-300 mt-1">{nickErr}</p>}
-              <p className="text-[10.5px] font-mono text-neutral-500 mt-1">@{currentUser.username} · {t(currentUser.role)}</p>
+              <p className="text-[10.5px] font-mono text-neutral-500 mt-1 flex flex-wrap items-center gap-2"><span>@{currentUser.username} · {t(currentUser.role)}</span>{founder?.me && <FounderBadge number={founder.me.number} />}</p>
             </div>
             <div>
               <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-neutral-400"><span>{t('Nivel {level} · {rankTitle}', { level, rankTitle })}</span><span>{playerXp} / {xpNeeded} XP</span></div>
@@ -234,7 +237,7 @@ export const ProfileView: React.FC<{ onOpenAccountModal: () => void }> = ({ onOp
                     {equipped && <span className="pf-eq">{t('EQUIPADO')}</span>}
                     {o && o.count > 1 && <span className="mk-owned" style={{ top: 4, right: 4, bottom: 'auto' }}>×{o.count}</span>}
                   </button>
-                  {o && <ListNftButton what={{ designId: d.id }} name={d.name} rarity={d.rarity} className="sr-btn !py-0.5 !text-[10px] justify-center" />}
+                  {o && d.season !== 'fundador' && <ListNftButton what={{ designId: d.id }} name={d.name} rarity={d.rarity} className="sr-btn !py-0.5 !text-[10px] justify-center" />}
                   </div>
                 );
               })}

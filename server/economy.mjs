@@ -132,6 +132,9 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     return { roomSlots: f.capacityPlants, envBonus: f.environmentBonus, plots: free(id, 'land').length, mods: { roomYield: m.roomYield ?? 0, plotYield: m.plotYield ?? 0, growth: m.growth ?? 0 } };
   };
 
+  // founder badge next to a seller's name (the table is created by founder.mjs, installed after this module)
+  let founderStmt = null;
+  const founderNo = (accountId) => { try { founderStmt ??= db.prepare('SELECT number FROM founders WHERE account_id = ?'); return founderStmt.get(accountId)?.number ?? null; } catch { return null; } };
   const listingView = (r) => ({ id: r.id, nftId: r.nft_id, kind: r.kind, rarity: r.rarity, price: r.price, createdAt: r.created_at, data: JSON.parse(r.data), sellerId: r.seller_id });
 
   /* ───────────── money ───────────── */
@@ -426,6 +429,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
         rarity = data.rarity;
       }
       else if (row.kind === 'avatar') {
+        need(!data.bound, 'avatar_bound');   // the Founder avatar is bought with real money: it never turns into $FLORA
         rarity = A.DESIGN_BY_ID[data.designId]?.rarity ?? '';
         // one copy leaves the stack: the listing is its own NFT until it is sold or taken back
         const copy = { designId: data.designId, count: 1, firstAt: data.firstAt, serial: data.serial };
@@ -664,7 +668,7 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
     const rows = db.prepare(`SELECT * FROM listings WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ? OFFSET ?`).all(...args, P2P.pageSize + 1, page * P2P.pageSize);
     const more = rows.length > P2P.pageSize;
     return {
-      listings: rows.slice(0, P2P.pageSize).map((r) => ({ ...listingView(r), seller: q.userName.get(r.seller_id)?.username ?? '—', sellerRank: stateOf(r.seller_id).empireRank ?? 1, mine: r.seller_id === a.id })),
+      listings: rows.slice(0, P2P.pageSize).map((r) => ({ ...listingView(r), seller: q.userName.get(r.seller_id)?.username ?? '—', sellerRank: stateOf(r.seller_id).empireRank ?? 1, sellerFounder: founderNo(r.seller_id), mine: r.seller_id === a.id })),
       more, feeRate: P2P.feeRate,
       recent: q.recentSales.all().map((r) => ({ id: r.id, kind: r.kind, rarity: r.rarity, price: r.price, at: r.closed_at })),
     };

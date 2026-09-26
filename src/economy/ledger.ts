@@ -39,7 +39,7 @@ export interface Snapshot {
 }
 export type ListingKind = 'staff' | 'land' | 'avatar' | 'relic';
 /** one offer on the player market: the item travels with its data, so it can be drawn as its own card */
-export interface ListingView { id: number; nftId: string; kind: ListingKind; rarity: string; price: number; createdAt: number; sellerId: number; data: Record<string, unknown>; seller?: string; sellerRank?: number; mine?: boolean }
+export interface ListingView { id: number; nftId: string; kind: ListingKind; rarity: string; price: number; createdAt: number; sellerId: number; data: Record<string, unknown>; seller?: string; sellerRank?: number; sellerFounder?: number | null; mine?: boolean }
 export interface MarketPage { listings: ListingView[]; more: boolean; feeRate: number; recent: Array<{ id: number; kind: ListingKind; rarity: string; price: number; at: number }> }
 export type IntentResult<T = unknown> = { ok: true; result: T; snapshot: Snapshot } | { ok: false; error: string; extra?: Record<string, unknown> };
 
@@ -93,6 +93,7 @@ export const REASON: Record<string, string> = {
   forge_material: k('Te faltan materiales para esa receta'), forge_tier: k('Esa receta pide una instalación de más nivel'), forge_jobs: k('La forja ya tiene el máximo de trabajos en marcha'),
   forge_flora: k('Saldo insuficiente para la forja'), forge_qty: k('Cantidad no válida'),
   empire_rank: k('Esa sede pide un rango de imperio más alto'),
+  avatar_bound: k('El avatar Fundador está ligado a tu cuenta: no se vende'),
   too_many_relics: k('Ya tienes el máximo de reliquias'), relic_slots: k('Ya tienes 3 reliquias equipadas'), relic_same_stat: k('Ya tienes equipada una reliquia de ese tipo'), relic_bound: k('Esa reliquia está ligada a tu cuenta: no se puede vender'),
 };
 /** el motivo de un rechazo del servidor, en el idioma del jugador (undefined si no hay texto para ese código) */

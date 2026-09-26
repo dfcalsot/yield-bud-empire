@@ -5,7 +5,7 @@ import { k } from '../i18n/core';/**
  */
 
 export type AvatarRarity = 'common' | 'rare' | 'epic' | 'legendary';
-export type SeasonId = 'primavera' | 'verano' | 'otono' | 'invierno' | 'classic';
+export type SeasonId = 'primavera' | 'verano' | 'otono' | 'invierno' | 'classic' | 'fundador';
 export type Motif = 'leaf' | 'bud' | 'sun' | 'moon' | 'snow' | 'flower' | 'drop' | 'crown' | 'flask' | 'pumpkin' | 'seed' | 'planet' | 'dna' | 'jar' | 'lantern' | 'bee';
 
 export interface Season {
@@ -22,6 +22,7 @@ export const SEASONS: Record<SeasonId, Season> = {
   otono: { id: 'otono', name: k('Otoño · Cosecha Dorada'), emoji: '🍂', tagline: k('Calabazas chrono, hojas ámbar y lunas de cosecha.'), colors: ['#f97316', '#a16207'] },
   invierno: { id: 'invierno', name: k('Invierno · Escarcha Neón'), emoji: '❄️', tagline: k('Copos de neón, hielo cristalino y auroras boreales.'), colors: ['#7dd3fc', '#c4b5fd'] },
   classic: { id: 'classic', name: k('Clásicos de Yield'), emoji: '🧬', tagline: k('Diseños atemporales: salen de cualquier cofre.'), colors: ['#34d399', '#a78bfa'] },
+  fundador: { id: 'fundador', name: k('Fundadores · Pack de Fundador'), emoji: '👑', tagline: k('Solo con el Pack de Fundador: nunca sale de un cofre ni se vende.'), colors: ['#fbbf24', '#7c3aed'] },
 };
 
 /** Season by calendar month (Dec–Feb winter, Mar–May spring, Jun–Aug summer, Sep–Nov autumn). */
@@ -60,6 +61,8 @@ const TABLE: Record<SeasonId, Row[]> = {
   otono: [[k('Semilla de Cosecha'), 'seed', 'common'], [k('Calabaza Yield'), 'pumpkin', 'common'], [k('Farol de Otoño'), 'lantern', 'common'], [k('Hoja Ámbar'), 'leaf', 'rare'], [k('Matraz de Sidra'), 'flask', 'rare'], [k('Cogollo Cobrizo'), 'bud', 'epic'], [k('Luna de Cosecha'), 'moon', 'epic'], [k('Rey Cosechador'), 'crown', 'legendary']],
   invierno: [[k('Copo Neón'), 'snow', 'common'], [k('Gota Helada'), 'drop', 'common'], [k('Farol de Escarcha'), 'lantern', 'common'], [k('Hoja de Hielo'), 'leaf', 'rare'], [k('Frasco de Nieve'), 'jar', 'rare'], [k('Cogollo Cristal'), 'bud', 'epic'], [k('Luna Boreal'), 'moon', 'epic'], [k('Reina de la Escarcha'), 'crown', 'legendary']],
   classic: [[k('Botánico Original'), 'leaf', 'common'], [k('Guardián de ADN'), 'dna', 'rare'], [k('Alquimista'), 'flask', 'epic'], [k('Yield Fundador'), 'planet', 'legendary']],
+  // not in any chest (rollChest only draws the current season and the classics): it comes with the Founder Pack, bound to the account
+  fundador: [[k('Fundador del Imperio'), 'crown', 'legendary']],
 };
 
 export const DESIGNS: AvatarDesign[] = (Object.keys(TABLE) as SeasonId[]).flatMap((season) =>

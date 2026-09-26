@@ -13,6 +13,7 @@ import {
 import { installEconomy } from './economy.mjs';
 import { installGame } from './game.mjs';
 import { installBridge } from './bridge.mjs';
+import { installFounder } from './founder.mjs';
 import { createPrereg } from './prereg.mjs';
 import { installWallet } from './wallet.mjs';
 
@@ -558,6 +559,7 @@ export const economy = installEconomy({ db, route, HttpError, sessionAccount, au
 export const wallet = installWallet({ db, route, HttpError, sessionAccount, audit, limit, readJson });
 export const game = installGame({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy });
 export const bridge = await installBridge({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy, cfg, env: process.env });
+export const founder = await installFounder({ db, route, HttpError, sessionAccount, audit, limit, readJson, env: process.env, sendMail });
 
 /* ───────────────────────────── server ───────────────────────────── */
 

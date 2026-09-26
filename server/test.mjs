@@ -10,9 +10,9 @@ const PORT = 30000 + Math.floor(Math.random() * 2000), MOCK = PORT + 1;
 Object.assign(process.env, {
   PORT: String(PORT), HOST: '127.0.0.1', DATA_DIR: dir, PUBLIC_URL: `http://localhost:${PORT}`, TRUST_PROXY: '1', SKIP_MX: '1', DEV_EXPOSE_LINKS: '1', POW_BITS: '8', MAX_ACCOUNTS_PER_IP: '3',
   GOOGLE_CLIENT_ID: 'gid', GOOGLE_CLIENT_SECRET: 'gsec', GOOGLE_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, GOOGLE_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, GOOGLE_USER_URL: `http://127.0.0.1:${MOCK}/user/google`,
-  BRIDGE_FAKE: '1',
+  BRIDGE_FAKE: '1', FOUNDER_FAKE: '1', FOUNDER_SUPPLY: '3',
 });
-const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg, economy, bridge } = await import('./index.mjs');
+const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg, economy, bridge, founder } = await import('./index.mjs');
 
 // mock identity provider (NOT Google: it only proves that our OAuth code paths behave)
 const profiles = { google: {}, x: {} };
@@ -939,6 +939,76 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   for (let i = 1; i <= 3; i++) await br(BC, 'withdraw', { relicId: relic(BC, i, 'common') });
   ok('puente: máximo 3 salidas por cuenta al día', (await br(BC, 'withdraw', { relicId: relic(BC, 4, 'common') })).json.error === 'bridge_daily_cap');
   await wait(500);
+}
+// ── Pack de Fundador (Solana Pay en USDC, con una cadena falsa en memoria)
+{
+  limiter.m.clear();
+  const fd = (P, path, body) => (body === undefined ? call('GET', `/api/founder/${path}`, { jar: P.jar, ip: P.ip }) : call('POST', `/api/founder/${path}`, { jar: P.jar, ip: P.ip, body }));
+  const pay = founder.pay;
+  const orderOf = async (P) => (await fd(P, 'order', {})).json.order;
+  const settleNow = async () => { for (const o of db.prepare("SELECT * FROM founder_orders WHERE status = 'open'").all()) await founder.check(o); };
+  const F1 = await mkPlayer(120); await state(F1);
+  const st = (await fd(F1, 'status')).json;
+  ok('fundador: estado con precio, cupo y sin pack', st.enabled && st.price === 20 && st.supply === 3 && st.left === 3 && st.me === null && st.order === null);
+  const o1 = await orderOf(F1);
+  ok('fundador: el pedido trae la URL de Solana Pay en USDC con su referencia', o1?.status === 'open' && o1.url.startsWith(`solana:${founder.receiver}?`) && o1.url.includes('amount=20') && o1.url.includes(`spl-token=${founder.mint}`) && o1.url.includes(`reference=${o1.reference}`));
+  ok('fundador: pedir otra vez devuelve el mismo pedido abierto', (await orderOf(F1)).id === o1.id);
+  ok('fundador: arma la transferencia para la billetera del navegador', (await fd(F1, 'pay-tx', { id: o1.id, payer: 'Payer11111111111111111111111111111111111111' })).json.tx?.length > 10 && (await fd(F1, 'pay-tx', { id: o1.id, payer: 'nope' })).status === 400);
+  const FU = await mkPlayer(121); await state(FU);
+  const ou = await orderOf(FU);
+  pay.pay(ou.reference, 5_000_000);
+  ok('fundador: un pago de menos no entrega nada y queda para revisar', (await fd(FU, `order?id=${ou.id}`)).json.order.status === 'underpaid' && founder.numberOf(FU.id) === null);
+  ok('fundador: sin pago el pedido sigue abierto', (await fd(F1, `order?id=${o1.id}`)).json.order.status === 'open');
+  pay.pay(o1.reference, 20_000_000);
+  const g1 = (await fd(F1, `order?id=${o1.id}`)).json;
+  ok('fundador: al llegar el pago se entrega el pack #1', g1.order.status === 'delivered' && g1.me?.number === 1 && founder.numberOf(F1.id) === 1);
+  const av = db.prepare('SELECT data FROM nfts WHERE id = ?').get(`av-${F1.id}-fundador-1`);
+  ok('fundador: el avatar Fundador queda en la cuenta, ligado', !!av && JSON.parse(av.data).bound === true && (await state(F1)).snapshot.avatars.some((a) => a.designId === 'fundador-1'));
+  ok('fundador: el avatar Fundador no se puede vender por $FLORA', (await intent(F1, 'list', { designId: 'fundador-1', price: 500 })).json.error === 'avatar_bound');
+  ok('fundador: el correo de confirmación dice el número', /Fundador #1 de Yield Bud Empire/.test(outbox()));
+  await settleNow(); await founder.check(db.prepare('SELECT * FROM founder_orders WHERE id = ?').get(o1.id));
+  ok('fundador: revisar otra vez no entrega dos veces', db.prepare('SELECT COUNT(*) n FROM founders').get().n === 1);
+  ok('fundador: un fundador no puede pedir otro pack', (await fd(F1, 'order', {})).json.error === 'founder_already');
+  // la misma firma no paga dos pedidos
+  const F2 = await mkPlayer(122); await state(F2);
+  const o2 = await orderOf(F2);
+  pay.pay(o2.reference, 20_000_000, undefined, `Sig-${o1.reference}`);
+  await settleNow();
+  ok('fundador: una firma ya usada no paga otro pedido', db.prepare('SELECT status FROM founder_orders WHERE id = ?').get(o2.id).status === 'open' && founder.numberOf(F2.id) === null);
+  // pago tardío (el pedido ya venció) con packs disponibles: se entrega igual
+  db.prepare('UPDATE founder_orders SET expires_at = ? WHERE id = ?').run(Date.now() - 1000, o2.id);
+  ok('fundador: un pedido vencido se ve como vencido', (await fd(F2, 'status')).json.order === null);
+  pay.pay(o2.reference, 20_000_000);
+  await settleNow();
+  ok('fundador: un pago tardío se entrega si queda cupo', founder.numberOf(F2.id) === 2);
+  // cupo: los pedidos abiertos de otros apartan su pack mientras están vigentes
+  const F3 = await mkPlayer(123); await state(F3);
+  const o3 = await orderOf(F3);
+  const F4 = await mkPlayer(124); await state(F4);
+  ok('fundador: sin cupo (pedidos abiertos de otros cuentan) no se puede pedir', (await fd(F4, 'order', {})).json.error === 'founder_sold_out' && (await fd(F4, 'status')).json.left === 0);
+  pay.pay(o3.reference, 25_000_000);
+  await settleNow();
+  ok('fundador: pagar de más también entrega (el pack #3)', founder.numberOf(F3.id) === 3);
+  // agotado: un pago que llega igual queda para devolver
+  const now = Date.now();
+  const late = db.prepare("INSERT INTO founder_orders (account_id, reference, amount, status, created_at, expires_at) VALUES (?, 'RefLate11111111111111111111111111111111111', 20000000, 'open', ?, ?)").run(F4.id, now, now + 60_000).lastInsertRowid;
+  pay.pay('RefLate11111111111111111111111111111111111', 20_000_000);
+  await settleNow();
+  ok('fundador: agotados, el pago queda marcado para devolver', db.prepare('SELECT status FROM founder_orders WHERE id = ?').get(late).status === 'refund_needed' && founder.numberOf(F4.id) === null && db.prepare('SELECT COUNT(*) n FROM founders').get().n === 3);
+  // si la cadena falla, el pedido sigue abierto y se reintenta
+  const FX = await mkPlayer(125); await state(FX);
+  const ox = db.prepare("INSERT INTO founder_orders (account_id, reference, amount, status, created_at, expires_at) VALUES (?, 'RefFail11111111111111111111111111111111111', 20000000, 'open', ?, ?)").run(FX.id, now, now + 60_000).lastInsertRowid;
+  pay.fail = 1; await settleNow();
+  ok('fundador: un error de la cadena no cierra el pedido', db.prepare('SELECT status, error FROM founder_orders WHERE id = ?').get(ox).status === 'open');
+  // créditos
+  let pub = (await call('GET', '/api/public/founders', { ip: newIp() })).json;
+  ok('fundador: créditos públicos con los tres fundadores', pub.sold === 3 && pub.founders.length === 3 && pub.founders[0].number === 1 && pub.founders[0].name === 'Econ Player 120');
+  await fd(F2, 'credits', { show: false });
+  pub = (await call('GET', '/api/public/founders', { ip: newIp() })).json;
+  ok('fundador: quien lo pide no aparece en los créditos', pub.founders.length === 2 && !pub.founders.some((f) => f.number === 2) && (await fd(F2, 'status')).json.me.credits === false);
+  ok('fundador: solo un fundador cambia los créditos', (await fd(FU, 'credits', { show: false })).status === 404);
+  ok('fundador: otra cuenta no ve un pedido ajeno', (await fd(FU, `order?id=${o1.id}`)).status === 404);
+  ok('fundador: sin sesión no hay pedido', (await call('POST', '/api/founder/order', { ip: newIp(), body: {} })).status === 401);
 }
 // ── idioma de la cuenta: correos en inglés para quien juega en inglés
 {

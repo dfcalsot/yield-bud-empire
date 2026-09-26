@@ -1,6 +1,7 @@
 import { EmpireBadge } from '../empire/EmpireBadge';
 import { RelicCard } from '../relics/RelicCard';
 import type { Relic } from '../../sim/relics';
+import { FounderBadge } from '../founder/FounderView';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowLeftRight, Flame, RefreshCw, Undo2 } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
@@ -108,7 +109,7 @@ export const P2PMarket: React.FC<{ onSay: (text: string, mood: 'idle' | 'happy' 
             return (
               <ListingCard key={l.id} l={l} footer={
                 <div className="space-y-1.5">
-                  <div className="text-[10.5px] font-mono text-neutral-400 flex items-center gap-1.5">{t('Vende')}{' '}<b className="text-neutral-200">{l.seller}</b>{l.sellerRank ? <EmpireBadge rank={l.sellerRank} compact /> : null}</div>
+                  <div className="text-[10.5px] font-mono text-neutral-400 flex items-center gap-1.5">{t('Vende')}{' '}<b className="text-neutral-200">{l.seller}</b>{l.sellerFounder ? <FounderBadge number={l.sellerFounder} compact /> : null}{l.sellerRank ? <EmpireBadge rank={l.sellerRank} compact /> : null}</div>
                   <button type="button" className={`mk-buy !py-2.5 !text-[11px] ${ok ? '' : 'is-poor'}`} disabled={busy === l.id} onClick={() => buy(l)} data-buy-listing={l.id}>
                     <span className="mk-buy-shine" /><span>{t('Comprar')}</span><span className="ml-auto flex items-center gap-1 font-mono"><Flame className="w-3.5 h-3.5" />{l.price}</span>
                   </button>

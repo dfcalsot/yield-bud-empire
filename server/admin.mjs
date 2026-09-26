@@ -1,5 +1,5 @@
 // Operator tool: node server/admin.mjs stats | games | dev <username> [off] | bridge [airdrop] | aviso <archivo.json> [enviar] | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
-//                | invite [cantidad] [usos] [nota] | invites | revoke <código> | seats <N> | wave <N> | waiting | prereg
+//                | invite [cantidad] [usos] [nota] | invites | revoke <código> | seats <N> | wave <N> | waiting | prereg | founder [grant <usuario> | refunded <pedido>]
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -159,4 +159,30 @@ if (cmd === 'stats') {
 } else if (cmd === 'revoke') {
   const r = db.prepare('UPDATE invites SET revoked = 1 WHERE code = ?').run(String(arg ?? '').toUpperCase().trim());
   console.log(r.changes ? 'código anulado' : 'no existe ese código');
-} else console.log('uso: node server/admin.mjs stats | flagged | audit [n] | ban <usuario> | unban <usuario> | setpass <correo> | gift <correo> <monto> [nota ES | nota EN] | invite [cantidad] [usos] [nota] | invites | revoke <código> | seats <N> | wave <N> | waiting | prereg');
+} else if (cmd === 'founder') {
+  // Pack de Fundador: ventas, USDC recibidos y pagos a revisar; `founder grant <usuario>` entrega a mano, `founder refunded <pedido>` marca una devolución hecha
+  db.exec("CREATE TABLE IF NOT EXISTS founder_orders (id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, reference TEXT NOT NULL UNIQUE, amount INTEGER NOT NULL, status TEXT NOT NULL, sig TEXT UNIQUE, payer TEXT, paid INTEGER, error TEXT, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, paid_at INTEGER); CREATE TABLE IF NOT EXISTS founders (number INTEGER PRIMARY KEY, account_id INTEGER NOT NULL UNIQUE, order_id INTEGER, credits INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL);");
+  const supply = Number(process.env.FOUNDER_SUPPLY ?? 100);
+  if (arg === 'grant') {
+    const a = db.prepare('SELECT id, username FROM accounts WHERE username = ?').get(String(extra ?? ''));
+    if (!a) { console.log('no existe ese usuario'); process.exit(1); }
+    if (db.prepare('SELECT 1 FROM founders WHERE account_id = ?').get(a.id)) { console.log('ya es fundador'); process.exit(1); }
+    const taken = new Set(db.prepare('SELECT number FROM founders').all().map((r) => r.number));
+    let n = 1; while (taken.has(n)) n++;
+    if (n > supply) { console.log('no quedan packs'); process.exit(1); }
+    const now = Date.now();
+    db.prepare('INSERT INTO founders (number, account_id, created_at) VALUES (?,?,?)').run(n, a.id, now);
+    db.prepare("INSERT OR IGNORE INTO nfts (id, account_id, kind, data, minted_at) VALUES (?, ?, 'avatar', ?, ?)").run(`av-${a.id}-fundador-1`, a.id, JSON.stringify({ designId: 'fundador-1', count: 1, firstAt: now, serial: n, bound: true }), now);
+    console.log(`${a.username} es el Fundador #${n}`);
+  } else if (arg === 'refunded') {
+    const r = db.prepare("UPDATE founder_orders SET status = 'refunded' WHERE id = ? AND status IN ('refund_needed', 'underpaid')").run(Number(extra));
+    console.log(r.changes ? 'marcado como devuelto' : 'ese pedido no está para devolver');
+  } else {
+    const t = db.prepare("SELECT COUNT(*) n, COALESCE(SUM(paid), 0) usdc FROM founder_orders WHERE status = 'delivered'").get();
+    console.log({ vendidos: db.prepare('SELECT COUNT(*) n FROM founders').get().n, de: supply, usdcRecibidos: t.usdc / 1e6 });
+    console.table(db.prepare("SELECT f.number AS nro, a.username AS jugador, f.credits AS creditos, datetime(f.created_at/1000,'unixepoch') AS desde FROM founders f JOIN accounts a ON a.id = f.account_id ORDER BY f.number").all());
+    const rev = db.prepare("SELECT o.id AS pedido, a.username AS jugador, o.status AS estado, o.paid / 1e6 AS usdc, o.payer AS billetera, o.sig AS firma FROM founder_orders o JOIN accounts a ON a.id = o.account_id WHERE o.status IN ('refund_needed', 'underpaid') ORDER BY o.id").all();
+    if (rev.length) { console.log('A revisar (devolver a la billetera que pagó):'); console.table(rev); }
+    console.table(db.prepare("SELECT o.id AS pedido, a.username AS jugador, o.status AS estado, o.paid / 1e6 AS usdc, o.error, datetime(o.created_at/1000,'unixepoch') AS creado FROM founder_orders o JOIN accounts a ON a.id = o.account_id ORDER BY o.id DESC LIMIT 20").all());
+  }
+} else console.log('uso: node server/admin.mjs stats | flagged | audit [n] | ban <usuario> | unban <usuario> | setpass <correo> | gift <correo> <monto> [nota ES | nota EN] | invite [cantidad] [usos] [nota] | invites | revoke <código> | seats <N> | wave <N> | waiting | prereg | founder [grant <usuario> | refunded <pedido>]');

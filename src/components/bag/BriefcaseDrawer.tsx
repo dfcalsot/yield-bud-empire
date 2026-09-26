@@ -390,7 +390,9 @@ const CollectionTab: React.FC<{ match: Match; onOpenPlanet: () => void; onOpenRo
               <div key={a.designId} className="rounded-xl border p-2 text-center bg-black/20 space-y-1" style={{ borderColor: `color-mix(in srgb, ${RARITY_STYLE[d.rarity].color} 45%, transparent)` }}>
                 <AvatarArt design={d} className="w-full aspect-square" />
                 <div className="text-[11px] font-semibold text-white truncate">{tr(d.name)}{a.count > 1 ? ` ×${a.count}` : ''}</div>
-                <ListNftButton what={{ designId: d.id }} name={d.name} rarity={d.rarity} className="sr-btn !py-0.5 !text-[10px] w-full justify-center" />
+                {d.season === 'fundador'
+                  ? <div className="text-[9.5px] font-mono text-amber-300/80">{tr('Ligado a tu cuenta')}</div>
+                  : <ListNftButton what={{ designId: d.id }} name={d.name} rarity={d.rarity} className="sr-btn !py-0.5 !text-[10px] w-full justify-center" />}
               </div>
             );
           })}</div>

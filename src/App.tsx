@@ -15,6 +15,7 @@ import { BreedingView } from './components/breeding/BreedingView';
 import { GeneticsLabView } from './components/GeneticsLabView';
 import { DispensaryV2PView } from './components/DispensaryV2PView';
 import { TokenomicsView } from './components/TokenomicsView';
+import { FounderView } from './components/founder/FounderView';
 import { WhitepaperView } from './components/WhitepaperView';
 import { WalletModal } from './components/wallet/WalletModal';
 import { GiftChest } from './components/wallet/GiftChest';
@@ -123,7 +124,7 @@ function YieldBudEmpireApp() {
           </div>
         </div>
 
-        {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && currentTab !== 'cultivo' && <ResourceBar onOpenMarket={openMarket} />}
+        {currentTab !== 'market' && currentTab !== 'tokenomica' && currentTab !== 'whitepaper' && currentTab !== 'fundadores' && currentTab !== 'cultivo' && <ResourceBar onOpenMarket={openMarket} />}
 
         {currentTab === 'cultivo' && <CultivationView onOpenMarket={openMarket} onOpenPlanet={() => goToTab('planeta')} />}
         {currentTab === 'perfil' && <ProfileView onOpenAccountModal={() => setIsProfileModalOpen(true)} />}
@@ -138,6 +139,7 @@ function YieldBudEmpireApp() {
         {currentTab === 'dispensario' && <DispensaryV2PView />}
         {currentTab === 'tokenomica' && <TokenomicsView />}
         {currentTab === 'whitepaper' && <WhitepaperView />}
+        {currentTab === 'fundadores' && <FounderView />}
       </main>
 
       <UpdateBanner />

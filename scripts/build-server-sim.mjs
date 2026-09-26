@@ -18,3 +18,11 @@ await build({
   banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
 });
 console.log('server/gen/chain.mjs built');
+// the Founder Pack payments (Solana Pay, USDC): reads the chain only
+await build({
+  entryPoints: [path.join(root, 'server/pay-entry.ts')],
+  outfile: path.join(root, 'server/gen/pay.mjs'),
+  bundle: true, format: 'esm', platform: 'node', target: 'node20', logLevel: 'warning', legalComments: 'none',
+  banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
+});
+console.log('server/gen/pay.mjs built');

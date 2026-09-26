@@ -293,3 +293,12 @@ export const ProfileBadge: IconComponent = (props) => (
     <path d="M17.6 3.2c1.6.2 2.8 1.3 3.2 2.9-1.6.1-2.9-.6-3.2-2.9Z" opacity=".7" />
   </Svg>
 );
+
+/** a crown with a small leaf on its middle point: the Founders */
+export const FounderCrown: IconComponent = (props) => (
+  <Svg {...props}>
+    <path d="M4 17.5 3 8l5 4 4-6 4 6 5-4-1 9.5z" />
+    <path d="M4.5 20.5h15" />
+    <path d="M12 11.2c-.9 1-.9 2.3 0 3.3.9-1 .9-2.3 0-3.3z" />
+  </Svg>
+);

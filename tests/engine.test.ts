@@ -196,7 +196,7 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
   const mulberry = (a: number) => () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   ok('temporadas: septiembre es otoño, enero invierno, abril primavera, julio verano', seasonOf(new Date(2026, 8, 20)) === 'otono' && seasonOf(new Date(2026, 0, 5)) === 'invierno' && seasonOf(new Date(2026, 3, 1)) === 'primavera' && seasonOf(new Date(2026, 6, 1)) === 'verano');
   ok('temporadas: quedan días positivos hasta el cambio', daysLeftInSeason(new Date(2026, 8, 20)) > 0 && daysLeftInSeason(new Date(2026, 8, 20)) <= 92, `(${daysLeftInSeason(new Date(2026, 8, 20))} d)`);
-  ok('catálogo: 36 diseños; cada temporada tiene las 4 rarezas', DESIGNS.length === 36 && (['primavera', 'verano', 'otono', 'invierno'] as SeasonId[]).every((s) => ['common', 'rare', 'epic', 'legendary'].every((r) => DESIGNS.some((d) => d.season === s && d.rarity === r))), `(${DESIGNS.length})`);
+  ok('catálogo: 36 diseños de cofre más el del Pack de Fundador; cada temporada tiene las 4 rarezas', DESIGNS.length === 37 && DESIGNS.filter((d) => d.season === 'fundador').length === 1 && (['primavera', 'verano', 'otono', 'invierno'] as SeasonId[]).every((s) => ['common', 'rare', 'epic', 'legendary'].every((r) => DESIGNS.some((d) => d.season === s && d.rarity === r))), `(${DESIGNS.length})`);
   ok('catálogo: ids únicos', new Set(DESIGNS.map((d) => d.id)).size === DESIGNS.length);
   ok('cofres: las probabilidades suman 100 %', Object.values(CHESTS).every((c) => Object.values(c.odds).reduce((a, b) => a + b, 0) === 100));
   // 20 000 openings of the season chest
@@ -213,7 +213,9 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
   const prem = Array.from({ length: 300 }, (_, i) => rollChest(CHESTS.premium, { ...EMPTY_PITY.premium }, 'verano', mulberry(i + 1)).design.rarity);
   ok('cofre premium: nunca da un común', prem.every((r) => r !== 'common'));
   ok('apodo: 3–20 caracteres, letras con tilde y dígitos; rechaza símbolos raros', validNick('Ana_Grower') && validNick('José Ñandú') && validNick('THC.420') && !validNick('ab') && !validNick('<script>') && !validNick('x'.repeat(21)) && validNick('  hola  ') && !validNick('..ab..'));
-  ok('temporadas: hay un nombre para cada una', Object.keys(SEASONS).length === 5);
+  ok('temporadas: hay un nombre para cada una', Object.keys(SEASONS).length === 6);
+  const drawn = [...Array.from({ length: 400 }, (_, i) => rollChest(CHESTS.premium, { ...EMPTY_PITY.premium }, 'otono', mulberry(i + 7))), ...Array.from({ length: 400 }, (_, i) => rollChest(CHESTS.season, { sinceEpic: 0, sinceLegend: 39 }, 'verano', mulberry(i + 9)))];
+  ok('cofres: el avatar Fundador nunca sale de un cofre', drawn.every((r) => r.design.season !== 'fundador') && drawn.some((r) => r.design.rarity === 'legendary'));
 }
 // 9 · nutrición: pH del sustrato, quemadura por EC y jardinero
 {
