@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 /**
  * Trial "level 1" animation of the 3D-mascot portraits: two layers (the scene without the character, and the character cut out)
@@ -19,23 +19,39 @@ const FX: Record<string, { fx: Fx[]; at?: [number, number]; fullAt?: [number, nu
  * Characters with expression frames (`public/npc3d/<id>/<frame>.webp`, all cut from the same square so they line up): the base face,
  * the mouth open to flap while talking, a blink, and one face per mood. Any frame a character lacks falls back to `base`.
  */
-type Frame = 'base' | 'talk' | 'blink' | 'happy' | 'think' | 'alert';
+type Frame = 'base' | 'talk' | 'talko' | 'blink' | 'happy' | 'think' | 'alert';
 const EXPR: Record<string, Frame[]> = {
   floro: ['base', 'talk', 'blink', 'happy', 'think', 'alert'],
   farmer: ['base', 'talk', 'blink', 'happy', 'think', 'alert'],
-  scientist: ['base', 'talk', 'happy', 'think', 'alert'],   // no blink frame yet
+  // blink and talko ("o" mouth) are her base face with the eyes of the laughing shot / the mouth of the surprised one pasted in
+  scientist: ['base', 'talk', 'talko', 'blink', 'happy', 'think', 'alert'],
   geneticist: ['base', 'talk', 'happy', 'think', 'alert'],  // talk = base with the open mouth of another shot pasted in (the arms differ)
 };
 const MOOD_FRAME: Record<string, Frame> = { happy: 'happy', wave: 'happy', think: 'think', busy: 'think', sad: 'think' };
+/** the faces a quiet character pulls now and then, so it never looks frozen */
+const GESTURES: Frame[] = ['think', 'happy'];
 
-/** which frame shows now: mouth flaps while talking, a blink every few seconds, otherwise the mood's face */
-function useExpression(id: string, talking: boolean, mood?: string): Frame | null {
+/**
+ * Which frame shows now. Talking: the mouth follows the letter being typed (open for a/e, round for o/u when there is a frame for
+ * it, closed on spaces and m/b/p), sampled a few times a second so it reads as speech. Quiet: the mood's face, a blink every few
+ * seconds and, in a calm mood, a short gesture now and then.
+ */
+function useExpression(id: string, talking: boolean, mood?: string, viseme?: string): Frame | null {
   const frames = EXPR[id];
-  const [flap, setFlap] = useState(false);
+  const vis = useRef(viseme);
+  vis.current = viseme;
+  const [mouth, setMouth] = useState<Frame>('base');
   const [blink, setBlink] = useState(false);
+  const [gesture, setGesture] = useState<Frame | null>(null);
   useEffect(() => {
-    if (!frames || !talking) { setFlap(false); return; }
-    const i = window.setInterval(() => setFlap((f) => !f), 150);
+    if (!frames || !talking) { setMouth('base'); return; }
+    const has = (f: Frame) => frames.includes(f);
+    const tick = () => {
+      const v = vis.current;
+      setMouth(v === 'o' && has('talko') ? 'talko' : v === 'a' || v === 'e' || v === 'o' ? (has('talk') ? 'talk' : 'base') : 'base');
+    };
+    tick();
+    const i = window.setInterval(tick, 110);
     return () => window.clearInterval(i);
   }, [frames, talking]);
   useEffect(() => {
@@ -45,10 +61,20 @@ function useExpression(id: string, talking: boolean, mood?: string): Frame | nul
     next();
     return () => window.clearTimeout(t);
   }, [frames]);
+  const calm = !mood || mood === 'idle';
+  useEffect(() => {
+    if (!frames || talking || !calm) { setGesture(null); return; }
+    const pool = GESTURES.filter((f) => frames.includes(f));
+    if (!pool.length) return;
+    let t = 0;
+    const next = () => { t = window.setTimeout(() => { setGesture(pool[Math.floor(Math.random() * pool.length)]); t = window.setTimeout(() => { setGesture(null); next(); }, 1400); }, 5000 + Math.random() * 4000); };
+    next();
+    return () => window.clearTimeout(t);
+  }, [frames, talking, calm]);
   if (!frames) return null;
   const has = (f: Frame) => frames.includes(f);
-  if (talking) return flap && has('talk') ? 'talk' : 'base';
-  const face = (mood && MOOD_FRAME[mood]) || 'base';
+  if (talking) return mouth;
+  const face = gesture ?? ((mood && MOOD_FRAME[mood]) || 'base');
   if (blink && face !== 'happy' && has('blink')) return 'blink';
   return has(face) ? face : 'base';
 }
@@ -57,9 +83,9 @@ const SPARKS: Array<[number, number, number]> = [[12, 18, 0], [84, 14, 0.7], [90
 
 /** `cutout`: only the character (no backdrop, no frame), for when the panel behind already paints the scene */
 /** `full`: the whole body (`public/npc3d/<id>/full/<frame>.webp`), for scenes where the character stands in the middle */
-export const Portrait3d: React.FC<{ id: string; talking: boolean; className?: string; cutout?: boolean; mood?: string; full?: boolean }> = ({ id, talking, className = '', cutout, mood, full }) => {
+export const Portrait3d: React.FC<{ id: string; talking: boolean; className?: string; cutout?: boolean; mood?: string; full?: boolean; viseme?: string }> = ({ id, talking, className = '', cutout, mood, full, viseme }) => {
   const def = FX[id] ?? { fx: [] };
-  const frame = useExpression(id, talking, mood);
+  const frame = useExpression(id, talking, mood, viseme);
   const dir = full && frame ? `/npc3d/${id}/full` : `/npc3d/${id}`;
   const at = (full ? def.fullAt : undefined) ?? def.at ?? [50, 50];
   return (

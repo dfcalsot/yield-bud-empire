@@ -72,7 +72,7 @@ export const NpcV2: React.FC<{
       i += 1;
       setShown(text.slice(0, i));
       if (i >= text.length) window.clearInterval(id);
-    }, 24);
+    }, 38);   // about the pace of speech, so the mouth has time to move
     return () => window.clearInterval(id);
   }, [text]);
 
@@ -101,7 +101,7 @@ export const NpcV2: React.FC<{
         </div>
       ) : art3d && NPC_ART3D.has(kind === 'merchant' ? shop : kind) ? (
         <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d ${cutout ? 'npc3d--cutout' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : full ? 'npc3d--full w-[170px] h-[302px] sm:w-[200px] sm:h-[356px]' : large || center ? 'w-[168px] h-[168px] sm:w-[220px] sm:h-[220px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
-          <Portrait3d id={kind === 'merchant' ? shop : kind} talking={talking} cutout={cutout} mood={mood} full={full} />
+          <Portrait3d id={kind === 'merchant' ? shop : kind} talking={talking} cutout={cutout} mood={mood} full={full} viseme={visemeOf(shown[shown.length - 1])} />
         </div>
       ) : (
       <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} shrink-0`}>
