@@ -4,7 +4,7 @@ import { Crown, ExternalLink, Eye, EyeOff, Loader2, ShieldCheck, Smartphone, Wal
 import { DESIGN_BY_ID } from '../../sim/avatars';
 import { AvatarArt } from '../profile/AvatarArt';
 import { createOrder, fetchCredits, fetchOrder, founderText, payWithWallet, setCredits, useFounder, type FounderCredits, type FounderOrder } from '../../economy/founderApi';
-import { t } from '../../i18n';
+import { t, getLang } from '../../i18n';
 
 const GOLD = '#fbbf24';
 
@@ -163,7 +163,7 @@ export const FounderView: React.FC = () => {
 
       <p className="text-[10.5px] font-mono text-neutral-500 leading-relaxed">
         {t('Uno por cuenta. Se paga en USDC en la red Solana; la comisión de la red la paga quien compra. Es un bien digital que se entrega al confirmarse el pago y no da ventajas ni $FLORA. Detalles en los Términos.')}{' '}
-        <a href="https://yieldbudempire.com/terminos/" target="_blank" rel="noopener noreferrer" className="underline hover:text-neutral-300">{t('Términos')}<ExternalLink className="inline w-3 h-3 ml-0.5" /></a>
+        <a href={getLang() === 'en' ? 'https://yieldbudempire.com/en/terms/' : 'https://yieldbudempire.com/terminos/'} target="_blank" rel="noopener noreferrer" className="underline hover:text-neutral-300">{t('Términos')}<ExternalLink className="inline w-3 h-3 ml-0.5" /></a>
       </p>
     </div>
   );
