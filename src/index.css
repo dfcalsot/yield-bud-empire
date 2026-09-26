@@ -1156,5 +1156,23 @@ body::before {
 .mk-keeper > .relative > :first-child { flex-direction: row-reverse; }
 .mk-keeper > .relative .v2-bubble { transform-origin: 100% 100%; }
 .mk-keeper > .relative .v2-bubble::before { left: auto; right: -7px; border-left: 0; border-bottom: 0; border-top: 1px solid var(--bubble-line); border-right: 1px solid var(--bubble-line); }
-.mk-keeper .mk-counter { left: 0; right: -12px; }
+.mk-keeper .mk-counter { left: auto; right: -14px; width: 196px; height: 26px; }
+@media (min-width: 640px) { .mk-keeper .mk-counter { width: 248px; height: 28px; } }
+.mk-keeper .mk-counter::after { bottom: 6px; height: 1.5px; opacity: 0.85; }
 .mk-keeper > .mk-swap { align-self: flex-end; }
+
+/* 3D trial: the keeper's missions as a frosted violet strip that belongs to the shop */
+.mk-missions.hud-panel { border-radius: 16px; border: 1px solid rgba(165, 180, 252, 0.45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  background: linear-gradient(90deg, rgba(30, 24, 78, 0.78), rgba(14, 12, 40, 0.7)); box-shadow: 0 0 30px -12px rgba(139, 92, 246, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.14); }
+.mk-missions.hud-panel::before, .mk-missions.hud-panel::after { display: none; }
+.mk-missions h3 { color: #eef2ff; font-size: 14px; }
+.mk-missions svg.text-amber-300 { color: #67e8f9; }
+.mk-missions [class*="text-emerald-300"], .mk-missions [class*="text-emerald-200"] { color: #a5b4fc; }
+.mk-missions [class*="text-emerald-100"], .mk-missions [class*="text-emerald-50"] { color: #e0e7ff; }
+.mk-missions button > span.font-mono:first-of-type { padding: 1px 8px; border-radius: 999px; background: rgba(103, 232, 249, 0.12); border: 1px solid rgba(103, 232, 249, 0.4); color: #a5f3fc; }
+.mk-missions .rounded-lg { border-color: rgba(165, 180, 252, 0.3); background: rgba(12, 10, 36, 0.55); }
+.mk-missions .rounded-lg.border-amber-300\/50 { border-color: rgba(252, 211, 77, 0.6); background: rgba(251, 191, 36, 0.08); }
+.mk-missions [role="progressbar"] { background: rgba(12, 10, 36, 0.8); }
+.mk-missions [role="progressbar"] > .bg-emerald-400 { background: linear-gradient(90deg, #67e8f9, #a78bfa); }
+.mk-missions .rounded-full.border-emerald-400\/25 { border-color: rgba(165, 180, 252, 0.4); background: rgba(129, 140, 248, 0.14); color: #e0e7ff; }
+.mk-missions button:disabled.rounded-md { background: rgba(129, 140, 248, 0.14); color: rgba(199, 210, 254, 0.6); border: 1px solid rgba(165, 180, 252, 0.25); }

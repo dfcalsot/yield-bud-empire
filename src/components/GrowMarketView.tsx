@@ -353,7 +353,7 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
         </div>
         )}
 
-        <NpcMissions npc="merchant" onSay={(text, mood) => setSay((s) => ({ text, mood, key: s.key + 1 }))} />
+        <NpcMissions npc="merchant" className={art3d ? 'mk-missions' : ''} onSay={(text, mood) => setSay((s) => ({ text, mood, key: s.key + 1 }))} />
 
         {/* your room: equipped hotbar + resource bars */}
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] mk-panel p-3 sm:p-4">
