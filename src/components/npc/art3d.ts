@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Trial of the new 3D-mascot portraits for the base cast (Chrono, Nico, Flor/Rudy, Tomás, Lucía, Rafa, Marta) and the staff.
- * Off by default: `?arte=3d` turns it on for this browser, `?arte=clasico` back off (kept in localStorage).
+ * The 3D-mascot art for the base cast (Chrono, Nico, Flor/Rudy, Tomás, Lucía, Rafa, Marta), the staff and the scenes.
+ * On for everyone since 2026-09-25; `?arte=clasico` brings back the drawn art in this browser and `?arte=3d` turns it on again (kept in localStorage).
  * Chrono is the seed with the pocket watch (King Bud is not approved yet); he has no backdrop, he is always a cut-out.
  */
 export const NPC_ART3D = new Set(['chrono', 'foreman', 'flora', 'floro', 'farmer', 'scientist', 'geneticist', 'budtender']);
@@ -21,8 +21,8 @@ const read = (): boolean => {
   try {
     const q = new URLSearchParams(window.location.search).get('arte');
     if (q === '3d' || q === 'clasico') localStorage.setItem(KEY, q);
-    return localStorage.getItem(KEY) === '3d';
-  } catch { return false; }
+    return localStorage.getItem(KEY) !== 'clasico';
+  } catch { return true; }
 };
 
 export function useNpcArt3d(): boolean {
