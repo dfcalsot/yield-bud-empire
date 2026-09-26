@@ -71,7 +71,7 @@ export const P2PMarket: React.FC<{ onSay: (text: string, mood: 'idle' | 'happy' 
       <div className="flex flex-wrap items-center gap-2">
         <ArrowLeftRight className="w-5 h-5 text-emerald-300" />
         <h3 className="font-serif text-base font-black tracking-[0.12em] uppercase text-emerald-100">{t('Mercado de jugadores')}</h3>
-        <span className="text-[11px] font-mono text-neutral-400">{t('Compra y vende NFT entre jugadores. Cada venta quema el {v0} % del precio. Para vender algo tuyo usa «Vender» en su tarjeta (Maletín, Planeta, Perfil).', { v0: Math.round(p2pInfo.feeRate * 100) })}</span>
+        <span className="text-[11px] font-mono text-neutral-400">{t('Compra y vende NFT entre jugadores. Cada venta quema el {v0} % del precio. Para vender algo tuyo usa «Vender» en su tarjeta (Maletín, Outdoor, Perfil).', { v0: Math.round(p2pInfo.feeRate * 100) })}</span>
         <button type="button" onClick={() => void load()} className="ml-auto sr-btn" aria-label={t('Actualizar')}><RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />{t('Actualizar')}</button>
       </div>
 

@@ -23,6 +23,7 @@ export const SubTabs: React.FC<SubTabsProps> = ({ currentTab, setCurrentTab }) =
             key={id}
             data-tour={`subtab-${id}`}
             onClick={() => setCurrentTab(id)}
+            title={tab.hint ? t(tab.hint) : undefined}
             className={`flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-lg text-xs font-semibold tracking-wide uppercase transition cursor-pointer ${
               isActive
                 ? 'bg-emerald-400/15 text-emerald-200 border border-emerald-300/40 shadow-[0_0_14px_rgba(52,211,153,0.3)]'

@@ -50,7 +50,7 @@ export const LandMarket: React.FC<{ currency: 'FLORA' | 'SOL'; onSay: (text: str
         <Globe2 className="w-5 h-5 text-sky-300" />
         <h3 className="font-serif text-base font-black tracking-[0.12em] uppercase text-sky-100">{t('Tierras NFT')}</h3>
         <span className="text-[11px] font-mono text-neutral-400">{t('Cada parcela es única, de suministro fijo, con 36 plantas. Tienes {length}.', { length: plots.length })}</span>
-        {onOpenPlanet && <button type="button" onClick={onOpenPlanet} className="ml-auto text-[11px] font-mono text-sky-200 underline underline-offset-2 cursor-pointer hover:text-white">{t('Ver mis tierras en el Planeta →')}</button>}
+        {onOpenPlanet && <button type="button" onClick={onOpenPlanet} className="ml-auto text-[11px] font-mono text-sky-200 underline underline-offset-2 cursor-pointer hover:text-white">{t('Ver mis tierras en Outdoor →')}</button>}
       </div>
 
       <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t('Región')}>

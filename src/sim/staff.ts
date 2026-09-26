@@ -18,7 +18,7 @@ export type StatId = 'roomYield' | 'plotYield' | 'shopDiscount' | 'labYield' | '
 
 export const ROLE_INFO: Record<StaffRole, { label: string; place: string; stat: StatId; effect: string }> = localize<Record<StaffRole, { label: string; place: string; stat: StatId; effect: string }>>({
   foreman: { label: k('Capataz'), place: k('Sala de cultivo'), stat: 'roomYield', effect: k('Cosecha de la Sala') },
-  farmer: { label: k('Cultivador'), place: k('Parcelas (Planeta)'), stat: 'plotYield', effect: k('Cosecha de las parcelas') },
+  farmer: { label: k('Cultivador'), place: k('Parcelas (Outdoor)'), stat: 'plotYield', effect: k('Cosecha de las parcelas') },
   merchant: { label: k('Tendero'), place: k('Mercado'), stat: 'shopDiscount', effect: k('Descuento en el Mercado') },
   scientist: { label: k('Científico'), place: k('Laboratorio'), stat: 'labYield', effect: k('Rendimiento de extracción') },
   geneticist: { label: k('Genetista'), place: k('Genética'), stat: 'seedBonus', effect: k('Semillas extra por cruce') },

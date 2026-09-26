@@ -37,6 +37,8 @@ export interface NavTab {
   id: TabId;
   label: string;
   icon: IconComponent;
+  /** What the tab means, shown as a tooltip. */
+  hint?: string;
 }
 
 export interface NavGroup {
@@ -47,8 +49,8 @@ export interface NavGroup {
 }
 
 export const NAV_TABS: Record<TabId, NavTab> = {
-  cultivo: { id: 'cultivo', label: k('Cultivo'), icon: CannabisLeaf },
-  planeta: { id: 'planeta', label: k('Planeta'), icon: PlanetGlobe },
+  cultivo: { id: 'cultivo', label: k('Indoor'), icon: CannabisLeaf, hint: k('Cultivo bajo techo, en tu sala con luces') },
+  planeta: { id: 'planeta', label: k('Outdoor'), icon: PlanetGlobe, hint: k('Cultivo al aire libre, en las parcelas del planeta') },
   nutrientes: { id: 'nutrientes', label: k('Nutrición'), icon: NutrientBottle },
   semillas: { id: 'semillas', label: k('Semillas'), icon: Seed },
   extraccion: { id: 'extraccion', label: k('Extracción'), icon: RosinPress },

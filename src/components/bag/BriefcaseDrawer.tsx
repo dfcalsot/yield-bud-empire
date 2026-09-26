@@ -247,7 +247,7 @@ const SeedsTab: React.FC<{ match: Match; rows: ReturnType<typeof useGame>['seedB
     <div className="grid grid-cols-2 gap-3">
       {list.map((s) => (
         <GeneticCard key={s.id} card={cardFromSeed(s, seedInventory[s.id] ?? 0)} compact>
-          <button onClick={() => { if (plantFromSeedBank(s.id)) { onDone(); onNavigate('cultivo'); } }} className="mt-2 w-full px-2 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-400 text-neutral-950 hover:bg-emerald-300 cursor-pointer">{tr('Sembrar en Cultivo')}</button>
+          <button onClick={() => { if (plantFromSeedBank(s.id)) { onDone(); onNavigate('cultivo'); } }} className="mt-2 w-full px-2 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-400 text-neutral-950 hover:bg-emerald-300 cursor-pointer">{tr('Sembrar en Indoor')}</button>
         </GeneticCard>
       ))}
     </div>
@@ -330,7 +330,7 @@ const CollectionTab: React.FC<{ match: Match; onOpenPlanet: () => void; onOpenRo
   const Head: React.FC<{ title: string; n: number; action?: React.ReactNode }> = ({ title, n, action }) => (
     <div className="flex items-center justify-between pt-1"><h4 className="text-[10.5px] font-mono uppercase tracking-[0.18em] text-neutral-400">{title} <span className="text-neutral-500">· {n}</span></h4>{action}</div>
   );
-  if (total + myListings.length === 0) return <Empty searching={match.searching} icon={<Globe2 className="w-5 h-5" />} title={tr('Aún no tienes NFT')} hint={tr('Las tierras del Planeta, el personal del Mercado y los avatares de los cofres aparecen aquí, todos juntos.')} action={{ label: tr('Ver el Planeta'), onClick: onOpenPlanet }} />;
+  if (total + myListings.length === 0) return <Empty searching={match.searching} icon={<Globe2 className="w-5 h-5" />} title={tr('Aún no tienes NFT')} hint={tr('Las tierras del Planeta, el personal del Mercado y los avatares de los cofres aparecen aquí, todos juntos.')} action={{ label: tr('Ver Outdoor'), onClick: onOpenPlanet }} />;
   return (
     <div className="space-y-4" data-testid="nft-hub">
       <div className="grid grid-cols-4 gap-1.5 text-center" data-testid="nft-summary">

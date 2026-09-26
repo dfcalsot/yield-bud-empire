@@ -108,7 +108,7 @@ export const PlotScreen: React.FC<{
     <div className="space-y-4">
       {/* header */}
       <div className="flex flex-wrap items-center gap-3">
-        <button onClick={onBack} className="care-btn"><ArrowLeft className="w-3.5 h-3.5" />{' '}{tr('Planeta')}</button>
+        <button onClick={onBack} className="care-btn"><ArrowLeft className="w-3.5 h-3.5" />{' '}{tr('Outdoor')}</button>
         <div className="min-w-0">
           <h2 className="font-serif text-xl font-black text-white leading-tight">{region.emoji} {tr(plot.name)} <span className="text-sm font-mono font-normal text-neutral-400">· {tr(region.name)} · {region.climate}</span></h2>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10.5px] font-mono text-neutral-400 mt-0.5">

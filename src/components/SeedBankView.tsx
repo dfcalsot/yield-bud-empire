@@ -65,7 +65,7 @@ export const SeedBankView: React.FC<SeedBankViewProps> = ({ onNavigateToCultivat
     tr('Hindu Kush ama Afganistán, Acapulco Gold México, Lamb’s Bread Jamaica… cada región tiene su landrace.'),
     tr('Una semilla se gasta al plantar en una parcela: piensa bien dónde la siembras.'),
     tr('Con un jardinero contratado, tus parcelas se riegan y se abonan solas.'),
-    ...(Object.values(seedInventory).reduce((a, q) => a + q, 0) === 0 ? [tr('No tienes semillas. Compra un pack y ve al Planeta a sembrar.')] : []),
+    ...(Object.values(seedInventory).reduce((a, q) => a + q, 0) === 0 ? [tr('No tienes semillas. Compra un pack y ve a Outdoor a sembrar.')] : []),
   ];
   const totalSeedsOwned = Object.values(seedInventory).reduce((acc, qty) => acc + qty, 0);
 

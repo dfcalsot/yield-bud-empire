@@ -42,7 +42,7 @@ export const STEPS: TutorialStep[] = [
     reward: { xp: 50 }, thanks: k('Primera venta hecha. Así se empieza un imperio.') },
   { id: 'buy', title: k('Compra suministros'), event: 'buy', goal: 1, tab: 'market', say: k('Para seguir cultivando necesitas insumos. En Mercado → Grow Market compra lo que te falte.'), hint: k('Compra algo en el Grow Market'),
     reward: { lots: [{ id: 'pest_neem' }], xp: 40 }, thanks: k('Buena compra. Un neem para las plagas, cortesía de la casa.') },
-  { id: 'planet', title: k('Conoce el Planeta'), event: 'planet', goal: 1, tab: 'planeta', say: k('Más allá de tu sala hay siete regiones con parcelas NFT. Entra a Cultivo → Planeta y échales un vistazo.'), hint: k('Abre el Planeta'),
+  { id: 'planet', title: k('Conoce el Planeta'), event: 'planet', goal: 1, tab: 'planeta', say: k('Más allá de tu sala hay siete regiones con parcelas NFT. Entra a Cultivo → Outdoor y échales un vistazo.'), hint: k('Abre Outdoor'),
     reward: { xp: 40 }, thanks: k('El mundo es grande. Ya lo explorarás.') },
   { id: 'harvest', title: k('Tu primera cosecha'), event: 'harvest', goal: 1, tab: 'cultivo', say: k('Cuando tu planta esté lista, cosecha. Crece en tiempo real: puedes esperar o acelerar el ciclo quemando $FLORA. Este paso es opcional, ¡vuelve cuando quieras!'), hint: k('Cosecha una planta'),
     reward: { seeds: { seed_gelato_auto: 1 }, lots: [{ id: 'energy_20' }], xp: 150 }, thanks: k('¡Cosechaste! Ya eres oficialmente cultivador de Yield Bud Empire.') },
