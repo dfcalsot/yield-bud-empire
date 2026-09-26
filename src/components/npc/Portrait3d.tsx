@@ -11,6 +11,7 @@ const FX: Record<string, { fx: Fx[]; at?: [number, number]; fullAt?: [number, nu
   floro: { fx: ['neon'] },
   farmer: { fx: ['sun', 'glint'], at: [86, 47] },   // the glint sits on his magnifying glass
   scientist: { fx: ['bubbles'], at: [79, 52], fullAt: [86, 27] },   // the bubbles rise from her flask
+  'scientist-lab': { fx: ['bubbles'], at: [88, 33] },                // from her test tube
   geneticist: { fx: ['dna'], at: [12, 40] },   // the glow sits on his DNA tube
   budtender: { fx: ['neon'] },
 };
@@ -25,8 +26,12 @@ const EXPR: Record<string, Frame[]> = {
   farmer: ['base', 'talk', 'blink', 'happy', 'think', 'alert'],
   // blink and talko ("o" mouth) are her base face with the eyes of the laughing shot / the mouth of the surprised one pasted in
   scientist: ['base', 'talk', 'talko', 'blink', 'happy', 'think', 'alert'],
+  // her second pose, at the bench with a test tube (Nutrition → Mixing lab), so the lab doesn't repeat the one used everywhere else
+  'scientist-lab': ['base', 'talk', 'talko', 'blink', 'happy', 'think', 'alert'],
   geneticist: ['base', 'talk', 'happy', 'think', 'alert'],  // talk = base with the open mouth of another shot pasted in (the arms differ)
 };
+/** characters that also have whole-body frames (`<id>/full/`) */
+const FULL_BODY = new Set(['scientist']);
 const MOOD_FRAME: Record<string, Frame> = { happy: 'happy', wave: 'happy', think: 'think', busy: 'think', sad: 'think' };
 /** the faces a quiet character pulls now and then, so it never looks frozen */
 const GESTURES: Frame[] = ['think', 'happy'];
@@ -86,7 +91,7 @@ const SPARKS: Array<[number, number, number]> = [[12, 18, 0], [84, 14, 0.7], [90
 export const Portrait3d: React.FC<{ id: string; talking: boolean; className?: string; cutout?: boolean; mood?: string; full?: boolean; viseme?: string }> = ({ id, talking, className = '', cutout, mood, full, viseme }) => {
   const def = FX[id] ?? { fx: [] };
   const frame = useExpression(id, talking, mood, viseme);
-  const dir = full && frame ? `/npc3d/${id}/full` : `/npc3d/${id}`;
+  const dir = full && frame && FULL_BODY.has(id) ? `/npc3d/${id}/full` : `/npc3d/${id}`;
   const at = (full ? def.fullAt : undefined) ?? def.at ?? [50, 50];
   return (
     <div className={`p3d p3d--${id} ${full ? 'p3d--full' : ''} ${cutout ? 'p3d--cutout' : ''} ${talking ? 'p3d--talk' : ''} ${def.fx.map((f) => `p3d-fx-${f}`).join(' ')} ${className}`}>

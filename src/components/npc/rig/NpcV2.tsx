@@ -31,6 +31,9 @@ export const NPC_NAMES_V2: Record<NpcKindV2, string> = {
   budtender: k('Marta · Dispensaria'),
 };
 
+/** figure size of the extra poses (their frames have their own proportions) */
+const ART_SIZE: Record<string, string> = { 'scientist-lab': 'w-[230px] h-[260px] sm:w-[290px] sm:h-[328px]' };
+
 export const NpcV2: React.FC<{
   kind: NpcKindV2;
   text: string;
@@ -52,7 +55,9 @@ export const NpcV2: React.FC<{
   center?: boolean;
   /** the whole body (characters that have full-body frames), standing on the bottom edge */
   full?: boolean;
-}> = ({ kind, text, mood, moodKey, bare, className = '', variant, plain, noScene, scene: pageScene, large, center, full }) => {
+  /** another pose of the character (its own frames in `public/npc3d/<art>/`), e.g. 'scientist-lab' */
+  art?: string;
+}> = ({ kind, text, mood, moodKey, bare, className = '', variant, plain, noScene, scene: pageScene, large, center, full, art }) => {
   const [chosen] = useShopkeeper();
   // when a hired NFT holds this character's job, its portrait (a personal variation of the character) replaces the default one
   const hiredRaw = useAssignedStaff(kind as StaffRole);
@@ -100,8 +105,8 @@ export const NpcV2: React.FC<{
             : <PremiumBust role={kind as StaffRole} variant={variantOf(hired.staff)} rarity={hired.staff.rarity} seed={hired.staff.seed} mood={mood} talking={talking} viseme={visemeOf(shown[shown.length - 1])} crop />}
         </div>
       ) : art3d && NPC_ART3D.has(kind === 'merchant' ? shop : kind) ? (
-        <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d ${cutout ? 'npc3d--cutout' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : full ? 'npc3d--full w-[170px] h-[302px] sm:w-[200px] sm:h-[356px]' : large || center ? 'w-[168px] h-[168px] sm:w-[220px] sm:h-[220px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
-          <Portrait3d id={kind === 'merchant' ? shop : kind} talking={talking} cutout={cutout} mood={mood} full={full} viseme={visemeOf(shown[shown.length - 1])} />
+        <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d ${cutout ? 'npc3d--cutout' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : full && art ? `npc3d--full ${ART_SIZE[art] ?? 'w-[240px] h-[240px]'}` : full ? 'npc3d--full w-[170px] h-[302px] sm:w-[200px] sm:h-[356px]' : large || center ? 'w-[168px] h-[168px] sm:w-[220px] sm:h-[220px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
+          <Portrait3d id={art ?? (kind === 'merchant' ? shop : kind)} talking={talking} cutout={cutout} mood={mood} full={full} viseme={visemeOf(shown[shown.length - 1])} />
         </div>
       ) : (
       <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} shrink-0`}>

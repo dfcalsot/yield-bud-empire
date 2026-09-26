@@ -23,7 +23,7 @@ export const NpcLab: React.FC = () => {
             <h1 className="font-serif text-2xl sm:text-3xl font-black text-white tracking-tight">Centro de Nutrición</h1>
             <p className="text-sm text-neutral-300 leading-relaxed max-w-2xl">Mezcla como un grower de verdad: tu agua manda en el pH, los nutrientes se bloquean o compiten entre sí.</p>
           </div>
-          <div className="nu-hero-npc"><Npc kind="scientist" noScene center full text={text} mood={mood} moodKey={n} /></div>
+          <div className="nu-hero-npc"><Npc kind="scientist" art="scientist-lab" noScene center full text={text} mood={mood} moodKey={n} /></div>
           <div className="nu-plantcard"><div className="nu-lbl">Planta seleccionada</div><b className="font-serif text-white">Gelato Auto</b><div className="text-[11px] font-mono text-emerald-300">Vegetativo · 42%</div></div>
         </div>
       </section>

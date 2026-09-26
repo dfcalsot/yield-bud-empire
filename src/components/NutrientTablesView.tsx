@@ -50,7 +50,7 @@ export const NutrientTablesView: React.FC = () => {
             <p className="text-sm text-neutral-300 leading-relaxed max-w-2xl">{tr('Mezcla como un grower de verdad: tu agua manda en el pH, los nutrientes se bloquean o compiten entre sí y cada etapa pide una receta distinta. Lo que aprendes aquí funciona igual en un cultivo real.')}</p>
             {!lab && <div className="mk-panel px-2 pt-2 max-w-xl"><Npc kind="scientist" scene="tablas" text={tr(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>}
           </div>
-          {lab && <div className="nu-hero-npc"><Npc kind="scientist" noScene center full text={tr(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>}
+          {lab && <div className="nu-hero-npc"><Npc kind="scientist" art="scientist-lab" noScene center full text={tr(npc.say.text)} mood={npc.say.mood} moodKey={npc.say.key} /></div>}
           <div className="nu-plantcard" aria-label={tr('Estado de la planta')}>
             <div className="nu-lbl">{tr('Planta seleccionada')}</div>
             {activePlant ? (<>
