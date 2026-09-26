@@ -1176,3 +1176,7 @@ body::before {
 .mk-missions [role="progressbar"] > .bg-emerald-400 { background: linear-gradient(90deg, #67e8f9, #a78bfa); }
 .mk-missions .rounded-full.border-emerald-400\/25 { border-color: rgba(165, 180, 252, 0.4); background: rgba(129, 140, 248, 0.14); color: #e0e7ff; }
 .mk-missions button:disabled.rounded-md { background: rgba(129, 140, 248, 0.14); color: rgba(199, 210, 254, 0.6); border: 1px solid rgba(165, 180, 252, 0.25); }
+/* the keeper's missions as one box on the left, next to the keeper (history and today's errand stacked) */
+.mk-mid { display: grid; gap: 16px; align-items: end; }
+@media (min-width: 1024px) { .mk-mid { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.3fr); } .mk-mid > .mk-missions { order: -1; } .mk-mid > .mk-keeper { margin-right: 0; width: 100%; } }
+.mk-missions .md\:grid-cols-2 { grid-template-columns: minmax(0, 1fr); }

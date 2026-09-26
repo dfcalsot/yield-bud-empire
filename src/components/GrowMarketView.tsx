@@ -303,13 +303,16 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
                 </div>
               </div>
             </div>
-            <div className="mk-keeper min-w-0">
-              <div className="relative">
-                <Merchant text={t(say.text)} mood={say.mood} moodKey={say.key} noScene={art3d} />
-                {/* 3D trial: the keeper stands behind a glass counter instead of floating as a half-body */}
-                {art3d && <div className="mk-counter" aria-hidden />}
+            <div className="mk-mid">
+              <div className="mk-keeper min-w-0">
+                <div className="relative">
+                  <Merchant text={t(say.text)} mood={say.mood} moodKey={say.key} noScene={art3d} />
+                  {/* 3D trial: the keeper stands behind a glass counter instead of floating as a half-body */}
+                  {art3d && <div className="mk-counter" aria-hidden />}
+                </div>
+                <button type="button" onClick={() => setShop(shop === 'flora' ? 'floro' : 'flora')} className="mk-swap mt-1 ml-1 text-[10.5px] font-mono text-neutral-400 hover:text-white underline underline-offset-2 cursor-pointer">{t('⇄ Cambiar de tendero ({v0})', { v0: shop === 'flora' ? t('Rudy') : t('Flor') })}</button>
               </div>
-              <button type="button" onClick={() => setShop(shop === 'flora' ? 'floro' : 'flora')} className="mk-swap mt-1 ml-1 text-[10.5px] font-mono text-neutral-400 hover:text-white underline underline-offset-2 cursor-pointer">{t('⇄ Cambiar de tendero ({v0})', { v0: shop === 'flora' ? t('Rudy') : t('Flor') })}</button>
+              <NpcMissions npc="merchant" className="mk-missions" defaultOpen onSay={(text, mood) => setSay((s) => ({ text, mood, key: s.key + 1 }))} />
             </div>
           </div>
         ) : (
@@ -353,7 +356,7 @@ export const GrowMarketView: React.FC<{ initialCat?: string; onOpenPlanet?: () =
         </div>
         )}
 
-        <NpcMissions npc="merchant" className={art3d ? 'mk-missions' : ''} onSay={(text, mood) => setSay((s) => ({ text, mood, key: s.key + 1 }))} />
+        {!art3d && <NpcMissions npc="merchant" onSay={(text, mood) => setSay((s) => ({ text, mood, key: s.key + 1 }))} />}
 
         {/* your room: equipped hotbar + resource bars */}
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] mk-panel p-3 sm:p-4">
