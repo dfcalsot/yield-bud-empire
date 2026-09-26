@@ -53,12 +53,13 @@ if (cmd === 'stats') {
   for (const r of rows) {
     const m = msg[r.lang === 'en' ? 'en' : 'es'];
     const text = m.text.replaceAll('{usuario}', r.username);
+    const subject = m.subject.replaceAll('{usuario}', r.username);
     const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
     const html = m.html ? m.html.replaceAll('{usuario}', esc(r.username)) : undefined;
-    if (extra !== 'enviar') { console.log(`#${r.id} ${r.username} (${r.lang ?? 'es'}) → ${m.subject}`); continue; }
+    if (extra !== 'enviar') { console.log(`#${r.id} ${r.username} (${r.lang ?? 'es'}) → ${subject}${html ? ' · con HTML' : ''}`); continue; }
     if (!process.env.SMTP_URL) { console.log('falta SMTP_URL (cargar /data/oauth.env)'); break; }
     mailer ??= (await import('nodemailer')).default.createTransport(process.env.SMTP_URL);
-    try { await mailer.sendMail({ from: process.env.MAIL_FROM ?? 'Yield Bud Empire <info@yieldbudempire.com>', to: r.email, subject: m.subject, text, ...(html ? { html } : {}) }); ok++; console.log(`#${r.id} ${r.username}: enviado`); }
+    try { await mailer.sendMail({ from: process.env.MAIL_FROM ?? 'Yield Bud Empire <info@yieldbudempire.com>', to: r.email, subject, text, ...(html ? { html } : {}) }); ok++; console.log(`#${r.id} ${r.username}: enviado`); }
     catch (e) { console.log(`#${r.id} ${r.username}: no se pudo (${e.code ?? e.message})`); }
   }
   if (extra === 'enviar') console.log(`enviados ${ok} de ${rows.length}`);
