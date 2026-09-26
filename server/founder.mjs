@@ -8,7 +8,7 @@
 //            Paid short, sold out or already a founder: kept for a manual refund (admin.mjs founder).
 //
 // FOUNDER_ENABLED=1 turns it on; FOUNDER_RECEIVER is the wallet that gets the money (the server has no key for it);
-// SOLANA_RPC chooses the network (devnet by default) and with it the USDC mint.
+// FOUNDER_RPC (or else SOLANA_RPC) chooses the network (devnet by default) and with it the USDC mint.
 const MIN = 60_000, DAY = 86400_000;
 const HOLD = 30 * MIN;        // an open order counts against the packs left for this long
 const WATCH = DAY;            // and its reference is watched for this long
@@ -31,7 +31,8 @@ export function fakePay() {
 
 export async function installFounder({ db, route, HttpError, sessionAccount, audit, limit, readJson, env, sendMail }) {
   const fake = env.FOUNDER_FAKE === '1';
-  const rpc = env.SOLANA_RPC || 'https://api.devnet.solana.com';
+  // its own network setting: moving the payments to mainnet must not move the relic bridge with them
+  const rpc = env.FOUNDER_RPC || env.SOLANA_RPC || 'https://api.devnet.solana.com';
   const network = /devnet/.test(rpc) ? 'devnet' : /testnet/.test(rpc) ? 'testnet' : 'mainnet';
   const receiver = fake ? 'Receiver111111111111111111111111111111111111' : (env.FOUNDER_RECEIVER ?? '').trim();
   const mint = env.FOUNDER_USDC_MINT || (network === 'mainnet' ? USDC.mainnet : USDC.devnet);
