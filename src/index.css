@@ -1147,3 +1147,12 @@ body::before {
 .pl-stage--3d { --bubble-bg: rgba(58, 28, 10, 0.72); --bubble-line: rgba(253, 186, 116, 0.8); --bubble-ink: #fff7ed; }
 .pl-stage--3d .v2-bubble { box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.8), 0 0 26px -8px rgba(251, 146, 60, 0.6); }
 .mk-stage--3d .v2-bubble { box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.8), 0 0 26px -8px rgba(139, 92, 246, 0.7); }
+/* 3D trial of the market: sign in the top-right corner, the keeper on the right facing the centre, the wallets on the left */
+@media (min-width: 1024px) { .mk-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); } .mk-hero > .mk-keeper { order: 2; } }
+.mk-keeper { display: flex; flex-direction: column; }
+.mk-keeper > .mk-sign { justify-content: flex-end; margin-bottom: 8px; }
+.mk-keeper > .relative > :first-child { flex-direction: row-reverse; }
+.mk-keeper > .relative .v2-bubble { transform-origin: 100% 100%; }
+.mk-keeper > .relative .v2-bubble::before { left: auto; right: -7px; border-left: 0; border-bottom: 0; border-top: 1px solid var(--bubble-line); border-right: 1px solid var(--bubble-line); }
+.mk-keeper .mk-counter { left: 0; right: -12px; }
+.mk-keeper > .mk-swap { align-self: flex-end; }
