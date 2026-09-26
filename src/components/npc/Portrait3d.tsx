@@ -11,7 +11,7 @@ const FX: Record<string, { fx: Fx[]; at?: [number, number] }> = {
   floro: { fx: ['neon'] },
   farmer: { fx: ['sun', 'glint'], at: [86, 47] },   // the glint sits on his magnifying glass
   scientist: { fx: ['bubbles'], at: [79, 52] },   // the bubbles rise from her flask
-  geneticist: { fx: ['dna'], at: [8, 45] },
+  geneticist: { fx: ['dna'], at: [12, 40] },   // the glow sits on his DNA tube
   budtender: { fx: ['neon'] },
 };
 
@@ -24,6 +24,7 @@ const EXPR: Record<string, Frame[]> = {
   floro: ['base', 'talk', 'blink', 'happy', 'think', 'alert'],
   farmer: ['base', 'talk', 'blink', 'happy', 'think', 'alert'],
   scientist: ['base', 'talk', 'happy', 'think', 'alert'],   // no blink frame yet
+  geneticist: ['base', 'talk', 'happy', 'think', 'alert'],  // talk = base with the open mouth of another shot pasted in (the arms differ)
 };
 const MOOD_FRAME: Record<string, Frame> = { happy: 'happy', wave: 'happy', think: 'think', busy: 'think', sad: 'think' };
 
