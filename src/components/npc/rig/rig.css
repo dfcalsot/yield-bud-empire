@@ -76,8 +76,9 @@
 .p3d { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 1rem; isolation: isolate; }
 .p3d-bg { position: absolute; inset: -4%; background-size: cover; background-position: center; animation: p3dDrift 14s ease-in-out infinite alternate; }
 .p3d-fg { position: absolute; inset: 0; width: 100%; height: 100%; transform-origin: 50% 100%; animation: p3dSway 5.2s ease-in-out infinite; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35)); }
-.p3d--talk .p3d-fg { animation: p3dTalk 0.34s ease-in-out infinite alternate; }
-.p3d-frame { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* talking adds a small nod on `translate`, so the sway on `transform` keeps running instead of being swapped (that jumped) */
+.p3d--talk .p3d-fg { animation: p3dSway 5.2s ease-in-out infinite, p3dNod 0.34s ease-in-out infinite alternate; }
+.p3d-frame { position: absolute; inset: 0; width: 100%; height: 100%; transition-property: opacity; transition-timing-function: ease-in-out; }
 @keyframes p3dDrift { from { transform: translate(-1.5%, 0.5%) scale(1.02); } to { transform: translate(1.5%, -0.5%) scale(1.05); } }
 @keyframes p3dSway { 0%, 100% { transform: rotate(-0.8deg) scale(1); } 50% { transform: rotate(0.8deg) scale(1.012, 1.02); } }
 @keyframes p3dTalk { from { transform: rotate(-1.4deg) translateY(0) scale(1); } to { transform: rotate(1.2deg) translateY(-2.5%) scale(1.02); } }
@@ -87,8 +88,8 @@
 /* the DNA and the vial glow */
 .p3d-fx-dna .p3d-bg { animation: p3dDrift 14s ease-in-out infinite alternate, p3dPulse 3s ease-in-out infinite; }
 @keyframes p3dPulse { 0%, 100% { filter: brightness(1) hue-rotate(0deg); } 50% { filter: brightness(1.18) hue-rotate(-12deg); } }
-.p3d-glow { position: absolute; width: 38%; height: 38%; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, rgba(163, 255, 120, 0.55), transparent 65%); mix-blend-mode: screen; animation: p3dGlow 2.4s ease-in-out infinite; z-index: 2; pointer-events: none; }
-@keyframes p3dGlow { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.9; } }
+.p3d-glow { position: absolute; width: 38%; height: 38%; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, rgba(163, 255, 120, 0.4), transparent 65%); mix-blend-mode: screen; animation: p3dGlow 4s ease-in-out infinite; z-index: 2; pointer-events: none; }
+@keyframes p3dGlow { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.5; } }
 /* golden-hour sun breathing behind Tomás */
 .p3d-sun { position: absolute; left: -10%; top: -10%; width: 70%; height: 70%; border-radius: 50%; background: radial-gradient(circle, rgba(255, 214, 120, 0.6), transparent 65%); mix-blend-mode: screen; animation: p3dGlow 6s ease-in-out infinite; }
 /* a light glint sweeping over a lens */
@@ -119,9 +120,10 @@
 .npc3d--full { animation: p3dStepIn 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
 .p3d--full .p3d-fg { animation: p3dBreath 4.6s ease-in-out infinite; }
 .p3d--full.p3d--talk .p3d-fg { animation: p3dBreath 4.6s ease-in-out infinite, p3dNod 0.5s ease-in-out infinite alternate; }
+.p3d--chrono.p3d--talk .p3d-fg { animation: p3dFloat 3.4s ease-in-out infinite, p3dNod 0.4s ease-in-out infinite alternate; }
 @keyframes p3dStepIn { from { opacity: 0; transform: translateY(18%) scale(0.94); } to { opacity: 1; transform: none; } }
 @keyframes p3dBreath { 0%, 100% { transform: rotate(-0.6deg) scale(1, 1); } 50% { transform: rotate(0.6deg) scale(1.006, 1.014); } }
-@keyframes p3dNod { from { translate: 0 0; } to { translate: 0 -1.2%; } }
+@keyframes p3dNod { from { translate: 0 0; } to { translate: 0 -1%; } }
 .v2-npc--happy .p3d--full .p3d-fg { animation: p3dBreath 4.6s ease-in-out infinite, p3dHop 0.5s ease-out 2; }
 @keyframes p3dHop { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4%; } }
 @media (prefers-reduced-motion: reduce) { .npc-scene-bg { animation: none; } }
@@ -130,5 +132,4 @@
 .p3d--cutout { overflow: visible; border-radius: 0; }
 .p3d--cutout .p3d-fg { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.6)); }
 .p3d--chrono .p3d-fg { animation: p3dFloat 3.4s ease-in-out infinite; }
-.p3d--chrono.p3d--talk .p3d-fg { animation: p3dFloat 1.2s ease-in-out infinite; }
 @keyframes p3dFloat { 0%, 100% { transform: translateY(1.5%) rotate(-1.5deg); } 50% { transform: translateY(-3%) rotate(1.5deg); } }

@@ -30,6 +30,9 @@ const EXPR: Record<string, Frame[]> = {
   'scientist-lab': ['base', 'talk', 'talko', 'blink', 'happy', 'think', 'alert'],
   geneticist: ['base', 'talk', 'happy', 'think', 'alert'],  // talk = base with the open mouth of another shot pasted in (the arms differ)
 };
+/** frames drawn in another pose than `base` (arms elsewhere): they cross-fade slower and base is not kept underneath them */
+const OTHER_POSE: Record<string, Frame[]> = { geneticist: ['happy', 'think'], farmer: ['think'] };
+
 /** characters that also have whole-body frames (`<id>/full/`) */
 const FULL_BODY = new Set(['scientist']);
 const MOOD_FRAME: Record<string, Frame> = { happy: 'happy', wave: 'happy', think: 'think', busy: 'think', sad: 'think' };
@@ -56,7 +59,7 @@ function useExpression(id: string, talking: boolean, mood?: string, viseme?: str
       setMouth(v === 'o' && has('talko') ? 'talko' : v === 'a' || v === 'e' || v === 'o' ? (has('talk') ? 'talk' : 'base') : 'base');
     };
     tick();
-    const i = window.setInterval(tick, 110);
+    const i = window.setInterval(tick, 130);
     return () => window.clearInterval(i);
   }, [frames, talking]);
   useEffect(() => {
@@ -101,7 +104,13 @@ export const Portrait3d: React.FC<{ id: string; talking: boolean; className?: st
       {frame ? (
         // every frame stays loaded; only the current one is visible, so switching never flickers
         <div className="p3d-fg">
-          {EXPR[id].map((f) => <img key={f} className="p3d-frame" src={`${dir}/${f}.webp`} alt="" draggable={false} style={{ opacity: f === frame ? 1 : 0 }} />)}
+          {EXPR[id].map((f) => {
+            const other = OTHER_POSE[id] ?? [];
+            // same-pose faces sit on top of base, which stays opaque below them: a fade never shows the scene through the character
+            const on = f === frame || (f === 'base' && !other.includes(frame));
+            const slow = other.includes(f) || other.includes(frame) || f === 'happy' || f === 'think' || f === 'alert';
+            return <img key={f} className="p3d-frame" src={`${dir}/${f}.webp`} alt="" draggable={false} style={{ opacity: on ? 1 : 0, transitionDuration: slow ? '220ms' : '70ms' }} />;
+          })}
         </div>
       ) : <img className="p3d-fg" src={`/npc3d/${id}-fg.webp`} alt="" draggable={false} />}
       {def.fx.includes('glint') && <div className="p3d-glint" style={{ left: `${at[0]}%`, top: `${at[1]}%` }} />}

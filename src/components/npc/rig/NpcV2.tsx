@@ -105,7 +105,8 @@ export const NpcV2: React.FC<{
             : <PremiumBust role={kind as StaffRole} variant={variantOf(hired.staff)} rarity={hired.staff.rarity} seed={hired.staff.seed} mood={mood} talking={talking} viseme={visemeOf(shown[shown.length - 1])} crop />}
         </div>
       ) : art3d && NPC_ART3D.has(kind === 'merchant' ? shop : kind) ? (
-        <div ref={ref} key={`${mood}-${moodKey}`} className={`v2-npc v2-npc--${mood} npc3d ${cutout ? 'npc3d--cutout' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : full && art ? `npc3d--full ${ART_SIZE[art] ?? 'w-[240px] h-[240px]'}` : full ? 'npc3d--full w-[170px] h-[302px] sm:w-[200px] sm:h-[356px]' : large || center ? 'w-[168px] h-[168px] sm:w-[220px] sm:h-[220px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
+        // not re-keyed per line: remounting the portrait restarted its animations and reloaded its frames (it looked stuck)
+        <div ref={ref} className={`v2-npc v2-npc--${mood} npc3d ${cutout ? 'npc3d--cutout' : ''} shrink-0 ${bare ? 'w-[96px] h-[96px]' : full && art ? `npc3d--full ${ART_SIZE[art] ?? 'w-[240px] h-[240px]'}` : full ? 'npc3d--full w-[170px] h-[302px] sm:w-[200px] sm:h-[356px]' : large || center ? 'w-[168px] h-[168px] sm:w-[220px] sm:h-[220px]' : 'w-[140px] h-[140px] sm:w-[164px] sm:h-[164px]'}`}>
           <Portrait3d id={art ?? (kind === 'merchant' ? shop : kind)} talking={talking} cutout={cutout} mood={mood} full={full} viseme={visemeOf(shown[shown.length - 1])} />
         </div>
       ) : (
