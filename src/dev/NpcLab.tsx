@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Npc, type Mood } from '../components/npc/Npc';
 import { sceneArt3d } from '../components/npc/art3d';
+import { FacilityBackdrop } from '../components/hud/FacilityBackdrop';
+import { CannabisPlant } from '../components/CannabisPlant';
 import { BadgeNumber, FounderCertificate, Perk, PlateText } from '../components/founder/FounderView';
 
 /** Dev only (`/#npclab`): the 3D characters in their panels, with their expressions, without signing in. */
@@ -66,3 +68,21 @@ export const FounderLab: React.FC = () => (
     </div>
   </div>
 );
+
+/** Dev only (`/#roomlab`): a facility backdrop at the cultivation stage's size, with a plant where the game puts it */
+export const RoomLab: React.FC = () => {
+  const id = new URLSearchParams(window.location.search).get('room') ?? 'tent_starter';
+  const equip = { lampWatts: 600, lampMaxPpfd: 480, acKw: 0, pumpKw: 0, autoWater: false, waterPerPlantAuto: 0, solarKw: 0, co2Ppm: 0, hasAc: false };
+  return (
+    <div className="min-h-screen p-4" style={{ background: '#0a0716' }}>
+      <div className="relative isolate overflow-hidden rounded-3xl border border-emerald-400/20 bg-[#02080a] h-[680px] max-w-[1100px] mx-auto">
+        <FacilityBackdrop facilityId={id} lampColor="255,236,190" lightPct={0.8} equip={equip} hour={13} />
+        <div className="absolute inset-x-0 top-[5%] bottom-[28%] flex items-end justify-center">
+          <div className="relative h-full w-full max-w-[760px]">
+            <CannabisPlant className="h-full w-full drop-shadow-[0_18px_28px_rgba(0,0,0,0.85)]" seedKey="lab" stage="vegetative" progress={38} health={92} soilMoisture={70} vpdOptimal strainColor="#15803d" amberPct={0} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -141,13 +141,21 @@ const Hydro: React.FC<Props> = ({ lampColor, equip }) => (
   </>
 );
 
+/** rooms with painted art (the plant is removed from the picture: the game draws its own plant on top); the rest are drawn above */
+const PAINTED: Record<string, { src: string; pos: string }> = {
+  tent_starter: { src: '/rooms/tent_starter.webp', pos: '50% 74%' },   // the cupboard floor lines up with the pot's base (the stage's bottom 28 %)
+};
+
 export const FacilityBackdrop: React.FC<Props> = (p) => {
   const base = artBase(p.facilityId);
   const T = base === 'lab_pharma_hydro' ? Hydro : base === 'greenhouse_commercial' ? Greenhouse : base === 'tent_pro' ? Tent : Closet;
   const tight = p.facilityId === 'tent_starter';
+  const painted = PAINTED[p.facilityId];
   return (
     <div className="fb-root" aria-hidden data-facility={p.facilityId}>
-      <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style={{ filter: artFilter(p.facilityId) }}><T {...p} /></svg>
+      {painted
+        ? <div className="fb-painted" style={{ backgroundImage: `url(${painted.src})`, backgroundPosition: painted.pos }} />
+        : <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style={{ filter: artFilter(p.facilityId) }}><T {...p} /></svg>}
       {/* the lamp's light cone over the room */}
       <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse ${tight ? 46 : 70}% 62% at 50% 8%, rgba(${p.lampColor},${0.26 * p.lightPct}) 0%, rgba(${p.lampColor},${0.08 * p.lightPct}) 45%, transparent 78%)` }} />
       <div className="absolute inset-0" style={{ background: tight ? 'radial-gradient(ellipse 62% 74% at 50% 46%, transparent 40%, rgba(4,2,10,.86) 100%)' : 'radial-gradient(ellipse 80% 90% at 50% 46%, transparent 55%, rgba(4,2,10,.55) 100%)' }} />

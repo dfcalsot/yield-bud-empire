@@ -15,6 +15,7 @@ const ModelLab = import.meta.env.DEV ? lazy(() => import('./dev/ModelLab.tsx').t
 // Style lab (palette + NPC rig proposals): http://localhost:3010/#stylelab (dev only; the style is chosen, so it is stripped from production builds)
 const StyleLab = import.meta.env.DEV ? lazy(() => import('./dev/StyleLab.tsx').then((m) => ({default: m.StyleLab}))) : null;
 const NpcLab = import.meta.env.DEV ? lazy(() => import('./dev/NpcLab.tsx').then((m) => ({default: m.NpcLab}))) : null;
+const RoomLab = import.meta.env.DEV ? lazy(() => import('./dev/NpcLab.tsx').then((m) => ({default: m.RoomLab}))) : null;
 const FounderLab = import.meta.env.DEV ? lazy(() => import('./dev/NpcLab.tsx').then((m) => ({default: m.FounderLab}))) : null;
 const LogoLab = lazy(() => import('./dev/LogoLab.tsx').then((m) => ({default: m.LogoLab})));
 const StaffGallery = lazy(() => import('./dev/StaffGallery.tsx').then((m) => ({default: m.StaffGallery})));
@@ -39,6 +40,7 @@ function Root() {
   if (logoLab) return <Suspense fallback={null}><LogoLab /></Suspense>;
   if (styleLab && StyleLab) return <Suspense fallback={null}><StyleLab /></Suspense>;
   if (import.meta.env.DEV && hashIs('#npclab') && NpcLab) return <Suspense fallback={null}><NpcLab /></Suspense>;
+  if (import.meta.env.DEV && hashIs('#roomlab') && RoomLab) return <Suspense fallback={null}><RoomLab /></Suspense>;
   if (import.meta.env.DEV && hashIs('#founderlab') && FounderLab) return <Suspense fallback={null}><FounderLab /></Suspense>;
   if (showModelLab && ModelLab) return <Suspense fallback={null}><ModelLab /></Suspense>;
   if (showLab && PlantLab) return <Suspense fallback={null}><PlantLab /></Suspense>;

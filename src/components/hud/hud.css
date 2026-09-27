@@ -76,6 +76,9 @@
 /* ── facility backdrops: each tier has its own environment and machinery ── */
 .fb-root { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .fb-root svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* painted room: fills the stage like the drawn ones (cover), with a slow breathing light from the lamp */
+.fb-painted { position: absolute; inset: 0; background-size: cover; background-repeat: no-repeat; animation: fbPaintedGlow 7s ease-in-out infinite alternate; }
+@keyframes fbPaintedGlow { from { filter: brightness(0.96); } to { filter: brightness(1.04); } }
 .fb-fan { transform-box: fill-box; transform-origin: center; animation: fbSpin 0.5s linear infinite; }
 @keyframes fbSpin { to { transform: rotate(360deg); } }
 .fb-cold { animation: fbCold 3.6s ease-in infinite; opacity: 0; }
