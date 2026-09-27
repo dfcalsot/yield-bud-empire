@@ -145,6 +145,7 @@ const Hydro: React.FC<Props> = ({ lampColor, equip }) => (
 const PAINTED: Record<string, { src: string; pos: string }> = {
   tent_starter: { src: '/rooms/tent_starter.webp', pos: '50% 74%' },   // the cupboard floor lines up with the pot's base (the stage's bottom 28 %)
   tent_pro: { src: '/rooms/tent_pro.webp', pos: '38% 72%' },   // the tent's floor sits a bit left of centre
+  greenhouse_commercial: { src: '/rooms/greenhouse_commercial.webp', pos: '38% 40%' },   // cut-away diorama: the pot stands mid-floor
 };
 
 export const FacilityBackdrop: React.FC<Props> = (p) => {
