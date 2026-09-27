@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Npc, type Mood } from '../components/npc/Npc';
 import { sceneArt3d } from '../components/npc/art3d';
+import { BadgeNumber, FounderCertificate, Perk } from '../components/founder/FounderView';
 
 /** Dev only (`/#npclab`): the 3D characters in their panels, with their expressions, without signing in. */
 const MOODS: Mood[] = ['idle', 'happy', 'think'];
@@ -50,3 +51,18 @@ export const NpcLab: React.FC = () => {
     </div>
   );
 };
+
+/** Dev only (`/#founderlab`): the Founder Pack pieces with made-up data */
+export const FounderLab: React.FC = () => (
+  <div className="min-h-screen p-6 space-y-6" style={{ background: '#0a0716' }}>
+    <FounderCertificate number={7} name="GrowerMaster" />
+    <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 max-w-4xl">
+      <Perk img="/founder/badge.webp" title="Insignia «Fundador #N»" text="Junto a tu nombre en el perfil y en el mercado."><BadgeNumber number={7} /></Perk>
+      <Perk img="/founder/medallion.webp" title="Avatar «Fundador del Imperio»" text="Exclusivo y ligado a tu cuenta." />
+      <Perk img="/founder/perk-arquitecto.webp" title="Título «Arquitecto del Imperio»" text="Un título para mostrar." />
+      <Perk img="/founder/perk-maestro.webp" title="Título «Maestro del Cultivo»" text="O este otro." />
+      <Perk img="/founder/perk-acceso.webp" title="Acceso anticipado" text="Pruebas las funciones nuevas antes que nadie." />
+      <Perk img="/founder/perk-creditos.webp" title="Tu nombre en los créditos" text="En el juego y en el sitio." />
+    </div>
+  </div>
+);

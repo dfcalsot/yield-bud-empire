@@ -1,6 +1,6 @@
 import { EmpireCard } from '../empire/EmpireCard';
 import { FounderBadge } from '../founder/FounderView';
-import { useFounder } from '../../economy/founderApi';
+import { useFounder, FOUNDER_TITLE } from '../../economy/founderApi';
 import React, { useMemo, useRef, useState } from 'react';
 import { Check, Coins, Flame, LogOut, Lock, Pencil, Settings, Upload, X } from 'lucide-react';
 import { logoutServer } from '../../auth/api';
@@ -145,7 +145,7 @@ export const ProfileView: React.FC<{ onOpenAccountModal: () => void }> = ({ onOp
                 <button className="care-btn" onClick={async () => { await logoutServer(); window.location.reload(); }}><LogOut className="w-3.5 h-3.5" />{' '}{t('Salir')}</button>
               </div>
               {nickErr && <p className="text-[11px] font-mono text-red-300 mt-1">{nickErr}</p>}
-              <p className="text-[10.5px] font-mono text-neutral-500 mt-1 flex flex-wrap items-center gap-2"><span>@{currentUser.username} · {t(currentUser.role)}</span>{founder?.me && <FounderBadge number={founder.me.number} />}</p>
+              <p className="text-[10.5px] font-mono text-neutral-500 mt-1 flex flex-wrap items-center gap-2"><span>@{currentUser.username} · {t(currentUser.role)}</span>{founder?.me && <FounderBadge number={founder.me.number} />}{founder?.me?.title && <span className="text-[10.5px] font-mono text-amber-200">{t(FOUNDER_TITLE[founder.me.title].name)}</span>}</p>
             </div>
             <div>
               <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-neutral-400"><span>{t('Nivel {level} · {rankTitle}', { level, rankTitle })}</span><span>{playerXp} / {xpNeeded} XP</span></div>

@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { DESIGN_BY_ID, type AvatarDesign, type AvatarRarity, type Motif } from '../../sim/avatars';
+import { DESIGN_BY_ID, DESIGN_IMG, type AvatarDesign, type AvatarRarity, type Motif } from '../../sim/avatars';
 import { t, k, localize } from '../../i18n';
 
 /** Hand-drawn SVG avatars (36 collectible designs) and the `Avatar` that shows whatever the profile uses. */
@@ -38,6 +38,16 @@ export const AvatarArt: React.FC<{ design: AvatarDesign; className?: string }> =
   const [a, b] = design.colors;
   const rc = RARITY_COLOR[design.rarity];
   const epicPlus = design.rarity === 'epic' || design.rarity === 'legendary';
+  const img = DESIGN_IMG[design.id];
+  if (img) {
+    return (
+      <svg viewBox="0 0 100 100" className={`av-art ${className}`} role="img" aria-label={t(design.name)}>
+        <defs><clipPath id={`cl${u}`}><circle cx="50" cy="50" r="46" /></clipPath></defs>
+        <image href={img} x="4" y="4" width="92" height="92" clipPath={`url(#cl${u})`} preserveAspectRatio="xMidYMid slice" />
+        <circle cx="50" cy="50" r="46" fill="none" stroke={rc} strokeWidth={3.4} />
+      </svg>
+    );
+  }
   return (
     <svg viewBox="0 0 100 100" className={`av-art ${className}`} role="img" aria-label={t(design.name)}>
       <defs>

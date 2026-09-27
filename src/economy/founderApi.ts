@@ -8,9 +8,15 @@ import { connectBrowserWallet, detectSolanaProviders } from '../utils/solana';
 import { t, k } from '../i18n';
 
 export interface FounderOrder { id: number; status: 'open' | 'expired' | 'delivered' | 'underpaid' | 'refund_needed' | 'refunded'; amount: number; reference: string; url: string; expiresAt: number; sig: string | null; explorer: string | null }
-export interface FounderMe { number: number; credits: boolean }
+export interface FounderMe { number: number; credits: boolean; title: FounderTitle | null; titles: FounderTitle[]; earlyAccess: boolean }
+export type FounderTitle = 'arquitecto' | 'maestro';
+/** the pack's titles: name and art */
+export const FOUNDER_TITLE: Record<FounderTitle, { name: string; img: string }> = {
+  arquitecto: { name: k('Arquitecto del Imperio'), img: '/founder/perk-arquitecto.webp' },
+  maestro: { name: k('Maestro del Cultivo'), img: '/founder/perk-maestro.webp' },
+};
 export interface FounderStatus { enabled: boolean; network: string; price: number; supply: number; sold: number; left: number; mint: string; receiver: string | null; me: FounderMe | null; order: FounderOrder | null }
-export interface FounderCredits { supply: number; sold: number; price: number; founders: Array<{ number: number; name: string }> }
+export interface FounderCredits { supply: number; sold: number; price: number; founders: Array<{ number: number; name: string; title: FounderTitle | null }> }
 
 const get = async <T,>(path: string): Promise<T | null> => { try { const r = await fetch(path, { credentials: 'same-origin' }); return r.ok ? (await r.json()) as T : null; } catch { return null; } };
 const post = async <T,>(path: string, body: unknown): Promise<{ ok: true; data: T } | { ok: false; error: string }> => {
@@ -34,6 +40,7 @@ export const fetchCredits = () => get<FounderCredits>('/api/public/founders');
 export const createOrder = () => post<{ order: FounderOrder }>('/api/founder/order', {});
 export const fetchOrder = (id: number) => get<{ order: FounderOrder; me: FounderMe | null }>(`/api/founder/order?id=${id}`);
 export const setCredits = (show: boolean) => post<{ show: boolean }>('/api/founder/credits', { show });
+export const setTitle = (title: FounderTitle | null) => post<{ me: FounderMe }>('/api/founder/title', { title });
 
 /** the founder status, shared by the badge and the Founders page (one request per mount) */
 export function useFounder() {

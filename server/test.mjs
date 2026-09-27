@@ -1007,6 +1007,14 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   pub = (await call('GET', '/api/public/founders', { ip: newIp() })).json;
   ok('fundador: quien lo pide no aparece en los créditos', pub.founders.length === 2 && !pub.founders.some((f) => f.number === 2) && (await fd(F2, 'status')).json.me.credits === false);
   ok('fundador: solo un fundador cambia los créditos', (await fd(FU, 'credits', { show: false })).status === 404);
+  // títulos del pack y acceso anticipado
+  const me1 = (await fd(F1, 'status')).json.me;
+  ok('fundador: trae los títulos Arquitecto y Maestro, sin ninguno elegido, y el acceso anticipado', me1.titles.join() === 'arquitecto,maestro' && me1.title === null && me1.earlyAccess === true);
+  const t1 = await fd(F1, 'title', { title: 'maestro' });
+  ok('fundador: elige qué título mostrar y sale en los créditos', t1.status === 200 && t1.json.me.title === 'maestro' && (await call('GET', '/api/public/founders', { ip: newIp() })).json.founders.find((f) => f.number === 1).title === 'maestro');
+  ok('fundador: un título que no es del pack se rechaza', (await fd(F1, 'title', { title: 'rey' })).status === 400);
+  ok('fundador: puede no mostrar ninguno', (await fd(F1, 'title', { title: null })).json.me.title === null);
+  ok('fundador: quien no es fundador no elige título', (await fd(FU, 'title', { title: 'maestro' })).status === 404);
   ok('fundador: otra cuenta no ve un pedido ajeno', (await fd(FU, `order?id=${o1.id}`)).status === 404);
   ok('fundador: sin sesión no hay pedido', (await call('POST', '/api/founder/order', { ip: newIp(), body: {} })).status === 401);
 }

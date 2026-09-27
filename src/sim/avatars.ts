@@ -69,6 +69,8 @@ export const DESIGNS: AvatarDesign[] = (Object.keys(TABLE) as SeasonId[]).flatMa
   TABLE[season].map(([name, motif, rarity], i) => ({ id: `${season}-${i + 1}`, season, name, motif, rarity, colors: SEASONS[season].colors }))
 );
 export const DESIGN_BY_ID: Record<string, AvatarDesign> = Object.fromEntries(DESIGNS.map((d) => [d.id, d]));
+/** designs painted as a picture instead of the drawn motif (public/…) */
+export const DESIGN_IMG: Record<string, string> = { 'fundador-1': '/founder/avatar.webp' };
 
 export const RARITIES: AvatarRarity[] = ['common', 'rare', 'epic', 'legendary'];
 

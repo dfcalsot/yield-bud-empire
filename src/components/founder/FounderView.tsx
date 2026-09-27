@@ -3,7 +3,8 @@ import qrcode from 'qrcode-generator';
 import { Crown, ExternalLink, Eye, EyeOff, Loader2, ShieldCheck, Smartphone, Wallet } from 'lucide-react';
 import { DESIGN_BY_ID } from '../../sim/avatars';
 import { AvatarArt } from '../profile/AvatarArt';
-import { createOrder, fetchCredits, fetchOrder, founderText, payWithWallet, setCredits, useFounder, type FounderCredits, type FounderOrder } from '../../economy/founderApi';
+import { createOrder, fetchCredits, fetchOrder, founderText, payWithWallet, setCredits, setTitle, useFounder, FOUNDER_TITLE, type FounderCredits, type FounderOrder, type FounderTitle } from '../../economy/founderApi';
+import { useGame } from '../../context/GameContext';
 import { t, getLang } from '../../i18n';
 
 const GOLD = '#fbbf24';
@@ -81,6 +82,33 @@ const PayPanel: React.FC<{ order: FounderOrder; network: string; onDone: () => v
   );
 };
 
+/** one thing the pack brings: its art and a line */
+export const Perk: React.FC<{ img: string; title: string; text: string; wide?: boolean; children?: React.ReactNode }> = ({ img, title, text, children }) => (
+  <div className="fp-perk">
+    <div className="fp-perk-art"><img src={img} alt="" loading="lazy" />{children}</div>
+    <div className="p-2.5 space-y-0.5"><div className="text-[12.5px] font-bold text-white leading-tight">{title}</div><div className="text-[11px] text-neutral-400 leading-snug">{text}</div></div>
+  </div>
+);
+
+/** «FUNDADOR #N» written on the badge's empty plate (without a number it shows «#N») */
+export const BadgeNumber: React.FC<{ number?: number }> = ({ number }) => (
+  <span className="fp-badge-text">{t('FUNDADOR')} #{number ?? 'N'}</span>
+);
+
+/** the certificate shown once the pack is delivered: the number on the gold plate and the player's name under it */
+export const FounderCertificate: React.FC<{ number: number; name: string }> = ({ number, name }) => (
+  <div className="space-y-2">
+  <h3 className="fp-cert-title">{t('¡Eres Fundador del Imperio!')}</h3>
+  <div className="fp-cert" role="img" aria-label={t('Fundador #{v0} de Yield Bud Empire', { v0: number })}>
+    <img src="/founder/celebrate.webp" alt="" />
+    <span className="fp-cert-label fp-cert-label--num">{t('Tu número de fundador:')}</span>
+    <span className="fp-cert-num">#{number}</span>
+    <span className="fp-cert-label fp-cert-label--name">{t('Nombre del jugador:')}</span>
+    <span className="fp-cert-name">{name}</span>
+  </div>
+  </div>
+);
+
 /** Crypto → Founders: the Founder Pack (100 numbered packs in USDC) and the credits */
 export const FounderView: React.FC = () => {
   const { status, reload } = useFounder();
@@ -89,6 +117,8 @@ export const FounderView: React.FC = () => {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const design = DESIGN_BY_ID['fundador-1'];
+  const { currentUser } = useGame();
+  const currentName = currentUser?.displayName || currentUser?.username || '';
   const closeOrder = useCallback(() => { setOrder(null); void reload(); }, [reload]);
 
   useEffect(() => { if (status?.order) setOrder(status.order); }, [status?.order]);
@@ -100,6 +130,7 @@ export const FounderView: React.FC = () => {
     setBusy(false);
     if (r.ok) setOrder(r.data.order); else setErr(founderText(r.error));
   };
+  const chooseTitle = async (title: FounderTitle | null) => { const r = await setTitle(title); if (r.ok) { await reload(); setCreditsList(await fetchCredits()); } };
   const toggleCredits = async () => {
     if (!status?.me) return;
     const r = await setCredits(!status.me.credits);
@@ -111,17 +142,13 @@ export const FounderView: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-5 animate-fade-in">
-      <div className="relative overflow-hidden rounded-2xl border p-5 sm:p-6" style={{ borderColor: 'rgba(251,191,36,.45)', background: 'radial-gradient(120% 140% at 85% 20%, rgba(124,58,237,.35), rgba(10,7,22,.96) 60%), #0a0716' }}>
-        <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] items-center">
+      <div className="relative overflow-hidden rounded-2xl border p-4 sm:p-6" style={{ borderColor: 'rgba(251,191,36,.45)', background: 'radial-gradient(120% 140% at 85% 20%, rgba(124,58,237,.35), rgba(10,7,22,.96) 60%), #0a0716' }}>
+        <div className="grid gap-5 md:grid-cols-[auto_minmax(0,1fr)] items-center">
+          <img src="/founder/cover.webp" alt={t('Pack de Fundador')} className="fp-cover w-44 sm:w-56 mx-auto rounded-xl" />
           <div className="space-y-3 min-w-0">
             <div className="text-[10px] font-mono uppercase tracking-[0.25em]" style={{ color: GOLD }}>{t('Edición única · {v0} packs numerados', { v0: status.supply })}</div>
             <h2 className="font-serif text-3xl font-black text-white leading-tight">{t('Pack de Fundador')}</h2>
             <p className="text-sm text-neutral-300 leading-relaxed max-w-xl">{t('Para quienes creen en Yield Bud Empire desde la alfa. Es un reconocimiento: no da ventajas en el juego ni $FLORA, y con él ayudas a que el proyecto siga creciendo.')}</p>
-            <ul className="text-sm text-neutral-200 space-y-1.5">
-              <li className="flex items-center gap-2"><Crown className="w-4 h-4 shrink-0" style={{ color: GOLD }} />{t('La insignia «Fundador #N» junto a tu nombre, con tu número para siempre.')}</li>
-              <li className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 shrink-0 text-purple-300" />{t('El avatar «{v0}», exclusivo: nunca sale de un cofre ni se vende.', { v0: t(design.name) })}</li>
-              <li className="flex items-center gap-2"><Eye className="w-4 h-4 shrink-0 text-emerald-300" />{t('Tu nombre en los créditos del juego y del sitio (si quieres).')}</li>
-            </ul>
             <div className="flex flex-wrap items-center gap-3 pt-1">
               {me ? (
                 <FounderBadge number={me.number} />
@@ -137,26 +164,56 @@ export const FounderView: React.FC = () => {
             </div>
             {err && <p className="text-[11px] font-mono text-red-300">{err}</p>}
           </div>
-          <div className="w-40 h-40 sm:w-48 sm:h-48 mx-auto rounded-2xl overflow-hidden border-2" style={{ borderColor: GOLD, boxShadow: '0 0 30px rgba(251,191,36,.35)' }}><AvatarArt design={design} className="w-full h-full" /></div>
         </div>
       </div>
 
-      {me && (
-        <div className="hud-panel p-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="text-sm text-neutral-200">{t('¡Gracias, Fundador #{v0}! Tu avatar está en Perfil → Colección.', { v0: me.number })}</div>
-          <button className="care-btn" onClick={toggleCredits}>{me.credits ? <><EyeOff className="w-3.5 h-3.5" />{' '}{t('No aparecer en los créditos')}</> : <><Eye className="w-3.5 h-3.5" />{' '}{t('Aparecer en los créditos')}</>}</button>
-        </div>
-      )}
-
       {!me && order && order.status !== 'delivered' && (
         <PayPanel order={order} network={status.network} onDone={closeOrder} onExpired={closeOrder} />
+      )}
+
+      {me && <FounderCertificate number={me.number} name={currentName} />}
+
+      <section className="space-y-3">
+        <h3 className="font-serif text-lg font-black text-white">{me ? t('Tu pack') : t('Qué trae el pack')}</h3>
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
+          <Perk img="/founder/badge.webp" title={t('Insignia «Fundador #N»')} text={t('Junto a tu nombre en el perfil y en el mercado, con tu número para siempre.')}>
+            <BadgeNumber number={me?.number} />
+          </Perk>
+          <Perk img="/founder/medallion.webp" title={t('Avatar «{v0}»', { v0: t(design.name) })} text={t('Exclusivo y ligado a tu cuenta: nunca sale de un cofre ni se vende.')} />
+          <Perk img={FOUNDER_TITLE.arquitecto.img} title={t('Título «{v0}»', { v0: t(FOUNDER_TITLE.arquitecto.name) })} text={t('Un título para mostrar junto a tu nombre.')} />
+          <Perk img={FOUNDER_TITLE.maestro.img} title={t('Título «{v0}»', { v0: t(FOUNDER_TITLE.maestro.name) })} text={t('O este otro: tú eliges cuál llevar.')} />
+          <Perk img="/founder/perk-acceso.webp" title={t('Acceso anticipado')} text={t('Pruebas las funciones nuevas antes que nadie.')} wide />
+          <Perk img="/founder/perk-creditos.webp" title={t('Tu nombre en los créditos')} text={t('En el juego y en el sitio, si quieres aparecer.')} />
+        </div>
+      </section>
+
+      {me && (
+        <div className="hud-panel p-4 space-y-3">
+          <h3 className="font-serif text-lg font-black text-white">{t('Tu título')}</h3>
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(FOUNDER_TITLE) as FounderTitle[]).map((id) => (
+              <button key={id} onClick={() => chooseTitle(id)} className={`fp-title ${me.title === id ? 'is-on' : ''}`}>
+                <img src={FOUNDER_TITLE[id].img} alt="" className="w-10 h-10 rounded-md object-cover" />{t(FOUNDER_TITLE[id].name)}
+              </button>
+            ))}
+            <button onClick={() => chooseTitle(null)} className={`fp-title ${me.title === null ? 'is-on' : ''}`}>{t('Sin título')}</button>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <span className="text-[11px] font-mono text-emerald-300">✓ {t('Acceso anticipado activo')}</span>
+            <button className="care-btn" onClick={toggleCredits}>{me.credits ? <><EyeOff className="w-3.5 h-3.5" />{' '}{t('No aparecer en los créditos')}</> : <><Eye className="w-3.5 h-3.5" />{' '}{t('Aparecer en los créditos')}</>}</button>
+          </div>
+        </div>
       )}
 
       <div className="hud-panel p-4 sm:p-5 space-y-3">
         <h3 className="font-serif text-lg font-black text-white flex items-center gap-2"><Crown className="w-4 h-4" style={{ color: GOLD }} />{t('Fundadores')}</h3>
         {credits && credits.founders.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {credits.founders.map((f) => <span key={f.number} className="mk-panel px-2.5 py-1.5 text-[12px] text-neutral-100 flex items-center gap-1.5"><FounderBadge number={f.number} compact />{f.name}</span>)}
+            {credits.founders.map((f) => (
+              <span key={f.number} className="mk-panel px-2.5 py-1.5 text-[12px] text-neutral-100 flex items-center gap-1.5">
+                <FounderBadge number={f.number} compact />{f.name}{f.title && <span className="text-[10px] font-mono text-amber-200/80">· {t(FOUNDER_TITLE[f.title].name)}</span>}
+              </span>
+            ))}
           </div>
         ) : <p className="text-xs text-neutral-400">{t('Todavía no hay fundadores. El primero se queda con el #1.')}</p>}
       </div>

@@ -1,5 +1,7 @@
 // The Founder Pack: 100 numbered packs paid in USDC with Solana Pay. It gives recognition, never an advantage and never $FLORA:
-// the «Fundador #N» badge, the Founder avatar (bound to the account: it can't be sold for $FLORA) and the name in the credits.
+// the «Fundador #N» badge, the Founder avatar (bound to the account: it can't be sold for $FLORA), the name in the credits, the
+// titles «Arquitecto del Imperio» and «Maestro del Cultivo» (the founder shows one next to their name) and early access to new
+// features (a flag the game checks before opening something new to everyone).
 //
 //   order    one open order per account: a Solana Pay URL (USDC to the team's receiving wallet) with a unique `reference`
 //   pay      the player pays by scanning the QR, or with the browser wallet (the server builds the unsigned transfer)
@@ -14,6 +16,8 @@ const HOLD = 30 * MIN;        // an open order counts against the packs left for
 const WATCH = DAY;            // and its reference is watched for this long
 const USDC = { devnet: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU', mainnet: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' };
 export const FOUNDER_DESIGN = 'fundador-1';
+/** the cosmetic titles that come with the pack */
+export const FOUNDER_TITLES = ['arquitecto', 'maestro'];
 
 /** an in-memory chain for the tests: `pay(reference, amount)` plays the player's wallet */
 export function fakePay() {
@@ -47,8 +51,10 @@ CREATE TABLE IF NOT EXISTS founder_orders (id INTEGER PRIMARY KEY AUTOINCREMENT,
 CREATE INDEX IF NOT EXISTS idx_founder_orders ON founder_orders(status, created_at);
 CREATE TABLE IF NOT EXISTS founders (number INTEGER PRIMARY KEY, account_id INTEGER NOT NULL UNIQUE, order_id INTEGER, credits INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL);
 `);
+  try { db.exec('ALTER TABLE founders ADD COLUMN title TEXT'); } catch { /* already there */ }
   const q = {
-    founderOf: db.prepare('SELECT number, credits FROM founders WHERE account_id = ?'),
+    founderOf: db.prepare('SELECT number, credits, title FROM founders WHERE account_id = ?'),
+    setTitle: db.prepare('UPDATE founders SET title = ? WHERE account_id = ?'),
     numbers: db.prepare('SELECT number FROM founders ORDER BY number'),
     sold: db.prepare('SELECT COUNT(*) n FROM founders'),
     holding: db.prepare("SELECT COUNT(*) n FROM founder_orders WHERE status = 'open' AND expires_at > ? AND account_id != ?"),
@@ -62,7 +68,7 @@ CREATE TABLE IF NOT EXISTS founders (number INTEGER PRIMARY KEY, account_id INTE
     sigUsed: db.prepare('SELECT 1 FROM founder_orders WHERE sig = ?'),
     addFounder: db.prepare('INSERT INTO founders (number, account_id, order_id, created_at) VALUES (?,?,?,?)'),
     credits: db.prepare('UPDATE founders SET credits = ? WHERE account_id = ?'),
-    creditsList: db.prepare('SELECT f.number, a.username FROM founders f JOIN accounts a ON a.id = f.account_id WHERE f.credits = 1 ORDER BY f.number'),
+    creditsList: db.prepare('SELECT f.number, f.title, a.username FROM founders f JOIN accounts a ON a.id = f.account_id WHERE f.credits = 1 ORDER BY f.number'),
     account: db.prepare('SELECT id, email, username, lang FROM accounts WHERE id = ?'),
     flags: db.prepare('SELECT flags FROM accounts WHERE id = ?'),
     nft: db.prepare('SELECT 1 FROM nfts WHERE id = ?'),
@@ -73,6 +79,7 @@ CREATE TABLE IF NOT EXISTS founders (number INTEGER PRIMARY KEY, account_id INTE
   if (fake) { pay = fakePay(); newReference = pay.newReference; }
   else if (enabled) { const mod = await import('./gen/pay.mjs'); pay = mod.createPay({ rpc, receiver, mint }); newReference = mod.newReference; }
 
+  const meView = (m) => ({ number: m.number, credits: !!m.credits, title: m.title ?? null, titles: FOUNDER_TITLES, earlyAccess: true });
   const tx = (fn) => { db.exec('BEGIN IMMEDIATE'); try { const o = fn(); db.exec('COMMIT'); return o; } catch (e) { try { db.exec('ROLLBACK'); } catch { /* */ } throw e; } };
   const left = (now, accountId = 0) => Math.max(0, supply - q.sold.get().n - q.holding.get(now, accountId).n);
   const payUrl = (o) => {
@@ -85,8 +92,8 @@ CREATE TABLE IF NOT EXISTS founders (number INTEGER PRIMARY KEY, account_id INTE
   });
 
   const MAIL = {
-    es: (u, n) => [`¡Eres el Fundador #${n} de Yield Bud Empire!`, `¡Gracias, ${u}!\n\nTu pago llegó y tu Pack de Fundador ya está en tu cuenta:\n· la insignia «Fundador #${n}»\n· el avatar Fundador (en Perfil → Colección)\n· tu nombre en los créditos (puedes ocultarlo en Cripto → Fundadores)\n\nEl pack es un reconocimiento: no da ventajas en el juego ni $FLORA.\n\nhttps://play.yieldbudempire.com`],
-    en: (u, n) => [`You are Yield Bud Empire Founder #${n}!`, `Thank you, ${u}!\n\nYour payment arrived and your Founder Pack is already in your account:\n· the "Founder #${n}" badge\n· the Founder avatar (in Profile → Collection)\n· your name in the credits (you can hide it in Crypto → Founders)\n\nThe pack is a recognition: it gives no in-game advantage and no $FLORA.\n\nhttps://play.yieldbudempire.com`],
+    es: (u, n) => [`¡Eres el Fundador #${n} de Yield Bud Empire!`, `¡Gracias, ${u}!\n\nTu pago llegó y tu Pack de Fundador ya está en tu cuenta:\n· la insignia «Fundador #${n}»\n· el avatar «Fundador del Imperio» (en Perfil → Colección)\n· los títulos «Arquitecto del Imperio» y «Maestro del Cultivo» (elige cuál mostrar en Cripto → Fundadores)\n· acceso anticipado a las funciones nuevas\n· tu nombre en los créditos (puedes ocultarlo en Cripto → Fundadores)\n\nEl pack es un reconocimiento: no da ventajas en el juego ni $FLORA.\n\nhttps://play.yieldbudempire.com`],
+    en: (u, n) => [`You are Yield Bud Empire Founder #${n}!`, `Thank you, ${u}!\n\nYour payment arrived and your Founder Pack is already in your account:\n· the "Founder #${n}" badge\n· the "Empire Founder" avatar (in Profile → Collection)\n· the titles "Empire Architect" and "Grow Master" (choose which one to show in Crypto → Founders)\n· early access to new features\n· your name in the credits (you can hide it in Crypto → Founders)\n\nThe pack is a recognition: it gives no in-game advantage and no $FLORA.\n\nhttps://play.yieldbudempire.com`],
   };
 
   /** a payment was found for an order: deliver the pack, or keep the payment aside for a manual refund */
@@ -146,7 +153,7 @@ CREATE TABLE IF NOT EXISTS founders (number INTEGER PRIMARY KEY, account_id INTE
     const me = q.founderOf.get(a.id);
     return {
       enabled: openFor(a.id), network, price, supply, sold: q.sold.get().n, left: left(now, a.id), mint, receiver: openFor(a.id) ? receiver : null,
-      me: me ? { number: me.number, credits: !!me.credits } : null, order: openFor(a.id) ? view(q.openOf.get(a.id, now), now) : null,
+      me: me ? meView(me) : null, order: openFor(a.id) ? view(q.openOf.get(a.id, now), now) : null,
     };
   });
 
@@ -174,7 +181,7 @@ CREATE TABLE IF NOT EXISTS founders (number INTEGER PRIMARY KEY, account_id INTE
     if (!o || o.account_id !== a.id) throw new HttpError(404, 'not_found');
     if (o.status === 'open' && o.created_at > Date.now() - WATCH) await check(o);
     const me = q.founderOf.get(a.id);
-    return { order: view(q.order.get(o.id)), me: me ? { number: me.number, credits: !!me.credits } : null };
+    return { order: view(q.order.get(o.id)), me: me ? meView(me) : null };
   });
 
   /** the USDC transfer for the player's browser wallet to sign and send (any wallet: linking one is not needed) */
@@ -199,13 +206,26 @@ CREATE TABLE IF NOT EXISTS founders (number INTEGER PRIMARY KEY, account_id INTE
     return { ok: true, show: b.show !== false };
   });
 
+  /** which of the pack's titles the founder shows next to their name (or none) */
+  route('POST', '/api/founder/title', async (ctx) => {
+    const a = who(ctx);
+    const b = await readJson(ctx.req, 512);
+    const me = q.founderOf.get(a.id);
+    if (!me) throw new HttpError(404, 'not_found');
+    const title = b.title === null || b.title === '' ? null : String(b.title);
+    if (title !== null && !FOUNDER_TITLES.includes(title)) throw new HttpError(400, 'bad_title');
+    q.setTitle.run(title, a.id);
+    return { ok: true, me: meView(q.founderOf.get(a.id)) };
+  });
+
   /** the credits, for the game and the promo site */
   route('GET', '/api/public/founders', (ctx) => {
     limit(ctx, `founders:${ctx.ip}`, 60, MIN);
-    return { supply, sold: q.sold.get().n, price, founders: q.creditsList.all().map((r) => ({ number: r.number, name: r.username })) };
+    return { supply, sold: q.sold.get().n, price, founders: q.creditsList.all().map((r) => ({ number: r.number, name: r.username, title: r.title ?? null })) };
   });
 
   /** the founder number of an account (for badges next to names), or null */
   const numberOf = (accountId) => q.founderOf.get(accountId)?.number ?? null;
-  return { enabled, network, receiver, mint, price, supply, pay, work, check, numberOf, status: () => ({ enabled, network, receiver, mint, price, supply, sold: q.sold.get().n }) };
+  const isFounder = (accountId) => !!q.founderOf.get(accountId);
+  return { enabled, network, receiver, mint, price, supply, pay, work, check, numberOf, isFounder, status: () => ({ enabled, network, receiver, mint, price, supply, sold: q.sold.get().n }) };
 }
