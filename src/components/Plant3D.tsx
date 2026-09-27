@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { GrowStage, PestKind } from '../types';
+import { PHASES } from '../sim/phases';
 
 /**
  * The real 3D cannabis plant (public/models/fases-cannabis.glb: 5 growth stages laid side by side).
@@ -16,8 +17,17 @@ import type { GrowStage, PestKind } from '../types';
 export const MODEL_URL = '/models/fases-cannabis.glb';
 
 const STAGE_NAMES = ['etapa_01_germinacion', 'etapa_02_plantula', 'etapa_03_vegetativo', 'etapa_04_prefloracion', 'etapa_05_floracion'];
-/** progress ranges (0..100) that show each model stage — the game's own stage switches are 15 / 50 / 95 */
-const STAGE_RANGE: Array<[number, number]> = [[0, 6], [6, 15], [15, 50], [50, 68], [68, 100]];
+/**
+ * Progress ranges (0..100) that show each model stage, taken from the game's phases (sim/phases.ts) so the 3D plant and the 2D one
+ * always agree: germination, seedling and vegetative match their phase; the model's pre-flowering and flowering split the game's
+ * flowering phase in two, and flowering carries on through maturation. (They were hand-written before and drifted: the 3D kept
+ * showing the seed up to 6 % while the game was already a seedling at 3 %.)
+ */
+const PH = Object.fromEntries(PHASES.map((p) => [p.id, p]));
+const MID_FLOWER = PH.flowering.from + (PH.flowering.to - PH.flowering.from) / 2;
+const STAGE_RANGE: Array<[number, number]> = [
+  [0, PH.seed.to], [PH.seedling.from, PH.seedling.to], [PH.vegetative.from, PH.vegetative.to], [PH.flowering.from, MID_FLOWER], [MID_FLOWER, 100],
+];
 /** on-screen height of each stage (world units) — compressed so the seed is still readable */
 const TARGET_H = [0.38, 0.5, 0.66, 0.82, 1.0];
 

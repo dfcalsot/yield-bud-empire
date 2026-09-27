@@ -2,6 +2,7 @@ import { advancePlant, SimEnv } from '../src/sim/engine';
 import type { GrowStage, PlantInGrow } from '../src/types';
 import { boostWithinPhase, isHarvestable, maxProgressFrom, PHASES, phaseFraction, stageOf, STAGE_ORDER } from '../src/sim/phases';
 import { applyTechnique, canTrain, TECHNIQUES, TECHNIQUE_BY_ID } from '../src/sim/techniques';
+import { modelStageOf } from '../src/components/Plant3D';
 
 let failed = 0;
 const ok = (name: string, cond: boolean, extra = '') => { console.log(`${cond ? 'PASS' : 'FAIL'}  ${name} ${extra}`); if (!cond) failed++; };
@@ -77,6 +78,15 @@ ok('poda de bajos: solo en floración', can('flowering', 'lollipop') && (['seed'
   ok('la salud nunca baja de 80 por entrenar', applyTechnique(plant({ health: 82, stage: 'vegetative' }), 'supercrop').health >= 80);
 }
 ok('con todas las técnicas el bono total es acotado (máx. +20 %)', TECHNIQUES.reduce((a, t) => a + t.yieldBonus, 0) <= 0.2 + 1e-9 && Object.keys(TECHNIQUE_BY_ID).length === TECHNIQUES.length);
+
+// el modelo 3D muestra la misma fase que el juego (y que el dibujo 2D) en todo el recorrido
+{
+  const MODEL_FOR: Record<string, number[]> = { seed: [0], seedling: [1], vegetative: [2], flowering: [3, 4], maturation: [4], ready_harvest: [4] };
+  const off: string[] = [];
+  for (let p = 0; p <= 100; p += 0.25) { const st = stageOf(p), m = modelStageOf(p); if (!MODEL_FOR[st].includes(m)) off.push(`${p}%: ${st}→modelo ${m}`); }
+  ok('3D: cada progreso muestra el modelo de su fase (germinación, plántula, vegetativo y floración coinciden)', off.length === 0, off.slice(0, 3).join(' · '));
+  ok('3D: al 4 % (plántula en el juego) ya no se ve la semilla', stageOf(4) === 'seedling' && modelStageOf(4) === 1);
+}
 
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 process.exit(failed ? 1 : 0);
