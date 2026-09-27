@@ -28,9 +28,9 @@ const EXPR: Record<string, Frame[]> = {
   scientist: ['base', 'talk', 'talko', 'blink', 'happy', 'think', 'alert'],
   // her second pose, at the bench with a test tube (Nutrition → Mixing lab), so the lab doesn't repeat the one used everywhere else
   'scientist-lab': ['base', 'talk', 'talko', 'blink', 'happy', 'think', 'alert'],
-  // only his base pose; no talk frame: every open mouth came from another shot (other head angle) and looked odd when it flapped.
-  // He nods while talking; happy = the big grin pasted in. Add 'talk' back when there is an open-mouth shot in this same pose.
-  geneticist: ['base', 'happy'],
+  // all his frames are his one base pose (49): talk = his own jaw opened a little (lower lip and beard warped down, the mouth
+  // shows in the gap), blink = the closed eyes of the laughing shot inside his lenses, happy = the big grin pasted in
+  geneticist: ['base', 'talk', 'blink', 'happy'],
 };
 /** frames drawn in another pose than `base` (arms elsewhere): they cross-fade slower and base is not kept underneath them */
 const OTHER_POSE: Record<string, Frame[]> = { farmer: ['think'] };
