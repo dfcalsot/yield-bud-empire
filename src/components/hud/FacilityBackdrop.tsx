@@ -144,6 +144,7 @@ const Hydro: React.FC<Props> = ({ lampColor, equip }) => (
 /** rooms with painted art (the plant is removed from the picture: the game draws its own plant on top); the rest are drawn above */
 const PAINTED: Record<string, { src: string; pos: string }> = {
   tent_starter: { src: '/rooms/tent_starter.webp', pos: '50% 74%' },   // the cupboard floor lines up with the pot's base (the stage's bottom 28 %)
+  tent_pro: { src: '/rooms/tent_pro.webp', pos: '38% 72%' },   // the tent's floor sits a bit left of centre
 };
 
 export const FacilityBackdrop: React.FC<Props> = (p) => {
