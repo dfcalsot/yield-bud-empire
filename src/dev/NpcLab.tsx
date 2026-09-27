@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Npc, type Mood } from '../components/npc/Npc';
 import { sceneArt3d } from '../components/npc/art3d';
-import { BadgeNumber, FounderCertificate, Perk } from '../components/founder/FounderView';
+import { BadgeNumber, FounderCertificate, Perk, PlateText } from '../components/founder/FounderView';
 
 /** Dev only (`/#npclab`): the 3D characters in their panels, with their expressions, without signing in. */
 const MOODS: Mood[] = ['idle', 'happy', 'think'];
@@ -59,9 +59,9 @@ export const FounderLab: React.FC = () => (
     <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 max-w-4xl">
       <Perk img="/founder/badge.webp" title="Insignia «Fundador #N»" text="Junto a tu nombre en el perfil y en el mercado."><BadgeNumber number={7} /></Perk>
       <Perk img="/founder/medallion.webp" title="Avatar «Fundador del Imperio»" text="Exclusivo y ligado a tu cuenta." />
-      <Perk img="/founder/perk-arquitecto.webp" title="Título «Arquitecto del Imperio»" text="Un título para mostrar." />
-      <Perk img="/founder/perk-maestro.webp" title="Título «Maestro del Cultivo»" text="O este otro." />
-      <Perk img="/founder/perk-acceso.webp" title="Acceso anticipado" text="Pruebas las funciones nuevas antes que nadie." />
+      <Perk img="/founder/perk-arquitecto.webp" title="Título «Arquitecto del Imperio»" text="Un título para mostrar."><PlateText top={74.3} width={56} lines={[{ text: 'Arquitecto del Imperio', tone: 'gold', size: 7.2 }]} /></Perk>
+      <Perk img="/founder/perk-maestro.webp" title="Título «Maestro del Cultivo»" text="O este otro."><PlateText top={78.2} width={50} lines={[{ text: 'Maestro del Cultivo', tone: 'green', size: 7.6 }]} /></Perk>
+      <Perk img="/founder/perk-acceso.webp" ratio="4250 / 2750" title="Acceso anticipado" text="Pruebas las funciones nuevas antes que nadie."><PlateText top={80.9} width={74} lines={[{ text: 'Recompensa:', tone: 'gold', size: 3.4 }, { text: 'Acceso anticipado', tone: 'green', size: 5 }]} /></Perk>
       <Perk img="/founder/perk-creditos.webp" title="Tu nombre en los créditos" text="En el juego y en el sitio." />
     </div>
   </div>

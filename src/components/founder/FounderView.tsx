@@ -83,11 +83,18 @@ const PayPanel: React.FC<{ order: FounderOrder; network: string; onDone: () => v
 };
 
 /** one thing the pack brings: its art and a line */
-export const Perk: React.FC<{ img: string; title: string; text: string; wide?: boolean; children?: React.ReactNode }> = ({ img, title, text, children }) => (
+export const Perk: React.FC<{ img: string; title: string; text: string; ratio?: string; children?: React.ReactNode }> = ({ img, title, text, ratio = '1 / 1', children }) => (
   <div className="fp-perk">
-    <div className="fp-perk-art"><img src={img} alt="" loading="lazy" />{children}</div>
+    <div className="fp-perk-art"><div className="fp-perk-img" style={{ aspectRatio: ratio }}><img src={img} alt="" loading="lazy" />{children}</div></div>
     <div className="p-2.5 space-y-0.5"><div className="text-[12.5px] font-bold text-white leading-tight">{title}</div><div className="text-[11px] text-neutral-400 leading-snug">{text}</div></div>
   </div>
+);
+
+/** text written on an art's empty plate, in the player's language: `top` is the plate's centre (% of the art's height) */
+export const PlateText: React.FC<{ top: number; width: number; lines: Array<{ text: string; tone: 'gold' | 'green'; size: number }> }> = ({ top, width, lines }) => (
+  <span className="fp-plate" style={{ top: `${top}%`, width: `${width}%` }}>
+    {lines.map((l, i) => <span key={i} className={`fp-plate-${l.tone}`} style={{ fontSize: `${l.size}cqw` }}>{l.text}</span>)}
+  </span>
 );
 
 /** «FUNDADOR #N» written on the badge's empty plate (without a number it shows «#N») */
@@ -180,9 +187,15 @@ export const FounderView: React.FC = () => {
             <BadgeNumber number={me?.number} />
           </Perk>
           <Perk img="/founder/medallion.webp" title={t('Avatar «{v0}»', { v0: t(design.name) })} text={t('Exclusivo y ligado a tu cuenta: nunca sale de un cofre ni se vende.')} />
-          <Perk img={FOUNDER_TITLE.arquitecto.img} title={t('Título «{v0}»', { v0: t(FOUNDER_TITLE.arquitecto.name) })} text={t('Un título para mostrar junto a tu nombre.')} />
-          <Perk img={FOUNDER_TITLE.maestro.img} title={t('Título «{v0}»', { v0: t(FOUNDER_TITLE.maestro.name) })} text={t('O este otro: tú eliges cuál llevar.')} />
-          <Perk img="/founder/perk-acceso.webp" title={t('Acceso anticipado')} text={t('Pruebas las funciones nuevas antes que nadie.')} wide />
+          <Perk img={FOUNDER_TITLE.arquitecto.img} title={t('Título «{v0}»', { v0: t(FOUNDER_TITLE.arquitecto.name) })} text={t('Un título para mostrar junto a tu nombre.')}>
+            <PlateText top={74.3} width={56} lines={[{ text: t(FOUNDER_TITLE.arquitecto.name), tone: 'gold', size: 7.2 }]} />
+          </Perk>
+          <Perk img={FOUNDER_TITLE.maestro.img} title={t('Título «{v0}»', { v0: t(FOUNDER_TITLE.maestro.name) })} text={t('O este otro: tú eliges cuál llevar.')}>
+            <PlateText top={78.2} width={50} lines={[{ text: t(FOUNDER_TITLE.maestro.name), tone: 'green', size: 7.6 }]} />
+          </Perk>
+          <Perk img="/founder/perk-acceso.webp" ratio="4250 / 2750" title={t('Acceso anticipado')} text={t('Pruebas las funciones nuevas antes que nadie.')}>
+            <PlateText top={80.9} width={74} lines={[{ text: t('Recompensa:'), tone: 'gold', size: 3.4 }, { text: t('Acceso anticipado'), tone: 'green', size: 5 }]} />
+          </Perk>
           <Perk img="/founder/perk-creditos.webp" title={t('Tu nombre en los créditos')} text={t('En el juego y en el sitio, si quieres aparecer.')} />
         </div>
       </section>

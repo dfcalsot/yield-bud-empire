@@ -1196,8 +1196,13 @@ body::before {
 @keyframes fpFloat { 0%, 100% { transform: translateY(0) rotate(-0.6deg); } 50% { transform: translateY(-6px) rotate(0.6deg); } }
 .fp-perk { border-radius: 14px; overflow: hidden; border: 1px solid rgba(251, 191, 36, 0.3); background: rgba(12, 9, 26, 0.8); transition: transform 0.2s, border-color 0.2s; }
 .fp-perk:hover { transform: translateY(-2px); border-color: rgba(251, 191, 36, 0.6); }
-.fp-perk-art { position: relative; aspect-ratio: 1 / 1; background: #07050f; container-type: inline-size; }
-.fp-perk-art img { width: 100%; height: 100%; object-fit: contain; }
+.fp-perk-art { aspect-ratio: 1 / 1; background: #07050f; display: flex; align-items: center; justify-content: center; }
+.fp-perk-img { position: relative; width: 100%; container-type: inline-size; }
+.fp-perk-img img { width: 100%; height: 100%; display: block; }
+/* words painted on an art's plate by the game (the plate was cleaned), in the player's language */
+.fp-plate { position: absolute; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.05; font-family: var(--font-serif, Georgia, serif); font-weight: 900; text-transform: uppercase; }
+.fp-plate-gold { color: #f5c86a; text-shadow: 0 0.35cqw 0 #3b2208, 0 0 1.6cqw rgba(0, 0, 0, 0.7); }
+.fp-plate-green { color: #3dff4f; text-shadow: 0 0.35cqw 0 #0b3d10, 0 0 1.8cqw rgba(61, 255, 79, 0.45); }
 /* «FUNDADOR #N» on the badge's empty plate (the plate sits at 50 % × 70 % of the art, 14 % tall) */
 .fp-badge-text { position: absolute; left: 50%; top: 70.3%; transform: translate(-50%, -50%); white-space: nowrap; font-family: var(--font-serif, Georgia, serif); font-weight: 900; font-size: 8.4cqw; letter-spacing: 0.04em;
   color: #f5c86a; text-shadow: 0 0.35cqw 0 #3b2208, 0 0 2cqw rgba(0, 0, 0, 0.6); }
