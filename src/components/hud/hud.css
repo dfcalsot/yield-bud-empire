@@ -123,6 +123,10 @@
 .fp-badge { position: absolute; right: 8px; top: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font: 700 10px ui-monospace, monospace; }
 .fp-badge--on { background: #b8f35a; color: #14210a; }
 .fp-badge--build { background: #f59e0b; color: #241503; }
+/* the room shown as the grow scene: bottom-right, so it never covers «En uso» */
+.fp-badge--scene { top: auto; bottom: 8px; background: #38bdf8; color: #06202e; }
+.fp-cta--ghost { color: #bae6fd; background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.5); box-shadow: none; }
+.fp-cta--ghost:hover:not(:disabled) { background: rgba(56, 189, 248, 0.22); }
 .fp-chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); color: #e2e8f0; }
 .fp-chip--g { color: #bef264; border-color: rgba(190, 242, 100, 0.3); }
 .fp-bar { height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }

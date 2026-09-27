@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Clock, Flame, Hammer, Lock, Sprout, X, Zap } from 'lucide-react';
+import { Eye, Check, Clock, Flame, Hammer, Lock, Sprout, X, Zap } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { FacilityBackdrop } from './FacilityBackdrop';
 import { buildHoursOf, progressOf, remainingMs, speedUpQuote, SPEEDUP } from '../../sim/facilities';
@@ -7,6 +7,7 @@ import { formatDuration } from '../../sim/engine';
 import type { GrowFacility } from '../../types';
 import './hud.css';
 import { t, t as tr, k, localize } from '../../i18n';
+import { setScene, useSceneId } from './sceneChoice';
 
 /** what each rung adds, in words a player understands (the numbers come from the data, not from here) */
 const PERKS: Record<string, string[]> = localize({
@@ -30,6 +31,7 @@ const hoursLabel = (h: number) => (h >= 48 ? tr('{v0} días', { v0: Math.round(h
 export const FacilityPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { facilities, currentFacility, floraBalance, upgradeFacility, construction, speedUpConstruction, equipStats, empire } = useGame();
   const rank = empire?.rank ?? 1;
+  const sceneId = useSceneId(currentFacility, facilities);
   const now = useNow(1000);
   const building = construction ? facilities.find((f) => f.id === construction.facilityId) : undefined;
   const quote = construction ? speedUpQuote(construction, now) : null;
@@ -80,6 +82,7 @@ export const FacilityPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                   <span className="fp-tier">{t('Nivel {tier}', { tier: f.tier })}</span>
                   {st === 'current' && <span className="fp-badge fp-badge--on"><Check className="w-3 h-3" />{' '}{t('En uso')}</span>}
                   {st === 'building' && <span className="fp-badge fp-badge--build"><Hammer className="w-3 h-3" />{' '}{t('En obra')}</span>}
+                  {sceneId === f.id && <span className="fp-badge fp-badge--scene"><Eye className="w-3 h-3" />{' '}{t('Escenario')}</span>}
                 </div>
 
                 <div className="p-3 flex-1 flex flex-col gap-2">
@@ -110,8 +113,13 @@ export const FacilityPanel: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                     )}
                     {st === 'next' && construction && <p className="text-[11px] text-neutral-500">{t('Hay otra obra en marcha.')}</p>}
                     {st === 'locked' && <p className="text-[11px] text-neutral-500">{t('Requiere construir antes el nivel {v0}. · Obra {v1} · {costFlora} $FLORA', { v0: f.tier - 1, v1: hoursLabel(hours), costFlora: f.costFlora })}{f.minEmpireRank ? tr(' · rango de imperio {n}', { n: f.minEmpireRank }) : ''}</p>}
-                    {st === 'passed' && <p className="text-[11px] text-neutral-500">{t('Superada: ya tienes algo mejor.')}</p>}
+                    {st === 'passed' && <p className="text-[11px] text-neutral-500">{t('Superada: sigues cultivando con tu mejor instalación.')}</p>}
                     {st === 'current' && <p className="text-[11px] text-emerald-300/80">{t('Aquí estás cultivando ahora.')}</p>}
+                    {(st === 'passed' || st === 'current') && (
+                      sceneId === f.id
+                        ? <p className="text-[11px] font-mono text-sky-300 inline-flex items-center gap-1"><Eye className="w-3 h-3" />{t('Es el escenario que ves en tu sala')}</p>
+                        : <button type="button" onClick={() => setScene(st === 'current' ? null : f.id)} className="fp-cta fp-cta--ghost"><Eye className="w-4 h-4" />{t('Usar este escenario')}</button>
+                    )}
                   </div>
                 </div>
               </article>

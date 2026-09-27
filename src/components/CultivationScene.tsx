@@ -12,6 +12,7 @@ import { TechniqueMenu } from './cultivo/TechniqueMenu';
 import { PHASES, phaseFraction, phaseIndex, stageOf } from '../sim/phases';
 import { canTrain, TECHNIQUES } from '../sim/techniques';
 import { t, t as tr, k } from '../i18n';
+import { useSceneId } from './hud/sceneChoice';
 
 /**
  * The stage of the Cultivo panel: the installation, the plant and its pot BIG in the middle, the skill hotbar (keys 1–6), the
@@ -45,8 +46,9 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const {
     activePlant, indoorPlants, selectedPlantIndex,
     waterPlant, feedNutrients, speedUpGrowth, harvestPlant, saveCurrentPlantAsMotherOrFather,
-    currentRoom, currentFacility, getPlantEta, care, equipStats,
+    currentRoom, currentFacility, facilities, getPlantEta, care, equipStats,
   } = useGame();
+  const sceneId = useSceneId(currentFacility, facilities);
 
   const [floaters, setFloaters] = useState<Array<{ id: number; text: string; color: string; dx: number }>>([]);
   const nextId = useRef(1);
@@ -121,7 +123,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   return (
     <div className="relative isolate overflow-hidden rounded-3xl border border-emerald-400/20 bg-[#02080a] h-[calc(100dvh-26.5rem)] min-h-[640px] max-h-[880px] shadow-[0_0_60px_-20px_rgba(52,211,153,0.4)]" data-testid="cultivo-stage">
       {/* ── backdrop: the facility itself (each tier is a different place) ── */}
-      <FacilityBackdrop facilityId={currentFacility.id} lampColor={lampColor} lightPct={lightPct} equip={equipStats} hour={new Date().getHours() + new Date().getMinutes() / 60} />
+      <FacilityBackdrop facilityId={sceneId} lampColor={lampColor} lightPct={lightPct} equip={equipStats} hour={new Date().getHours() + new Date().getMinutes() / 60} />
       <div className="absolute inset-0 pointer-events-none">
         {spores.map((s, i) => (
           <span key={i} className="cf-spore absolute bottom-[14%] rounded-full bg-emerald-200"

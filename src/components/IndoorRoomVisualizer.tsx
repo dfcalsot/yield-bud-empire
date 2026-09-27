@@ -9,6 +9,7 @@ import { isHungry, isMale, isThirsty, PEST_INFO, sexRevealed } from '../sim/engi
 import { MAX_ROOM_PLANTS } from '../sim/facilities';
 import './hud/hud.css';
 import { t, t as tr, k, localize } from '../i18n';
+import { useSceneId } from './hud/sceneChoice';
 
 /**
  * The grow room as a game board. The room is exactly as big as the installation (the rest of the benches are locked slots that
@@ -78,6 +79,7 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
     waterPlant, waterAllPlants, feedNutrients, feedAllPlants, harvestPlant, harvestAllReadyPlants, treatPests,
     co2Ppm, setCo2Ppm, equipStats,
   } = useGame();
+  const sceneId = useSceneId(currentFacility, facilities);
   const [lens, setLens] = useState(false);
   const [co2Burst, setCo2Burst] = useState(false);
   const { say, speak, tips } = useNpc(tr('Sala en orden, jefe. Toca una planta para ver su ficha; las teclas 1–6 hacen las tareas de toda la sala.'));
@@ -166,7 +168,7 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
 
       {/* the room, in the look of the installation you actually have */}
       <div className="sr-stage">
-        <FacilityBackdrop facilityId={currentFacility.id} lampColor="255,236,190" lightPct={0.7} equip={equipStats} hour={13} />
+        <FacilityBackdrop facilityId={sceneId} lampColor="255,236,190" lightPct={0.7} equip={equipStats} hour={13} />
         <div className="sr-veil" />
         {co2Burst && <div className="sr-co2" aria-hidden />}
 
