@@ -3802,5 +3802,13 @@
  "🐛 El jardinero trató una plaga": "🐛 The gardener treated a pest",
  "🌾 ¡{name} está lista para cosechar!": "🌾 {name} is ready to harvest!",
  "🌾 ¡{n} plantas están listas para cosechar!": "🌾 {n} plants are ready to harvest!",
- "Esa recompensa ya la habías cobrado: el reto queda cerrado.": "You had already collected that reward: the challenge is now closed."
+ "Esa recompensa ya la habías cobrado: el reto queda cerrado.": "You had already collected that reward: the challenge is now closed.",
+ "Audio: efectos, música y ambiente": "Audio: effects, music and ambience",
+ "Audio": "Audio",
+ "Efectos": "Effects",
+ "Sí": "On",
+ "No": "Off",
+ "Música": "Music",
+ "Activar música y ambiente": "Turn on music and ambience",
+ "El ambiente cambia según la zona: sala, parcelas, laboratorio o mercado.": "The ambience changes with the zone: grow room, plots, lab or market."
 }

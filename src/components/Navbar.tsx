@@ -19,6 +19,7 @@ import { YieldBudWordmark } from './brand/YieldBudWordmark';
 import { LangSwitch } from '../i18n/LangSwitch';
 import { ECON, claimStatus } from '../sim/economy';
 import { t, t as tr } from '../i18n';
+import { setAudioPrefs, useAudioPrefs } from '../utils/music';
 
 interface NavbarProps {
   setCurrentTab: (tab: string) => void;
@@ -64,15 +65,47 @@ export const Navbar: React.FC<NavbarProps> = ({
     window.addEventListener('pointerdown', close);
     return () => window.removeEventListener('pointerdown', close);
   }, [settingsOpen]);
+  // audio: sound effects on/off, and the music and ambience volumes (utils/music.ts)
+  const audio = useAudioPrefs();
+  const [audioOpen, setAudioOpen] = useState(false);
+  const audioRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!audioOpen) return;
+    const close = (e: PointerEvent) => { if (!audioRef.current?.contains(e.target as Node)) setAudioOpen(false); };
+    window.addEventListener('pointerdown', close);
+    return () => window.removeEventListener('pointerdown', close);
+  }, [audioOpen]);
+  const anySound = soundEnabled || audio.music > 0 || audio.ambience > 0;
   const soundBtn = (
-    <button
-      onClick={toggleSound}
-      aria-label={soundEnabled ? t('Silenciar audio') : t('Activar audio')}
-      title={soundEnabled ? t('Silenciar audio') : t('Activar audio')}
-      className="grid place-items-center w-9 h-9 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 transition cursor-pointer"
-    >
-      {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4" />}
-    </button>
+    <div ref={audioRef} className="relative">
+      <button
+        onClick={() => setAudioOpen((v) => !v)}
+        aria-label={t('Audio: efectos, música y ambiente')}
+        title={t('Audio: efectos, música y ambiente')}
+        aria-expanded={audioOpen}
+        className="grid place-items-center w-9 h-9 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 transition cursor-pointer"
+      >
+        {anySound ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4" />}
+      </button>
+      {audioOpen && (
+        <div className="absolute right-0 top-11 z-50 w-64 rounded-xl border border-emerald-400/25 bg-neutral-950/95 backdrop-blur-xl p-3 space-y-3 shadow-2xl" role="dialog" aria-label={t('Audio')}>
+          <div className="flex items-center justify-between text-xs text-neutral-200">
+            <span>{t('Efectos')}</span>
+            <button onClick={toggleSound} className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer ${soundEnabled ? 'bg-emerald-400 text-neutral-950' : 'bg-neutral-800 text-neutral-400'}`}>{soundEnabled ? t('Sí') : t('No')}</button>
+          </div>
+          {([['music', t('Música'), '🎵'], ['ambience', t('Ambiente'), '🌿']] as const).map(([k, label, icon]) => (
+            <label key={k} className="block text-xs text-neutral-200 space-y-1">
+              <span className="flex justify-between"><span>{icon} {label}</span><span className="font-mono text-neutral-500">{Math.round(audio[k] * 100)}%</span></span>
+              <input type="range" min={0} max={100} step={5} value={Math.round(audio[k] * 100)} onChange={(e) => setAudioPrefs({ [k]: Number(e.target.value) / 100 })} className="w-full accent-emerald-400 cursor-pointer" />
+            </label>
+          ))}
+          {audio.music === 0 && audio.ambience === 0 && (
+            <button onClick={() => setAudioPrefs({ music: 0.5, ambience: 0.5 })} className="w-full px-2 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-400/15 border border-emerald-400/40 text-emerald-200 cursor-pointer">{t('Activar música y ambiente')}</button>
+          )}
+          <p className="text-[10px] text-neutral-500 leading-snug">{t('El ambiente cambia según la zona: sala, parcelas, laboratorio o mercado.')}</p>
+        </div>
+      )}
+    </div>
   );
 
   return (

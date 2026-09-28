@@ -34,10 +34,13 @@ import { SubTabs } from './components/SubTabs';
 import { ParticleField } from './components/game/GameUI';
 import { NAV_GROUPS, TAB_ZONE, groupOfTab, type TabId } from './nav';
 import { t, useLang } from './i18n';
+import { setZone, ZONE_OF_TAB } from './utils/music';
 
 function YieldBudEmpireApp() {
   const { indoorPlants, reportEvent, logoutUser } = useGame();
   const [currentTab, setCurrentTab] = useState<string>('cultivo');
+  // the ambience follows the zone the player is in
+  useEffect(() => { setZone(ZONE_OF_TAB[currentTab] ?? null); }, [currentTab]);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [bagOpen, setBagOpen] = useState<boolean>(false);
