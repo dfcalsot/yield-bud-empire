@@ -55,8 +55,8 @@ function ring(at, f, amp, pan, decay = 1.8) {
 }
 
 if (kind === 'outdoor') {
-  noiseBed({ lo: 0.02, hi: 0.16, level: 1.1, lfo: (t) => 0.55 + 0.3 * Math.sin(2 * Math.PI * t / 13.7) + 0.15 * Math.sin(2 * Math.PI * t / 5.3 + 1.1) });      // wind
-  for (let t = 0; t < LOOP + TAIL; t += rr(0.05, 0.35)) { const g = 0.55 + 0.3 * Math.sin(2 * Math.PI * t / 13.7); if (rnd() < g) blip(t, { amp: rr(0.03, 0.07) * g, decay: rr(6, 14), len: rr(0.25, 0.9), pan: rr(0.2, 0.8) }); }  // leaves
+  noiseBed({ lo: 0.02, hi: 0.16, level: 0.045, lfo: () => 1 });     // a faint, steady breeze (no swell: a swell sounds like waves)
+  for (let t = rr(1, 3); t < LOOP + TAIL; t += rr(3, 8)) for (let k = 0, at = t; k < Math.floor(rr(2, 6)); k++, at += rr(0.08, 0.25)) blip(at, { amp: rr(0.012, 0.028), decay: rr(10, 18), len: rr(0.2, 0.45), pan: rr(0.2, 0.8) });  // a few leaves rustling now and then
   const SP = [[3200, 4400, 0.09, 0.07, 3, 6], [2400, 1900, 0.22, 0.12, 2, 3], [2800, 3600, 0.05, 0.04, 6, 10]];
   for (let t = rr(0.5, 2); t < LOOP + TAIL - 2; t += rr(2.2, 6.5)) {      // birds
     const [f0, f1, d, gap, c0, c1] = SP[Math.floor(rnd() * SP.length)], pan = rr(0.1, 0.9), amp = rr(0.06, 0.12), sh = rr(0.9, 1.12);
@@ -67,17 +67,17 @@ if (kind === 'outdoor') {
 }
 
 if (kind === 'indoor') {
-  noiseBed({ lo: 0.03, hi: 0.1, level: 0.5, lfo: (t) => 0.9 + 0.1 * Math.sin(2 * Math.PI * t / 9.1) });                                       // inline fan whoosh
+  noiseBed({ lo: 0.03, hi: 0.1, level: 0.08, lfo: () => 1 });                                                                                   // the fan's air, very low and steady
   hum(120, 0.05, [0.35, 1, 0.5, 0.3, 0.15], 0.5, 0.05);                                                                                          // LED driver buzz (120 Hz and harmonics)
-  hum(310, 0.012, [1, 0.3], 0.4, 0.2);                                                                                                            // fan motor
-  noiseBed({ lo: 0.25, hi: 0.5, level: 0.04, lfo: (t) => 0.6 + 0.4 * Math.sin(2 * Math.PI * t / 4.7) ** 2 });                                  // water trickling in the lines
+  hum(310, 0.02, [1, 0.35, 0.12], 0.4, 0.0);                                                                                                            // fan motor
+  for (let t = 0; t < LOOP + TAIL; t += rr(0.03, 0.09)) blip(t, { tone: rr(1800, 3200), sweep: rr(-800, 800), decay: 90, len: 0.04, amp: rr(0.004, 0.009), pan: rr(0.55, 0.75) });   // water trickling in the lines
   for (let t = rr(1, 3); t < LOOP + TAIL; t += rr(1.2, 4.5)) blip(t, { tone: rr(900, 1500), sweep: rr(900, 2000), decay: 40, len: 0.12, amp: rr(0.04, 0.08), pan: rr(0.3, 0.7) });   // drips
   for (let t = rr(10, 20); t < LOOP; t += rr(18, 30)) blip(t, { amp: 0.06, decay: 5, len: 0.8, pan: rr(0.35, 0.65) });                       // a pump cycling
 }
 
 if (kind === 'lab') {
   hum(60, 0.03, [0.2, 1, 0.6, 0.4], 0.5, 0.02);                                                                                                   // fume hood / fridge
-  noiseBed({ lo: 0.05, hi: 0.09, level: 0.22, lfo: () => 1 });                                                                                      // ventilation
+  // (no noise bed: the lab is quiet; the bubbles, beeps and glass carry it)
   for (let t = 0; t < LOOP + TAIL; t += rr(0.04, 0.25)) blip(t, { tone: rr(500, 1400), sweep: rr(1500, 4000), decay: rr(35, 70), len: 0.09, amp: rr(0.02, 0.05), pan: rr(0.2, 0.55) });   // bubbling flask
   for (let t = rr(3, 6); t < LOOP; t += rr(6, 12)) { const f = [1760, 2093, 2349][Math.floor(rnd() * 3)]; blip(t, { tone: f, decay: 18, len: 0.14, amp: 0.035, pan: 0.75 }); if (rnd() < 0.5) blip(t + 0.18, { tone: f * 1.26, decay: 18, len: 0.14, amp: 0.03, pan: 0.75 }); }  // instrument beeps
   for (let t = rr(12, 20); t < LOOP; t += rr(20, 30)) for (let i = 0; i < 4 * SR; i++) { const tt = i / SR, e = Math.sin(Math.PI * tt / 4); put(Math.floor(t * SR) + i, Math.sin(2 * Math.PI * (380 + 60 * tt) * tt) * e * 0.02, 0.3); }   // a centrifuge spinning
@@ -85,7 +85,7 @@ if (kind === 'lab') {
 }
 
 if (kind === 'shop') {
-  noiseBed({ lo: 0.04, hi: 0.07, level: 0.4, lfo: (t) => 0.7 + 0.3 * Math.sin(2 * Math.PI * t / 6.3) * Math.sin(2 * Math.PI * t / 2.9) });  // room tone / far murmur
+  noiseBed({ lo: 0.04, hi: 0.07, level: 0.05, lfo: () => 1 });   // a hint of room tone, steady
   // muffled voices: formant-ish blips in the speech range, in short phrases
   for (let t = rr(0.5, 2); t < LOOP + TAIL - 3; t += rr(2.5, 6)) { const pan = rr(0.2, 0.8), base = rr(160, 240); let at = t; for (let s = 0; s < Math.floor(rr(4, 10)); s++) { blip(at, { tone: base * rr(0.9, 1.3), sweep: rr(-80, 80), decay: 9, len: rr(0.12, 0.25), amp: rr(0.025, 0.045), pan }); at += rr(0.12, 0.3); } }
   for (let t = rr(4, 8); t < LOOP; t += rr(7, 14)) { ring(t, rr(2200, 2900), 0.02, rr(0.3, 0.7), 5); if (rnd() < 0.6) ring(t + 0.09, rr(2500, 3100), 0.015, rr(0.3, 0.7), 6); }   // glass jars clinking

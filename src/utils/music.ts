@@ -73,8 +73,8 @@ function applyAmbience() {
   for (const [z, el] of amb) if (z !== zone || prefs.ambience === 0) fadeTo(el, 0);
   if (!zone || prefs.ambience === 0) return;
   let el = amb.get(zone);
-  if (!el) { el = make(`/audio/amb-${zone}.mp3`, true); amb.set(zone, el); }
-  fadeTo(el, prefs.ambience * 0.8);   // a bed under the music
+  if (!el) { el = make(`/audio/amb-${zone}.mp3?v=2`, true); amb.set(zone, el); }
+  fadeTo(el, prefs.ambience * (prefs.music > 0 ? 0.45 : 0.7));   // a bed under the music: quieter while music plays, so they don't blur
 }
 
 /** the zone the player is looking at (App calls it on every tab change) */
