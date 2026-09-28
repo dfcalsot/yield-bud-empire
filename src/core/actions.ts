@@ -1074,8 +1074,18 @@ export const ACTIONS: Record<string, Action> = {
   claimQuestReward(r, p) {
     const q = questsOf(r.s).find((x) => x.id === p.questId);
     if (!q || !q.isCompleted || q.isClaimed) no(tr('Esa misión todavía no se puede reclamar.'));
-    const res = r.ctx.econ<{ amount: number }>('reward', { kind: 'quest', id: q!.id });
     const prog = r.s.quests.find((x) => x.id === q!.id)!;
+    let res: { amount: number };
+    try { res = r.ctx.econ<{ amount: number }>('reward', { kind: 'quest', id: q!.id }); }
+    catch (e) {
+      // the economy already paid this quest (the game had lost the mark): close it here instead of leaving a button that never works
+      if ((e as { code?: string })?.code === 'already_claimed') {
+        prog.isClaimed = true;
+        say(r, tr('Esa recompensa ya la habías cobrado: el reto queda cerrado.'), 'info');
+        return true;
+      }
+      throw e;
+    }
     prog.isClaimed = true;
     sfx(r, 'quest');
     addXp(r, q!.rewardXp);

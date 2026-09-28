@@ -1018,6 +1018,23 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   ok('fundador: otra cuenta no ve un pedido ajeno', (await fd(FU, `order?id=${o1.id}`)).status === 404);
   ok('fundador: sin sesión no hay pedido', (await call('POST', '/api/founder/order', { ip: newIp(), body: {} })).status === 401);
 }
+// ── retos: si la economía ya pagó un reto que el juego tenía abierto, reclamarlo lo cierra (sin volver a pagar)
+{
+  limiter.m.clear();
+  const Q = await mkPlayer(131); await state(Q);
+  await call('GET', '/api/game/state', { jar: Q.jar, ip: Q.ip });
+  const C = sim.core;
+  const g = C.unpackGame(JSON.parse(db.prepare('SELECT json FROM game_state WHERE account_id = ?').get(Q.id).json));
+  g.quests = [...g.quests.filter((x) => x.id !== 'quest_machine_repair'), { id: 'quest_machine_repair', currentCount: 1, isCompleted: true, isClaimed: false }];
+  db.prepare('UPDATE game_state SET json = ? WHERE account_id = ?').run(JSON.stringify(C.packGame(g)), Q.id);
+  const es = JSON.parse(db.prepare('SELECT json FROM econ_state WHERE account_id = ?').get(Q.id).json);
+  es.questsClaimed = [...(es.questsClaimed ?? []), 'quest_machine_repair'];
+  db.prepare('UPDATE econ_state SET json = ? WHERE account_id = ?').run(JSON.stringify(es), Q.id);
+  const f0 = wallet(Q).flora;
+  const r1 = await call('POST', '/api/game/action', { jar: Q.jar, ip: Q.ip, body: { type: 'claimQuestReward', params: { questId: 'quest_machine_repair' } } });
+  const qq = C.unpackGame(JSON.parse(db.prepare('SELECT json FROM game_state WHERE account_id = ?').get(Q.id).json)).quests.find((x) => x.id === 'quest_machine_repair');
+  ok('retos: un reto ya cobrado por la economía se cierra al reclamarlo, sin pagar dos veces', r1.status === 200 && qq.isClaimed === true && wallet(Q).flora === f0, `(${r1.status} ${JSON.stringify(r1.json?.error ?? '')})`);
+}
 // ── aviso de cosecha por correo (jugadores ausentes)
 {
   limiter.m.clear();
