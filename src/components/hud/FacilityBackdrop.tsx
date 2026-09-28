@@ -147,9 +147,10 @@ const PAINTED: Record<string, { src: string; pos: string; mobile?: { size: strin
   tent_starter: { src: '/rooms/tent_starter.webp', pos: '50% 74%' },   // the cupboard floor lines up with the pot's base (the stage's bottom 28 %)
   tent_pro: { src: '/rooms/tent_pro.webp', pos: '38% 72%' },   // the tent's floor sits a bit left of centre
   greenhouse_commercial: { src: '/rooms/greenhouse_commercial.webp', pos: '38% 40%' },   // cut-away diorama: the pot stands mid-floor
-  lab_pharma_hydro: { src: '/rooms/lab_pharma_hydro.webp', pos: '45% 45%' },   // also the empire seats' art (tinted) until they get their own
+  lab_pharma_hydro: { src: '/rooms/lab_pharma_hydro.webp', pos: '45% 45%' },
   hydro_complex: { src: '/rooms/hydro_complex.webp', pos: '50% 45%' },   // two rooms and the control lab: the pot stands in the middle
   grow_campus: { src: '/rooms/grow_campus.webp', pos: '50% 40%', mobile: { size: 'auto 135%', pos: '50% 26%' } },   // the pot stands in the central courtyard
+  empire_seat: { src: '/rooms/empire_seat.webp', pos: '50% 45%' },   // the pot stands in the central aisle, the emblem behind it
 };
 
 export const FacilityBackdrop: React.FC<Props> = (p) => {
