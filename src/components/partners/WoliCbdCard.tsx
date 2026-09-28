@@ -34,6 +34,7 @@ export const WoliCbdCard: React.FC = () => (
           <ExternalLink className="w-3.5 h-3.5" />www.wolicbd.com
         </a>
         <p className="flex items-center gap-1 text-[10.5px] text-neutral-500"><MapPin className="w-3 h-3" />{tr('Costa Rica · producto cosmético: detalles y compra en su tienda.')}</p>
+        <p className="text-[10px] text-neutral-500 leading-snug">{tr('Los productos con CBD solo se venden y envían a países donde están regulados y pueden pasar la aduana sin problemas.')}</p>
       </div>
       <a href={SITE} target="_blank" rel="noopener noreferrer" aria-label={tr('Ver el ungüento en www.wolicbd.com')} tabIndex={-1} className="block">
         <img src="/partners/woli/hero.webp" alt={tr('Lata del ungüento WOLI CBD con lavanda, incienso y tomillo')} className="w-full h-auto drop-shadow-[0_10px_22px_rgba(0,0,0,.55)]" loading="lazy" />
