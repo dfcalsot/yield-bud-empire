@@ -12,7 +12,7 @@ Object.assign(process.env, {
   GOOGLE_CLIENT_ID: 'gid', GOOGLE_CLIENT_SECRET: 'gsec', GOOGLE_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, GOOGLE_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, GOOGLE_USER_URL: `http://127.0.0.1:${MOCK}/user/google`,
   BRIDGE_FAKE: '1', FOUNDER_FAKE: '1', FOUNDER_SUPPLY: '3',
 });
-const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg, economy, bridge, founder, game } = await import('./index.mjs');
+const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg, economy, bridge, founder, game, panel } = await import('./index.mjs');
 
 // mock identity provider (NOT Google: it only proves that our OAuth code paths behave)
 const profiles = { google: {}, x: {} };
@@ -804,6 +804,29 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   // lo que el juego cuenta (patentes, cruces, nivel) llega al rango
   await call('GET', '/api/game/state', { jar: EQ.jar, ip: EQ.ip });
   ok('imperio: el nivel de jugador y lo del juego llegan al desglose', (await state(EQ)).snapshot.empire.breakdown.tier === 450);
+}
+// ── panel de operadores: solo cuentas admin; a las demás no existe, y solo lee
+{
+  const PA = await mkPlayer(190); await state(PA);
+  const PN = await mkPlayer(191); await state(PN);
+  const routes = ['/api/admin/me', '/api/admin/overview', '/api/admin/players', '/api/admin/economy'];
+  let hidden = true; for (const r of routes) { const x = await call('GET', r, { jar: PN.jar, ip: PN.ip }); hidden &&= x.status === 404; }
+  ok('panel: una cuenta normal recibe 404 en todas sus rutas', hidden);
+  ok('panel: sin sesión también 404', (await call('GET', '/api/admin/overview', { ip: newIp() })).status === 404);
+  db.prepare("UPDATE accounts SET flags = flags || 'dev,' WHERE id = ?").run(PN.id);
+  ok('panel: ser dev no alcanza', (await call('GET', '/api/admin/overview', { jar: PN.jar, ip: PN.ip })).status === 404);
+  db.prepare("UPDATE accounts SET flags = flags || 'admin,' WHERE id = ?").run(PA.id);
+  const o = await call('GET', '/api/admin/overview', { jar: PA.jar, ip: PA.ip });
+  ok('panel: la cuenta admin ve el resumen', o.status === 200 && o.json.players.total >= 2 && o.json.players.online >= 1 && o.json.series.length === 30 && Array.isArray(o.json.feed) && o.json.health.uptime >= 0);
+  const pl = await call('GET', '/api/admin/players', { jar: PA.jar, ip: PA.ip });
+  const me = pl.json.players?.find((p) => p.id === PA.id);
+  ok('panel: la lista de jugadores trae nivel, instalación y plantas', pl.status === 200 && me && me.admin === true && typeof me.level === 'number' && typeof me.plants === 'number' && me.online === true);
+  ok('panel: la lista no trae correos', !JSON.stringify(pl.json).includes('@example.com'));
+  const ec = await call('GET', '/api/admin/economy', { jar: PA.jar, ip: PA.ip });
+  ok('panel: economía (circulante, libro, NFT)', ec.status === 200 && typeof ec.json.circulating === 'number' && ec.json.days.length === 14 && Array.isArray(ec.json.nfts));
+  ok('panel: cuenta las peticiones del servidor', panel && typeof panel.observe === 'function');
+
+  limiter.m.clear();   // the two accounts above count against the per-minute sign-up budget of the sections below
 }
 // ── cuentas de desarrollador: juegan con su saldo de prueba, pero nada real sale con $FLORA
 {

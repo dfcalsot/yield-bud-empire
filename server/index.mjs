@@ -14,6 +14,7 @@ import { installEconomy } from './economy.mjs';
 import { installGame } from './game.mjs';
 import { installBridge } from './bridge.mjs';
 import { installFounder } from './founder.mjs';
+import { installPanel } from './panel.mjs';
 import { createPrereg } from './prereg.mjs';
 import { installWallet } from './wallet.mjs';
 
@@ -205,6 +206,8 @@ function issueSession(ctx, accountId) {
   q.trimSessions.run(accountId);   // at most 5 live sessions per account
   ctx.setCookies.push(cookie('cf_session', token, { maxAge: 30 * 86400, secure }));
 }
+/** when each account last made a request (for «online now» in the operators' panel; memory only) */
+const seenAt = new Map();
 function sessionAccount(ctx) {
   const token = parseCookies(ctx.req.headers.cookie).cf_session;
   if (!token) return null;
@@ -212,6 +215,7 @@ function sessionAccount(ctx) {
   if (!s || s.expires_at < Date.now()) return null;
   const now = Date.now();
   if (now - s.last_seen > 3600_000) q.touchSession.run(now, now + 30 * 86400_000, s.id_hash);   // sliding expiry
+  seenAt.set(s.account_id, now);
   return q.byId.get(s.account_id) ?? null;
 }
 
@@ -559,6 +563,7 @@ export const economy = installEconomy({ db, route, HttpError, sessionAccount, au
 export const wallet = installWallet({ db, route, HttpError, sessionAccount, audit, limit, readJson });
 export const game = installGame({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy, sendMail, sign: (s) => hmac(SECRET, s), publicUrl: cfg.publicUrl, harvestMail: process.env.HARVEST_MAIL !== '0' });
 export const bridge = await installBridge({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy, cfg, env: process.env });
+export const panel = installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile: path.join(cfg.dataDir, 'accounts.db') });
 export const founder = await installFounder({ db, route, HttpError, sessionAccount, audit, limit, readJson, env: process.env, sendMail });
 
 /* ───────────────────────────── server ───────────────────────────── */
@@ -588,6 +593,8 @@ function send(res, status, body, ctx) {
 export function createServer() {
   const server = http.createServer(async (req, res) => {
     const ctx = { req, res, setCookies: [], ip: clientIp(req), url: new URL(req.url ?? '/', 'http://x') };
+    const t0 = performance.now();
+    res.on('finish', () => panel.observe(ctx.url.pathname, res.statusCode, performance.now() - t0));
     ctx.ipHash = ipHashOf(ctx.ip);
     ctx.uaHash = crypto.createHash('sha256').update(`${req.headers['user-agent'] ?? ''}|${req.headers['accept-language'] ?? ''}`).digest('hex').slice(0, 16);
     try {

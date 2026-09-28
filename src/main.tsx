@@ -20,6 +20,8 @@ const FounderLab = import.meta.env.DEV ? lazy(() => import('./dev/NpcLab.tsx').t
 const LogoLab = lazy(() => import('./dev/LogoLab.tsx').then((m) => ({default: m.LogoLab})));
 const StaffGallery = lazy(() => import('./dev/StaffGallery.tsx').then((m) => ({default: m.StaffGallery})));
 const LogoStage = lazy(() => import('./dev/LogoLab.tsx').then((m) => ({default: m.LogoStage})));
+// the operators' panel (/#panel): only admin accounts get its data from the server (server/panel.mjs)
+const AdminPanel = lazy(() => import('./admin/AdminPanel.tsx').then((m) => ({default: m.AdminPanel})));
 const hashIs = (h: string) => window.location.hash === h;
 const showLab = import.meta.env.DEV && hashIs('#plantlab');
 const showModelLab = import.meta.env.DEV && hashIs('#modellab');
@@ -30,11 +32,13 @@ function Root() {
   const [logoLab, setLogoLab] = useState(hashIs('#logo'));
   const [logoStage, setLogoStage] = useState(hashIs('#logo-stage'));
   const [staffGal, setStaffGal] = useState(hashIs('#staff'));
+  const [panel, setPanel] = useState(hashIs('#panel'));
   useEffect(() => {
-    const on = () => { setStyleLab(import.meta.env.DEV && hashIs('#stylelab')); setLogoLab(hashIs('#logo')); setLogoStage(hashIs('#logo-stage')); setStaffGal(hashIs('#staff')); };
+    const on = () => { setStyleLab(import.meta.env.DEV && hashIs('#stylelab')); setLogoLab(hashIs('#logo')); setLogoStage(hashIs('#logo-stage')); setStaffGal(hashIs('#staff')); setPanel(hashIs('#panel')); };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
+  if (panel) return <Suspense fallback={null}><AdminPanel /></Suspense>;
   if (staffGal) return <Suspense fallback={null}><StaffGallery /></Suspense>;
   if (logoStage && LogoStage) return <Suspense fallback={null}><LogoStage /></Suspense>;
   if (logoLab) return <Suspense fallback={null}><LogoLab /></Suspense>;

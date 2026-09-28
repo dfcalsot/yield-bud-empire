@@ -1,5 +1,6 @@
 // Operator tool: node server/admin.mjs stats | games | dev <username> [off] | bridge [airdrop] | aviso <archivo.json> [enviar] | flagged | audit [n] | ban <username> | unban <username> | setpass <email> | gift <email> <monto> [nota]
 //                | invite [cantidad] [usos] [nota] | invites | revoke <código> | seats <N> | wave <N> | waiting | prereg | founder [grant <usuario> | refunded <pedido>]
+//                | panel [<usuario> [off]]   (acceso al panel de operadores, /#panel en el juego)
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -63,6 +64,16 @@ if (cmd === 'stats') {
     catch (e) { console.log(`#${r.id} ${r.username}: no se pudo (${e.code ?? e.message})`); }
   }
   if (extra === 'enviar') console.log(`enviados ${ok} de ${rows.length}`);
+} else if (cmd === 'panel') {
+  // the operators' panel (server/panel.mjs, /#panel in the game): only accounts flagged admin can open it
+  if (arg) {
+    const a = db.prepare('SELECT id, flags FROM accounts WHERE username = ?').get(arg);
+    if (!a) { console.error('no existe ese usuario'); process.exit(1); }
+    if (extra === 'off') db.prepare("UPDATE accounts SET flags = replace(flags, 'admin,', '') WHERE id = ?").run(a.id);
+    else if (!/(^|,)admin,/.test(a.flags)) db.prepare("UPDATE accounts SET flags = flags || 'admin,' WHERE id = ?").run(a.id);
+    console.log(extra === 'off' ? `${arg}: ya no entra al panel` : `${arg}: entra al panel de operadores`);
+  }
+  console.table(db.prepare("SELECT id, username, flags FROM accounts WHERE flags LIKE '%admin,%'").all());
 } else if (cmd === 'dev') {
   // developer account: keeps its test balance for playing, but can never take anything real out with $FLORA (V2P, future withdrawals)
   const a = db.prepare('SELECT id, flags FROM accounts WHERE username = ?').get(arg);
