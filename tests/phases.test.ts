@@ -88,5 +88,21 @@ ok('con todas las técnicas el bono total es acotado (máx. +20 %)', TECHNIQUES.
   ok('3D: al 4 % (plántula en el juego) ya no se ve la semilla', stageOf(4) === 'seedling' && modelStageOf(4) === 1);
 }
 
+// ── indoors the plant moves by itself to each stage's room (germinación → vegetativo → floración) and never grows slowed by a wrong room
+{
+  const equip = { lampWatts: 600, lampMaxPpfd: 480, acKw: 0, pumpKw: 0, solarKw: 0, waterPerPlantAuto: 0.5 };
+  let p = plant({ currentRoom: 'vegetative' }); const rooms: string[] = []; let t = 0;
+  while (p.stage !== 'ready_harvest' && t < 40 * 86400) {
+    p = advancePlant(p, 600, env({ equip })); t += 600;
+    if (rooms[rooms.length - 1] !== p.currentRoom) rooms.push(p.currentRoom);
+  }
+  ok('interior: la planta se muda sola de sala en cada etapa', rooms.join(' → ') === 'germination → vegetative → flowering', rooms.join(' → '));
+  ok('interior: en floración toma el 12/12 de su sala', p.lightSchedule === '12/12');
+  const mom = advancePlant(plant({ stage: 'vegetative', progressPercent: 20, currentRoom: 'mothers_fathers' }), 600, env({ equip }));
+  ok('el santuario de madres sigue valiendo para vegetativo', mom.currentRoom === 'mothers_fathers');
+  const out = advancePlant(plant({ currentRoom: 'vegetative' }), 600, env());
+  ok('afuera (sin equipo) no hay salas que cambiar', out.currentRoom === 'vegetative');
+}
+
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 process.exit(failed ? 1 : 0);

@@ -11,11 +11,18 @@ import { ResourceBar } from '../ResourceBar';
 import { formatDuration, isThirsty } from '../../sim/engine';
 import { progressOf, remainingMs } from '../../sim/facilities';
 import { plantClocks, STAGE_DOT, STAGE_LABEL } from './plantInfo';
-import { bestRoomFor, roomFits, ROOM_MISFIT } from '../../sim/phases';
-import type { GrowRoomId } from '../../types';
+import type { GrowStage } from '../../types';
 import { Droplets as DropletsIcon, FlaskConical as FlaskIcon, Zap as ZapIcon } from 'lucide-react';
 import '../hud/hud.css';
-import { t as tr } from '../../i18n';
+import { t as tr, k } from '../../i18n';
+
+/** the four stages shown in the Etapas card, with the room each one grows in; maturation and harvest are part of flowering */
+const STEPS = [
+  { label: k('Germinación'), room: 'germination', stages: ['seed'], from: 0, to: 3 },
+  { label: k('Plántula'), room: 'germination', stages: ['seedling'], from: 3, to: 15 },
+  { label: k('Vegetativo'), room: 'vegetative', stages: ['vegetative'], from: 15, to: 50 },
+  { label: k('Floración'), room: 'flowering', stages: ['flowering', 'maturation', 'ready_harvest'], from: 50, to: 100 },
+] as const satisfies ReadonlyArray<{ label: string; room: string; stages: readonly GrowStage[]; from: number; to: number }>;
 
 /**
  * The two side rails of the Cultivo panel. Everything that used to be stacked above or floating inside the scene lives here as
@@ -32,9 +39,10 @@ const Card: React.FC<{ title: string; icon?: React.ReactNode; aside?: React.Reac
 interface LeftProps { onOpenFacility: () => void; onOpenMarket?: (cat?: string) => void; onOpenSeedModal: () => void }
 
 export const LeftRail: React.FC<LeftProps> = ({ onOpenFacility, onOpenMarket, onOpenSeedModal }) => {
-  const { activePlant, indoorPlants, selectedPlantIndex, selectPlant, getPlantEta, currentFacility, facilities, construction, currentRoom, switchGrowRoom, resources } = useGame();
+  const { activePlant, indoorPlants, selectedPlantIndex, selectPlant, getPlantEta, currentFacility, facilities, construction, currentRoom, resources } = useGame();
   // the room shown is the selected plant's own (each plant can be in a different one)
   const plantRoom = activePlant?.currentRoom ?? currentRoom;
+  const cur = activePlant ? STEPS.findIndex((st) => (st.stages as readonly GrowStage[]).includes(activePlant.stage)) : -1;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { if (!construction) return; const t = setInterval(() => setNow(Date.now()), 15000); setNow(Date.now()); return () => clearInterval(t); }, [construction]);
   const building = construction ? facilities.find((f) => f.id === construction.facilityId) : undefined;
@@ -77,25 +85,27 @@ export const LeftRail: React.FC<LeftProps> = ({ onOpenFacility, onOpenMarket, on
         )}
       </Card>
 
-      {/* the room */}
-      <Card title={tr('Cuarto')} icon={<CannabisLeaf className="w-4 h-4 text-emerald-300" />}>
-        {/* the selected plant's room: each phase grows best in its own one (sim/phases.ts), the wrong one costs 20 % */}
-        {activePlant && !roomFits(activePlant.stage, plantRoom) && (
-          <button type="button" onClick={() => switchGrowRoom(bestRoomFor(activePlant.stage) as GrowRoomId)} className="cv-room-warn" data-testid="room-misfit">
-            ⚠ {tr('{stage} crece mejor en «{room}» · ahora va un {pct} % más lenta. Toca para moverla.', { stage: tr(STAGE_LABEL[activePlant.stage]), room: tr(GROW_ROOMS_CONFIG.find((r) => r.id === bestRoomFor(activePlant.stage))!.name), pct: Math.round((1 - ROOM_MISFIT) * 100) })}
-          </button>
-        )}
-        <div className="space-y-1.5" role="radiogroup" aria-label={tr('Cuarto de cultivo')}>
-          {GROW_ROOMS_CONFIG.map((r) => {
-            const fits = activePlant ? roomFits(activePlant.stage, r.id) : false;
+      {/* the plant's four stages: each one grows in its own room, and the plant moves by itself as it grows (sim/engine.ts) */}
+      <Card title={tr('Etapas')} icon={<CannabisLeaf className="w-4 h-4 text-emerald-300" />}>
+        <ol className="space-y-1.5" aria-label={tr('Etapas de la planta')}>
+          {STEPS.map((st, i) => {
+            const room = GROW_ROOMS_CONFIG.find((r) => r.id === (i === cur && plantRoom === 'mothers_fathers' ? plantRoom : st.room))!;
+            const state = !activePlant ? '' : i < cur ? 'is-done' : i === cur ? 'is-on' : '';
             return (
-              <button key={r.id} type="button" role="radio" aria-checked={r.id === plantRoom} onClick={() => switchGrowRoom(r.id)} className={`cv-room ${r.id === plantRoom ? 'is-on' : ''}`} style={{ ['--room' as string]: r.accentColor }} title={tr(r.description)}>
-                <span className="flex w-full items-center gap-1.5"><span className="text-[11.5px] font-bold text-white truncate flex-1">{tr(r.name)}</span>{fits && <span className="cv-room-fit">{tr('Ideal')}</span>}</span>
-                <span className="text-[9.5px] font-mono text-neutral-400">{tr('{targetTempC}°C · {targetRhPercent}% HR · {recommendedLightSchedule}', { targetTempC: r.targetTempC, targetRhPercent: r.targetRhPercent, recommendedLightSchedule: r.recommendedLightSchedule })}</span>
-              </button>
+              <li key={st.label} className={`cv-room ${state}`} style={{ ['--room' as string]: room.accentColor }} title={tr(room.description)} aria-current={i === cur ? 'step' : undefined}>
+                <span className="flex w-full items-center gap-1.5">
+                  <span className="cv-step-dot">{i < cur ? '✓' : i + 1}</span>
+                  <span className="text-[11.5px] font-bold text-white truncate flex-1">{tr(st.label)}</span>
+                  {i === cur && <span className="cv-room-fit">{tr('Ahora')}</span>}
+                </span>
+                <span className="text-[9.5px] text-neutral-300 truncate w-full">{tr(room.name)}</span>
+                <span className="text-[9.5px] font-mono text-neutral-400">{tr('{targetTempC}°C · {targetRhPercent}% HR · {recommendedLightSchedule}', { targetTempC: room.targetTempC, targetRhPercent: room.targetRhPercent, recommendedLightSchedule: room.recommendedLightSchedule })}</span>
+                {i === cur && activePlant && <span className="cv-step-bar" aria-hidden><i style={{ width: `${Math.round(Math.max(0, Math.min(1, (activePlant.progressPercent - st.from) / (st.to - st.from))) * 100)}%` }} /></span>}
+              </li>
             );
           })}
-        </div>
+        </ol>
+        <p className="mt-2 text-[10px] text-neutral-400 leading-snug">{tr('La planta pasa sola a la sala de cada etapa a medida que crece.')}</p>
       </Card>
 
       {/* resources */}

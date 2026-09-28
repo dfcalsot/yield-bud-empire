@@ -1,4 +1,5 @@
-import { maxProgressFrom, roomFits, ROOM_MISFIT, stageOf } from './phases';
+import { bestRoomFor, maxProgressFrom, roomFits, ROOM_MISFIT, stageOf } from './phases';
+import { GROW_ROOMS_CONFIG } from '../data/initialData';
 import type { GrowStage, PestKind, PlantInGrow, RegionId, Strain } from '../types';
 import { BALANCE as B, LIGHT_FRACTION } from './balance';
 import { hash01 } from './hash';
@@ -330,8 +331,14 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
     clear = 5; milky = 65; amber = 30;
   }
 
+  // indoors, a plant that enters a new phase moves by itself to that phase's room and takes its light schedule (sim/phases.ts);
+  // the lamp intensity stays as the player set it, so the move never slows the plant
+  const moved = env.equip && !roomFits(stage, p.currentRoom) ? GROW_ROOMS_CONFIG.find((r) => r.id === bestRoomFor(stage)) : undefined;
+  const room = moved ? { currentRoom: moved.id, lightSchedule: moved.recommendedLightSchedule } : {};
+
   return {
     ...p,
+    ...room,
     stage,
     progressPercent: r1(progress),
     soilMoisture: r1(moisture),

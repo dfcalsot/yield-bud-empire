@@ -3810,5 +3810,8 @@
  "No": "Off",
  "Música": "Music",
  "Activar música y ambiente": "Turn on music and ambience",
- "El ambiente cambia según la zona: sala, parcelas, laboratorio o mercado.": "The ambience changes with the zone: grow room, plots, lab or market."
+ "El ambiente cambia según la zona: sala, parcelas, laboratorio o mercado.": "The ambience changes with the zone: grow room, plots, lab or market.",
+ "Etapas de la planta": "Plant stages",
+ "Ahora": "Now",
+ "La planta pasa sola a la sala de cada etapa a medida que crece.": "The plant moves by itself to each stage's room as it grows."
 }

@@ -214,7 +214,7 @@
 .cv-facility:hover { border-color: var(--zone, #b8f35a); transform: translateY(-1px); }
 .cv-facility-art { width: 52px; height: 44px; flex: none; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.12); }
 .cv-build { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 8px; padding: 6px 9px; border-radius: 10px; cursor: pointer; background: rgba(120, 53, 15, 0.35); border: 1px solid rgba(251, 191, 36, 0.5); }
-.cv-room { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 6px 10px; border-radius: 10px; cursor: pointer; text-align: left; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.09); transition: border-color 0.15s, background 0.15s; }
+.cv-room { list-style: none; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 6px 10px; border-radius: 10px; cursor: pointer; text-align: left; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.09); transition: border-color 0.15s, background 0.15s; }
 .cv-room:hover { border-color: rgba(184, 243, 90, 0.4); }
 .cv-room.is-on { border-color: var(--room, var(--zone, #b8f35a)); background: color-mix(in srgb, var(--room, var(--zone, #b8f35a)) 16%, transparent); box-shadow: 0 0 14px -6px var(--room, var(--zone, #b8f35a)); }
 .cv-room-fit { flex: none; padding: 0 6px; border-radius: 999px; font: 700 9px ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.06em; color: #14210a; background: #b8f35a; }
@@ -268,3 +268,10 @@
 @keyframes fjSpark { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-16px) scale(0.3); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .fj-glow, .fj-hang, .fj-sparks circle { animation: none !important; } }
 @media (prefers-reduced-motion: reduce) { .gc-fab, .gc-glow, .gc-chest.is-shaking, .gc-amount { animation: none; } .gc-chest .gc-lid, .gc-chest .gc-coins { transition: none; } }
+/* the Etapas card (CultivoRails): numbered steps, done ones checked, the current one with its own progress bar */
+.cv-room.is-done { opacity: 0.6; }
+.cv-step-dot { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 999px; font: 700 9px ui-monospace, monospace; color: #d4d4d4; background: rgba(255, 255, 255, 0.08); }
+.cv-room.is-on .cv-step-dot, .cv-room.is-done .cv-step-dot { color: #14210a; background: var(--room, #b8f35a); }
+.cv-step-bar { display: block; width: 100%; height: 3px; margin-top: 3px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.cv-step-bar > i { display: block; height: 100%; background: var(--room, #b8f35a); transition: width 0.6s ease; }
+li.cv-room { cursor: default; }

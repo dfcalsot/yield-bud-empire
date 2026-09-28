@@ -28,8 +28,8 @@ export const stageOf = (progress: number): GrowStage => {
 export const phaseIndex = (stage: GrowStage): number => STAGE_ORDER.indexOf(stage);
 
 /**
- * The grow room each phase does best in (the player moves the plant by hand, in Cultivo → Cuarto). A plant in a room that
- * doesn't suit its phase grows ROOM_MISFIT slower. The mothers' sanctuary is a vegetative room (18/6 keeps donors from flowering).
+ * The grow room each phase does best in. Indoors the plant moves by itself when it enters a new phase (sim/engine.ts); a plant in
+ * a room that doesn't suit its phase (only possible for a moment, or in old saves) grows ROOM_MISFIT slower. The mothers' sanctuary is a vegetative room (18/6 keeps donors from flowering).
  */
 export const ROOMS_FOR_STAGE: Record<GrowStage, readonly string[]> = {
   seed: ['germination'], seedling: ['germination'], vegetative: ['vegetative', 'mothers_fathers'],
