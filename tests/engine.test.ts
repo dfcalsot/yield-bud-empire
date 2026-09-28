@@ -121,6 +121,11 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
   ok('jardinero: riega desde el tanque', p.soilMoisture > 80 && Math.abs(b.waterL - 9.5) < 1e-9, `(hum ${p.soilMoisture}, tanque ${b.waterL} L)`);
   ok('jardinero: abona con el stock y aplica la marca', p.ecLevel >= 2 && b.nutrientMl === 17 && p.feedBonus === 1.06, `(EC ${p.ecLevel}, abono ${b.nutrientMl} ml)`);
   ok('jardinero (nivel 2): cura la plaga, gasta tratamiento y protege', !p.pest && (p.guard ?? 0) > 40 && b.treatMl.mold === 42, `(guard ${(p.guard ?? 0).toFixed(1)} h, tratamiento ${b.treatMl.mold} ml)`);
+  {
+    const lb = { waterL: 10, energyKwh: 0, nutrientMl: 20, treatMl: { mold: 50 }, gardenerDays: 2, log: { auto: 0, water: 0, feed: 0, treat: 0 } };
+    advanceWorld([thirsty({ pest: { kind: 'mold', hours: 3 } })], 300, env({ gardener: g, budget: lb, cleanliness: 100 }));
+    ok('jardinero: registra lo que hizo (1 riego, 1 abonada, 1 plaga tratada)', lb.log.water === 1 && lb.log.feed === 1 && lb.log.treat === 1 && lb.log.auto === 0, JSON.stringify(lb.log));
+  }
   ok('jardinero: el contrato baja con el tiempo', Math.abs(b.gardenerDays - (2 - 300 / 86400)) < 1e-9, `(${b.gardenerDays.toFixed(4)} d)`);
   const noTreat = advanceWorld([thirsty({ pest: { kind: 'mold', hours: 3 } })], 300, env({ gardener: { ...g, treat: false }, budget: { waterL: 10, energyKwh: 0, nutrientMl: 20, treatMl: { mold: 50 }, gardenerDays: 2 }, cleanliness: 100 }))[0];
   ok('jardinero nivel 1: no trata plagas', !!noTreat.pest);

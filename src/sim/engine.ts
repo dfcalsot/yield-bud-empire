@@ -41,6 +41,8 @@ export interface Budget {
   treatMl?: Partial<Record<PestKind, number>>;
   /** days of contract left; ticks down with every simulated chunk that has plants */
   gardenerDays?: number;
+  /** what the automation did (filled in when present): automatic drip, and the gardener's waterings, feedings and treatments */
+  log?: { auto: number; water: number; feed: number; treat: number };
 }
 
 /** What the hired gardener does (level 1: water + feed, level 2: also treats plagues). */
@@ -229,7 +231,7 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   if (env.autoWater && moisture < B.autoWaterTrigger) {
     const cost = (env.equip?.waterPerPlantAuto ?? 0.5) * (env.useFactor ?? 1);
     if (!env.budget || env.budget.waterL >= cost) {
-      if (env.budget) env.budget.waterL -= cost;
+      if (env.budget) { env.budget.waterL -= cost; if (env.budget.log) env.budget.log.auto++; }
       moisture = B.autoWaterTarget;
     }
   }
@@ -237,6 +239,7 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   const handWater = B.waterPerWatering * (env.useFactor ?? 1);
   if (moisture < B.autoWaterTrigger && env.gardener?.water && env.budget && env.budget.waterL >= handWater) {
     env.budget.waterL -= handWater;
+    if (env.budget.log) env.budget.log.water++;
     moisture = B.autoWaterTarget;
   }
 
@@ -247,6 +250,7 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   const feedMl = B.feedMl * (env.useFactor ?? 1);
   if (env.gardener?.feed && ec < B.ecOk + 0.15 && env.budget && (env.budget.nutrientMl ?? 0) >= feedMl) {
     env.budget.nutrientMl = (env.budget.nutrientMl ?? 0) - feedMl;
+    if (env.budget.log) env.budget.log.feed++;
     ec = B.ecFed;
     feedBonus = env.gardener.feedBonus;
     phLevel = 6.2; // el jardinero prepara la solución con el pH corregido
@@ -295,6 +299,7 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
     const ml = env.budget?.treatMl?.[pest.kind] ?? 0;
     if (env.gardener?.treat && env.budget?.treatMl && ml >= B.treatMl) {
       env.budget.treatMl[pest.kind] = ml - B.treatMl;
+      if (env.budget.log) env.budget.log.treat++;
       pest = undefined;
       guard = B.guardHoursGardener;
       health = Math.min(100, health + 5);

@@ -60,6 +60,16 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
     setFloaters((f) => [...f.slice(-4), { id, text, color, dx: (Math.random() - 0.5) * 120 }]);
     window.setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), 1400);
   };
+  // the gardener / automatic drip at work: when today's count goes up while the player watches, it shows over the plant
+  const seen = useRef<typeof care.today | null>(null);
+  useEffect(() => {
+    const prev = seen.current; seen.current = care.today;
+    if (!prev) return;
+    if (care.today.water + care.today.auto > prev.water + prev.auto) pop(care.today.auto > prev.auto ? t('💧 Riego automático') : t('💧 El jardinero regó'), '#7dd3fc');
+    if (care.today.feed > prev.feed) pop(t('🧪 El jardinero abonó'), '#bef264');
+    if (care.today.treat > prev.treat) pop(t('🐛 El jardinero trató una plaga'), '#f9a8d4');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [care.today.water, care.today.auto, care.today.feed, care.today.treat]);
 
   const room = GROW_ROOMS_CONFIG.find((r) => r.id === currentRoom) ?? GROW_ROOMS_CONFIG[0];
   const flowering = activePlant ? activePlant.lightSchedule === '12/12' : room.recommendedLightSchedule === '12/12';

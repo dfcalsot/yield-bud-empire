@@ -51,7 +51,8 @@ export interface GameState {
   co2Ppm: number;
   autoWaterActive: boolean;
   autoClimateActive: boolean;
-  care: { rating: number; lastCleanAt: number };
+  /** `today`: what the automation did on that calendar day (auto drip + the gardener's waterings, feedings, treatments), for the Care panel */
+  care: { rating: number; lastCleanAt: number; today?: { day: string; auto: number; water: number; feed: number; treat: number } };
   /** NFT lots: equipment, consumables (water / nutrient / energy / treatments / gardener days) and lab licences */
   assets: OwnedAsset[];
   seedInventory: Record<string, number>;
@@ -316,7 +317,9 @@ export function normalizeGame(raw: unknown, now: number, opts: { paidLevel?: num
   s.autoWaterActive = bool(r.autoWaterActive);
   s.autoClimateActive = bool(r.autoClimateActive);
   const care = obj(r.care);
-  s.care = { rating: num(care.rating, 0, 100, 100), lastCleanAt: num(care.lastCleanAt, 0, now, 0) };
+  const td = obj(care.today);
+  s.care = { rating: num(care.rating, 0, 100, 100), lastCleanAt: num(care.lastCleanAt, 0, now, 0),
+    ...(typeof td.day === 'string' ? { today: { day: String(td.day).slice(0, 10), auto: num(td.auto, 0, 1e6, 0), water: num(td.water, 0, 1e6, 0), feed: num(td.feed, 0, 1e6, 0), treat: num(td.treat, 0, 1e6, 0) } } : {}) };
   s.assets = Array.isArray(r.assets) ? normalizeAssets(r.assets) : base.assets;
 
   // seeds and genetics

@@ -99,8 +99,19 @@ export const CarePanel: React.FC<{ onClose: () => void; onOpenMarket: (cat?: str
               {care.gardenerLevel === 0 ? t('Modo manual') : t('Jardinero {v0} · {v1} d', { v0: care.gardenerLevel === 2 ? 'maestro' : 'aprendiz', v1: care.gardenerDays.toFixed(1) })}
             </div>
             <div className="text-[10px] text-neutral-400 leading-snug">
-              {care.gardenerLevel === 0 ? t('Contrata un jardinero: riega y abona por ti.') : care.gardenerLevel === 2 ? t('Riega, abona, trata plagas y mantiene la sala limpia.') : t('Riega y abona con lo que haya en tu almacén.')}
+              {care.gardenerLevel === 0 ? t('Contrata un jardinero: riega y abona por ti.') : care.gardenerLevel === 2 ? t('Riega, abona y trata plagas usando tu agua, abono y tratamientos.') : t('Riega y abona usando tu agua y tu abono.')}
             </div>
+            {(care.gardenerLevel > 0 || care.today.auto > 0) && (
+              <div className="flex flex-wrap gap-1 mt-1.5" data-testid="gardener-today">
+                <span className="text-[9.5px] font-mono uppercase tracking-wider text-neutral-500">{t('Hoy:')}</span>
+                {[[care.today.water + care.today.auto, '💧', t('riegos')], [care.today.feed, '🧪', t('abonadas')], [care.today.treat, '🐛', t('plagas tratadas')]].map(([n, e, l]) => (
+                  <span key={String(l)} className="px-1.5 py-px rounded-md bg-emerald-400/10 border border-emerald-400/25 text-[10px] font-mono text-emerald-100">{e} {n} {l}</span>
+                ))}
+              </div>
+            )}
+            {care.gardenerLevel > 0 && (
+              <div className="text-[10px] text-neutral-500 leading-snug mt-0.5">{t('Tú sigues cosechando, sembrando, quitando machos y reciclando la basura. Si se acaba el agua o el abono, deja de trabajar.')}</div>
+            )}
           </div>
         </div>
         <div className="flex gap-1.5 mt-2">

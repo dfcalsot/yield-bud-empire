@@ -177,7 +177,7 @@ interface GameContextType {
   claimTutorialStep: () => string | null;
   skipTutorialStep: () => void;
   patchTutorial: (p: Partial<Pick<TutorialState, 'dismissed' | 'minimized'>>) => void;
-  care: { rating: number; cleanReadyInHours: number; pests: number; plotPests: number; males: number; plotMales: number; pollinated: number; garbage: number; gardenerLevel: 0 | 1 | 2; gardenerDays: number };
+  care: { rating: number; cleanReadyInHours: number; pests: number; plotPests: number; males: number; plotMales: number; pollinated: number; garbage: number; gardenerLevel: 0 | 1 | 2; gardenerDays: number; today: { auto: number; water: number; feed: number; treat: number } };
   treatPests: (scope: 'selected' | 'all', plotId?: string) => void;
   cleanRoom: () => boolean;
   recycleGarbage: () => void;
@@ -613,6 +613,7 @@ const GameView: React.FC<GameViewProps> = ({ view, account, online, act, send, n
     garbage: garbageOf(s.assets).length,
     gardenerLevel: gardenerLevelOf(s.assets),
     gardenerDays: stockOf(s.assets, 'service'),
+    today: s.care.today && s.care.today.day === new Date(now).toISOString().slice(0, 10) ? s.care.today : { auto: 0, water: 0, feed: 0, treat: 0 },
   };
   const resources = (() => {
     const { kwhPerDay, solarKwhPerDay } = powerDraw(equipStats, indoorPlants[0], { autoClimate: simEnv.autoClimate, autoWater: simEnv.autoWater });

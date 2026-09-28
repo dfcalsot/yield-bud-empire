@@ -104,11 +104,12 @@ function grow(r: Run, ext: Ext, dt: number, quiet: boolean) {
   const stock = s.assets;
   const treat0 = pestStock(stock);
   const budget = { waterL: stockOf(stock, 'water'), energyKwh: stockOf(stock, 'energy'), nutrientMl: stockOf(stock, 'nutrient'), treatMl: { ...treat0 }, gardenerDays: stockOf(stock, 'service') };
+  const log = { auto: 0, water: 0, feed: 0, treat: 0 };
   const plots = ext.plots.filter((pl) => s.plotPlants[pl.id]?.length);
   const plotList = plots.flatMap((pl) => s.plotPlants[pl.id]);
   const env: SimEnv = {
     ...deriveEnv(s, ext),
-    budget: { ...budget, treatMl: { ...treat0 } },
+    budget: { ...budget, treatMl: { ...treat0 }, log },
     clockMs: now - Math.min(dt, BALANCE.maxCatchUpSeconds) * 1000,
     site: (siteId, ms) => { const pl = plots.find((x) => x.id === siteId); return pl ? siteConditions(pl.region as RegionId, pl.ratings, ms) : undefined; },
   };
@@ -145,6 +146,12 @@ function grow(r: Run, ext: Ext, dt: number, quiet: boolean) {
     if (decay > 0) s.care = { ...s.care, rating: Math.max(0, Number((s.care.rating - decay).toFixed(3))) };
   }
   s.indoorPlants = after;
+  // what the automation did today (the server's tick is the truth; the browser's quiet display tick doesn't count)
+  if (!quiet && log.auto + log.water + log.feed + log.treat > 0) {
+    const day = new Date(now).toISOString().slice(0, 10);
+    const t0 = s.care.today?.day === day ? s.care.today : { day, auto: 0, water: 0, feed: 0, treat: 0 };
+    s.care = { ...s.care, today: { day, auto: t0.auto + log.auto, water: t0.water + log.water, feed: t0.feed + log.feed, treat: t0.treat + log.treat } };
+  }
   if (quiet) return;
 
   const newPests = [...after.filter((p, i) => p.pest && !before[i]?.pest), ...plotAfterList.filter((p, i) => p.pest && !plotList[i]?.pest)];
@@ -177,6 +184,9 @@ function grow(r: Run, ext: Ext, dt: number, quiet: boolean) {
     say(r,
       tr('Han pasado {v0}: tus plantas crecieron +{v1}%{v2}{v3}{v4}{v5}{v6}', { v0: formatDuration(Math.min(dt, BALANCE.maxCatchUpSeconds)), v1: grew.toFixed(1), v2: ready ? tr(' ({ready} listas para cosechar)', { ready }) : '', v3: thirsty ? tr('. ¡{thirsty} necesitan agua!', { thirsty }) : '.', v4: sick ? tr(' 🐛 {sick} con plaga.', { sick }) : '', v5: newMales.length ? tr(' ♂ {length} macho{v1} por quitar.', { length: newMales.length, v1: pl(newMales.length) }) : '', v6: newPollinated.length ? tr(' 🐝 {length} polinizada{v1}.', { length: newPollinated.length, v1: pl(newPollinated.length) }) : '' }),
       thirsty || sick ? 'info' : 'success');
+    // and what the gardener / automatic drip did meanwhile
+    const parts = [log.auto ? tr('{n} riegos automáticos', { n: log.auto }) : '', log.water ? tr('{n} riegos', { n: log.water }) : '', log.feed ? tr('{n} abonadas', { n: log.feed }) : '', log.treat ? tr('{n} plagas tratadas', { n: log.treat }) : ''].filter(Boolean);
+    if (parts.length) say(r, tr('🧑‍🌾 Mientras no estabas: {list}.', { list: parts.join(' · ') }), 'success');
   }
 }
 
