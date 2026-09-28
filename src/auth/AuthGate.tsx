@@ -12,7 +12,7 @@ const here = (u?: string): string => (u ? u.replace(/^https?:\/\/[^/]+/, window.
 
 export interface ServerAccount { id: number; username: string; email: string | null; verified: boolean; providers: string[]; source: string; createdAt: number; lang?: string | null }
 /** Versión de los Términos y la Política de Privacidad (la misma fecha que en yieldbudempire.com, src/legal/content.ts). */
-const TERMS_VERSION = '2026-09-24';
+const TERMS_VERSION = '2026-09-26';
 const LEGAL = {
   terms: 'https://yieldbudempire.com/terminos/', privacy: 'https://yieldbudempire.com/privacidad/',
   cookies: 'https://yieldbudempire.com/cookies/', legal: 'https://yieldbudempire.com/aviso-legal/',
