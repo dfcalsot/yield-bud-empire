@@ -78,6 +78,8 @@
 .fb-root svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 /* painted room: fills the stage like the drawn ones (cover), with a slow breathing light from the lamp */
 .fb-painted { position: absolute; inset: 0; background-size: cover; background-position: var(--fb-pos, 50% 50%); background-repeat: no-repeat; animation: fbPaintedGlow 7s ease-in-out infinite alternate; }
+/* the real hour over a painted sky (night, dawn, dusk), see skyLight() */
+.fb-sky { position: absolute; inset: 0; mix-blend-mode: multiply; transition: opacity 2s, background 2s; pointer-events: none; }
 @media (max-width: 640px) { .fb-painted { background-size: var(--fb-size-m, cover); background-position: var(--fb-pos-m, var(--fb-pos, 50% 50%)); } }
 @keyframes fbPaintedGlow { from { filter: brightness(0.96); } to { filter: brightness(1.04); } }
 .fb-fan { transform-box: fill-box; transform-origin: center; animation: fbSpin 0.5s linear infinite; }

@@ -143,15 +143,25 @@ const Hydro: React.FC<Props> = ({ lampColor, equip }) => (
 
 /** rooms with painted art (the plant is removed from the picture: the game draws its own plant on top); the rest are drawn above */
 /** `mobile`: framing for narrow screens (size + position), when the default one would put the pot somewhere odd */
-const PAINTED: Record<string, { src: string; pos: string; mobile?: { size: string; pos: string } }> = {
+/** `sky`: the painting shows the open sky, so it takes the real hour's light (dawn, day, dusk, night) */
+const PAINTED: Record<string, { src: string; pos: string; mobile?: { size: string; pos: string }; sky?: boolean }> = {
   tent_starter: { src: '/rooms/tent_starter.webp', pos: '50% 74%' },   // the cupboard floor lines up with the pot's base (the stage's bottom 28 %)
   tent_pro: { src: '/rooms/tent_pro.webp', pos: '38% 72%' },   // the tent's floor sits a bit left of centre
-  greenhouse_commercial: { src: '/rooms/greenhouse_commercial.webp', pos: '38% 40%' },   // cut-away diorama: the pot stands mid-floor
+  greenhouse_commercial: { src: '/rooms/greenhouse_commercial.webp', pos: '38% 40%', sky: true },   // cut-away diorama: the pot stands mid-floor
   lab_pharma_hydro: { src: '/rooms/lab_pharma_hydro.webp', pos: '45% 45%' },
   hydro_complex: { src: '/rooms/hydro_complex.webp', pos: '50% 45%' },   // two rooms and the control lab: the pot stands in the middle
-  grow_campus: { src: '/rooms/grow_campus.webp', pos: '50% 40%', mobile: { size: 'auto 135%', pos: '50% 26%' } },   // the pot stands in the central courtyard
-  empire_seat: { src: '/rooms/empire_seat.webp', pos: '50% 45%' },   // the pot stands in the central aisle, the emblem behind it
+  grow_campus: { src: '/rooms/grow_campus.webp', pos: '50% 40%', mobile: { size: 'auto 135%', pos: '50% 26%' }, sky: true },   // the pot stands in the central courtyard
+  empire_seat: { src: '/rooms/empire_seat.webp', pos: '50% 45%', sky: true },   // the pot stands in the central aisle, the emblem behind it
 };
+
+/** the hour's light over a painting with sky: a colour laid on top with `multiply` (night blue, warm dawn/dusk, nothing by day) */
+function skyLight(hour: number): { color: string; opacity: number } | null {
+  const h = ((hour % 24) + 24) % 24;
+  if (h >= 8 && h < 16.5) return null;                                                    // day: the painting as it is
+  if (h >= 6 && h < 8) return { color: '#ff9a62', opacity: 0.55 * (1 - (h - 6) / 2) + 0.12 };    // dawn fading out
+  if (h >= 16.5 && h < 19) return { color: '#ff8a4c', opacity: 0.2 + 0.35 * ((h - 16.5) / 2.5) }; // dusk coming in
+  return { color: '#1b2a6b', opacity: h >= 19 && h < 20 ? 0.45 + 0.3 * (h - 19) : 0.75 };        // night
+}
 
 export const FacilityBackdrop: React.FC<Props> = (p) => {
   const base = artBase(p.facilityId);
@@ -165,6 +175,9 @@ export const FacilityBackdrop: React.FC<Props> = (p) => {
     <div className="fb-root" aria-hidden data-facility={p.facilityId}>
       {painted
         ? <div className="fb-painted" style={{ backgroundImage: `url(${painted.src})`, ['--fb-pos' as string]: painted.pos, ...(painted.mobile ? { ['--fb-pos-m' as string]: painted.mobile.pos, ['--fb-size-m' as string]: painted.mobile.size } : {}), ...(tint ? { filter: tint, animation: 'none' } : {}) }} />
+        : null}
+      {painted?.sky && (() => { const l = skyLight(p.hour); return l ? <div className="fb-sky" style={{ background: l.color, opacity: l.opacity }} /> : null; })()}
+      {painted ? null
         : <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style={{ filter: artFilter(p.facilityId) }}><T {...p} /></svg>}
       {/* the lamp's light cone over the room */}
       <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse ${tight ? 46 : 70}% 62% at 50% 8%, rgba(${p.lampColor},${0.26 * p.lightPct}) 0%, rgba(${p.lampColor},${0.08 * p.lightPct}) 45%, transparent 78%)` }} />
