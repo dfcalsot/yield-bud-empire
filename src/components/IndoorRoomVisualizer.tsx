@@ -144,6 +144,9 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
 
   return (
     <div className="sr-root" data-testid="sala">
+      {/* the installation you actually have fills the whole panel, behind Nico and the benches */}
+      <FacilityBackdrop facilityId={sceneId} lampColor="255,236,190" lightPct={0.7} equip={equipStats} hour={13} />
+      <div className="sr-veil" />
       {/* banner: foreman + the state of the room */}
       <header className="sr-banner">
         <div className="sr-npc"><Npc kind="foreman" text={tr(say.text)} mood={say.mood} moodKey={say.key} /></div>
@@ -166,10 +169,8 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
         </div>
       </header>
 
-      {/* the room, in the look of the installation you actually have */}
+      {/* the room */}
       <div className="sr-stage">
-        <FacilityBackdrop facilityId={sceneId} lampColor="255,236,190" lightPct={0.7} equip={equipStats} hour={13} />
-        <div className="sr-veil" />
         {co2Burst && <div className="sr-co2" aria-hidden />}
 
         {!lens ? (
