@@ -26,6 +26,19 @@ export const stageOf = (progress: number): GrowStage => {
 };
 
 export const phaseIndex = (stage: GrowStage): number => STAGE_ORDER.indexOf(stage);
+
+/**
+ * The grow room each phase does best in (the player moves the plant by hand, in Cultivo → Cuarto). A plant in a room that
+ * doesn't suit its phase grows ROOM_MISFIT slower. The mothers' sanctuary is a vegetative room (18/6 keeps donors from flowering).
+ */
+export const ROOMS_FOR_STAGE: Record<GrowStage, readonly string[]> = {
+  seed: ['germination'], seedling: ['germination'], vegetative: ['vegetative', 'mothers_fathers'],
+  flowering: ['flowering'], maturation: ['flowering'], ready_harvest: ['flowering'],
+};
+export const ROOM_MISFIT = 0.8;
+/** the room this phase does best in (the first one listed) */
+export const bestRoomFor = (stage: GrowStage): string => ROOMS_FOR_STAGE[stage][0];
+export const roomFits = (stage: GrowStage, room: string | undefined): boolean => !room || ROOMS_FOR_STAGE[stage].includes(room);
 export const phaseOf = (stage: GrowStage): Phase | undefined => PHASES.find((p) => p.id === stage);
 export const isHarvestable = (p: { stage: GrowStage }): boolean => p.stage === 'ready_harvest';
 

@@ -1,4 +1,4 @@
-import { advancePlant, advanceWorld, cycleSecondsOf, etaSeconds, hoursUntilMoisture, pestCount, sexFor, POLLINATED_YIELD, SimEnv } from '../src/sim/engine';
+import { advancePlant, advanceWorld, growthPerSecond, cycleSecondsOf, etaSeconds, hoursUntilMoisture, pestCount, sexFor, POLLINATED_YIELD, SimEnv } from '../src/sim/engine';
 import type { PlantInGrow, RegionId } from '../src/types';
 import { CHESTS, DESIGNS, EMPTY_PITY, rollChest, seasonOf, daysLeftInSeason, validNick, SEASONS, type PityState, type SeasonId } from '../src/sim/avatars';
 import { plotOffer, REGION_BY_ID, REGIONS, siteConditions, terroirOf, weatherOn, regionDistance, WeatherKind } from '../src/sim/terroir';
@@ -72,7 +72,7 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
 {
   const equip = { lampWatts: 600, lampMaxPpfd: 480, acKw: 0, pumpKw: 0, solarKw: 0, waterPerPlantAuto: 0.5 };
   const budget = { waterL: 500, energyKwh: 60 };
-  const p = advanceWorld([plant(65)], 3 * 86400, env({ equip, budget, autoWater: true }))[0];
+  const p = advanceWorld([plant(65, { currentRoom: undefined })], 3 * 86400, env({ equip, budget, autoWater: true }))[0];   // no room: measures energy and water only
   ok('consumo eléctrico: 600 W × 18 h/día × 3 d = 32.4 kWh', Math.abs((60 - budget.energyKwh) - 32.4) < 1.5, `(gastó ${(60 - budget.energyKwh).toFixed(1)} kWh)`);
   ok('con energía y riego crece a buen ritmo', p.progressPercent > 60, `(${p.progressPercent}%)`);
   const b2 = { waterL: 500, energyKwh: 5 };
@@ -231,6 +231,21 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
   const fed = advanceWorld([plant(65, { ecLevel: 1.0, phLevel: 7.4 })], 2 * 3600, env({ gardener: { water: true, feed: true, treat: false, feedBonus: 1.05 }, budget: { waterL: 50, energyKwh: 100, nutrientMl: 100, treatMl: {}, gardenerDays: 5 } }))[0];
   ok('el jardinero restablece el pH a 6,2 al abonar', fed.phLevel === 6.2 && fed.ecLevel > 1.9, `(pH ${fed.phLevel}, EC ${fed.ecLevel})`);
   ok('pH sano no cambia nada respecto a antes (plantas por defecto)', good.progressPercent > 0 && Number.isFinite(good.progressPercent));
+}
+
+// cuartos: cada fase crece mejor en su cuarto; el CO₂ solo lo da el equipo instalado
+{
+  const eqp = { lampWatts: 600, lampMaxPpfd: 480, acKw: 0, pumpKw: 0, solarKw: 0, waterPerPlantAuto: 0 };
+  const e = env({ equip: eqp, co2Ppm: 420 });
+  const veg = plant(65, { progressPercent: 30, stage: 'vegetative' });
+  const inVeg = growthPerSecond({ ...veg, currentRoom: 'vegetative' }, e);
+  ok('cuartos: en su cuarto crece normal; en el equivocado, un 20 % más lento', Math.abs(growthPerSecond({ ...veg, currentRoom: 'flowering' }, e) / inVeg - 0.8) < 1e-9 && growthPerSecond({ ...veg, currentRoom: 'mothers_fathers' }, e) === inVeg);
+  const seed = plant(65, { progressPercent: 1, stage: 'seed' });
+  ok('cuartos: la semilla va en Germinación', growthPerSecond({ ...seed, currentRoom: 'germination' }, e) > growthPerSecond({ ...seed, currentRoom: 'vegetative' }, e));
+  const flo = { ...plant(65, { progressPercent: 60, stage: 'flowering' }), currentRoom: 'flowering' as const };
+  ok('CO₂: el 1 200 ppm del cuarto de floración no cuenta sin equipo', growthPerSecond({ ...flo, co2Ppm: 1200 }, e) === growthPerSecond({ ...flo, co2Ppm: 420 }, e));
+  ok('CO₂: con el sistema presurizado (1 200 ppm) crece un 35 % más', Math.abs(growthPerSecond(flo, env({ equip: eqp, co2Ppm: 1200 })) / growthPerSecond(flo, e) - 1.35) < 1e-9);
+  ok('cuartos: al aire libre (sin equipo) no hay cuartos', growthPerSecond({ ...veg, currentRoom: 'flowering' }, env({})) === growthPerSecond({ ...veg, currentRoom: 'vegetative' }, env({})));
 }
 
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');

@@ -216,7 +216,10 @@
 .cv-build { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 8px; padding: 6px 9px; border-radius: 10px; cursor: pointer; background: rgba(120, 53, 15, 0.35); border: 1px solid rgba(251, 191, 36, 0.5); }
 .cv-room { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 6px 10px; border-radius: 10px; cursor: pointer; text-align: left; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.09); transition: border-color 0.15s, background 0.15s; }
 .cv-room:hover { border-color: rgba(184, 243, 90, 0.4); }
-.cv-room.is-on { border-color: var(--zone, #b8f35a); background: color-mix(in srgb, var(--zone, #b8f35a) 14%, transparent); box-shadow: 0 0 14px -6px var(--zone, #b8f35a); }
+.cv-room.is-on { border-color: var(--room, var(--zone, #b8f35a)); background: color-mix(in srgb, var(--room, var(--zone, #b8f35a)) 16%, transparent); box-shadow: 0 0 14px -6px var(--room, var(--zone, #b8f35a)); }
+.cv-room-fit { flex: none; padding: 0 6px; border-radius: 999px; font: 700 9px ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.06em; color: #14210a; background: #b8f35a; }
+.cv-room-warn { display: block; width: 100%; margin-bottom: 6px; padding: 7px 10px; border-radius: 10px; text-align: left; font-size: 11px; line-height: 1.35; color: #fde68a; background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.55); cursor: pointer; animation: cvWarn 2.4s ease-in-out infinite; }
+@keyframes cvWarn { 0%, 100% { box-shadow: 0 0 0 rgba(245, 158, 11, 0); } 50% { box-shadow: 0 0 16px -4px rgba(245, 158, 11, 0.7); } }
 .cv-modebar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px; }
 .cv-mode { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 10px; font: 800 12px ui-sans-serif, system-ui; cursor: pointer; color: #a9a3cf; border: 1px solid transparent; transition: color 0.12s, background 0.12s; }
 .cv-mode:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }

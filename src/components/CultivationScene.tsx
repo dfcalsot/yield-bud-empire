@@ -9,7 +9,8 @@ import { nextActionFor } from '../sim/nextAction';
 import { Hotbar, type SlotSpec } from './hud/HudParts';
 import { FacilityBackdrop } from './hud/FacilityBackdrop';
 import { TechniqueMenu } from './cultivo/TechniqueMenu';
-import { PHASES, phaseFraction, phaseIndex, stageOf } from '../sim/phases';
+import { bestRoomFor, PHASES, phaseFraction, phaseIndex, roomFits, stageOf } from '../sim/phases';
+import type { GrowRoomId } from '../types';
 import { canTrain, TECHNIQUES } from '../sim/techniques';
 import { t, t as tr, k } from '../i18n';
 import { useSceneId } from './hud/sceneChoice';
@@ -46,7 +47,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const {
     activePlant, indoorPlants, selectedPlantIndex,
     waterPlant, feedNutrients, speedUpGrowth, harvestPlant, saveCurrentPlantAsMotherOrFather,
-    currentRoom, currentFacility, facilities, getPlantEta, care, equipStats,
+    currentRoom, currentFacility, facilities, getPlantEta, care, equipStats, switchGrowRoom,
   } = useGame();
   const sceneId = useSceneId(currentFacility, facilities);
 
@@ -63,7 +64,9 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const room = GROW_ROOMS_CONFIG.find((r) => r.id === currentRoom) ?? GROW_ROOMS_CONFIG[0];
   const flowering = activePlant ? activePlant.lightSchedule === '12/12' : room.recommendedLightSchedule === '12/12';
   const lightPct = activePlant ? clamp(activePlant.ppfdLightIntensity / 1000, 0.3, 1) : 0.5;
-  const lampColor = flowering ? '255,140,60' : '190,240,255';
+  // the room's light over the scene: soft green (propagation), cool white 5000 K (vegetative), deep red 660 nm (flowering), warm (mothers)
+  const ROOM_LIGHT: Record<string, string> = { germination: '190,255,205', vegetative: '190,230,255', flowering: '255,95,75', mothers_fathers: '255,215,160' };
+  const lampColor = ROOM_LIGHT[activePlant?.currentRoom ?? currentRoom] ?? (flowering ? '255,140,60' : '190,240,255');
 
   const spores = useMemo(
     () => Array.from({ length: 14 }, (_, i) => ({ left: 8 + ((i * 37) % 84), delay: (i * 0.9) % 9, dx: ((i % 5) - 2) * 14, size: 2 + (i % 3) })),
@@ -111,6 +114,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
   const next = nextActionFor({
     hasPlant: !!activePlant, harvestReady: false, pest: activePlant?.pest ? PEST_INFO[activePlant.pest.kind].label : null, thirsty, hungry, maleWarn,
     thirstyOthers: Math.max(0, thirstyCount - (thirsty ? 1 : 0)), etaText: isFinite(eta) ? formatDuration(eta) : '—',
+    wrongRoom: activePlant && !roomFits(activePlant.stage, activePlant.currentRoom) ? tr(GROW_ROOMS_CONFIG.find((r) => r.id === bestRoomFor(activePlant.stage))!.name) : null,
   });
   const runNext = () => {
     if (next.kind === 'seed') onOpenSeedModal();
@@ -118,6 +122,7 @@ export const CultivationScene: React.FC<CultivationSceneProps> = ({ onOpenSeedMo
     else if (next.kind === 'feed') doFeed();
     else if (next.kind === 'pest' || next.kind === 'male') onOpenCare();
     else if (next.kind === 'room-thirst') onShowRoom();
+    else if (next.kind === 'room' && activePlant) switchGrowRoom(bestRoomFor(activePlant.stage) as GrowRoomId);
   };
 
   return (

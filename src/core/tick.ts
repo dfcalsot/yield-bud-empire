@@ -30,7 +30,7 @@ export function deriveEnv(s: GameState, ext: Ext): SimEnv {
     autoClimate: s.autoClimateActive && eq.hasAc,
     facilityBonus: ext.facility.environmentBonus * (1 + ext.mods.growth),
     useFactor: ext.facility.resourceUse ?? 1,
-    co2Ppm: Math.max(s.co2Ppm, eq.co2Ppm),
+    co2Ppm: Math.max(420, eq.co2Ppm),   // ambient air unless there is CO₂ gear installed
     lightOn: 1,
     equip: eq,
     cleanliness: s.care.rating,

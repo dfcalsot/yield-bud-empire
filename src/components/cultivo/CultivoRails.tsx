@@ -11,6 +11,8 @@ import { ResourceBar } from '../ResourceBar';
 import { formatDuration, isThirsty } from '../../sim/engine';
 import { progressOf, remainingMs } from '../../sim/facilities';
 import { plantClocks, STAGE_DOT, STAGE_LABEL } from './plantInfo';
+import { bestRoomFor, roomFits, ROOM_MISFIT } from '../../sim/phases';
+import type { GrowRoomId } from '../../types';
 import { Droplets as DropletsIcon, FlaskConical as FlaskIcon, Zap as ZapIcon } from 'lucide-react';
 import '../hud/hud.css';
 import { t as tr } from '../../i18n';
@@ -31,6 +33,8 @@ interface LeftProps { onOpenFacility: () => void; onOpenMarket?: (cat?: string) 
 
 export const LeftRail: React.FC<LeftProps> = ({ onOpenFacility, onOpenMarket, onOpenSeedModal }) => {
   const { activePlant, indoorPlants, selectedPlantIndex, selectPlant, getPlantEta, currentFacility, facilities, construction, currentRoom, switchGrowRoom, resources } = useGame();
+  // the room shown is the selected plant's own (each plant can be in a different one)
+  const plantRoom = activePlant?.currentRoom ?? currentRoom;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { if (!construction) return; const t = setInterval(() => setNow(Date.now()), 15000); setNow(Date.now()); return () => clearInterval(t); }, [construction]);
   const building = construction ? facilities.find((f) => f.id === construction.facilityId) : undefined;
@@ -75,13 +79,22 @@ export const LeftRail: React.FC<LeftProps> = ({ onOpenFacility, onOpenMarket, on
 
       {/* the room */}
       <Card title={tr('Cuarto')} icon={<CannabisLeaf className="w-4 h-4 text-emerald-300" />}>
+        {/* the selected plant's room: each phase grows best in its own one (sim/phases.ts), the wrong one costs 20 % */}
+        {activePlant && !roomFits(activePlant.stage, plantRoom) && (
+          <button type="button" onClick={() => switchGrowRoom(bestRoomFor(activePlant.stage) as GrowRoomId)} className="cv-room-warn" data-testid="room-misfit">
+            ⚠ {tr('{stage} crece mejor en «{room}» · ahora va un {pct} % más lenta. Toca para moverla.', { stage: tr(STAGE_LABEL[activePlant.stage]), room: tr(GROW_ROOMS_CONFIG.find((r) => r.id === bestRoomFor(activePlant.stage))!.name), pct: Math.round((1 - ROOM_MISFIT) * 100) })}
+          </button>
+        )}
         <div className="space-y-1.5" role="radiogroup" aria-label={tr('Cuarto de cultivo')}>
-          {GROW_ROOMS_CONFIG.map((r) => (
-            <button key={r.id} type="button" role="radio" aria-checked={r.id === currentRoom} onClick={() => switchGrowRoom(r.id)} className={`cv-room ${r.id === currentRoom ? 'is-on' : ''}`}>
-              <span className="text-[11.5px] font-bold text-white truncate">{tr(r.name)}</span>
-              <span className="text-[9.5px] font-mono text-neutral-400">{tr('{targetTempC}°C · {targetRhPercent}% HR · {recommendedLightSchedule}', { targetTempC: r.targetTempC, targetRhPercent: r.targetRhPercent, recommendedLightSchedule: r.recommendedLightSchedule })}</span>
-            </button>
-          ))}
+          {GROW_ROOMS_CONFIG.map((r) => {
+            const fits = activePlant ? roomFits(activePlant.stage, r.id) : false;
+            return (
+              <button key={r.id} type="button" role="radio" aria-checked={r.id === plantRoom} onClick={() => switchGrowRoom(r.id)} className={`cv-room ${r.id === plantRoom ? 'is-on' : ''}`} style={{ ['--room' as string]: r.accentColor }} title={tr(r.description)}>
+                <span className="flex w-full items-center gap-1.5"><span className="text-[11.5px] font-bold text-white truncate flex-1">{tr(r.name)}</span>{fits && <span className="cv-room-fit">{tr('Ideal')}</span>}</span>
+                <span className="text-[9.5px] font-mono text-neutral-400">{tr('{targetTempC}°C · {targetRhPercent}% HR · {recommendedLightSchedule}', { targetTempC: r.targetTempC, targetRhPercent: r.targetRhPercent, recommendedLightSchedule: r.recommendedLightSchedule })}</span>
+              </button>
+            );
+          })}
         </div>
       </Card>
 

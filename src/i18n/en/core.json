@@ -3768,5 +3768,9 @@
  "Escenario": "Scene",
  "Superada: sigues cultivando con tu mejor instalación.": "Surpassed: you keep growing with your best facility.",
  "Es el escenario que ves en tu sala": "This is the scene you see in your room",
- "Usar este escenario": "Use this scene"
+ "Usar este escenario": "Use this scene",
+ "{stage} crece mejor en «{room}» · ahora va un {pct} % más lenta. Toca para moverla.": "{stage} grows best in \"{room}\" · it's {pct}% slower now. Tap to move it.",
+ "Ideal": "Ideal",
+ "Muévela a «{room}»": "Move it to \"{room}\"",
+ "Esta fase crece mejor en ese cuarto: en el actual va más lenta.": "This phase grows best in that room: in the current one it's slower."
 }

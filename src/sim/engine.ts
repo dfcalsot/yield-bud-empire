@@ -1,4 +1,4 @@
-import { maxProgressFrom, stageOf } from './phases';
+import { maxProgressFrom, roomFits, ROOM_MISFIT, stageOf } from './phases';
 import type { GrowStage, PestKind, PlantInGrow, RegionId, Strain } from '../types';
 import { BALANCE as B, LIGHT_FRACTION } from './balance';
 import { hash01 } from './hash';
@@ -132,7 +132,8 @@ export function growthPerSecond(p: PlantInGrow, env: SimEnv): number {
   const ecF = s.ec >= B.ecOk ? 1 : 0.8;
   const healthF = 0.5 + 0.5 * (s.health / 100);
   const vpdF = optimal ? 1 : 0.7;
-  const co2 = p.co2Ppm || env.co2Ppm;
+  // indoors only the installed CO₂ gear counts (env.co2Ppm); a room choice or a slider can't add CO₂ the player doesn't have
+  const co2 = env.equip ? env.co2Ppm : (p.co2Ppm || env.co2Ppm);
   const co2F = co2 >= 1100 ? 1.35 : co2 >= 800 ? 1.18 : 1;
   // stronger lamps grow faster, with diminishing returns (starter 600 W lamp = 1.0)
   const ppfdF = env.equip ? Math.sqrt(clamp(Math.min(p.ppfdLightIntensity, env.equip.lampMaxPpfd || 0) / 480, 0.4, 3)) : 1;
@@ -146,7 +147,9 @@ export function growthPerSecond(p: PlantInGrow, env: SimEnv): number {
   const t = env.ambient?.tempC;
   const tempF = t === undefined ? 1 : t < 8 ? 0.15 : t < 16 ? 0.6 : t > 36 ? 0.4 : t > 32 ? 0.8 : 1;
   const lightF = env.lightMul !== undefined ? env.lightMul : (env.lightOn > 0 ? 1 : 0);
-  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * ppfdF * feedF * phF * pestF * terroirF * tempF * lightF;
+  // indoors, the phase grows best in its own room (sim/phases.ts); outdoor plots have no rooms
+  const roomF = env.equip && !roomFits(stageOf(s.progress), p.currentRoom) ? ROOM_MISFIT : 1;
+  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * ppfdF * feedF * phF * pestF * terroirF * tempF * lightF * roomF;
 }
 
 /** Seconds left until harvest at the current rate (Infinity if stalled). */
