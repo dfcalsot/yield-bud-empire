@@ -142,12 +142,14 @@ const Hydro: React.FC<Props> = ({ lampColor, equip }) => (
 );
 
 /** rooms with painted art (the plant is removed from the picture: the game draws its own plant on top); the rest are drawn above */
-const PAINTED: Record<string, { src: string; pos: string }> = {
+/** `mobile`: framing for narrow screens (size + position), when the default one would put the pot somewhere odd */
+const PAINTED: Record<string, { src: string; pos: string; mobile?: { size: string; pos: string } }> = {
   tent_starter: { src: '/rooms/tent_starter.webp', pos: '50% 74%' },   // the cupboard floor lines up with the pot's base (the stage's bottom 28 %)
   tent_pro: { src: '/rooms/tent_pro.webp', pos: '38% 72%' },   // the tent's floor sits a bit left of centre
   greenhouse_commercial: { src: '/rooms/greenhouse_commercial.webp', pos: '38% 40%' },   // cut-away diorama: the pot stands mid-floor
   lab_pharma_hydro: { src: '/rooms/lab_pharma_hydro.webp', pos: '45% 45%' },   // also the empire seats' art (tinted) until they get their own
   hydro_complex: { src: '/rooms/hydro_complex.webp', pos: '50% 45%' },   // two rooms and the control lab: the pot stands in the middle
+  grow_campus: { src: '/rooms/grow_campus.webp', pos: '50% 40%', mobile: { size: 'auto 135%', pos: '50% 26%' } },   // the pot stands in the central courtyard
 };
 
 export const FacilityBackdrop: React.FC<Props> = (p) => {
@@ -161,7 +163,7 @@ export const FacilityBackdrop: React.FC<Props> = (p) => {
   return (
     <div className="fb-root" aria-hidden data-facility={p.facilityId}>
       {painted
-        ? <div className="fb-painted" style={{ backgroundImage: `url(${painted.src})`, backgroundPosition: painted.pos, ...(tint ? { filter: tint, animation: 'none' } : {}) }} />
+        ? <div className="fb-painted" style={{ backgroundImage: `url(${painted.src})`, ['--fb-pos' as string]: painted.pos, ...(painted.mobile ? { ['--fb-pos-m' as string]: painted.mobile.pos, ['--fb-size-m' as string]: painted.mobile.size } : {}), ...(tint ? { filter: tint, animation: 'none' } : {}) }} />
         : <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style={{ filter: artFilter(p.facilityId) }}><T {...p} /></svg>}
       {/* the lamp's light cone over the room */}
       <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse ${tight ? 46 : 70}% 62% at 50% 8%, rgba(${p.lampColor},${0.26 * p.lightPct}) 0%, rgba(${p.lampColor},${0.08 * p.lightPct}) 45%, transparent 78%)` }} />
