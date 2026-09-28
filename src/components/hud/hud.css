@@ -147,7 +147,10 @@
 .sr-root { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; gap: 12px; padding: 12px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.1); background: #0a0716; }
 .sr-root > .sr-banner, .sr-root > .sr-stage { position: relative; z-index: 1; }
 .sr-banner { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; padding: 12px 14px; border-radius: 18px; border: 1px solid rgba(184, 243, 90, 0.25); background: linear-gradient(180deg, rgba(34, 25, 72, 0.55), rgba(12, 8, 28, 0.62)); backdrop-filter: blur(3px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 10px 30px rgba(0, 0, 0, 0.35); }
-.sr-npc { flex: 1 1 340px; min-width: 0; }
+.sr-npc { flex: 1 1 340px; min-width: 0; align-self: stretch; display: flex; }
+/* Nico's own painted corner (npc3d/sala-scene.webp) fills his whole box, edge to edge */
+.sr-npc > .npc-scene { flex: 1; min-height: 190px; border-radius: 14px; }
+.sr-npc .npc-scene-bg { background-position: 40% 55%; }
 .sr-stats { flex: 1 1 260px; min-width: 0; }
 .sr-cap { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 999px; background: rgba(184, 243, 90, 0.12); border: 1px solid rgba(184, 243, 90, 0.35); color: #d9f99d; font: 700 11px ui-monospace, monospace; }
 .sr-vital { padding: 6px 9px; border-radius: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.09); display: flex; flex-direction: column; justify-content: center; }

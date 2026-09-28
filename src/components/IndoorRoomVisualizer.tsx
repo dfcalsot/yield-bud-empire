@@ -149,7 +149,7 @@ export const IndoorRoomVisualizer: React.FC<{ onOpenFacility?: () => void }> = (
       <div className="sr-veil" />
       {/* banner: foreman + the state of the room */}
       <header className="sr-banner">
-        <div className="sr-npc"><Npc kind="foreman" text={tr(say.text)} mood={say.mood} moodKey={say.key} /></div>
+        <div className="sr-npc"><Npc kind="foreman" scene="sala" text={tr(say.text)} mood={say.mood} moodKey={say.key} /></div>
         <div className="sr-stats">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-serif text-lg sm:text-xl font-black text-white tracking-wide">{t('Sala de cultivo')}</h3>
