@@ -10,7 +10,7 @@ import { core as C, useLangNow, EN } from './gen/sim.mjs';
 
 const DAY = 86400_000;
 
-export function installGame({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ }) {
+export function installGame({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ, sendMail, sign, publicUrl = '', harvestMail = false }) {
   db.exec(`
 CREATE TABLE IF NOT EXISTS game_state (account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE, json TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, migrated_from TEXT);
@@ -155,5 +155,57 @@ CREATE TABLE IF NOT EXISTS game_idem (account_id INTEGER NOT NULL, idem TEXT NOT
     if (pending.length) console.log(`game: ${pending.length} partida(s) migrada(s) al servidor`);
   } catch (e) { console.error('game: migración al arrancar falló', e); }
 
-  return { readState, act, load };
+  /* ───────────── harvest alerts by e-mail ─────────────
+   * Every 10 minutes, for players who are away (no request in the last 30 minutes): the world is advanced on a copy inside a
+   * transaction that is always rolled back (nothing is saved, so the «while you were away» summary still greets them), and if
+   * plants are ready to harvest they get one e-mail for that harvest (at most one every 12 hours). A signed link in the mail
+   * turns the alerts off. */
+  try { db.exec('ALTER TABLE accounts ADD COLUMN harvest_mail INTEGER NOT NULL DEFAULT 1'); } catch { /* already there */ }
+  db.exec('CREATE TABLE IF NOT EXISTS harvest_notices (account_id INTEGER PRIMARY KEY, sig TEXT NOT NULL, sent_at INTEGER NOT NULL)');
+  const hq = {
+    away: db.prepare('SELECT a.id, a.username, a.email, a.lang FROM accounts a JOIN game_state g ON g.account_id = a.id WHERE a.email_verified = 1 AND a.harvest_mail = 1 AND g.updated_at < ?'),
+    notice: db.prepare('SELECT sig, sent_at FROM harvest_notices WHERE account_id = ?'),
+    putNotice: db.prepare('INSERT INTO harvest_notices (account_id, sig, sent_at) VALUES (?,?,?) ON CONFLICT(account_id) DO UPDATE SET sig = excluded.sig, sent_at = excluded.sent_at'),
+    off: db.prepare('UPDATE accounts SET harvest_mail = 0 WHERE id = ?'),
+  };
+  const MAIL = {
+    es: (u, n, link, off) => [`🌾 ${u}, tu cosecha está lista`, `Hola, ${u}:\n\n${n === 1 ? 'Una planta está lista' : `${n} plantas están listas`} para cosechar en Yield Bud Empire. Cosechá para llevarte la flor, la XP y los puntos de imperio.\n\n${link}\n\n¡A cosechar!\nEl equipo de Yield Bud Empire\n\n—\n¿No querés más estos avisos? ${off}`],
+    en: (u, n, link, off) => [`🌾 ${u}, your harvest is ready`, `Hi ${u},\n\n${n === 1 ? 'A plant is ready' : `${n} plants are ready`} to harvest in Yield Bud Empire. Harvest to collect the flower, the XP and the empire points.\n\n${link}\n\nHappy harvesting!\nThe Yield Bud Empire team\n\n—\nDon't want these alerts? ${off}`],
+  };
+  /** plants that would be ready right now, worked out on a copy that is never saved */
+  function readyNow(acc, now) {
+    db.exec('BEGIN');
+    try {
+      const s0 = load(acc, now);
+      const ctx = ctxFor(acc.id, now, `h${now.toString(36)}`);
+      const { state } = C.advance(s0, ctx, { quiet: true });
+      const all = [...state.indoorPlants, ...Object.values(state.plotPlants ?? {}).flat()];
+      return all.filter((p) => p.stage === 'ready_harvest').map((p) => p.id ?? `${p.strain?.id}-${p.plantedAt}`);
+    } finally { try { db.exec('ROLLBACK'); } catch { /* */ } }
+  }
+  async function harvestAlerts(now = Date.now()) {
+    for (const acc of hq.away.all(now - 30 * 60_000)) {
+      let ready;
+      try { ready = readyNow(acc, now); } catch (e) { console.error('harvest alert:', acc.id, e?.message ?? e); continue; }
+      if (!ready.length) continue;
+      const sig = [...ready].sort().join('|').slice(0, 500);
+      const last = hq.notice.get(acc.id);
+      if (last && (last.sig === sig || now - last.sent_at < 12 * 3600_000)) continue;
+      const off = `${publicUrl}/api/notify/harvest-off?a=${acc.id}&t=${sign(`harvest-off:${acc.id}`)}`;
+      const [subject, text] = (MAIL[acc.lang === 'en' ? 'en' : 'es'])(acc.username, ready.length, publicUrl || 'https://play.yieldbudempire.com', off);
+      hq.putNotice.run(acc.id, sig, now);
+      try { await sendMail(acc.email, subject, text); audit('harvest_mail', acc.id, null, `${ready.length}`); } catch (e) { console.error('harvest mail:', e?.message ?? e); }
+    }
+  }
+  if (harvestMail && sendMail) { setInterval(() => { void harvestAlerts(); }, 10 * 60_000).unref(); }
+  route('GET', '/api/notify/harvest-off', (ctx) => {
+    const id = Math.floor(Number(ctx.url.searchParams.get('a')));
+    const t = String(ctx.url.searchParams.get('t') ?? '');
+    if (!id || !sign || t !== sign(`harvest-off:${id}`)) throw new HttpError(400, 'bad_link');
+    hq.off.run(id);
+    audit('harvest_mail_off', id, null);
+    return { __raw: { type: 'text/html; charset=utf-8', body: '<!doctype html><meta charset="utf-8"><title>Yield Bud Empire</title><body style="font-family:sans-serif;background:#0a0716;color:#e5e7eb;display:grid;place-items:center;height:100vh;margin:0"><div style="text-align:center"><h1>🌾</h1><p>Listo: ya no te enviaremos avisos de cosecha por correo.</p><p>Done: we won’t e-mail you harvest alerts any more.</p><p><a style="color:#b9dc55" href="https://play.yieldbudempire.com">Yield Bud Empire</a></p></div></body>' } };
+  });
+
+  return { readState, act, load, harvestAlerts };
 }

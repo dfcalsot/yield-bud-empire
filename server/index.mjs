@@ -557,7 +557,7 @@ function finishOAuth(ctx, name, data, fail, rawInvite, terms) {
 
 export const economy = installEconomy({ db, route, HttpError, sessionAccount, audit, limit, readJson });
 export const wallet = installWallet({ db, route, HttpError, sessionAccount, audit, limit, readJson });
-export const game = installGame({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy });
+export const game = installGame({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy, sendMail, sign: (s) => hmac(SECRET, s), publicUrl: cfg.publicUrl, harvestMail: process.env.HARVEST_MAIL !== '0' });
 export const bridge = await installBridge({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy, cfg, env: process.env });
 export const founder = await installFounder({ db, route, HttpError, sessionAccount, audit, limit, readJson, env: process.env, sendMail });
 

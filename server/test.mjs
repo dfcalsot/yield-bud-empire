@@ -12,7 +12,7 @@ Object.assign(process.env, {
   GOOGLE_CLIENT_ID: 'gid', GOOGLE_CLIENT_SECRET: 'gsec', GOOGLE_AUTH_URL: `http://127.0.0.1:${MOCK}/auth`, GOOGLE_TOKEN_URL: `http://127.0.0.1:${MOCK}/token`, GOOGLE_USER_URL: `http://127.0.0.1:${MOCK}/user/google`,
   BRIDGE_FAKE: '1', FOUNDER_FAKE: '1', FOUNDER_SUPPLY: '3',
 });
-const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg, economy, bridge, founder } = await import('./index.mjs');
+const { createServer, cfg, db, limiter, originAllowed, isPrivateHost, prereg, economy, bridge, founder, game } = await import('./index.mjs');
 
 // mock identity provider (NOT Google: it only proves that our OAuth code paths behave)
 const profiles = { google: {}, x: {} };
@@ -1017,6 +1017,35 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   ok('fundador: quien no es fundador no elige título', (await fd(FU, 'title', { title: 'maestro' })).status === 404);
   ok('fundador: otra cuenta no ve un pedido ajeno', (await fd(FU, `order?id=${o1.id}`)).status === 404);
   ok('fundador: sin sesión no hay pedido', (await call('POST', '/api/founder/order', { ip: newIp(), body: {} })).status === 401);
+}
+// ── aviso de cosecha por correo (jugadores ausentes)
+{
+  limiter.m.clear();
+  const H = await mkPlayer(130); await state(H);
+  await call('GET', '/api/game/state', { jar: H.jar, ip: H.ip });
+  db.prepare('UPDATE accounts SET email_verified = 1 WHERE id = ?').run(H.id);
+  const C = sim.core;
+  const g = C.unpackGame(JSON.parse(db.prepare('SELECT json FROM game_state WHERE account_id = ?').get(H.id).json));
+  g.indoorPlants = g.indoorPlants.map((p, i) => (i === 0 ? { ...p, progressPercent: 100, stage: 'ready_harvest', sim: { ...(p.sim ?? {}), progress: 100 } } : p));
+  const setGame = (st, age) => db.prepare('UPDATE game_state SET json = ?, updated_at = ? WHERE account_id = ?').run(JSON.stringify(C.packGame(st)), Date.now() - age, H.id);
+  const mails = () => (outbox().match(/tu cosecha está lista/g) ?? []).length;
+  setGame(g, 5 * 60_000);
+  const m0 = mails();
+  await game.harvestAlerts();
+  ok('cosecha: un jugador conectado hace poco no recibe correo', mails() === m0);
+  setGame(g, 60 * 60_000);
+  await game.harvestAlerts();
+  ok('cosecha: un jugador ausente con plantas listas recibe un correo', mails() === m0 + 1 && /Una planta está lista para cosechar/.test(outbox()));
+  await game.harvestAlerts();
+  ok('cosecha: la misma cosecha no se avisa dos veces', mails() === m0 + 1);
+  ok('cosecha: revisar no guarda la partida (el resumen al volver sigue intacto)', Date.now() - db.prepare('SELECT updated_at FROM game_state WHERE account_id = ?').get(H.id).updated_at >= 59 * 60_000);
+  const link = /\/api\/notify\/harvest-off\?a=(\d+)&t=([^\s]+)/.exec(outbox());
+  ok('cosecha: un enlace falso no da de baja', (await call('GET', `/api/notify/harvest-off?a=${H.id}&t=nope`, { ip: newIp() })).status === 400);
+  const offR = await fetch(`${base}/api/notify/harvest-off?a=${link[1]}&t=${link[2]}`);
+  ok('cosecha: el enlace del correo da de baja los avisos', offR.status === 200 && db.prepare('SELECT harvest_mail FROM accounts WHERE id = ?').get(H.id).harvest_mail === 0);
+  db.prepare('DELETE FROM harvest_notices WHERE account_id = ?').run(H.id);
+  await game.harvestAlerts();
+  ok('cosecha: dado de baja, no recibe más', mails() === m0 + 1);
 }
 // ── idioma de la cuenta: correos en inglés para quien juega en inglés
 {

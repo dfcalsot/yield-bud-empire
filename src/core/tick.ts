@@ -167,6 +167,13 @@ function grow(r: Run, ext: Ext, dt: number, quiet: boolean) {
   }
   const allBefore = [...before, ...plotList];
   const allAfter = [...after, ...plotAfterList];
+  // plants that became ready to harvest while the player is here (a long absence gets the summary below instead)
+  const newReady = allAfter.filter((p, i) => p.stage === 'ready_harvest' && allBefore[i] && allBefore[i].stage !== 'ready_harvest');
+  if (dt <= 1800 && newReady.length > 0) {
+    say(r, newReady.length === 1
+      ? tr('🌾 ¡{name} está lista para cosechar!', { name: tr(newReady[0].strain.name) })
+      : tr('🌾 ¡{n} plantas están listas para cosechar!', { n: newReady.length }), 'success');
+  }
   const newMales = allAfter.filter((p, i) => isMale(p) && sexRevealed(p) && !(allBefore[i] && isMale(allBefore[i]) && sexRevealed(allBefore[i])));
   const newPollinated = allAfter.filter((p, i) => p.pollinated && !allBefore[i]?.pollinated);
   const pl = (n: number) => (n > 1 ? 's' : '');

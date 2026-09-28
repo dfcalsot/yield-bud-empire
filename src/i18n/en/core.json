@@ -3799,5 +3799,7 @@
  "💧 Riego automático": "💧 Automatic watering",
  "💧 El jardinero regó": "💧 The gardener watered",
  "🧪 El jardinero abonó": "🧪 The gardener fed",
- "🐛 El jardinero trató una plaga": "🐛 The gardener treated a pest"
+ "🐛 El jardinero trató una plaga": "🐛 The gardener treated a pest",
+ "🌾 ¡{name} está lista para cosechar!": "🌾 {name} is ready to harvest!",
+ "🌾 ¡{n} plantas están listas para cosechar!": "🌾 {n} plants are ready to harvest!"
 }

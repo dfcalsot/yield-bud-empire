@@ -76,7 +76,9 @@ function YieldBudEmpireApp() {
   // tab title flags plants that need water (this is a real-time game: the player has to come back)
   useEffect(() => {
     const thirsty = indoorPlants.filter(isThirsty).length;
-    document.title = t('{v0}Yield Bud Empire: El Multiverso Botánico Descentralizado', { v0: thirsty ? `(💧${thirsty}) ` : '' });
+    const ready = indoorPlants.filter((p) => p.stage === 'ready_harvest').length;
+    const flags = [ready ? `🌾${ready}` : '', thirsty ? `💧${thirsty}` : ''].filter(Boolean).join(' ');
+    document.title = t('{v0}Yield Bud Empire: El Multiverso Botánico Descentralizado', { v0: flags ? `(${flags}) ` : '' });
   }, [indoorPlants]);
 
   const goToTab = (tab: string) => {
