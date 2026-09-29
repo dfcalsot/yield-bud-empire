@@ -9,7 +9,11 @@ let enabled = false;
 let queue: Ev[] = [];
 const seen = new Set<string>();   // one report per distinct error per visit
 
-function device(): string {
+/** the screen the player is on (also sent with a support case) */
+let screen = '';
+export const currentScreen = () => screen;
+
+export function device(): string {
   const ua = navigator.userAgent;
   const kind = /Mobi|Android|iPhone|iPod/i.test(ua) ? 'celular' : /iPad|Tablet/i.test(ua) ? 'tablet' : 'computadora';
   const os = /Android/i.test(ua) ? 'Android' : /iPhone|iPad|iPod/i.test(ua) ? 'iOS' : /Windows/i.test(ua) ? 'Windows' : /Mac OS/i.test(ua) ? 'Mac' : /Linux/i.test(ua) ? 'Linux' : 'otro';
@@ -42,7 +46,7 @@ export function reportError(err: unknown, where = '') {
 }
 
 /** the screen the player opened (App calls it on every tab change) */
-export function reportView(tab: string) { push({ kind: 'view', name: tab }); }
+export function reportView(tab: string) { screen = tab; push({ kind: 'view', name: tab }); }
 
 export function initTelemetry() {
   if (typeof window === 'undefined') return;

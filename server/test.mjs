@@ -861,6 +861,37 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   const sc = await call('GET', '/api/admin/security', { jar: PA.jar, ip: PA.ip });
   ok('seguridad: conteos, días, marcadas y redes compartidas', sc.status === 200 && sc.json.days.length === 30 && typeof sc.json.counts.login_fail.d30 === 'number' && Array.isArray(sc.json.shared) && !JSON.stringify(sc.json).includes('ip_hash'));
   ok('seguridad: una cuenta normal no la ve', (await call('GET', '/api/admin/security', { jar: PN.jar, ip: PN.ip })).status === 404);
+  // soporte: el jugador abre un caso desde el juego, el admin lo ve con contexto y responde; nadie ve casos ajenos
+  {
+    limiter.m.clear();
+    const PR = await mkPlayer(192); await state(PR);
+    const mails = () => (outbox().match(/Respuesta de soporte/g) ?? []).length;
+    const PNG = 'data:image/png;base64,' + Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(40)]).toString('base64');
+    ok('soporte: sin sesión no se abre un caso', (await call('POST', '/api/support/new', { ip: newIp(), body: { topic: 'bug', body: 'algo pasa en el juego' } })).status === 401);
+    ok('soporte: un mensaje demasiado corto se rechaza', (await call('POST', '/api/support/new', { jar: PN.jar, ip: PN.ip, body: { topic: 'bug', body: 'hola' } })).json.error === 'too_short');
+    ok('soporte: una «imagen» que no es imagen se rechaza', (await call('POST', '/api/support/new', { jar: PN.jar, ip: PN.ip, body: { topic: 'bug', body: 'mi planta no crece nada', image: 'data:image/png;base64,' + Buffer.from('<script>x</script>').toString('base64') } })).json.error === 'bad_image');
+    const nt = await call('POST', '/api/support/new', { jar: PN.jar, ip: PN.ip, body: { topic: 'bug', body: 'Mi planta no crece desde ayer', image: PNG, context: { screen: 'cultivo', device: 'celular Android Chrome', build: 'b1' } } });
+    ok('soporte: el jugador abre un caso con captura', nt.status === 200 && nt.json.id > 0);
+    const id = nt.json.id;
+    const list = await call('GET', '/api/admin/support', { jar: PA.jar, ip: PA.ip });
+    ok('soporte: el panel lo ve como nuevo y sin leer', list.status === 200 && list.json.tickets.some((t) => t.id === id && t.status === 'nuevo' && t.unread_admin === 1) && list.json.unread >= 1);
+    const full = await call('GET', `/api/admin/support/ticket?id=${id}`, { jar: PA.jar, ip: PA.ip });
+    ok('soporte: el caso trae el contexto que puso el juego', full.json.ticket.context.screen === 'cultivo' && full.json.ticket.context.device === 'celular Android Chrome' && Array.isArray(full.json.ticket.context.errors) && full.json.ticket.messages[0].has_image);
+    const img = await call('GET', full.json.ticket.messages[0].image, { jar: PA.jar, ip: PA.ip });
+    ok('soporte: el admin ve la captura; otro jugador no', img.status === 200 && (await call('GET', full.json.ticket.messages[0].image, { jar: PR.jar, ip: PR.ip })).status === 404);
+    ok('soporte: otro jugador no ve el caso', (await call('GET', `/api/support/ticket?id=${id}`, { jar: PR.jar, ip: PR.ip })).status === 404);
+    ok('soporte: una cuenta normal no ve la bandeja', (await call('GET', '/api/admin/support', { jar: PN.jar, ip: PN.ip })).status === 404);
+    const m0 = mails();
+    const rep = await call('POST', '/api/admin/support/reply', { jar: PA.jar, ip: PA.ip, body: { id, body: 'Ya lo revisamos: riega la planta y vuelve a crecer.' } });
+    ok('soporte: el admin responde, el caso pasa a en curso y sale el correo', rep.status === 200 && mails() === m0 + 1 && /caso #\d+/.test(outbox()) && db.prepare('SELECT status FROM support_tickets WHERE id = ?').get(id).status === 'en_curso');
+    const mine = await call('GET', '/api/support/mine', { jar: PN.jar, ip: PN.ip });
+    ok('soporte: el jugador ve que tiene una respuesta', mine.json.unread === 1 && mine.json.tickets[0].unread === true && mine.json.email === 'support@yieldbudempire.com');
+    const seen = await call('GET', `/api/support/ticket?id=${id}`, { jar: PN.jar, ip: PN.ip });
+    ok('soporte: al abrirlo la lee y ya no queda pendiente', seen.json.ticket.messages.length === 2 && seen.json.ticket.messages[1].author === 'admin' && !('context' in seen.json.ticket) && (await call('GET', '/api/support/mine', { jar: PN.jar, ip: PN.ip })).json.unread === 0);
+    await call('POST', '/api/admin/support/status', { jar: PA.jar, ip: PA.ip, body: { id, status: 'resuelto' } });
+    await call('POST', '/api/support/reply', { jar: PN.jar, ip: PN.ip, body: { id, body: 'Volvió a pasar hoy' } });
+    ok('soporte: si el jugador escribe en un caso resuelto, se reabre', db.prepare('SELECT status, unread_admin FROM support_tickets WHERE id = ?').get(id).status === 'en_curso');
+  }
   // sección Solana del panel: solo admins; lo mal formado se rechaza sin tocar la red
   ok('solana: una cuenta normal recibe 404', (await call('GET', '/api/admin/chain/status', { jar: PN.jar, ip: PN.ip })).status === 404 && (await call('GET', '/api/admin/chain/tx?sig=x', { jar: PN.jar, ip: PN.ip })).status === 404);
   ok('solana: firma o dirección mal formada → 400', (await call('GET', '/api/admin/chain/tx?sig=hola', { jar: PA.jar, ip: PA.ip })).json.error === 'bad_signature' && (await call('GET', '/api/admin/chain/nft?asset=0OIl', { jar: PA.jar, ip: PA.ip })).json.error === 'bad_address');

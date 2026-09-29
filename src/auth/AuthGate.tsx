@@ -6,6 +6,7 @@ import { Npc, useNpcSay } from '../components/npc/Npc';
 import { clearOldLocalGame } from '../utils/auth';
 import { t, getLang, setLang, hasChosenLang, useLang, t as tr } from '../i18n';
 import { LangSwitch } from '../i18n/LangSwitch';
+import { SUPPORT_EMAIL } from '../components/support/email';
 
 /** The service builds links with its configured public address; on screen they should open on the address you are playing from. */
 const here = (u?: string): string => (u ? u.replace(/^https?:\/\/[^/]+/, window.location.origin) : '');
@@ -267,6 +268,8 @@ const AuthScreen: React.FC<{ config: AuthConfig; initialMsg?: string; resetToken
           )}
           {err && <p className="text-[12px] font-mono text-red-300 bg-red-500/10 border border-red-400/30 rounded-lg px-3 py-2" role="alert">{err}</p>}
         </div>
+        {/* for whoever can't get in (support inside the game needs a session) */}
+        <p className="text-center text-[11.5px] text-neutral-400">{t('¿No puedes entrar? Escríbenos a')} <a href={`mailto:${SUPPORT_EMAIL}`} className="text-emerald-300 hover:underline">{SUPPORT_EMAIL}</a></p>
         <nav aria-label={t('Documentos legales')} className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10.5px] font-mono text-neutral-500">
           <a href={LEGAL.terms} target="_blank" rel="noopener" className="hover:text-emerald-300">{t('Términos')}</a>
           <a href={LEGAL.privacy} target="_blank" rel="noopener" className="hover:text-emerald-300">{t('Privacidad')}</a>

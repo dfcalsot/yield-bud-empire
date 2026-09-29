@@ -11,7 +11,9 @@ import {
   Award,
   User,
   Settings2,
+  LifeBuoy,
 } from 'lucide-react';
+import { SupportModal } from './support/SupportModal';
 import { CannabisLeaf, LeafCoin } from './icons/CannabisIcons';
 import { Avatar } from './profile/AvatarArt';
 import { YieldMark } from './brand/YieldLogo';
@@ -76,6 +78,17 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener('pointerdown', close);
   }, [audioOpen]);
   const anySound = soundEnabled || audio.music > 0 || audio.ambience > 0;
+
+  // «Ayuda»: support cases (server/support.mjs); the dot says there is an answer the player hasn't read
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpUnread, setHelpUnread] = useState(0);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const pull = () => { if (!document.hidden) void fetch('/api/support/mine', { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) setHelpUnread(j.unread ?? 0); }).catch(() => { /* offline */ }); };
+    pull();
+    const id = window.setInterval(pull, 120_000);
+    return () => window.clearInterval(id);
+  }, [isAuthenticated]);
   const soundBtn = (
     <div ref={audioRef} className="relative">
       <button
@@ -199,6 +212,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
+          {/* Ayuda: casos de soporte */}
+          {isAuthenticated && (
+            <button
+              onClick={() => setHelpOpen(true)}
+              aria-label={t('Ayuda y soporte')}
+              title={t('Ayuda y soporte')}
+              className="relative grid place-items-center w-10 h-10 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-emerald-300 transition cursor-pointer shrink-0"
+            >
+              <LifeBuoy className="w-4 h-4" />
+              {helpUnread > 0 && <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-400 text-neutral-950 text-[10px] font-black grid place-items-center">{helpUnread}</span>}
+            </button>
+          )}
+
           {/* Perfil: el nombre solo en pantallas anchas */}
           {isAuthenticated && currentUser ? (
             <button
@@ -234,6 +260,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>
       </div>
+      {helpOpen && <SupportModal onClose={() => setHelpOpen(false)} onUnread={setHelpUnread} />}
     </header>
   );
 };

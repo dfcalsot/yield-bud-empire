@@ -16,6 +16,7 @@ import { installBridge } from './bridge.mjs';
 import { installFounder } from './founder.mjs';
 import { installPanel } from './panel.mjs';
 import { installChainPanel } from './panel-chain.mjs';
+import { installSupport } from './support.mjs';
 import { createAlerts } from './alerts.mjs';
 import { createPrereg } from './prereg.mjs';
 import { installWallet } from './wallet.mjs';
@@ -572,6 +573,8 @@ export const panel = installPanel({ db, route, HttpError, sessionAccount, limit,
 export const founder = await installFounder({ db, route, HttpError, sessionAccount, audit, limit, readJson, env: process.env, sendMail });
 // the panel's Solana section: read-only questions to the chain (wallets, payments, a transaction, where a relic is)
 installChainPanel({ db, route, HttpError, guard: panel.guard, limit, bridge, founder });
+// player support: «Ayuda» in the game, «Soporte» in the panel (server/support.mjs)
+export const support = installSupport({ db, route, HttpError, sessionAccount, guard: panel.guard, limit, readJson, audit, alerts, sendMail, publicUrl: cfg.publicUrl });
 
 /* ───────────────────────────── server ───────────────────────────── */
 
@@ -590,7 +593,7 @@ function send(res, status, body, ctx) {
   if (ctx?.setCookies?.length) headers['Set-Cookie'] = ctx.setCookies;
   if (ctx?.cors) Object.assign(headers, { 'Access-Control-Allow-Origin': ctx.cors, Vary: 'Origin', 'Cross-Origin-Resource-Policy': 'cross-origin' });
   if (body?.redirect) { res.writeHead(302, { ...headers, Location: body.redirect }); return res.end(); }
-  if (body?.__raw) { res.writeHead(status, { ...headers, 'Content-Type': body.__raw.type, 'Cache-Control': 'public, max-age=300' }); return res.end(body.__raw.body); }
+  if (body?.__raw) { res.writeHead(status, { ...headers, 'Content-Type': body.__raw.type, 'Cache-Control': body.__raw.cache ?? 'public, max-age=300' }); return res.end(body.__raw.body); }
   headers['Content-Type'] = 'application/json; charset=utf-8';
   if (body?.retryAfter) headers['Retry-After'] = String(body.retryAfter);
   res.writeHead(status, headers);

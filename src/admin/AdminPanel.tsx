@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, Ban, BarChart3, Coins, Copy, Footprints, Gift, Link2, Menu, MonitorSmartphone, Pause, Play, Server, ShieldAlert, Ticket, Users, Wrench, X } from 'lucide-react';
+import { Activity, Ban, BarChart3, Coins, Copy, Footprints, Gift, LifeBuoy, Link2, Menu, MonitorSmartphone, Pause, Play, Server, ShieldAlert, Ticket, Users, Wrench, X } from 'lucide-react';
 
 /**
  * The operators' panel (`/#panel`): players, progress, economy and the server, refreshed every few seconds. Only accounts flagged
@@ -460,11 +460,91 @@ const SolanaView: React.FC = () => {
   );
 };
 
-type Tab = 'resumen' | 'embudo' | 'jugadores' | 'economia' | 'solana' | 'cliente' | 'seguridad' | 'servidor' | 'acciones';
+/** the support inbox (server/support.mjs): the players' cases, with their context and the player's card one click away */
+const TOPIC: Record<string, string> = { bug: 'Algo no funciona', pago: 'Pagos / Pack de Fundador', reliquias: 'Reliquias / Solana', cuenta: 'Su cuenta', sugerencia: 'Sugerencia', otro: 'Otro' };
+const ST: Record<string, [string, string]> = { nuevo: ['Nuevo', 'bg-sky-400/15 text-sky-200'], en_curso: ['En curso', 'bg-amber-400/15 text-amber-200'], resuelto: ['Resuelto', 'bg-emerald-400/15 text-emerald-200'] };
+const post = async (path: string, body: Json): Promise<Json> => {
+  try { const r = await fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json', 'x-cf-csrf': '1' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); return r.ok ? j : { error: j.error ?? r.status }; }
+  catch { return { error: 'sin conexión' }; }
+};
+const SupportView: React.FC<{ onOpenPlayer: (id: number) => void; onChanged: () => void }> = ({ onOpenPlayer, onChanged }) => {
+  const [filter, setFilter] = useState<string>('abiertos');
+  const [data, setData] = useState<Json | null>(null);
+  const [sel, setSel] = useState<number | null>(null);
+  const [tk, setTk] = useState<Json | null>(null);
+  const [reply, setReply] = useState('');
+  const [close, setClose] = useState(false);
+  const [email, setEmail] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const load = async () => { const r = await get('/api/admin/support'); if (typeof r !== 'number') setData(r); };
+  const open = async (id: number) => { setSel(id); setMsg(''); const r = await get(`/api/admin/support/ticket?id=${id}`); if (typeof r !== 'number') { setTk(r.ticket); void load(); onChanged(); } };
+  useEffect(() => { void load(); const t = window.setInterval(() => { if (!document.hidden) void load(); }, 20_000); return () => window.clearInterval(t); }, []);
+  const list = ((data?.tickets ?? []) as Json[]).filter((t) => filter === 'todos' || (filter === 'abiertos' ? t.status !== 'resuelto' : t.status === filter));
+  const send = async () => {
+    if (!sel || reply.trim().length < 2) return;
+    setBusy(true);
+    const r = await post('/api/admin/support/reply', { id: sel, body: reply, email, ...(close ? { status: 'resuelto' } : {}) });
+    setBusy(false);
+    if (r.error) { setMsg(`No se pudo enviar (${r.error}).`); return; }
+    setReply(''); setClose(false); setMsg(r.mailed ? 'Respuesta enviada: la ve en el juego y le llegó por correo.' : 'Respuesta enviada: la ve en el juego.');
+    void open(sel);
+  };
+  const setStatus = async (status: string) => { if (!sel) return; await post('/api/admin/support/status', { id: sel, status }); void open(sel); };
+  const c = tk?.context ?? {};
+  return (
+    <div className="grid lg:grid-cols-[360px_1fr] gap-4 items-start">
+      <Card title={`Casos (${list.length})`} aside={
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="bg-black/40 border border-white/10 rounded-md px-2 py-1 text-[12px]">
+          <option value="abiertos">Abiertos</option><option value="nuevo">Nuevos</option><option value="en_curso">En curso</option><option value="resuelto">Resueltos</option><option value="todos">Todos</option>
+        </select>}>
+        {!data ? <p className="text-neutral-500 text-sm">Cargando…</p> : list.length ? (
+          <ul className="space-y-1.5 max-h-[70vh] overflow-auto">{list.map((t) => (
+            <li key={t.id}><button type="button" onClick={() => void open(t.id)} className={`w-full text-left rounded-xl border px-3 py-2 ${sel === t.id ? 'border-lime-300/50 bg-lime-300/[0.06]' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]'}`}>
+              <span className="flex items-center gap-2"><span className="font-mono text-[11px] text-neutral-500">#{t.id}</span><span className="flex-1 truncate text-[13px] text-white">{t.subject}</span>{t.unread_admin ? <i className="w-2 h-2 rounded-full bg-lime-300" title="Sin leer" /> : null}</span>
+              <span className="flex flex-wrap items-center gap-1.5 text-[11px] text-neutral-400 mt-0.5"><b className="text-neutral-200">{t.player}</b>· {TOPIC[t.topic] ?? t.topic} · {ago(t.updated_at)}<span className={`ml-auto px-1.5 rounded ${ST[t.status]?.[1] ?? ''}`}>{ST[t.status]?.[0] ?? t.status}</span></span>
+            </button></li>))}</ul>
+        ) : <p className="text-[13px] text-emerald-300">{filter === 'abiertos' ? 'No hay casos abiertos. ✓' : 'Nada en este filtro.'}</p>}
+        {data && <p className="text-[11px] text-neutral-500 mt-3">Nuevos {data.counts.nuevo ?? 0} · en curso {data.counts.en_curso ?? 0} · resueltos {data.counts.resuelto ?? 0}</p>}
+      </Card>
+      {!sel || !tk ? <Card title="Caso"><p className="text-[13px] text-neutral-400">{sel ? 'Cargando…' : 'Elige un caso de la lista.'}</p></Card> : (
+        <Card title={`Caso #${tk.id} · ${TOPIC[tk.topic] ?? tk.topic}`} aside={
+          <div className="flex gap-1">{Object.entries(ST).map(([k, [label, cls]]) => <button key={k} type="button" onClick={() => void setStatus(k)} className={`text-[11px] px-2 py-1 rounded ${tk.status === k ? cls : 'bg-white/5 text-neutral-400 hover:bg-white/10'}`}>{label}</button>)}</div>}>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <button type="button" onClick={() => onOpenPlayer(tk.account_id)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[13px] font-semibold text-white"><Users className="w-4 h-4" />{tk.player} · ver ficha</button>
+            <span className="text-[12px] text-neutral-400">abierto {ago(tk.created_at)}</span>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/25 p-3 mb-3 text-[12px] grid sm:grid-cols-2 gap-x-4 gap-y-1">
+            <p><span className="text-neutral-500">Pantalla:</span> {c.screen || '—'}</p><p><span className="text-neutral-500">Equipo:</span> {c.device || '—'}</p>
+            <p><span className="text-neutral-500">Versión:</span> <span className="font-mono">{c.build || '—'}</span></p><p><span className="text-neutral-500">Idioma · ventana:</span> {c.lang || '—'} · {c.size || '—'}</p>
+            <div className="sm:col-span-2 mt-1"><span className="text-neutral-500">Últimos errores del juego:</span>
+              {(c.errors as Json[] | undefined)?.length ? <ul className="mt-1 space-y-0.5">{(c.errors as Json[]).map((e, i) => <li key={i} className="font-mono text-[11px] text-rose-200 break-words">{ago(e.ts)} · {e.name}</li>)}</ul> : <span className="text-emerald-300"> ninguno</span>}
+            </div>
+          </div>
+          <ul className="space-y-2 mb-3">{(tk.messages as Json[]).map((m) => (
+            <li key={m.id} className={`max-w-[85%] rounded-2xl px-3 py-2 text-[13px] whitespace-pre-wrap break-words ${m.author === 'admin' ? 'ml-auto bg-lime-300/10 border border-lime-300/25' : 'bg-white/[0.05] border border-white/10'}`}>
+              <span className="block text-[10.5px] text-neutral-400 mb-0.5">{m.author === 'admin' ? `Soporte · ${m.admin ?? ''}` : tk.player} · {new Date(m.created_at).toLocaleString('es-CR')}</span>
+              {m.body}
+              {m.image && <a href={m.image} target="_blank" rel="noreferrer"><img src={m.image} alt="Captura" className="mt-2 max-h-64 rounded-lg border border-white/10" /></a>}
+            </li>))}</ul>
+          {msg && <p className="text-[12.5px] mb-2 text-emerald-200">{msg}</p>}
+          <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4} maxLength={4000} placeholder={`Respuesta para ${tk.player}…`} className="w-full rounded-xl bg-black/40 border border-white/15 px-3 py-2 text-[13px] text-white" />
+          <div className="flex flex-wrap items-center gap-3 mt-2 text-[12.5px]">
+            <label className="flex items-center gap-1.5"><input type="checkbox" checked={email} onChange={(e) => setEmail(e.target.checked)} />avisarle también por correo</label>
+            <label className="flex items-center gap-1.5"><input type="checkbox" checked={close} onChange={(e) => setClose(e.target.checked)} />marcar como resuelto</label>
+            <button type="button" disabled={busy || reply.trim().length < 2} onClick={() => void send()} className="ml-auto px-4 py-2 rounded-lg bg-lime-300 text-[#14210a] text-sm font-bold disabled:opacity-40">{busy ? '…' : 'Responder'}</button>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+type Tab = 'resumen' | 'embudo' | 'jugadores' | 'soporte' | 'economia' | 'solana' | 'cliente' | 'seguridad' | 'servidor' | 'acciones';
 /** the side menu, by section (it replaced a single crowded row of tabs) */
 const NAV: Array<{ group: string; items: Array<[Tab, string, React.FC<{ className?: string }>]> }> = [
   { group: 'General', items: [['resumen', 'Resumen', BarChart3], ['embudo', 'Primeros pasos', Footprints]] },
-  { group: 'Jugadores', items: [['jugadores', 'Jugadores', Users], ['seguridad', 'Seguridad', ShieldAlert]] },
+  { group: 'Jugadores', items: [['jugadores', 'Jugadores', Users], ['soporte', 'Soporte', LifeBuoy], ['seguridad', 'Seguridad', ShieldAlert]] },
   { group: 'Economía', items: [['economia', 'Economía', Coins], ['solana', 'Solana', Link2]] },
   { group: 'Técnico', items: [['cliente', 'Lado del jugador', MonitorSmartphone], ['servidor', 'Servidor', Server]] },
   { group: 'Gestión', items: [['acciones', 'Acciones', Wrench]] },
@@ -488,6 +568,10 @@ export const AdminPanel: React.FC = () => {
   const [sort, setSort] = useState<string>('last');
   const [hideDev, setHideDev] = useState(false);
   const [menu, setMenu] = useState(false);
+  // support cases nobody has read yet: the number next to «Soporte» in the menu
+  const [supportUnread, setSupportUnread] = useState(0);
+  const pullSupport = React.useCallback(() => { void get('/api/admin/support').then((r) => { if (typeof r !== 'number') setSupportUnread(r.unread ?? 0); }); }, []);
+  useEffect(() => { pullSupport(); const id = window.setInterval(() => { if (!document.hidden) pullSupport(); }, 30_000); return () => window.clearInterval(id); }, [pullSupport]);
 
   // the summary every 5 s; the tab's own data every 15 s (and at once when the tab opens)
   useEffect(() => {
@@ -555,6 +639,7 @@ export const AdminPanel: React.FC = () => {
               <button key={id} type="button" onClick={() => go(id)} aria-current={tab === id ? 'page' : undefined}
                 className={`group w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13.5px] font-semibold transition-colors ${tab === id ? 'bg-lime-300/15 text-lime-200 shadow-[inset_2px_0_0_#b8f35a]' : 'text-neutral-300 hover:bg-white/5 hover:text-white'}`}>
                 <Icon className={`w-4 h-4 ${tab === id ? 'text-lime-300' : 'text-neutral-500 group-hover:text-neutral-300'}`} />{label}
+                {id === 'soporte' && supportUnread > 0 && <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-lime-300 text-[#14210a] text-[11px] font-black grid place-items-center">{supportUnread}</span>}
               </button>
             ))}
           </div>
@@ -600,6 +685,7 @@ export const AdminPanel: React.FC = () => {
       <div className="p-4 sm:p-6 lg:px-8 max-w-[1400px] mx-auto space-y-4">
         {tab === 'acciones' && <ActionsView />}
         {tab === 'solana' && <SolanaView />}
+        {tab === 'soporte' && <SupportView onOpenPlayer={setCard} onChanged={pullSupport} />}
         {tab === 'resumen' && (<>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
             <Kpi label="En línea ahora (5 min)" value={P.online} tone="text-emerald-300" />
