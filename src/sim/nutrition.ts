@@ -181,7 +181,7 @@ export interface StageTarget {
   note: string;
 }
 export const STAGES: StageTarget[] = localize<StageTarget[]>([
-  { id: 'seedling', name: k('Plántula'), weeks: k('Semana 1'), from: 0, to: 15, npk: '1-1-1 suave', ec: [0.5, 0.9],
+  { id: 'seedling', name: k('Plántula'), weeks: k('Semana 1'), from: 0, to: 15, npk: k('1-1-1 suave'), ec: [0.5, 0.9],
     ranges: { N: [50, 100], P: [20, 40], K: [60, 120], Ca: [50, 100], Mg: [20, 40], S: [20, 60], Fe: [0.5, 2] },
     note: k('Raíces diminutas: la mitad de dosis. Casi todo el trabajo es no quemar.') },
   { id: 'veg_early', name: k('Vegetativo temprano'), weeks: k('Semanas 2-3'), from: 15, to: 32, npk: '3-1-2', ec: [1.2, 1.6],
@@ -423,7 +423,7 @@ export function diagnose(sol: Solution, stageId: StageId, mediumId: MediumId): D
       const lock = rawOk && eff < lo && eff < sol.ppm[e] * 0.93;
       findings.push({
         id: `${e}-low`, element: e, level: s === 'deficient' ? 'bad' : 'warn',
-        title: lock ? t('{name} bloqueado por el pH (hay {v1} ppm pero solo {eff} son absorbibles)', { name: ELEMENTS[e].name, v1: sol.ppm[e], eff }) : t('{name} {v1} ({eff} ppm, ideal {lo}–{hi})', { name: ELEMENTS[e].name, v1: s === 'deficient' ? t('muy escaso') : 'bajo', eff, lo, hi }),
+        title: lock ? t('{name} bloqueado por el pH (hay {v1} ppm pero solo {eff} son absorbibles)', { name: ELEMENTS[e].name, v1: sol.ppm[e], eff }) : t('{name} {v1} ({eff} ppm, ideal {lo}–{hi})', { name: ELEMENTS[e].name, v1: s === 'deficient' ? t('muy escaso') : t('bajo'), eff, lo, hi }),
         detail: lock ? t('A pH {ph} la raíz no puede tomar todo el {v1} disponible.', { ph: sol.ph, v1: ELEMENTS[e].name.toLowerCase() }) : `${ELEMENTS[e].role}.`,
         fix: lock ? t('Lleva el pH a {v0}–{v1} antes de añadir más.', { v0: medium.ph[0], v1: medium.ph[1] }) : fixFor(e, 'low'),
         symptomId: `${e.toLowerCase()}_def`,

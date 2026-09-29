@@ -132,7 +132,7 @@ export function growthPerSecond(p: PlantInGrow, env: SimEnv): number {
   const s = readSim(p);
   const optimal = p.vpdKpa >= 0.8 && p.vpdKpa <= 1.4;
   const moistureF = s.moisture >= B.moistureOk ? 1 : s.moisture >= B.moistureStress ? 0.4 : 0.15;
-  const ecF = s.ec >= B.ecOk ? 1 : 0.8;
+  const ecF = s.ec >= ecOkAt(s.progress) ? 1 : 0.8;
   const healthF = 0.5 + 0.5 * (s.health / 100);
   const vpdF = optimal ? 1 : 0.7;
   // indoors only the installed CO₂ gear counts (env.co2Ppm); a room choice or a slider can't add CO₂ the player doesn't have
@@ -140,7 +140,7 @@ export function growthPerSecond(p: PlantInGrow, env: SimEnv): number {
   const co2F = co2 >= 1100 ? 1.35 : co2 >= 800 ? 1.18 : 1;
   // stronger lamps grow faster, with diminishing returns (starter 600 W lamp = 1.0)
   const ppfdF = env.equip ? Math.sqrt(clamp(Math.min(p.ppfdLightIntensity, env.equip.lampMaxPpfd || 0) / 480, 0.4, 3)) : 1;
-  const feedF = s.ec >= B.ecOk ? (p.feedBonus ?? 1) : 1;
+  const feedF = s.ec >= ecOkAt(s.progress) ? (p.feedBonus ?? 1) : 1;
   // un pH del sustrato fuera de 5,6–6,9 bloquea nutrientes (ver sim/nutrition.ts)
   const phF = phGrowthFactor(p.phLevel);
   const pestF = p.pest ? B.pestGrowth[p.pest.kind] : 1;
@@ -184,7 +184,13 @@ export function hoursUntilMoisture(p: PlantInGrow, threshold: number, lightOn = 
 
 export const isThirsty = (p: PlantInGrow) => p.stage !== 'ready_harvest' && p.soilMoisture < B.thirstyBelow;
 export const pestCount = (plants: PlantInGrow[]) => plants.filter((p) => p.pest).length;
-export const isHungry = (p: PlantInGrow) => p.stage !== 'ready_harvest' && p.ecLevel < B.ecOk + 0.15;
+/**
+ * The EC a plant needs to count as fed, by where it is in its cycle (the same bands as the nutrition tables, sim/nutrition.ts
+ * STAGES): a seedling lives on 0.5–0.9 and the final flush on almost none, so asking every stage for 1.2 made the right mix for a
+ * seedling look «hungry» and slowed it down.
+ */
+export const ecOkAt = (progress: number): number => (progress < 15 ? 0.5 : progress < 32 ? 1.0 : progress < 92 ? B.ecOk : 0);   // final flush: clean water, it never asks for feed
+export const isHungry = (p: PlantInGrow) => p.stage !== 'ready_harvest' && p.ecLevel < ecOkAt(p.progressPercent) + 0.15;
 
 /* ───────────────────────────── sexing ───────────────────────────── */
 
@@ -249,7 +255,7 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   let feedBonus = p.feedBonus;
   let phLevel = p.phLevel;
   const feedMl = B.feedMl * (env.useFactor ?? 1);
-  if (env.gardener?.feed && ec < B.ecOk + 0.15 && env.budget && (env.budget.nutrientMl ?? 0) >= feedMl) {
+  if (env.gardener?.feed && ec < ecOkAt(s.progress) + 0.15 && env.budget && (env.budget.nutrientMl ?? 0) >= feedMl) {
     env.budget.nutrientMl = (env.budget.nutrientMl ?? 0) - feedMl;
     if (env.budget.log) env.budget.log.feed++;
     ec = B.ecFed;
@@ -284,7 +290,7 @@ export function advancePlant(p: PlantInGrow, dt: number, env: SimEnv): PlantInGr
   // --- health: dry plants suffer down to a floor; cared-for plants recover ---
   let health = s.health;
   if (moisture < B.moistureStress) health = Math.max(B.healthFloor, health - B.healthLossPerHourDry * hours);
-  else if (optimal && moisture >= B.moistureOk && ec >= B.ecOk && ec <= B.ecBurn && !p.pest) health = Math.min(100, health + B.healthGainPerHourCared * hours);
+  else if (optimal && moisture >= B.moistureOk && ec >= ecOkAt(s.progress) && ec <= B.ecBurn && !p.pest) health = Math.min(100, health + B.healthGainPerHourCared * hours);
   // sobredosis de sales: las puntas se queman y la salud cae hasta el mínimo (nunca muere)
   if (ec > B.ecBurn) health = Math.max(B.healthFloor, health - B.burnLossPerHour * hours);
   if (env.stormLoss) health = Math.max(B.healthFloor, health - env.stormLoss * hours);

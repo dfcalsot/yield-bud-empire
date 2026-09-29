@@ -75,7 +75,7 @@ export const NutrientTablesView: React.FC = () => {
         {tabs.map((t) => <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'is-on' : ''} onClick={() => setTab(t.id)}>{t.icon}<span>{tr(t.label)}</span></button>)}
       </div>
 
-      <div className={tab === 'tables' ? '' : 'hidden'}><TablesTab prefs={prefs} setPrefs={setPrefs} onSendToLab={(doses, st) => { setSeed({ doses, stage: st, key: Date.now() }); setTab('lab'); }} /></div>
+      <div className={tab === 'tables' ? '' : 'hidden'}><TablesTab active={tab === 'tables'} prefs={prefs} setPrefs={setPrefs} onSendToLab={(doses, st) => { setSeed({ doses, stage: st, key: Date.now() }); setTab('lab'); }} /></div>
       <div className={tab === 'lab' ? '' : 'hidden'}><LabTab prefs={prefs} setPrefs={setPrefs} seed={seed} onOpenSymptom={(id) => { setFocus({ id, key: Date.now() }); setTab('guide'); }} /></div>
       <div className={tab === 'guide' ? '' : 'hidden'}><GuideTab prefs={prefs} setPrefs={setPrefs} focus={focus} /></div>
     </div>

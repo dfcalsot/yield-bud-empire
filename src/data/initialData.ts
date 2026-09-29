@@ -801,7 +801,7 @@ export const NUTRIENT_BRANDS_DATABASE: NutrientBrand[] = [
         targetPh: '5.8 - 6.0',
         targetEc: k('0.6 - 0.8 mS/cm'),
         targetPpm500: k('300 - 400 PPM'),
-        recommendedNpk: '1-1-1 suave',
+        recommendedNpk: k('1-1-1 suave'),
         dosageMlPerLiter: [
           { productName: k('pH Master Micro'), mlPerL: 0.5 },
           { productName: k('pH Master Grow'), mlPerL: 0.5 },

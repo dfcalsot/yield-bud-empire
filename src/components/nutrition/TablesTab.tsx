@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
-import { Beaker as BeakerIcon, FlaskConical, Leaf, Sprout } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Beaker as BeakerIcon, FlaskConical, GraduationCap, Leaf, Sprout } from 'lucide-react';
+import { ScreenTour, tourSeen, type TourStep } from '../guide/ScreenTour';
 import { useGame } from '../../context/GameContext';
 import { USE } from '../../economy/catalog';
 import {
@@ -18,7 +19,23 @@ const ACIDS: { id: AcidId; label: string }[] = localize([{ id: 'acid_nitric', la
 
 interface Row { idx: number; name: string; weeks: string; stageId: StageId; printedEc: string; printedPh: string; targetEc: number; strength: number; mix: Mix; corr: { ingredient: string | null; dose: number }; sol: ReturnType<typeof solve>; d: ReturnType<typeof diagnose>; dosage: { productName: string; mlPerL: number }[] }
 
-export const TablesTab: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<NutriPrefs>) => void; onSendToLab: (doses: Record<string, number>, stage: StageId) => void }> = ({ prefs, setPrefs, onSendToLab }) => {
+/** Chrono's walk-through of this screen (components/guide/ScreenTour.tsx) */
+const TOUR: TourStep[] = [
+  { title: k('La mesa de mezclas'), say: k('Aquí preparas el abono de cada riego. Una buena mezcla hace crecer tu planta hasta un 10 % más rápido y le da salud; una mala la frena. Te muestro cómo en un minuto.') },
+  { anchor: 'nu-water', title: k('1. Tu agua'), say: k('Cada agua trae sales y calcio distintos, y empuja el pH. Si no sabes cuál tienes, deja «Grifo blanda»: es un buen punto de partida.') },
+  { anchor: 'nu-medium', title: k('2. Dónde crece tu planta'), say: k('Tierra, coco o hidroponía. La tierra perdona errores; en hidroponía el pH tiene que estar exacto.') },
+  { anchor: 'nu-liters', title: k('3. Tu depósito'), say: k('Cuántos litros preparas. Solo cambia cuántos ml te dice que eches: no cambia la calidad de la mezcla.') },
+  { anchor: 'nu-strength', title: k('4. Fuerza'), say: k('Déjalo en «Auto (EC)» y el juego ajusta las dosis solo a lo que tu planta necesita. Súbelo a mano solo si sabes lo que haces: pasarse de sales quema la planta.') },
+  { anchor: 'nu-brands', title: k('5. La marca'), say: k('Cada marca trae su propia tabla por etapas. Prueba varias: con tu agua algunas salen mejor que otras.') },
+  { anchor: 'nu-stages', title: k('6. La etapa'), say: k('La tarjeta marcada «tu planta» es lo que le toca ahora. El juego la elige solo y la cambia cuando crece: no hace falta tocarla.') },
+  { anchor: 'nu-recipe', title: k('7. Tu receta'), say: k('Cuánto echar de cada producto para tus litros. La última fila es el ácido que baja el pH: el juego calcula la gota exacta.') },
+  { anchor: 'nu-score', title: k('8. La nota'), say: k('Mírala antes de aplicar: con 75 o más tu planta crece +5 % y gana salud; con 90 o más, +10 %. Por debajo de 40 la enferma. Los medidores muestran el pH y la EC (las sales).') },
+  { anchor: 'nu-elements', title: k('9. Qué falta o sobra'), say: k('Cada barra es un nutriente contra su franja ideal, y abajo te digo cómo corregirlo. No hace falta que todo esté en verde para una buena nota.') },
+  { anchor: 'nu-apply', title: k('10. Aplicar'), say: k('«Aplicar a mi planta» la riega con esta mezcla (gasta 3 ml de abono) y te da XP. El efecto dura mientras tenga comida: cuando vuelva a pedir abono, repite. ¿Sin tiempo? El botón «Abonar» de la sala da una mezcla estándar; aquí le sacas más.') },
+  { anchor: 'nu-guide', title: k('¡Eso es todo!'), say: k('Si lo olvidas, toca «Guía de Chrono» y te lo explico otra vez. ¡A cultivar!') },
+];
+
+export const TablesTab: React.FC<{ active?: boolean; prefs: NutriPrefs; setPrefs: (p: Partial<NutriPrefs>) => void; onSendToLab: (doses: Record<string, number>, stage: StageId) => void }> = ({ active = true, prefs, setPrefs, onSendToLab }) => {
   const { nutrientBrands, selectedNutrientBrand, setSelectedNutrientBrand, activePlant, applyFertigation, resources } = useGame();
   const brand: NutrientBrand = nutrientBrands.find((b) => b.id === selectedNutrientBrand) ?? nutrientBrands[0];
   const medium = MEDIUM_BY_ID[prefs.medium];
@@ -46,28 +63,37 @@ export const TablesTab: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<Nutr
   const ecUnit = prefs.ecUnit;
   const nutrientStock = resources.nutrient;
   const canApply = !!activePlant;
+  // the first time the player actually sees this screen, Chrono explains it (a short pause so the screen is drawn first)
+  const [tour, setTour] = useState(false);
+  useEffect(() => { if (!active || tourSeen('nutri-tables')) return; const id = window.setTimeout(() => setTour(true), 700); return () => window.clearTimeout(id); }, [active]);
   const apply = (scope: 'one' | 'all') => {
     applyFertigation({ mix: sel.mix, stage: sel.stageId, medium: prefs.medium, label: `${brand.name} · ${sel.name}`, scope, brandName: brand.name });
   };
 
   return (
     <div className="space-y-5">
+      {/* Chrono explains the screen: by itself the first time, and from this button whenever the player wants */}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-300/25 bg-amber-300/[0.06] px-3.5 py-2.5">
+        <p className="text-[12.5px] text-amber-50/90">{t('Aquí preparas el abono de cada riego. Una buena mezcla hace crecer tu planta más rápido y le da salud.')}</p>
+        <button type="button" data-tour="nu-guide" onClick={() => setTour(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-300 hover:bg-amber-200 text-neutral-950 text-[12px] font-bold cursor-pointer"><GraduationCap className="w-4 h-4" />{t('Guía de Chrono')}</button>
+      </div>
+      <ScreenTour id="nutri-tables" steps={TOUR} open={tour && active} onClose={() => setTour(false)} />
       {/* Ajustes que mueven todos los números */}
       <section className="hud-panel p-4 space-y-3" aria-label={t('Ajustes de la mezcla')}>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div>
+          <div data-tour="nu-water">
             <div className="nu-lbl">{t('Agua de origen')}</div>
             <div className="nu-chips">{WATERS.map((w) => <button key={w.id} className={`nu-chip ${prefs.water === w.id ? 'is-on' : ''}`} onClick={() => setPrefs({ water: w.id })} title={t(w.blurb)}>{w.emoji} {t(w.name)}</button>)}</div>
           </div>
-          <div>
+          <div data-tour="nu-medium">
             <div className="nu-lbl">{t('Medio de cultivo')}</div>
             <div className="nu-chips">{MEDIA.map((m) => <button key={m.id} className={`nu-chip ${prefs.medium === m.id ? 'is-on' : ''}`} onClick={() => setPrefs({ medium: m.id })} title={t(m.blurb)}>{m.emoji} {t(m.name)}</button>)}</div>
           </div>
-          <div>
+          <div data-tour="nu-liters">
             <div className="nu-lbl">{t('Depósito · {liters} L', { liters: prefs.liters })}</div>
             <div className="nu-chips">{[1, 5, 10, 20, 50].map((l) => <button key={l} className={`nu-chip ${prefs.liters === l ? 'is-on' : ''}`} onClick={() => setPrefs({ liters: l })}>{l} L</button>)}</div>
           </div>
-          <div>
+          <div data-tour="nu-strength">
             <div className="nu-lbl">{t('Fuerza de la mezcla')}</div>
             <div className="flex items-center gap-2">
               <button className={`nu-chip ${strengthPct === null ? 'is-on' : ''}`} onClick={() => setStrengthPct(null)} title={t('Ajusta las dosis a la EC objetivo con tu agua')}>{t('Auto (EC)')}</button>
@@ -80,7 +106,7 @@ export const TablesTab: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<Nutr
       </section>
 
       {/* Marcas */}
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3" data-tour="nu-brands">
         {nutrientBrands.map((b) => {
           const on = b.id === brand.id;
           const prods = Array.from(new Set(b.stages.flatMap((s) => s.dosageMlPerLiter.map((d) => d.productName)))).map((n) => ingredientForProduct(n)).filter(Boolean).slice(0, 4);
@@ -100,7 +126,7 @@ export const TablesTab: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<Nutr
       {brand.category === 'Orgánica 100%' && <p className="nu-note">{t('🌿 Los abonos orgánicos liberan su N-P-K solo cuando los microbios los mineralizan: el juego cuenta un')}{' '}<b>60 %</b>{' '}{t('disponible. Por eso las mismas dosis dan menos EC que una mineral.')}</p>}
 
       {/* Línea de tiempo de etapas */}
-      <div className="nu-stages" role="tablist" aria-label={t('Etapas')}>
+      <div className="nu-stages" role="tablist" aria-label={t('Etapas')} data-tour="nu-stages">
         {rows.map((r) => {
           const on = r === sel;
           return (
@@ -119,11 +145,11 @@ export const TablesTab: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<Nutr
           <section className="hud-panel p-4 sm:p-5 space-y-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="font-serif text-lg font-bold text-white flex items-center gap-2"><FlaskConical className="w-5 h-5 text-emerald-300" /> {t(sel.name)}</h3>
-              <span className="text-[11px] font-mono text-neutral-400">N-P-K {brand.stages[sel.idx].recommendedNpk ?? STAGE_BY_ID[sel.stageId].npk} · {t(sel.weeks)}</span>
+              <span className="text-[11px] font-mono text-neutral-400">N-P-K {t(brand.stages[sel.idx].recommendedNpk ?? STAGE_BY_ID[sel.stageId].npk)} · {t(sel.weeks)}</span>
             </div>
             <p className="text-xs text-neutral-300 leading-relaxed">{t(brand.stages[sel.idx].instructions ?? STAGE_BY_ID[sel.stageId].note)}</p>
 
-            <div className="nu-recipe">
+            <div className="nu-recipe" data-tour="nu-recipe">
               <div className="nu-recipe__head"><span>{t('Producto')}</span><span>{t('Tabla')}</span><span>{t('Tu mezcla')}</span><span>{t('Para {liters} L', { liters: prefs.liters })}</span></div>
               {sel.dosage.map((d) => {
                 const ing = ingredientForProduct(d.productName);
@@ -154,7 +180,7 @@ export const TablesTab: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<Nutr
             {sel.targetEc < mid(sel.printedEc, 0) - 0.05 && <p className="nu-note">{t('⚠️ Esta tabla del fabricante pide más EC de la que tolera esta etapa ({targetEc} mS/cm): la receta se limita para no quemar las raíces. Los fabricantes tienden a recomendar dosis altas.', { targetEc: sel.targetEc })}</p>}
             {sel.strength <= 0.05 && <p className="nu-note">{t('💧 Tu agua ya trae casi toda la EC necesaria: no hace falta añadir base.')}</p>}
 
-            <div className="flex flex-wrap gap-2 pt-1">
+            <div className="flex flex-wrap gap-2 pt-1" data-tour="nu-apply">
               <button className="care-btn care-btn--gold" disabled={!canApply} onClick={() => apply('one')}><Leaf className="w-3.5 h-3.5" />{' '}{t('Aplicar a mi planta')}</button>
               <button className="care-btn" disabled={!canApply} onClick={() => apply('all')}>{t('A toda la sala')}</button>
               <button className="care-btn" onClick={() => onSendToLab({ ...sel.mix.doses }, sel.stageId)}><BeakerIcon className="w-3.5 h-3.5" />{' '}{t('Probar en el laboratorio')}</button>
@@ -164,11 +190,11 @@ export const TablesTab: React.FC<{ prefs: NutriPrefs; setPrefs: (p: Partial<Nutr
 
           {/* Medición */}
           <section className="hud-panel p-4 sm:p-5 space-y-4">
-            <div className="grid grid-cols-[auto_1fr] gap-4 items-center">
+            <div className="grid grid-cols-[auto_1fr] gap-4 items-center" data-tour="nu-score">
               <ScoreRing score={sel.d.score} stars={sel.d.stars} label={t(sel.d.headline)} />
               <div className="grid grid-cols-2 gap-3"><PhPen ph={sel.sol.ph} range={medium.ph} /><EcMeter sol={sel.sol} range={sel.d.ecRange} state={sel.d.ecState} unit={ecUnit} onUnit={(u: EcUnit) => setPrefs({ ecUnit: u })} /></div>
             </div>
-            <div><div className="nu-lbl mb-1.5">{t('Elementos frente al rango ideal de {v0}', { v0: STAGE_BY_ID[sel.stageId].name.toLowerCase() })}</div><ElementBars sol={sel.sol} d={sel.d} /></div>
+            <div data-tour="nu-elements"><div className="nu-lbl mb-1.5">{t('Elementos frente al rango ideal de {v0}', { v0: STAGE_BY_ID[sel.stageId].name.toLowerCase() })}</div><ElementBars sol={sel.sol} d={sel.d} /></div>
             <ul className="space-y-1.5">{sel.d.findings.slice(0, 3).map((f) => <li key={f.id} className={`nu-find nu-find--${f.level}`}><b>{t(f.title)}</b>{f.fix && <span>{t(f.fix)}</span>}</li>)}</ul>
           </section>
         </div>

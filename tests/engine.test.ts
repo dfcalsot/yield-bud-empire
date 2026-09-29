@@ -1,4 +1,4 @@
-import { advancePlant, advanceWorld, growthPerSecond, cycleSecondsOf, etaSeconds, hoursUntilMoisture, pestCount, sexFor, POLLINATED_YIELD, SimEnv } from '../src/sim/engine';
+import { advancePlant, advanceWorld, growthPerSecond, isHungry, cycleSecondsOf, etaSeconds, hoursUntilMoisture, pestCount, sexFor, POLLINATED_YIELD, SimEnv } from '../src/sim/engine';
 import type { PlantInGrow, RegionId } from '../src/types';
 import { CHESTS, DESIGNS, EMPTY_PITY, rollChest, seasonOf, daysLeftInSeason, validNick, SEASONS, type PityState, type SeasonId } from '../src/sim/avatars';
 import { plotOffer, REGION_BY_ID, REGIONS, siteConditions, terroirOf, weatherOn, regionDistance, WeatherKind } from '../src/sim/terroir';
@@ -233,8 +233,16 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
   const burnt = advanceWorld([plant(65, { ecLevel: 3.2, health: 100 })], 12 * 3600, env())[0];
   ok('EC 3,2 quema: pierde salud mientras dure la sobredosis', burnt.health < 100 && burnt.health >= 30, `(salud ${burnt.health})`);
   ok('EC normal no quema', advanceWorld([plant(65, { ecLevel: 2.1, health: 90 })], 12 * 3600, env())[0].health >= 90);
-  const fed = advanceWorld([plant(65, { ecLevel: 1.0, phLevel: 7.4 })], 2 * 3600, env({ gardener: { water: true, feed: true, treat: false, feedBonus: 1.05 }, budget: { waterL: 50, energyKwh: 100, nutrientMl: 100, treatMl: {}, gardenerDays: 5 } }))[0];
+  const fed = advanceWorld([plant(65, { ecLevel: 1.0, phLevel: 7.4, progressPercent: 40, stage: 'vegetative' })], 2 * 3600, env({ gardener: { water: true, feed: true, treat: false, feedBonus: 1.05 }, budget: { waterL: 50, energyKwh: 100, nutrientMl: 100, treatMl: {}, gardenerDays: 5 } }))[0];
   ok('el jardinero restablece el pH a 6,2 al abonar', fed.phLevel === 6.2 && fed.ecLevel > 1.9, `(pH ${fed.phLevel}, EC ${fed.ecLevel})`);
+  // the EC a plant needs follows its stage (like the nutrition tables): a seedling on 0.9 is well fed, a late one is not
+  const seedMix = plant(65, { ecLevel: 0.9, progressPercent: 5, stage: 'seedling' });
+  ok('una plántula con EC 0,9 (lo que pide su tabla) no tiene hambre', !isHungry(seedMix));
+  ok('una planta en floración con EC 0,9 sí tiene hambre', isHungry(plant(65, { ecLevel: 0.9, progressPercent: 70, stage: 'flowering' })));
+  ok('en el lavado final (EC casi 0) no pide abono', !isHungry(plant(65, { ecLevel: 0.25, progressPercent: 95, stage: 'maturation' })));
+  const g1 = growthPerSecond(plant(65, { ecLevel: 0.9, progressPercent: 5, stage: 'seedling' }), env());
+  const g2 = growthPerSecond(plant(65, { ecLevel: 2.1, progressPercent: 5, stage: 'seedling' }), env());
+  ok('la mezcla correcta de plántula no la frena', Math.abs(g1 - g2) < 1e-12, `(${g1} vs ${g2})`);
   ok('pH sano no cambia nada respecto a antes (plantas por defecto)', good.progressPercent > 0 && Number.isFinite(good.progressPercent));
 }
 
