@@ -1,17 +1,19 @@
 // The operators' panel (/#panel in the game): read-only numbers about players, progress, economy and the server, for the
 // accounts flagged `admin` (node server/admin.mjs panel <usuario>). To anyone else every /api/admin/* route answers 404, as if it
-// didn't exist. Nothing here changes the game.
+// didn't exist. Almost everything here only reads; the few admin actions (invitations, a $FLORA chest, blocking an account) are
+// the same as server/admin.mjs, need a confirmation in the panel and leave their trace in the audit.
 //
 // Besides reading the tables the game already keeps (accounts, sessions, audit, game_state, econ_state, wallets, ledger, …), it
 // measures the server itself: each request is counted into a one-minute bucket (requests, 4xx, 5xx, response times) that is kept
 // in `metrics_minute` for 30 days, and the last server errors are kept in memory.
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 
 const MIN = 60_000, DAY = 86400_000;
 const pct = (arr, p) => { if (!arr.length) return 0; const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; };
 const dayKey = (ts) => new Date(ts).toISOString().slice(0, 10);
 
-export function installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile, readJson, telemetry = false, alerts = null }) {
+export function installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile, readJson, telemetry = false, alerts = null, audit = () => {}, publicUrl = '' }) {
   db.exec(`
 CREATE TABLE IF NOT EXISTS metrics_minute (ts INTEGER PRIMARY KEY, req INTEGER NOT NULL, e4 INTEGER NOT NULL, e5 INTEGER NOT NULL,
   p50 INTEGER NOT NULL, p95 INTEGER NOT NULL, online INTEGER NOT NULL, rss INTEGER NOT NULL);
@@ -157,7 +159,8 @@ CREATE INDEX IF NOT EXISTS idx_client_events ON client_events(kind, ts);
     const market = has('listings') ? all('SELECT status, COUNT(*) AS n, COALESCE(SUM(price),0) AS flora FROM listings GROUP BY status') : [];
     const nfts = all('SELECT kind, COUNT(*) AS n FROM nfts GROUP BY kind ORDER BY n DESC');
     const bridge = has('bridge_jobs') ? all('SELECT dir, status, COUNT(*) AS n FROM bridge_jobs GROUP BY dir, status') : [];
-    const founder = has('founder_orders') ? all('SELECT status, COUNT(*) AS n, COALESCE(SUM(amount),0) AS amount FROM founder_orders GROUP BY status') : [];
+    // the orders keep USDC in its smallest unit (6 decimals): shown in whole USDC
+    const founder = has('founder_orders') ? all('SELECT status, COUNT(*) AS n, ROUND(COALESCE(SUM(amount),0) / 1e6, 2) AS amount FROM founder_orders GROUP BY status') : [];
     const founders = has('founders') ? one('SELECT COUNT(*) AS n FROM founders').n : 0;
     // health, real players only (no dev accounts, no grants or gifts): what the game creates and destroys each day, the supply over
     // time, who holds it, and what things sell for between players
@@ -343,6 +346,66 @@ CREATE INDEX IF NOT EXISTS idx_client_events ON client_events(kind, ts);
       WHERE a.event IN (${SEC_EVENTS.map(() => '?').join(',')}) ORDER BY a.ts DESC LIMIT 40`, ...SEC_EVENTS);
     return { counts, days, fails, flagged, shared, recent, locked: flagged.filter((f) => f.locked).length };
   }
+
+  /* ───────────── what an admin can do from the panel (the same as server/admin.mjs, with its trace in the audit) ─────────────
+   * Invitations, a $FLORA chest for one player, and blocking or unblocking an account. Admin accounts can't be blocked from here. */
+  const ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const newCode = () => { const b = Array.from(crypto.randomBytes(8), (x) => ABC[x % ABC.length]).join(''); return `YBE-${b.slice(0, 4)}-${b.slice(4)}`; };
+  const target = (id) => { const t = one('SELECT id, username, flags FROM accounts WHERE id = ?', Math.floor(Number(id)) || 0); if (!t) throw new HttpError(400, 'no_such_player'); return t; };
+  const invites = () => (has('invites')
+    ? all('SELECT code, note, max_uses, uses, created_at, revoked FROM invites ORDER BY created_at DESC LIMIT 60').map((r) => ({ ...r, link: `${publicUrl}/?invite=${r.code}` }))
+    : []);
+  route('GET', '/api/admin/invites', (ctx) => { admin(ctx); return { invites: invites() }; });
+  route('POST', '/api/admin/action', async (ctx) => {
+    const me = admin(ctx);
+    limit(ctx, `panel-act:${me.id}`, 30, MIN);
+    const b = await readJson(ctx.req, 8 * 1024);
+    const by = `por ${me.username} (panel)`;
+    switch (String(b.action ?? '')) {
+      case 'invite': {
+        if (!has('invites')) throw new HttpError(400, 'no_invites');
+        const count = Math.max(1, Math.min(50, Math.floor(Number(b.count)) || 1)), uses = Math.max(1, Math.min(100, Math.floor(Number(b.uses)) || 1));
+        const note = String(b.note ?? '').slice(0, 80);
+        const ins = db.prepare('INSERT OR IGNORE INTO invites (code, note, max_uses, created_at) VALUES (?,?,?,?)');
+        const made = []; while (made.length < count) { const c = newCode(); if (ins.run(c, note, uses, Date.now()).changes) made.push(c); }
+        audit('admin_panel_invite', me.id, null, `${count}×${uses} usos · ${note} · ${by}`);
+        return { ok: true, codes: made.map((c) => ({ code: c, link: `${publicUrl}/?invite=${c}` })) };
+      }
+      case 'revoke': {
+        const code = String(b.code ?? '').toUpperCase().trim();
+        if (!db.prepare('UPDATE invites SET revoked = 1 WHERE code = ?').run(code).changes) throw new HttpError(400, 'no_such_code');
+        audit('admin_panel_revoke', me.id, null, `${code.slice(0, 20)} · ${by}`);
+        return { ok: true };
+      }
+      case 'gift': {
+        const t = target(b.id);
+        const amount = Math.floor(Number(b.amount));
+        if (!Number.isFinite(amount) || amount < 1 || amount > 1_000_000) throw new HttpError(400, 'bad_amount');
+        const es = String(b.noteEs ?? '').trim().slice(0, 120), en = String(b.noteEn ?? '').trim().slice(0, 120);
+        const note = en ? JSON.stringify({ es: es || en, en }) : (es || 'Regalo de la casa');
+        const r = db.prepare('INSERT INTO gifts (account_id, amount, note, created_at) VALUES (?,?,?,?)').run(t.id, amount, note, Date.now());
+        audit('admin_gift', t.id, null, `${amount} · ${by}`);
+        return { ok: true, gift: Number(r.lastInsertRowid), to: t.username, amount };
+      }
+      case 'ban': {
+        const t = target(b.id);
+        if (/(^|,)admin,/.test(t.flags)) throw new HttpError(400, 'is_admin');
+        db.prepare("UPDATE accounts SET locked_until = ?, flags = CASE WHEN flags LIKE '%banned,%' THEN flags ELSE flags || 'banned,' END WHERE id = ?").run(Date.now() + 100 * 365 * DAY, t.id);
+        db.prepare('DELETE FROM sessions WHERE account_id = ?').run(t.id);
+        seenAt.delete(t.id); cache.at = 0;
+        audit('admin_ban', t.id, null, `${String(b.reason ?? '').slice(0, 100)} · ${by}`);
+        return { ok: true };
+      }
+      case 'unban': {
+        const t = target(b.id);
+        db.prepare("UPDATE accounts SET locked_until = 0, failed = 0, flags = replace(flags, 'banned,', '') WHERE id = ?").run(t.id);
+        cache.at = 0;
+        audit('admin_unban', t.id, null, by);
+        return { ok: true };
+      }
+      default: throw new HttpError(400, 'unknown_action');
+    }
+  });
 
   route('GET', '/api/admin/me', (ctx) => { const a = admin(ctx); return { ok: true, name: a.username }; });
   route('GET', '/api/admin/overview', (ctx) => { admin(ctx); const now = Date.now(); return { ...overview(now), health: health(now), feed: feed(40) }; });

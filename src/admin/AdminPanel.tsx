@@ -1,14 +1,52 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Activity, Ban, BarChart3, Coins, Copy, Footprints, Gift, Menu, MonitorSmartphone, Pause, Play, Server, ShieldAlert, Ticket, Users, Wrench, X } from 'lucide-react';
 
 /**
  * The operators' panel (`/#panel`): players, progress, economy and the server, refreshed every few seconds. Only accounts flagged
- * admin see it (node server/admin.mjs panel <usuario>); for anyone else the server answers 404 and this page says so. Read-only.
+ * admin see it (node server/admin.mjs panel <usuario>); for anyone else the server answers 404 and this page says so. Mostly
+ * read-only; the admin actions (invitations, a $FLORA chest, blocking an account) always ask for a confirmation first.
  * An internal tool: Spanish only, no game translations.
  */
 type Json = Record<string, any>;
 const get = async (path: string): Promise<Json | number> => {
   try { const r = await fetch(path, { credentials: 'same-origin' }); return r.ok ? await r.json() : r.status; } catch { return 0; }
 };
+const ACTION_ERR: Record<string, string> = { is_admin: 'No se puede bloquear una cuenta admin.', bad_amount: 'Monto inválido (1 a 1 000 000).', no_such_player: 'Ese jugador no existe.', no_such_code: 'Ese código no existe.', rate_limited: 'Demasiadas acciones seguidas; espera un minuto.' };
+/** an admin action (server/panel.mjs → /api/admin/action) */
+const act = async (body: Json): Promise<Json> => {
+  try {
+    const r = await fetch('/api/admin/action', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json', 'x-cf-csrf': '1' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    return r.ok ? j : { error: ACTION_ERR[j.error] ?? `No se pudo (${j.error ?? r.status}).` };
+  } catch { return { error: 'Sin conexión con el servidor.' }; }
+};
+
+/** asks before doing something; for the serious ones, the admin types the player's name to confirm */
+const Confirm: React.FC<{ title: string; body: React.ReactNode; confirm: string; danger?: boolean; typeToConfirm?: string; onYes: () => Promise<void> | void; onNo: () => void }> = ({ title, body, confirm, danger, typeToConfirm, onYes, onNo }) => {
+  const [typed, setTyped] = useState('');
+  const [busy, setBusy] = useState(false);
+  const ready = !typeToConfirm || typed.trim() === typeToConfirm;
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center p-4" role="alertdialog" aria-modal>
+      <button type="button" aria-label="Cancelar" className="absolute inset-0 bg-black/70" onClick={onNo} />
+      <div className={`relative w-full max-w-md rounded-2xl border ${danger ? 'border-rose-400/40' : 'border-lime-300/30'} bg-[#140f2b] p-5 shadow-2xl`}>
+        <h3 className="text-lg font-black text-white">{title}</h3>
+        <div className="text-[13.5px] text-neutral-300 mt-2 space-y-2">{body}</div>
+        {typeToConfirm && (
+          <label className="block mt-3 text-[12px] text-neutral-400">Escribe <b className="text-white">{typeToConfirm}</b> para confirmar
+            <input autoFocus value={typed} onChange={(e) => setTyped(e.target.value)} className="mt-1 w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 text-white" />
+          </label>
+        )}
+        <div className="flex justify-end gap-2 mt-4">
+          <button type="button" onClick={onNo} className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm">Cancelar</button>
+          <button type="button" disabled={!ready || busy} onClick={async () => { setBusy(true); await onYes(); setBusy(false); }}
+            className={`px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-40 ${danger ? 'bg-rose-500 hover:bg-rose-400 text-white' : 'bg-lime-300 hover:bg-lime-200 text-[#14210a]'}`}>{busy ? '…' : confirm}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+type Ask = React.ComponentProps<typeof Confirm> | null;
 const fmt = (n: number) => (Math.round(n) || 0).toLocaleString('es-CR');
 const ago = (ts: number, now = Date.now()) => {
   const s = Math.max(0, (now - ts) / 1000);
@@ -102,6 +140,30 @@ const STAGE: Record<string, string> = { seed: 'Germinación', seedling: 'Plántu
 const PlayerCard: React.FC<{ id: number; onClose: () => void }> = ({ id, onClose }) => {
   const [c, setC] = useState<Json | null>(null);
   const [err, setErr] = useState(false);
+  const [ask, setAsk] = useState<Ask>(null);
+  const [gift, setGift] = useState<{ amount: string; es: string; en: string } | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const reload = async () => { const r = await get(`/api/admin/player?id=${id}`); if (typeof r !== 'number') setC(r); };
+  const done = (r: Json, okText: string) => { setAsk(null); setMsg(r.error ? { ok: false, text: r.error } : { ok: true, text: okText }); void reload(); };
+  const askBan = () => setAsk({
+    title: `¿Bloquear a ${c!.name}?`, danger: true, confirm: 'Bloquear', typeToConfirm: c!.name, onNo: () => setAsk(null),
+    body: <><p>Se cierran todas sus sesiones y no podrá volver a entrar hasta que alguien la desbloquee.</p><p className="text-neutral-400">Su partida, su $FLORA y sus NFT no se tocan.</p></>,
+    onYes: async () => done(await act({ action: 'ban', id }), `${c!.name} quedó bloqueado.`),
+  });
+  const askUnban = () => setAsk({
+    title: `¿Desbloquear a ${c!.name}?`, confirm: 'Desbloquear', onNo: () => setAsk(null),
+    body: <p>Podrá volver a entrar con su contraseña o con Google.</p>,
+    onYes: async () => done(await act({ action: 'unban', id }), `${c!.name} ya puede entrar.`),
+  });
+  const askGift = () => {
+    const amount = Math.floor(Number(gift?.amount));
+    if (!Number.isFinite(amount) || amount < 1 || amount > 1_000_000) { setMsg({ ok: false, text: 'Monto inválido (1 a 1 000 000).' }); return; }
+    setAsk({
+      title: `¿Regalar ${fmt(amount)} $FLORA a ${c!.name}?`, confirm: 'Enviar regalo', onNo: () => setAsk(null),
+      body: <><p>Le llega un cofre en el juego y el monto se suma cuando lo abre.</p>{(gift?.es || gift?.en) && <p className="text-neutral-400">Nota: «{gift?.es || gift?.en}»{gift?.en && gift?.es ? ` / «${gift.en}»` : ''}</p>}</>,
+      onYes: async () => { const r = await act({ action: 'gift', id, amount, noteEs: gift?.es, noteEn: gift?.en }); if (!r.error) setGift(null); done(r, `Cofre de ${fmt(amount)} $FLORA enviado a ${c!.name}.`); },
+    });
+  };
   useEffect(() => {
     let alive = true;
     const pull = async () => { const r = await get(`/api/admin/player?id=${id}`); if (!alive) return; if (typeof r === 'number') setErr(true); else setC(r); };
@@ -132,6 +194,24 @@ const PlayerCard: React.FC<{ id: number; onClose: () => void }> = ({ id, onClose
           <button type="button" onClick={onClose} className="px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/10 text-sm">Cerrar ✕</button>
         </div>
         {err && <p className="text-rose-300 text-sm">No se pudo cargar la ficha.</p>}
+        {msg && <p className={`text-[13px] rounded-lg px-3 py-2 ${msg.ok ? 'bg-emerald-400/10 text-emerald-200' : 'bg-rose-400/10 text-rose-200'}`}>{msg.text}</p>}
+        {c && (
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setGift(gift ? null : { amount: '', es: '', en: '' })} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-lime-300/15 hover:bg-lime-300/25 text-lime-200 text-[13px] font-semibold"><Gift className="w-4 h-4" />Regalar $FLORA</button>
+            {c.locked
+              ? <button type="button" onClick={askUnban} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-400/15 hover:bg-emerald-400/25 text-emerald-200 text-[13px] font-semibold"><Play className="w-4 h-4" />Desbloquear</button>
+              : !c.admin && <button type="button" onClick={askBan} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 text-[13px] font-semibold"><Ban className="w-4 h-4" />Bloquear cuenta</button>}
+          </div>
+        )}
+        {c && gift && (
+          <div className="rounded-xl border border-lime-300/25 bg-lime-300/[0.04] p-3 grid sm:grid-cols-[120px_1fr_1fr_auto] gap-2 items-end">
+            <label className="text-[11px] text-neutral-400">Monto<input inputMode="numeric" value={gift.amount} onChange={(e) => setGift({ ...gift, amount: e.target.value.replace(/[^\d]/g, '') })} placeholder="500" className="mt-1 w-full rounded-lg bg-black/40 border border-white/15 px-2 py-1.5 text-white font-mono" /></label>
+            <label className="text-[11px] text-neutral-400">Nota (español)<input value={gift.es} maxLength={120} onChange={(e) => setGift({ ...gift, es: e.target.value })} placeholder="Gracias por probar la alfa" className="mt-1 w-full rounded-lg bg-black/40 border border-white/15 px-2 py-1.5 text-white" /></label>
+            <label className="text-[11px] text-neutral-400">Nota (inglés, opcional)<input value={gift.en} maxLength={120} onChange={(e) => setGift({ ...gift, en: e.target.value })} placeholder="Thanks for testing the alpha" className="mt-1 w-full rounded-lg bg-black/40 border border-white/15 px-2 py-1.5 text-white" /></label>
+            <button type="button" onClick={askGift} className="px-3 py-2 rounded-lg bg-lime-300 text-[#14210a] text-sm font-bold">Revisar</button>
+          </div>
+        )}
+        {ask && <Confirm {...ask} />}
         {c && (<>
           <div className="flex flex-wrap gap-1.5 text-[11px]">
             {(c.flags as string[]).map((f) => <span key={f} className="px-2 py-0.5 rounded bg-white/10">{f}</span>)}
@@ -182,8 +262,118 @@ const PlayerCard: React.FC<{ id: number; onClose: () => void }> = ({ id, onClose
   );
 };
 
-type Tab = 'resumen' | 'embudo' | 'jugadores' | 'economia' | 'cliente' | 'seguridad' | 'servidor';
-const TABS: Array<[Tab, string]> = [['resumen', 'Resumen'], ['embudo', 'Primeros pasos'], ['jugadores', 'Jugadores'], ['economia', 'Economía'], ['cliente', 'Lado del jugador'], ['seguridad', 'Seguridad'], ['servidor', 'Servidor']];
+/** invitations and gifts, with a confirmation before each one (blocking lives in each player's card) */
+const ActionsView: React.FC = () => {
+  const [inv, setInv] = useState<Json[] | null>(null);
+  const [list, setList] = useState<Json[]>([]);
+  const [ask, setAsk] = useState<Ask>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [made, setMade] = useState<Json[]>([]);
+  const [form, setForm] = useState({ count: '1', uses: '1', note: '' });
+  const [g, setG] = useState({ id: '', amount: '', es: '', en: '' });
+  const [copied, setCopied] = useState('');
+  const load = async () => {
+    const r = await get('/api/admin/invites'); if (typeof r !== 'number') setInv(r.invites);
+    const p = await get('/api/admin/players'); if (typeof p !== 'number') setList((p.players as Json[]).filter((x) => !x.banned));
+  };
+  useEffect(() => { void load(); }, []);
+  const copy = async (text: string) => { try { await navigator.clipboard.writeText(text); setCopied(text); window.setTimeout(() => setCopied(''), 1500); } catch { /* no clipboard */ } };
+  const askInvite = () => {
+    const count = Math.max(1, Math.min(50, Number(form.count) || 1)), uses = Math.max(1, Math.min(100, Number(form.uses) || 1));
+    setAsk({
+      title: `¿Crear ${count} ${count === 1 ? 'invitación' : 'invitaciones'}?`, confirm: 'Crear', onNo: () => setAsk(null),
+      body: <p>{count} código{count === 1 ? '' : 's'} de {uses} uso{uses === 1 ? '' : 's'} cada uno{form.note ? `, con la nota «${form.note}»` : ''}. Cada uso abre una cuenta nueva en la alfa.</p>,
+      onYes: async () => { const r = await act({ action: 'invite', count, uses, note: form.note }); setAsk(null); if (r.error) setMsg({ ok: false, text: r.error }); else { setMade(r.codes); setMsg({ ok: true, text: `${r.codes.length} invitación(es) creada(s).` }); void load(); } },
+    });
+  };
+  const askRevoke = (code: string) => setAsk({
+    title: '¿Anular esta invitación?', confirm: 'Anular', danger: true, onNo: () => setAsk(null),
+    body: <p>El código <b className="font-mono">{code}</b> deja de servir. Las cuentas que ya se crearon con él siguen igual.</p>,
+    onYes: async () => { const r = await act({ action: 'revoke', code }); setAsk(null); setMsg(r.error ? { ok: false, text: r.error } : { ok: true, text: `Código ${code} anulado.` }); void load(); },
+  });
+  const askGift = () => {
+    const p = list.find((x) => String(x.id) === g.id); const amount = Math.floor(Number(g.amount));
+    if (!p) { setMsg({ ok: false, text: 'Elige un jugador.' }); return; }
+    if (!Number.isFinite(amount) || amount < 1 || amount > 1_000_000) { setMsg({ ok: false, text: 'Monto inválido (1 a 1 000 000).' }); return; }
+    setAsk({
+      title: `¿Regalar ${fmt(amount)} $FLORA a ${p.name}?`, confirm: 'Enviar regalo', onNo: () => setAsk(null),
+      body: <><p>Le llega un cofre en el juego y el monto se suma cuando lo abre.</p>{p.dev && <p className="text-amber-200">Ojo: es una cuenta dev.</p>}</>,
+      onYes: async () => { const r = await act({ action: 'gift', id: p.id, amount, noteEs: g.es, noteEn: g.en }); setAsk(null); setMsg(r.error ? { ok: false, text: r.error } : { ok: true, text: `Cofre de ${fmt(amount)} $FLORA enviado a ${p.name}.` }); if (!r.error) setG({ id: '', amount: '', es: '', en: '' }); },
+    });
+  };
+  const input = 'mt-1 w-full rounded-lg bg-black/40 border border-white/15 px-2.5 py-2 text-white';
+  return (
+    <div className="space-y-4">
+      {msg && <p className={`text-[13px] rounded-lg px-3 py-2 ${msg.ok ? 'bg-emerald-400/10 text-emerald-200' : 'bg-rose-400/10 text-rose-200'}`}>{msg.text}</p>}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card title="Crear invitaciones" aside={<Ticket className="w-4 h-4 text-lime-300" />}>
+          <div className="grid grid-cols-[90px_90px_1fr] gap-2">
+            <label className="text-[11px] text-neutral-400">Cantidad<input inputMode="numeric" value={form.count} onChange={(e) => setForm({ ...form, count: e.target.value.replace(/\D/g, '') })} className={input} /></label>
+            <label className="text-[11px] text-neutral-400">Usos c/u<input inputMode="numeric" value={form.uses} onChange={(e) => setForm({ ...form, uses: e.target.value.replace(/\D/g, '') })} className={input} /></label>
+            <label className="text-[11px] text-neutral-400">Nota (para quién)<input value={form.note} maxLength={80} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="ola 2 · Discord" className={input} /></label>
+          </div>
+          <button type="button" onClick={askInvite} className="mt-3 px-4 py-2 rounded-lg bg-lime-300 text-[#14210a] text-sm font-bold">Crear</button>
+          {made.length > 0 && (
+            <ul className="mt-3 space-y-1.5">{made.map((m) => (
+              <li key={m.code} className="flex items-center gap-2 rounded-lg bg-black/30 px-2.5 py-1.5 text-[12px]">
+                <b className="font-mono text-lime-200">{m.code}</b><span className="flex-1 truncate text-neutral-400">{m.link}</span>
+                <button type="button" onClick={() => copy(m.link)} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 hover:bg-white/10"><Copy className="w-3.5 h-3.5" />{copied === m.link ? 'Copiado' : 'Copiar enlace'}</button>
+              </li>))}</ul>
+          )}
+        </Card>
+        <Card title="Regalar $FLORA" aside={<Gift className="w-4 h-4 text-lime-300" />}>
+          <div className="grid sm:grid-cols-[1fr_120px] gap-2">
+            <label className="text-[11px] text-neutral-400">Jugador
+              <select value={g.id} onChange={(e) => setG({ ...g, id: e.target.value })} className={input}>
+                <option value="">Elegir…</option>
+                {list.map((p) => <option key={p.id} value={p.id}>{p.name}{p.dev ? ' (dev)' : ''} · nivel {p.level}</option>)}
+              </select>
+            </label>
+            <label className="text-[11px] text-neutral-400">Monto<input inputMode="numeric" value={g.amount} onChange={(e) => setG({ ...g, amount: e.target.value.replace(/\D/g, '') })} placeholder="500" className={`${input} font-mono`} /></label>
+            <label className="text-[11px] text-neutral-400">Nota (español)<input value={g.es} maxLength={120} onChange={(e) => setG({ ...g, es: e.target.value })} placeholder="Gracias por probar la alfa" className={input} /></label>
+            <label className="text-[11px] text-neutral-400 sm:col-span-1">Nota (inglés)<input value={g.en} maxLength={120} onChange={(e) => setG({ ...g, en: e.target.value })} placeholder="Thanks!" className={input} /></label>
+          </div>
+          <button type="button" onClick={askGift} className="mt-3 px-4 py-2 rounded-lg bg-lime-300 text-[#14210a] text-sm font-bold">Revisar y enviar</button>
+          <p className="text-[11px] text-neutral-500 mt-2">Para bloquear o desbloquear una cuenta, ábrela desde Jugadores o Seguridad.</p>
+        </Card>
+      </div>
+      <Card title="Invitaciones" aside={<span className="text-[11px] text-neutral-500">las 60 más recientes</span>}>
+        {!inv ? <p className="text-neutral-500 text-sm">Cargando…</p> : (
+          <div className="overflow-auto"><table className="w-full text-[12.5px] whitespace-nowrap">
+            <thead className="text-neutral-400 text-left"><tr className="border-b border-white/10"><th className="py-1.5 pr-3">Código</th><th className="pr-3">Nota</th><th className="text-right pr-3">Usos</th><th className="pr-3">Creada</th><th className="pr-3">Estado</th><th /></tr></thead>
+            <tbody>{inv.map((r) => {
+              const state = r.revoked ? 'anulada' : r.uses >= r.max_uses ? 'usada' : 'disponible';
+              return (
+                <tr key={r.code} className="border-b border-white/5">
+                  <td className="py-1.5 pr-3 font-mono text-white">{r.code}</td><td className="pr-3 text-neutral-400 max-w-[220px] truncate">{r.note}</td>
+                  <td className="text-right pr-3 font-mono">{r.uses}/{r.max_uses}</td><td className="pr-3 text-neutral-400">{ago(r.created_at)}</td>
+                  <td className="pr-3"><span className={`text-[11px] px-1.5 rounded ${state === 'disponible' ? 'bg-emerald-400/15 text-emerald-200' : state === 'usada' ? 'bg-white/10 text-neutral-300' : 'bg-rose-400/15 text-rose-200'}`}>{state}</span></td>
+                  <td className="text-right space-x-1.5">{state === 'disponible' && <>
+                    <button type="button" onClick={() => copy(r.link)} className="px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-[11.5px]">{copied === r.link ? 'Copiado' : 'Copiar enlace'}</button>
+                    <button type="button" onClick={() => askRevoke(r.code)} className="px-2 py-1 rounded bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 text-[11.5px]">Anular</button>
+                  </>}</td>
+                </tr>
+              );
+            })}</tbody>
+          </table></div>
+        )}
+      </Card>
+      <p className="text-[11.5px] text-neutral-500">Cada acción queda registrada con el nombre del admin que la hizo.</p>
+      {ask && <Confirm {...ask} />}
+    </div>
+  );
+};
+
+type Tab = 'resumen' | 'embudo' | 'jugadores' | 'economia' | 'cliente' | 'seguridad' | 'servidor' | 'acciones';
+/** the side menu, by section (it replaced a single crowded row of tabs) */
+const NAV: Array<{ group: string; items: Array<[Tab, string, React.FC<{ className?: string }>]> }> = [
+  { group: 'General', items: [['resumen', 'Resumen', BarChart3], ['embudo', 'Primeros pasos', Footprints]] },
+  { group: 'Jugadores', items: [['jugadores', 'Jugadores', Users], ['seguridad', 'Seguridad', ShieldAlert]] },
+  { group: 'Economía', items: [['economia', 'Economía', Coins]] },
+  { group: 'Técnico', items: [['cliente', 'Lado del jugador', MonitorSmartphone], ['servidor', 'Servidor', Server]] },
+  { group: 'Gestión', items: [['acciones', 'Acciones', Wrench]] },
+];
+const LABEL = Object.fromEntries(NAV.flatMap((g) => g.items.map(([id, label]) => [id, label]))) as Record<Tab, string>;
 
 export const AdminPanel: React.FC = () => {
   const [tab, setTab] = useState<Tab>('resumen');
@@ -201,6 +391,7 @@ export const AdminPanel: React.FC = () => {
   const [live, setLive] = useState(true);
   const [sort, setSort] = useState<string>('last');
   const [hideDev, setHideDev] = useState(false);
+  const [menu, setMenu] = useState(false);
 
   // the summary every 5 s; the tab's own data every 15 s (and at once when the tab opens)
   useEffect(() => {
@@ -251,21 +442,67 @@ export const AdminPanel: React.FC = () => {
   const series: Json[] = ov.series;
   const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)} %` : '—');
 
+  const go = (t: Tab) => { setTab(t); setMenu(false); window.scrollTo({ top: 0 }); };
+  const sidebar = (
+    <div className="flex h-full flex-col">
+      <div className="px-5 pt-5 pb-4">
+        <div className="flex items-center gap-2.5">
+          <span className="grid place-items-center w-9 h-9 rounded-xl bg-gradient-to-br from-lime-300 to-emerald-500 text-[#0b1a06] font-black text-sm shadow-[0_0_20px_-4px_rgba(184,243,90,0.6)]">YB</span>
+          <div className="leading-tight"><p className="font-black text-white text-[15px] tracking-tight">Yield Bud Empire</p><p className="text-[11px] uppercase tracking-[0.18em] text-lime-300/80">Operadores</p></div>
+        </div>
+      </div>
+      <nav className="flex-1 overflow-auto px-3 space-y-4" aria-label="Secciones del panel">
+        {NAV.map((g) => (
+          <div key={g.group}>
+            <p className="px-2 mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">{g.group}</p>
+            {g.items.map(([id, label, Icon]) => (
+              <button key={id} type="button" onClick={() => go(id)} aria-current={tab === id ? 'page' : undefined}
+                className={`group w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13.5px] font-semibold transition-colors ${tab === id ? 'bg-lime-300/15 text-lime-200 shadow-[inset_2px_0_0_#b8f35a]' : 'text-neutral-300 hover:bg-white/5 hover:text-white'}`}>
+                <Icon className={`w-4 h-4 ${tab === id ? 'text-lime-300' : 'text-neutral-500 group-hover:text-neutral-300'}`} />{label}
+              </button>
+            ))}
+          </div>
+        ))}
+      </nav>
+      <div className="m-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-2.5">
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="flex items-center gap-1.5 text-neutral-300"><i className={`w-2 h-2 rounded-full ${live ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`} />{live ? 'En vivo' : 'Pausado'}</span>
+          <span className="font-mono text-neutral-500">{hhmm(updated)}</span>
+        </div>
+        <div className="flex items-center justify-between text-[12px] text-neutral-400"><span><Activity className="inline w-3.5 h-3.5 mr-1 -mt-0.5 text-emerald-300" />{P.online} en línea</span><span>{H.lastHour.e5 ? <b className="text-rose-300">{H.lastHour.e5} errores</b> : 'sin errores'}</span></div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button type="button" onClick={() => setLive((v) => !v)} className="inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[12px]">{live ? <><Pause className="w-3.5 h-3.5" />Pausar</> : <><Play className="w-3.5 h-3.5" />Reanudar</>}</button>
+          <a href="/" className="inline-flex items-center justify-center px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[12px]">Al juego</a>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#0a0716] text-neutral-200" style={{ fontFamily: "'Outfit', sans-serif" }}>
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0a0716]/90 backdrop-blur px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3">
-        <h1 className="font-black text-white text-lg tracking-tight">Yield Bud Empire · <span className="text-lime-300">Panel de operadores</span></h1>
-        <nav className="flex gap-1">
-          {TABS.map(([id, label]) => <button key={id} type="button" onClick={() => setTab(id)} className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold ${tab === id ? 'bg-lime-300 text-[#14210a]' : 'bg-white/5 hover:bg-white/10'}`}>{label}</button>)}
-        </nav>
-        <div className="ml-auto flex items-center gap-3 text-[12px] text-neutral-400">
-          <span className="flex items-center gap-1.5"><i className={`w-2 h-2 rounded-full ${live ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`} />{live ? 'En vivo' : 'Pausado'} · {hhmm(updated)}</span>
-          <button type="button" onClick={() => setLive((v) => !v)} className="px-2 py-1 rounded-md bg-white/5 hover:bg-white/10">{live ? 'Pausar' : 'Reanudar'}</button>
-          <a href="/" className="px-2 py-1 rounded-md bg-white/5 hover:bg-white/10">Al juego</a>
-        </div>
+      {/* desktop: fixed side menu; phone: a top bar that opens it as a drawer */}
+      <aside className="hidden lg:block fixed inset-y-0 left-0 w-60 border-r border-white/10 bg-[#0c0820]/95 z-20">{sidebar}</aside>
+      <header className="lg:hidden sticky top-0 z-20 flex items-center gap-3 border-b border-white/10 bg-[#0a0716]/95 backdrop-blur px-4 py-3">
+        <button type="button" onClick={() => setMenu(true)} aria-label="Abrir menú" className="p-1.5 rounded-lg bg-white/5"><Menu className="w-5 h-5" /></button>
+        <p className="font-black text-white">{LABEL[tab]}</p>
+        <span className="ml-auto flex items-center gap-1.5 text-[12px] text-neutral-400"><i className={`w-2 h-2 rounded-full ${live ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-600'}`} />{P.online} en línea</span>
       </header>
+      {menu && (
+        <div className="lg:hidden fixed inset-0 z-40 flex">
+          <aside className="relative w-72 max-w-[85%] h-full bg-[#0c0820] border-r border-white/10">{sidebar}
+            <button type="button" onClick={() => setMenu(false)} aria-label="Cerrar menú" className="absolute top-4 right-3 p-1.5 rounded-lg bg-white/5"><X className="w-4 h-4" /></button>
+          </aside>
+          <button type="button" aria-label="Cerrar menú" className="flex-1 bg-black/60" onClick={() => setMenu(false)} />
+        </div>
+      )}
 
-      <main className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-4">
+      <main className="lg:pl-60">
+        <div className="hidden lg:flex items-end justify-between px-8 pt-7 pb-1 max-w-[1400px] mx-auto">
+          <div><p className="text-[11px] uppercase tracking-[0.2em] text-neutral-500">{NAV.find((g) => g.items.some(([id]) => id === tab))?.group}</p><h1 className="text-2xl font-black text-white tracking-tight">{LABEL[tab]}</h1></div>
+          <p className="text-[12px] text-neutral-500">Actualizado {hhmm(updated)}</p>
+        </div>
+      <div className="p-4 sm:p-6 lg:px-8 max-w-[1400px] mx-auto space-y-4">
+        {tab === 'acciones' && <ActionsView />}
         {tab === 'resumen' && (<>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
             <Kpi label="En línea ahora (5 min)" value={P.online} tone="text-emerald-300" />
@@ -461,7 +698,7 @@ export const AdminPanel: React.FC = () => {
                 {!(econ.bridge as Json[]).length && <p className="text-[12px] text-neutral-500">Sin envíos todavía.</p>}
               </Card>
               <Card title="Pack de Fundador (pedidos)">
-                {(econ.founder as Json[]).map((f) => <p key={f.status} className="flex justify-between text-[13px]"><span className="text-neutral-400">{f.status}</span><b>{f.n} · {fmt(f.amount)} USDC</b></p>)}
+                {(econ.founder as Json[]).map((f) => <p key={f.status} className="flex justify-between text-[13px]"><span className="text-neutral-400">{({ open: 'Abiertos (sin pagar)', delivered: 'Entregados', underpaid: 'Pagaron de menos', refund_needed: 'Para devolver', refunded: 'Devueltos', expired: 'Vencidos' } as Json)[f.status] ?? f.status}</span><b>{f.n} · {f.status === 'open' ? '—' : `${fmt(f.amount)} USDC`}</b></p>)}
                 {!(econ.founder as Json[]).length && <p className="text-[12px] text-neutral-500">Sin pedidos todavía.</p>}
               </Card>
             </div>
@@ -567,6 +804,7 @@ export const AdminPanel: React.FC = () => {
             </Card>
           </div>
         </>)}
+      </div>
       </main>
       {card !== null && <PlayerCard id={card} onClose={closeCard} />}
     </div>

@@ -861,6 +861,26 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   const sc = await call('GET', '/api/admin/security', { jar: PA.jar, ip: PA.ip });
   ok('seguridad: conteos, días, marcadas y redes compartidas', sc.status === 200 && sc.json.days.length === 30 && typeof sc.json.counts.login_fail.d30 === 'number' && Array.isArray(sc.json.shared) && !JSON.stringify(sc.json).includes('ip_hash'));
   ok('seguridad: una cuenta normal no la ve', (await call('GET', '/api/admin/security', { jar: PN.jar, ip: PN.ip })).status === 404);
+  // acciones de admin desde el panel: invitaciones, regalo, bloqueo; nunca para una cuenta normal, nunca contra un admin
+  {
+    const A = (body, P = PA) => call('POST', '/api/admin/action', { jar: P.jar, ip: P.ip, body });
+    ok('acciones: una cuenta normal recibe 404', (await A({ action: 'invite', count: 1 }, PN)).status === 404);
+    const iv = await A({ action: 'invite', count: 2, uses: 3, note: 'prueba panel' });
+    ok('acciones: crea invitaciones con su enlace', iv.status === 200 && iv.json.codes.length === 2 && /^YBE-\w{4}-\w{4}$/.test(iv.json.codes[0].code) && iv.json.codes[0].link.includes('?invite=') && db.prepare('SELECT max_uses FROM invites WHERE code = ?').get(iv.json.codes[0].code).max_uses === 3);
+    const rv = await A({ action: 'revoke', code: iv.json.codes[1].code });
+    ok('acciones: anula una invitación', rv.status === 200 && db.prepare('SELECT revoked FROM invites WHERE code = ?').get(iv.json.codes[1].code).revoked === 1);
+    const gf = await A({ action: 'gift', id: PN.id, amount: 750, noteEs: 'gracias', noteEn: 'thanks' });
+    const gRow = db.prepare('SELECT amount, note FROM gifts WHERE account_id = ? ORDER BY id DESC').get(PN.id);
+    ok('acciones: regala un cofre de $FLORA con su nota en dos idiomas', gf.status === 200 && gRow.amount === 750 && JSON.parse(gRow.note).en === 'thanks');
+    ok('acciones: el monto tiene límite', (await A({ action: 'gift', id: PN.id, amount: 5_000_000 })).status === 400 && (await A({ action: 'gift', id: PN.id, amount: 0 })).status === 400);
+    ok('acciones: no se bloquea a un admin', (await A({ action: 'ban', id: PA.id })).json.error === 'is_admin');
+    const bn = await A({ action: 'ban', id: PN.id, reason: 'prueba' });
+    ok('acciones: bloquear cierra sus sesiones', bn.status === 200 && (await call('GET', '/api/game/state', { jar: PN.jar, ip: PN.ip })).status === 401 && db.prepare('SELECT flags FROM accounts WHERE id = ?').get(PN.id).flags.includes('banned,'));
+    const ub = await A({ action: 'unban', id: PN.id });
+    ok('acciones: desbloquear', ub.status === 200 && !db.prepare('SELECT flags FROM accounts WHERE id = ?').get(PN.id).flags.includes('banned,'));
+    ok('acciones: queda registrado quién la hizo', db.prepare("SELECT COUNT(*) AS n FROM audit WHERE event IN ('admin_gift','admin_ban','admin_unban','admin_panel_invite','admin_panel_revoke') AND detail LIKE '%(panel)%'").get().n >= 5);
+    ok('acciones: sin el encabezado anti-CSRF se rechaza', (await call('POST', '/api/admin/action', { jar: PA.jar, ip: PA.ip, body: { action: 'invite' }, headers: { 'x-cf-csrf': '0' } })).status === 403);
+  }
   limiter.m.clear();   // the two accounts above count against the per-minute sign-up budget of the sections below
 }
 // ── cuentas de desarrollador: juegan con su saldo de prueba, pero nada real sale con $FLORA
