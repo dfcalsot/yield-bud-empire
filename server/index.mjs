@@ -15,6 +15,7 @@ import { installGame } from './game.mjs';
 import { installBridge } from './bridge.mjs';
 import { installFounder } from './founder.mjs';
 import { installPanel } from './panel.mjs';
+import { createAlerts } from './alerts.mjs';
 import { createPrereg } from './prereg.mjs';
 import { installWallet } from './wallet.mjs';
 
@@ -153,7 +154,9 @@ setInterval(() => { const now = Date.now(); try { q.sweepPow.run(now); q.sweepSe
 
 const limiter = new Limiter();
 const ipHashOf = (ip) => crypto.createHmac('sha256', ipSalt).update(String(ip)).digest('hex').slice(0, 24);
-const audit = (event, accountId, ipHash, detail = '') => { try { q.audit.run(Date.now(), event, accountId ?? null, ipHash ?? null, String(detail).slice(0, 200)); } catch { /* */ } };
+// the operators' Telegram chat (server/alerts.mjs): off unless TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are set
+export const alerts = createAlerts({ db });
+const audit = (event, accountId, ipHash, detail = '') => { try { q.audit.run(Date.now(), event, accountId ?? null, ipHash ?? null, String(detail).slice(0, 200)); } catch { /* */ } alerts.onAudit(event, accountId, detail); };
 
 /* ───────────────────────────── mail ───────────────────────────── */
 
@@ -564,7 +567,7 @@ export const economy = installEconomy({ db, route, HttpError, sessionAccount, au
 export const wallet = installWallet({ db, route, HttpError, sessionAccount, audit, limit, readJson });
 export const game = installGame({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy, sendMail, sign: (s) => hmac(SECRET, s), publicUrl: cfg.publicUrl, harvestMail: process.env.HARVEST_MAIL !== '0' });
 export const bridge = await installBridge({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy, cfg, env: process.env });
-export const panel = installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile: path.join(cfg.dataDir, 'accounts.db'), readJson, telemetry: process.env.TELEMETRY_ENABLED === '1' });
+export const panel = installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile: path.join(cfg.dataDir, 'accounts.db'), readJson, telemetry: process.env.TELEMETRY_ENABLED === '1', alerts });
 export const founder = await installFounder({ db, route, HttpError, sessionAccount, audit, limit, readJson, env: process.env, sendMail });
 
 /* ───────────────────────────── server ───────────────────────────── */
@@ -642,6 +645,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (cfg.devLinks) console.warn('⚠  DEV_EXPOSE_LINKS=1: los enlaces de verificación se devuelven a la web. La verificación de correo NO protege nada. Solo para desarrollo.');
   if (!cfg.smtpUrl) console.warn('⚠  SMTP_URL sin configurar: los correos se guardan en data/outbox.log y no llegan a nadie.');
   if (!secure) console.warn('⚠  PUBLIC_URL sin HTTPS: las cookies de sesión no llevan el atributo Secure. Ponlo detrás de HTTPS en producción.');
+  if (alerts.on) void alerts.send('start', '🔄 El servidor del juego arrancó (despliegue o reinicio).');
   createServer().listen(cfg.port, cfg.host, () => console.log(`Yield Bud Empire accounts on http://${cfg.host}:${cfg.port} (public ${cfg.publicUrl}) · google=${!!providers.google.id} smtp=${!!cfg.smtpUrl}`));
 }
 export { db, q, limiter };

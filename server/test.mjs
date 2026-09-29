@@ -845,6 +845,17 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   ok('ficha: trae plantas, instalación, acciones y libro', fc.status === 200 && Array.isArray(fc.json.indoor) && fc.json.facility.tier >= 1 && Array.isArray(fc.json.activity) && Array.isArray(fc.json.ledger));
   ok('ficha: sin correo', !JSON.stringify(fc.json).includes('@example.com'));
   ok('ficha: jugador inexistente → 404; cuenta normal → 404', (await call('GET', '/api/admin/player?id=999999', { jar: PA.jar, ip: PA.ip })).status === 404 && (await call('GET', `/api/admin/player?id=${PA.id}`, { jar: PN.jar, ip: PN.ip })).status === 404);
+  // alertas a Telegram (server/alerts.mjs) con un Telegram falso: jugador nuevo sí, repetidas con espera no, sin token nada
+  {
+    const { createAlerts } = await import('./alerts.mjs');
+    const sent = [];
+    const al = createAlerts({ db, env: { TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: 'c' }, fetchImpl: async (url, o) => { sent.push({ url, body: JSON.parse(o.body) }); return { ok: true }; } });
+    al.onAudit('signup', PA.id); al.onAudit('login', PA.id); al.onAudit('bot_signal', null, 'honeypot'); al.onAudit('bot_signal', null, 'honeypot');
+    await new Promise((r) => setTimeout(r, 20));
+    ok('alertas: avisa jugador nuevo y seguridad; un login no; lo repetido espera', sent.length === 2 && /Jugador nuevo/.test(sent[0].body.text) && /Seguridad/.test(sent[1].body.text) && sent[0].body.chat_id === 'c' && sent[0].url.includes('/bott/'));
+    const quiet = createAlerts({ db, env: {}, fetchImpl: async () => { throw new Error('no debería llamar'); } });
+    ok('alertas: sin token no hace nada', quiet.on === false && (await quiet.send('x', 'y')) === false);
+  }
   limiter.m.clear();   // the two accounts above count against the per-minute sign-up budget of the sections below
 }
 // ── cuentas de desarrollador: juegan con su saldo de prueba, pero nada real sale con $FLORA

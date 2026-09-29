@@ -11,7 +11,7 @@ const MIN = 60_000, DAY = 86400_000;
 const pct = (arr, p) => { if (!arr.length) return 0; const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; };
 const dayKey = (ts) => new Date(ts).toISOString().slice(0, 10);
 
-export function installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile, readJson, telemetry = false }) {
+export function installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile, readJson, telemetry = false, alerts = null }) {
   db.exec(`
 CREATE TABLE IF NOT EXISTS metrics_minute (ts INTEGER PRIMARY KEY, req INTEGER NOT NULL, e4 INTEGER NOT NULL, e5 INTEGER NOT NULL,
   p50 INTEGER NOT NULL, p95 INTEGER NOT NULL, online INTEGER NOT NULL, rss INTEGER NOT NULL);
@@ -40,6 +40,17 @@ CREATE INDEX IF NOT EXISTS idx_client_events ON client_events(kind, ts);
     bucket = { ts: Math.floor(now / MIN) * MIN, req: 0, e4: 0, e5: 0, ms: [] };
     if (!b.req && !onlineNow(now)) return;
     try { q.putMin.run(b.ts, b.req, b.e4, b.e5, Math.round(pct(b.ms, 0.5)), Math.round(pct(b.ms, 0.95)), onlineNow(now), Math.round(process.memoryUsage().rss / 1048576)); } catch { /* */ }
+    watch(now);
+  }
+  /** bursts worth a Telegram message: server errors in the last 5 minutes, players' errors in the last 10 */
+  function watch(now) {
+    if (!alerts?.on) return;
+    try {
+      const e5 = one('SELECT COALESCE(SUM(e5),0) AS n FROM metrics_minute WHERE ts >= ?', now - 5 * MIN).n;
+      if (e5 >= 5) void alerts.send('e5', `🔥 ${e5} errores del servidor en los últimos 5 minutos. Mira Panel → Servidor.`, 30 * MIN);
+      const ce = one("SELECT COUNT(*) AS n, COUNT(DISTINCT account_id) AS p FROM client_events WHERE kind = 'error' AND ts >= ?", now - 10 * MIN);
+      if (ce.n >= 10) void alerts.send('client_errors', `🐞 ${ce.n} errores del juego en 10 minutos (${ce.p} jugadores). Mira Panel → Lado del jugador.`, 60 * MIN);
+    } catch { /* */ }
   }
   const timer = setInterval(() => { flush(); try { q.sweepMin.run(Date.now() - 30 * DAY); q.sweepEvents.run(Date.now() - 30 * DAY); } catch { /* */ } }, MIN);
   timer.unref?.();
