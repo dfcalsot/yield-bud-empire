@@ -182,8 +182,8 @@ const PlayerCard: React.FC<{ id: number; onClose: () => void }> = ({ id, onClose
   );
 };
 
-type Tab = 'resumen' | 'embudo' | 'jugadores' | 'economia' | 'cliente' | 'servidor';
-const TABS: Array<[Tab, string]> = [['resumen', 'Resumen'], ['embudo', 'Primeros pasos'], ['jugadores', 'Jugadores'], ['economia', 'Economía'], ['cliente', 'Lado del jugador'], ['servidor', 'Servidor']];
+type Tab = 'resumen' | 'embudo' | 'jugadores' | 'economia' | 'cliente' | 'seguridad' | 'servidor';
+const TABS: Array<[Tab, string]> = [['resumen', 'Resumen'], ['embudo', 'Primeros pasos'], ['jugadores', 'Jugadores'], ['economia', 'Economía'], ['cliente', 'Lado del jugador'], ['seguridad', 'Seguridad'], ['servidor', 'Servidor']];
 
 export const AdminPanel: React.FC = () => {
   const [tab, setTab] = useState<Tab>('resumen');
@@ -194,6 +194,7 @@ export const AdminPanel: React.FC = () => {
   const [fun, setFun] = useState<Json | null>(null);
   const [funDays, setFunDays] = useState(0);
   const [card, setCard] = useState<number | null>(null);
+  const [sec, setSec] = useState<Json | null>(null);
   const closeCard = React.useCallback(() => setCard(null), []);
   const [denied, setDenied] = useState<number | null>(null);
   const [updated, setUpdated] = useState(0);
@@ -216,12 +217,13 @@ export const AdminPanel: React.FC = () => {
     return () => { alive = false; window.clearInterval(id); };
   }, [live]);
   useEffect(() => {
-    if (tab !== 'jugadores' && tab !== 'economia' && tab !== 'cliente' && tab !== 'embudo') return;
+    if (tab !== 'jugadores' && tab !== 'economia' && tab !== 'cliente' && tab !== 'embudo' && tab !== 'seguridad') return;
     let alive = true;
     const pull = async () => {
       if (document.hidden) return;
       if (tab === 'jugadores') { const r = await get('/api/admin/players'); if (alive && typeof r !== 'number') setPlayers(r.players); }
       else if (tab === 'embudo') { const r = await get(`/api/admin/funnel?days=${funDays}`); if (alive && typeof r !== 'number') setFun(r); }
+      else if (tab === 'seguridad') { const r = await get('/api/admin/security'); if (alive && typeof r !== 'number') setSec(r); }
       else if (tab === 'cliente') { const r = await get('/api/admin/client'); if (alive && typeof r !== 'number') setClient(r); }
       else { const r = await get('/api/admin/economy'); if (alive && typeof r !== 'number') setEcon(r); }
     };
@@ -407,6 +409,35 @@ export const AdminPanel: React.FC = () => {
             <Kpi label="Fundadores" value={econ.founders} tone="text-amber-300" />
             <Kpi label="NFT en total" value={fmt((econ.nfts as Json[]).reduce((n, x) => n + x.n, 0))} />
           </div>
+          {(() => { const w = econ.week as Json; const ratio = w.burned ? w.made / w.burned : w.made ? Infinity : 0; const tone = ratio > 1.5 ? 'text-rose-300' : ratio > 1.1 ? 'text-amber-300' : 'text-emerald-300'; return (
+            <Card title="Salud de la economía · jugadores reales" aside={<span className="text-[11px] text-neutral-500">sin cuentas dev, regalos ni saldos de prueba</span>}>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                <Kpi label="$FLORA creada (7 d)" value={fmt(w.made)} tone="text-lime-300" />
+                <Kpi label="$FLORA destruida o gastada (7 d)" value={fmt(w.burned)} tone="text-pink-300" />
+                <Kpi label="Neto (7 d)" value={`${w.made - w.burned >= 0 ? '+' : ''}${fmt(w.made - w.burned)}`} tone={w.made - w.burned > 0 ? 'text-amber-200' : 'text-emerald-300'} />
+                <Kpi label={ratio > 1.1 ? 'Se crea más de lo que se gasta: ojo con la inflación' : 'Equilibrada: se gasta lo que se crea'} value={Number.isFinite(ratio) ? `${ratio.toFixed(2)}×` : '∞'} tone={tone} hint="creada ÷ gastada en 7 días" />
+              </div>
+              <div className="grid lg:grid-cols-2 gap-4">
+                <div><p className="text-[11px] text-neutral-400 mb-1">Creada (verde) y gastada (rosa) por día · 30 d</p><Bars data={(econ.health as Json[]).map((h) => ({ label: h.d.slice(5), v: h.made, v2: h.burned }))} /></div>
+                <div><p className="text-[11px] text-neutral-400 mb-1">$FLORA en circulación al cierre de cada día · 30 d</p><Line data={(econ.health as Json[]).map((h) => h.supply)} color="#b8f35a" h={110} labels={[(econ.health as Json[])[0].d.slice(5), (econ.health as Json[])[29].d.slice(5)]} /></div>
+              </div>
+            </Card>); })()}
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card title="Quién tiene más $FLORA (reales)">
+              <ul className="text-[12.5px] space-y-1">{(econ.holders as Json[]).map((h, i) => (
+                <li key={h.id} className="flex items-center gap-2"><span className="w-5 text-neutral-500 font-mono">{i + 1}</span><button type="button" onClick={() => setCard(h.id)} className="w-36 truncate text-left text-white hover:text-lime-300 hover:underline">{h.name}</button>
+                  <span className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden"><i className="block h-full rounded-full bg-lime-400/80" style={{ width: `${h.share * 100}%` }} /></span>
+                  <span className="w-24 text-right font-mono">{fmt(h.flora)}</span><span className={`w-12 text-right font-mono ${h.share > 0.5 ? 'text-amber-300' : 'text-neutral-400'}`}>{Math.round(h.share * 100)}%</span></li>))}</ul>
+            </Card>
+            <Card title="Precios del mercado entre jugadores · 30 d">
+              {(econ.prices as Json[]).length ? (<>
+                <table className="w-full text-[12.5px] mb-3"><thead className="text-neutral-400 text-left"><tr className="border-b border-white/10"><th className="py-1">Tipo</th><th className="text-right">Ventas</th><th className="text-right">Promedio</th><th className="text-right">Mín</th><th className="text-right">Máx</th></tr></thead>
+                  <tbody>{(econ.prices as Json[]).map((r) => <tr key={r.kind} className="border-b border-white/5"><td className="py-1 font-mono">{r.kind}</td><td className="text-right font-mono">{r.n}</td><td className="text-right font-mono">{fmt(r.avg)}</td><td className="text-right font-mono text-neutral-400">{fmt(r.min)}</td><td className="text-right font-mono text-neutral-400">{fmt(r.max)}</td></tr>)}</tbody></table>
+                <p className="text-[11px] text-neutral-400 mb-1">Últimas ventas</p>
+                <ul className="text-[12px] divide-y divide-white/5">{(econ.sales as Json[]).map((x, i) => <li key={i} className="py-1 flex gap-2"><span className="w-20 text-neutral-500">{ago(x.ts, ov.now)}</span><span className="flex-1">{x.kind}{x.rarity ? ` · ${x.rarity}` : ''} · {x.seller} → {x.buyer}</span><b className="font-mono">{fmt(x.price)}</b></li>)}</ul>
+              </>) : <p className="text-[12px] text-neutral-500">Todavía no hubo ventas entre jugadores.</p>}
+            </Card>
+          </div>
           <div className="grid lg:grid-cols-3 gap-4">
             <Card title="$FLORA que entra (verde) y sale (rosa) por día · 14 d" className="lg:col-span-2" aside={<span className="text-[11px] text-neutral-500">sin regalos ni saldos de prueba</span>}>
               <Bars data={(econ.days as Json[]).map((d) => ({ label: d.d.slice(5), v: d.in, v2: d.out }))} />
@@ -474,6 +505,34 @@ export const AdminPanel: React.FC = () => {
                   <span className="w-20 text-right font-mono">{fmt(r.n)} · {r.players}👤</span>
                 </div>))}</div>
             ) : <p className="text-[12px] text-neutral-500">Sin datos todavía.</p>; })()}
+          </Card>
+        </>))}
+
+
+        {tab === 'seguridad' && (!sec ? <p className="text-neutral-500 text-sm">Cargando…</p> : (<>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+            {([['login_fail', 'Contraseñas erradas'], ['bot_signal', 'Señales de bot'], ['flag_multi_ip', 'Varias cuentas misma red'], ['disposable', 'Correos desechables'], ['invite_rejected', 'Invitaciones rechazadas'], ['reset_request', 'Pidieron cambiar contraseña']] as Array<[string, string]>).map(([k, l]) => (
+              <Kpi key={k} label={`${l} (24 h · 7 d · 30 d)`} value={`${sec.counts[k].d1} · ${sec.counts[k].d7} · ${sec.counts[k].d30}`} tone={sec.counts[k].d1 ? 'text-amber-300' : 'text-white'} />
+            ))}
+          </div>
+          <div className="grid lg:grid-cols-3 gap-4">
+            <Card title="Contraseñas erradas (ámbar) y otras señales (rojo) por día · 30 d" className="lg:col-span-2"><Bars data={(sec.days as Json[]).map((d) => ({ label: d.d.slice(5), v: d.fail, v2: d.other }))} color="#fbbf24" color2="#fb7185" /></Card>
+            <Card title={`Cuentas marcadas o bloqueadas (${(sec.flagged as Json[]).length})`}>
+              {(sec.flagged as Json[]).length ? <ul className="text-[12.5px] space-y-1">{(sec.flagged as Json[]).map((a) => <li key={a.id} className="flex flex-wrap items-center gap-1.5"><button type="button" onClick={() => setCard(a.id)} className="font-semibold text-white hover:text-lime-300 hover:underline">{a.name}</button>{a.locked && <span className="text-[10px] px-1.5 rounded bg-rose-500/20 text-rose-200">bloqueada</span>}{(a.flags as string[]).map((f) => <span key={f} className="text-[10px] px-1.5 rounded bg-amber-400/15 text-amber-200">{f}</span>)}</li>)}</ul> : <p className="text-[13px] text-emerald-300">Ninguna. ✓</p>}
+            </Card>
+          </div>
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card title="Contraseñas erradas por cuenta · 7 d">
+              {(sec.fails as Json[]).length ? <table className="w-full text-[12.5px]"><thead className="text-neutral-400 text-left"><tr className="border-b border-white/10"><th className="py-1">Cuenta</th><th className="text-right">Intentos</th><th className="text-right">Redes distintas</th><th className="text-right">Último</th></tr></thead>
+                <tbody>{(sec.fails as Json[]).map((f, i) => <tr key={i} className="border-b border-white/5"><td className="py-1">{f.id ? <button type="button" onClick={() => setCard(f.id)} className="text-white hover:text-lime-300 hover:underline">{f.name}</button> : <span className="text-neutral-400">(usuario que no existe)</span>}</td><td className={`text-right font-mono ${f.n >= 5 ? 'text-amber-300' : ''}`}>{f.n}</td><td className={`text-right font-mono ${f.nets >= 3 ? 'text-rose-300' : ''}`}>{f.nets}</td><td className="text-right text-neutral-400">{ago(f.last, ov.now)}</td></tr>)}</tbody></table>
+                : <p className="text-[13px] text-emerald-300">Ninguna en la última semana. ✓</p>}
+            </Card>
+            <Card title="Cuentas creadas desde la misma red" aside={<span className="text-[11px] text-neutral-500">la dirección no se guarda: solo se agrupa</span>}>
+              {(sec.shared as Json[]).length ? <ul className="text-[12.5px] space-y-1">{(sec.shared as Json[]).map((g) => <li key={g.net} className="flex gap-2"><span className="w-14 shrink-0 font-mono text-neutral-500">{g.net}</span><b className="font-mono w-6">{g.n}</b><span className="text-neutral-200">{g.names}</span></li>)}</ul> : <p className="text-[13px] text-emerald-300">Cada cuenta viene de una red distinta. ✓</p>}
+            </Card>
+          </div>
+          <Card title="Últimos eventos de seguridad">
+            <ul className="text-[12.5px] divide-y divide-white/5 max-h-[400px] overflow-auto">{(sec.recent as Json[]).map((e, i) => <li key={i} className="py-1 flex gap-3"><span className="w-20 shrink-0 text-neutral-500">{ago(e.ts, ov.now)}</span><span className="w-52 shrink-0 font-mono text-amber-200">{e.event}</span>{e.id ? <button type="button" onClick={() => setCard(e.id)} className="text-white hover:text-lime-300 hover:underline">{e.name}</button> : <span className="text-neutral-500">—</span>}<span className="text-neutral-500 truncate">{e.detail}</span></li>)}</ul>
           </Card>
         </>))}
 

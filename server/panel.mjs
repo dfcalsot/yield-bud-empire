@@ -159,7 +159,26 @@ CREATE INDEX IF NOT EXISTS idx_client_events ON client_events(kind, ts);
     const bridge = has('bridge_jobs') ? all('SELECT dir, status, COUNT(*) AS n FROM bridge_jobs GROUP BY dir, status') : [];
     const founder = has('founder_orders') ? all('SELECT status, COUNT(*) AS n, COALESCE(SUM(amount),0) AS amount FROM founder_orders GROUP BY status') : [];
     const founders = has('founders') ? one('SELECT COUNT(*) AS n FROM founders').n : 0;
-    return { circulating: circ.real, circulatingAll: circ.all_, byKind, days, market, nfts, bridge, founder, founders };
+    // health, real players only (no dev accounts, no grants or gifts): what the game creates and destroys each day, the supply over
+    // time, who holds it, and what things sell for between players
+    const REAL = "account_id IN (SELECT id FROM accounts WHERE flags NOT LIKE '%dev,%')";
+    const real = all(`SELECT account_id AS id, ts, kind, delta, balance FROM ledger WHERE ${REAL} ORDER BY id`);
+    const health = Array.from({ length: 30 }, (_, i) => ({ d: dayKey(now - (29 - i) * DAY), made: 0, burned: 0, supply: 0 }));
+    const idx = new Map(health.map((h, i) => [h.d, i]));
+    for (const r of real) { if (r.kind === 'grant' || r.kind === 'gift' || r.ts < now - 30 * DAY) continue; const h = health[idx.get(dayKey(r.ts))]; if (!h) continue; if (r.delta > 0) h.made += r.delta; else h.burned -= r.delta; }
+    const lastBal = new Map();   // account → last balance seen, walked day by day
+    let k = 0; const sortedTs = [...real].sort((a, b) => a.ts - b.ts);
+    for (const h of health) {
+      const end = new Date(`${h.d}T23:59:59.999Z`).getTime();
+      while (k < sortedTs.length && sortedTs[k].ts <= end) { lastBal.set(sortedTs[k].id, sortedTs[k].balance); k++; }
+      h.supply = [...lastBal.values()].reduce((a, b) => a + b, 0);
+    }
+    const week = health.slice(-7).reduce((a, h) => ({ made: a.made + h.made, burned: a.burned + h.burned }), { made: 0, burned: 0 });
+    const holders = all(`SELECT w.account_id AS id, a.username AS name, w.flora FROM wallets w JOIN accounts a ON a.id = w.account_id WHERE a.flags NOT LIKE '%dev,%' ORDER BY w.flora DESC LIMIT 10`)
+      .map((h) => ({ ...h, share: circ.real ? h.flora / circ.real : 0 }));
+    const prices = has('listings') ? all(`SELECT kind, COUNT(*) AS n, ROUND(AVG(price)) AS avg, MIN(price) AS min, MAX(price) AS max FROM listings WHERE status = 'sold' AND closed_at >= ? GROUP BY kind ORDER BY n DESC`, now - 30 * DAY) : [];
+    const sales = has('listings') ? all(`SELECT l.closed_at AS ts, l.kind, l.rarity, l.price, s.username AS seller, b.username AS buyer FROM listings l LEFT JOIN accounts s ON s.id = l.seller_id LEFT JOIN accounts b ON b.id = l.buyer_id WHERE l.status = 'sold' ORDER BY l.closed_at DESC LIMIT 15`) : [];
+    return { circulating: circ.real, circulatingAll: circ.all_, byKind, days, market, nfts, bridge, founder, founders, health, week, holders, prices, sales };
   }
 
   function health(now) {
@@ -299,12 +318,39 @@ CREATE INDEX IF NOT EXISTS idx_client_events ON client_events(kind, ts);
     };
   }
 
+
+  /* ───────────── security: everything suspicious in one place ───────────── */
+  const SEC_EVENTS = ['login_fail', 'bot_signal', 'prereg_bot', 'flag_multi_ip', 'ip_cap', 'disposable', 'prereg_disposable', 'invite_rejected', 'signup_existing_email', 'reset_request'];
+  function security(now) {
+    const since = now - 30 * DAY;
+    const counts = Object.fromEntries(SEC_EVENTS.map((e) => [e, { d1: 0, d7: 0, d30: 0 }]));
+    const perDay = {};
+    for (const r of all(`SELECT ts, event FROM audit WHERE ts >= ? AND event IN (${SEC_EVENTS.map(() => '?').join(',')})`, since, ...SEC_EVENTS)) {
+      const c = counts[r.event]; c.d30++; if (now - r.ts < 7 * DAY) c.d7++; if (now - r.ts < DAY) c.d1++;
+      const d = perDay[dayKey(r.ts)] ??= { fail: 0, other: 0 }; if (r.event === 'login_fail') d.fail++; else d.other++;
+    }
+    const days = Array.from({ length: 30 }, (_, i) => dayKey(now - (29 - i) * DAY)).map((d) => ({ d, fail: perDay[d]?.fail ?? 0, other: perDay[d]?.other ?? 0 }));
+    // failed logins by account (the ip is only a hash: grouped, never shown whole)
+    const fails = all(`SELECT a.account_id AS id, c.username AS name, COUNT(*) AS n, COUNT(DISTINCT a.ip_hash) AS nets, MAX(a.ts) AS last FROM audit a LEFT JOIN accounts c ON c.id = a.account_id
+      WHERE a.event = 'login_fail' AND a.ts >= ? GROUP BY a.account_id ORDER BY n DESC LIMIT 15`, now - 7 * DAY);
+    const flagged = all("SELECT id, username AS name, flags, locked_until, failed FROM accounts WHERE flags != '' OR locked_until > ? ORDER BY id DESC LIMIT 60", now)
+      .map((a) => ({ id: a.id, name: a.name, flags: a.flags.split(',').filter((f) => f && f !== 'dev' && f !== 'admin'), locked: a.locked_until > now, failed: a.failed }))
+      .filter((a) => a.flags.length || a.locked);
+    // accounts created from the same network (same ip hash): shown as groups, with a short tag instead of the hash
+    const shared = all("SELECT ip_hash, GROUP_CONCAT(username, ', ') AS names, GROUP_CONCAT(id) AS ids, COUNT(*) AS n FROM accounts WHERE ip_hash IS NOT NULL GROUP BY ip_hash HAVING n > 1 ORDER BY n DESC LIMIT 20")
+      .map((g, i) => ({ net: `red ${String.fromCharCode(65 + (i % 26))}`, names: g.names, ids: String(g.ids).split(',').map(Number), n: g.n }));
+    const recent = all(`SELECT a.ts, a.event, a.account_id AS id, c.username AS name, a.detail FROM audit a LEFT JOIN accounts c ON c.id = a.account_id
+      WHERE a.event IN (${SEC_EVENTS.map(() => '?').join(',')}) ORDER BY a.ts DESC LIMIT 40`, ...SEC_EVENTS);
+    return { counts, days, fails, flagged, shared, recent, locked: flagged.filter((f) => f.locked).length };
+  }
+
   route('GET', '/api/admin/me', (ctx) => { const a = admin(ctx); return { ok: true, name: a.username }; });
   route('GET', '/api/admin/overview', (ctx) => { admin(ctx); const now = Date.now(); return { ...overview(now), health: health(now), feed: feed(40) }; });
   route('GET', '/api/admin/players', (ctx) => { admin(ctx); return { players: players(Date.now()) }; });
   route('GET', '/api/admin/economy', (ctx) => { admin(ctx); return economy(Date.now()); });
   route('GET', '/api/admin/client', (ctx) => { admin(ctx); return clientSide(Date.now()); });
   route('GET', '/api/admin/player', (ctx) => { admin(ctx); return playerCard(Math.floor(Number(ctx.url.searchParams.get('id'))) || 0, Date.now()); });
+  route('GET', '/api/admin/security', (ctx) => { admin(ctx); return security(Date.now()); });
   route('GET', '/api/admin/funnel', (ctx) => { admin(ctx); const d = Number(ctx.url.searchParams.get('days')); return funnel(Date.now(), [7, 30, 90].includes(d) ? d : 0); });
 
   return Object.assign(api, { observe, isAdmin });

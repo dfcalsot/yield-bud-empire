@@ -856,6 +856,11 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
     const quiet = createAlerts({ db, env: {}, fetchImpl: async () => { throw new Error('no debería llamar'); } });
     ok('alertas: sin token no hace nada', quiet.on === false && (await quiet.send('x', 'y')) === false);
   }
+  const ec2 = await call('GET', '/api/admin/economy', { jar: PA.jar, ip: PA.ip });
+  ok('economía: salud de 30 días, semana, mayores tenedores y precios', ec2.status === 200 && ec2.json.health.length === 30 && typeof ec2.json.week.made === 'number' && Array.isArray(ec2.json.holders) && Array.isArray(ec2.json.prices) && ec2.json.holders.every((h) => h.share >= 0 && h.share <= 1));
+  const sc = await call('GET', '/api/admin/security', { jar: PA.jar, ip: PA.ip });
+  ok('seguridad: conteos, días, marcadas y redes compartidas', sc.status === 200 && sc.json.days.length === 30 && typeof sc.json.counts.login_fail.d30 === 'number' && Array.isArray(sc.json.shared) && !JSON.stringify(sc.json).includes('ip_hash'));
+  ok('seguridad: una cuenta normal no la ve', (await call('GET', '/api/admin/security', { jar: PN.jar, ip: PN.ip })).status === 404);
   limiter.m.clear();   // the two accounts above count against the per-minute sign-up budget of the sections below
 }
 // ── cuentas de desarrollador: juegan con su saldo de prueba, pero nada real sale con $FLORA
