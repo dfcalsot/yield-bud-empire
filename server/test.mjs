@@ -838,6 +838,13 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   ok('telemetría: el panel la muestra', cl.status === 200 && cl.json.errors[0]?.name === 'TypeError: boom' && cl.json.views[0]?.name === 'cultivo' && cl.json.perf[0]?.p50 === 2300);
   ok('telemetría: la pestaña del panel no la ve una cuenta normal', (await call('GET', '/api/admin/client', { jar: PN.jar, ip: PN.ip })).status === 404);
   panel.telemetry = false;
+  const fu = await call('GET', '/api/admin/funnel?days=7', { jar: PA.jar, ip: PA.ip });
+  ok('embudo: pasos en orden, el primero es el registro', fu.status === 200 && fu.json.steps.length === 8 && fu.json.steps[0].id === 'signup' && fu.json.steps[0].n === fu.json.total && fu.json.steps.every((x) => x.n <= x.eligible));
+  ok('embudo: no cuenta las cuentas dev', !fu.json.stuck.some((x) => x.id === PN.id));
+  const fc = await call('GET', `/api/admin/player?id=${PA.id}`, { jar: PA.jar, ip: PA.ip });
+  ok('ficha: trae plantas, instalación, acciones y libro', fc.status === 200 && Array.isArray(fc.json.indoor) && fc.json.facility.tier >= 1 && Array.isArray(fc.json.activity) && Array.isArray(fc.json.ledger));
+  ok('ficha: sin correo', !JSON.stringify(fc.json).includes('@example.com'));
+  ok('ficha: jugador inexistente → 404; cuenta normal → 404', (await call('GET', '/api/admin/player?id=999999', { jar: PA.jar, ip: PA.ip })).status === 404 && (await call('GET', `/api/admin/player?id=${PA.id}`, { jar: PN.jar, ip: PN.ip })).status === 404);
   limiter.m.clear();   // the two accounts above count against the per-minute sign-up budget of the sections below
 }
 // ── cuentas de desarrollador: juegan con su saldo de prueba, pero nada real sale con $FLORA

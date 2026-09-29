@@ -214,11 +214,87 @@ CREATE INDEX IF NOT EXISTS idx_client_events ON client_events(kind, ts);
     return { enabled: api.telemetry, errors, days, perf, devices, views };
   }
 
+
+  /* ───────────── the first steps: how far new players get ───────────── */
+  const STEPS = [
+    { id: 'signup', label: 'Se registró' },
+    { id: 'play', label: 'Hizo algo en el juego', test: (e) => e.startsWith('game_') && e !== 'game_created' && e !== 'game_migrated' },
+    { id: 'water', label: 'Regó', test: (e) => /^game_water/.test(e) },
+    { id: 'feed', label: 'Abonó', test: (e) => /^game_(feed|applyNutrient|applyFertigation)/.test(e) },
+    { id: 'harvest', label: 'Cosechó su primera planta', test: (e) => /^game_harvest/.test(e) },
+    { id: 'sell', label: 'Vendió o procesó la cosecha', test: (e) => /^game_(sellProduct|processRawFlower|runLabProcess|executeManualRosinPress)$|^econ_sell$/.test(e) },
+    { id: 'd1', label: 'Volvió otro día' },
+    { id: 'd7', label: 'Sigue jugando una semana después' },
+  ];
+  function funnel(now, days) {
+    const since = days ? now - days * DAY : 0;
+    const accts = all("SELECT id, created_at FROM accounts WHERE created_at >= ? AND flags NOT LIKE '%dev,%' ORDER BY id", since);
+    const ids = new Set(accts.map((a) => a.id));
+    const ev = new Map(); for (const a of accts) ev.set(a.id, { names: new Set(), days: new Set(), last: a.created_at });
+    for (const r of all('SELECT ts, event, account_id AS id FROM audit WHERE account_id IS NOT NULL AND ts >= ?', since)) {
+      if (!ids.has(r.id)) continue;
+      const x = ev.get(r.id); x.names.add(r.event); x.days.add(dayKey(r.ts)); x.last = Math.max(x.last, r.ts);
+    }
+    const reached = (a, st) => {
+      const x = ev.get(a.id);
+      if (st.id === 'signup') return true;
+      if (st.id === 'd1') return [...x.days].some((d) => d !== dayKey(a.created_at));
+      if (st.id === 'd7') return x.last - a.created_at >= 7 * DAY;
+      return [...x.names].some(st.test);
+    };
+    const steps = STEPS.map((st) => {
+      const who = accts.filter((a) => reached(a, st));
+      return { id: st.id, label: st.label, n: who.length, eligible: st.id === 'd7' ? accts.filter((a) => now - a.created_at >= 7 * DAY).length : accts.length };
+    });
+    // where the ones who didn't finish the tutorial stopped
+    const tut = {};
+    for (const r of all('SELECT g.account_id AS id, g.json FROM game_state g')) {
+      if (!ids.has(r.id)) continue;
+      const t = json(r.json).tutorial;
+      const k = !t || !t.started ? 'sin empezar' : t.dismissed ? 'cerrado o terminado' : `paso ${(t.index ?? 0) + 1}`;
+      tut[k] = (tut[k] ?? 0) + 1;
+    }
+    // players stuck: signed up but never did anything in the game
+    const stuck = accts.filter((a) => !reached(a, STEPS[1])).map((a) => ({ id: a.id, name: one('SELECT username FROM accounts WHERE id = ?', a.id)?.username, created: a.created_at }));
+    return { days, total: accts.length, steps, tutorial: Object.entries(tut).map(([k, n]) => ({ k, n })).sort((a, b) => b.n - a.n), stuck };
+  }
+
+
+  /* ───────────── one player's card, for support ───────────── */
+  function playerCard(id, now) {
+    const a = one('SELECT id, username, created_at, flags, source, lang, email_verified, harvest_mail, terms_version, locked_until FROM accounts WHERE id = ?', id);
+    if (!a) throw new HttpError(404, 'not_found');
+    const row = players(now).find((p) => p.id === id) ?? {};
+    const g = one('SELECT json, version, updated_at FROM game_state WHERE account_id = ?', id);
+    const s = g ? json(g.json) : {};
+    const e = json(one('SELECT json FROM econ_state WHERE account_id = ?', id)?.json ?? '{}');
+    const strainName = (x) => (typeof x === 'string' ? x : x?.name ?? x?.id ?? '?');
+    const plant = (p) => ({ strain: strainName(p.strain), stage: p.stage, progress: Math.round(p.progressPercent ?? 0), health: Math.round(p.health ?? 0), moisture: Math.round(p.soilMoisture ?? 0), room: p.currentRoom ?? null, pest: p.pest?.kind ?? null, sex: p.sex ?? null });
+    const plots = Object.entries(s.plotPlants ?? {}).map(([site, list]) => ({ site, plants: (Array.isArray(list) ? list : []).map(plant) }));
+    const nfts = all('SELECT kind, COUNT(*) AS n, SUM(escrow) AS escrow FROM nfts WHERE account_id = ? GROUP BY kind', id);
+    const sessions = one('SELECT COUNT(*) AS n, MAX(last_seen) AS last FROM sessions WHERE account_id = ? AND expires_at > ?', id, now);
+    const invite = has('invite_uses') ? one('SELECT code, used_at FROM invite_uses WHERE account_id = ?', id) : null;
+    return {
+      ...row, email_verified: !!a.email_verified, harvestMail: !!a.harvest_mail, terms: a.terms_version, locked: a.locked_until > now,
+      flags: a.flags.split(',').filter(Boolean), sessions, invite: invite ? { code: invite.code.slice(0, 8) + '…', at: invite.used_at } : null,
+      game: { level: s.playerLevel ?? 0, xp: s.playerXp ?? 0, room: s.currentRoom ?? null, updated: g?.updated_at ?? null, auto: { water: !!s.autoWaterActive, climate: !!s.autoClimateActive } },
+      facility: { tier: e.tier ?? 1, unlocked: e.unlocked ?? [], construction: e.construction ?? null, rank: e.empireRank ?? 1 },
+      indoor: (s.indoorPlants ?? []).map(plant), plots,
+      seeds: Object.values(s.seedInventory ?? {}).reduce((n, x) => n + (Number(x) || 0), 0),
+      products: (s.products ?? []).length, quests: e.questsClaimed ?? [], tutorial: s.tutorial ?? null,
+      nfts, activity: all('SELECT ts, event, detail FROM audit WHERE account_id = ? ORDER BY ts DESC LIMIT 60', id),
+      ledger: all('SELECT ts, kind, delta, balance, ref FROM ledger WHERE account_id = ? ORDER BY id DESC LIMIT 40', id),
+      errors: all("SELECT ts, name, detail, device FROM client_events WHERE account_id = ? AND kind = 'error' ORDER BY ts DESC LIMIT 20", id),
+    };
+  }
+
   route('GET', '/api/admin/me', (ctx) => { const a = admin(ctx); return { ok: true, name: a.username }; });
   route('GET', '/api/admin/overview', (ctx) => { admin(ctx); const now = Date.now(); return { ...overview(now), health: health(now), feed: feed(40) }; });
   route('GET', '/api/admin/players', (ctx) => { admin(ctx); return { players: players(Date.now()) }; });
   route('GET', '/api/admin/economy', (ctx) => { admin(ctx); return economy(Date.now()); });
   route('GET', '/api/admin/client', (ctx) => { admin(ctx); return clientSide(Date.now()); });
+  route('GET', '/api/admin/player', (ctx) => { admin(ctx); return playerCard(Math.floor(Number(ctx.url.searchParams.get('id'))) || 0, Date.now()); });
+  route('GET', '/api/admin/funnel', (ctx) => { admin(ctx); const d = Number(ctx.url.searchParams.get('days')); return funnel(Date.now(), [7, 30, 90].includes(d) ? d : 0); });
 
   return Object.assign(api, { observe, isAdmin });
 }

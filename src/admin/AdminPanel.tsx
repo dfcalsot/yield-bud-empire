@@ -95,8 +95,95 @@ const Dist: React.FC<{ rows: Array<{ k: string; n: number }>; prefix: string }> 
   );
 };
 
-type Tab = 'resumen' | 'jugadores' | 'economia' | 'cliente' | 'servidor';
-const TABS: Array<[Tab, string]> = [['resumen', 'Resumen'], ['jugadores', 'Jugadores'], ['economia', 'Economía'], ['cliente', 'Lado del jugador'], ['servidor', 'Servidor']];
+
+const STAGE: Record<string, string> = { seed: 'Germinación', seedling: 'Plántula', vegetative: 'Vegetativo', flowering: 'Floración', maturation: 'Maduración', ready_harvest: 'Lista 🌾' };
+
+/** one player's card (side sheet): what support needs to answer «no me funciona tal cosa» */
+const PlayerCard: React.FC<{ id: number; onClose: () => void }> = ({ id, onClose }) => {
+  const [c, setC] = useState<Json | null>(null);
+  const [err, setErr] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const pull = async () => { const r = await get(`/api/admin/player?id=${id}`); if (!alive) return; if (typeof r === 'number') setErr(true); else setC(r); };
+    void pull(); const t = window.setInterval(pull, 10000);
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', esc);
+    return () => { alive = false; window.clearInterval(t); window.removeEventListener('keydown', esc); };
+  }, [id, onClose]);
+  const Plant = ({ p }: { p: Json }) => (
+    <div className="flex items-center gap-2 text-[12px] py-1 border-b border-white/5">
+      <span className="flex-1 truncate text-white">{p.strain}</span>
+      <span className="w-24 text-neutral-300">{STAGE[p.stage] ?? p.stage}</span>
+      <span className="w-12 text-right font-mono">{p.progress}%</span>
+      <span className={`w-14 text-right font-mono ${p.health < 60 ? 'text-rose-300' : ''}`}>♥{p.health}</span>
+      <span className={`w-14 text-right font-mono ${p.moisture < 35 ? 'text-amber-300' : ''}`}>💧{p.moisture}</span>
+      <span className="w-16 text-right">{p.pest ? <span className="text-rose-300">🐛 {p.pest}</span> : ''}</span>
+    </div>
+  );
+  return (
+    <div className="fixed inset-0 z-30 flex justify-end" role="dialog" aria-modal>
+      <button type="button" aria-label="Cerrar" className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <aside className="relative w-full max-w-[720px] h-full overflow-auto bg-[#0e0a1f] border-l border-white/10 p-5 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-black text-white">{c?.name ?? '…'} <span className="text-neutral-500 font-mono text-sm">#{id}</span></h2>
+            {c && <p className="text-[12px] text-neutral-400 mt-0.5">{c.online ? <span className="text-emerald-300">● en línea</span> : `última actividad ${ago(c.last)}`} · registrado {new Date(c.created).toLocaleDateString('es-CR')} · {c.source}{c.lang ? ` · ${c.lang}` : ''}</p>}
+          </div>
+          <button type="button" onClick={onClose} className="px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/10 text-sm">Cerrar ✕</button>
+        </div>
+        {err && <p className="text-rose-300 text-sm">No se pudo cargar la ficha.</p>}
+        {c && (<>
+          <div className="flex flex-wrap gap-1.5 text-[11px]">
+            {(c.flags as string[]).map((f) => <span key={f} className="px-2 py-0.5 rounded bg-white/10">{f}</span>)}
+            {c.founder && <span className="px-2 py-0.5 rounded bg-amber-400/20 text-amber-200">👑 Fundador #{c.founder}</span>}
+            <span className={`px-2 py-0.5 rounded ${c.email_verified ? 'bg-emerald-400/15 text-emerald-200' : 'bg-rose-400/15 text-rose-200'}`}>{c.email_verified ? 'correo verificado' : 'correo sin verificar'}</span>
+            {c.locked && <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-200">bloqueada</span>}
+            <span className="px-2 py-0.5 rounded bg-white/5">avisos de cosecha: {c.harvestMail ? 'sí' : 'no'}</span>
+            <span className="px-2 py-0.5 rounded bg-white/5">términos {c.terms ?? '—'}</span>
+            {c.invite && <span className="px-2 py-0.5 rounded bg-white/5">invitación {c.invite.code}</span>}
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            <Kpi label="Nivel" value={c.game.level} /><Kpi label="Instalación" value={c.facility.tier} /><Kpi label="Rango" value={c.facility.rank} />
+            <Kpi label="$FLORA" value={fmt(c.flora)} /><Kpi label="Acciones" value={fmt(c.actions)} /><Kpi label="Cosechas" value={c.harvests} />
+          </div>
+          <Card title="Instalación">
+            <p className="text-[13px]">Abiertas: <span className="font-mono">{(c.facility.unlocked as string[]).join(', ') || '—'}</span></p>
+            {c.facility.construction && <p className="text-[13px] mt-1 text-amber-200">🏗️ Construyendo {c.facility.construction.facilityId} · termina {new Date(c.facility.construction.endsAt).toLocaleString('es-CR')}</p>}
+            <p className="text-[12px] text-neutral-400 mt-1">Riego automático: {c.game.auto.water ? 'sí' : 'no'} · Clima automático: {c.game.auto.climate ? 'sí' : 'no'} · Semillas: {c.seeds} · Lotes de laboratorio: {c.products} · Retos cobrados: {(c.quests as string[]).length}</p>
+            <p className="text-[12px] text-neutral-400 mt-1">Tutorial: {c.tutorial ? (c.tutorial.dismissed ? 'cerrado' : `paso ${(c.tutorial.index ?? 0) + 1}`) : 'sin empezar'}</p>
+          </Card>
+          <Card title={`Plantas en interior (${(c.indoor as Json[]).length})`}>
+            {(c.indoor as Json[]).length ? (c.indoor as Json[]).map((p, i) => <Plant key={i} p={p} />) : <p className="text-[12px] text-neutral-500">Ninguna.</p>}
+          </Card>
+          {(c.plots as Json[]).length > 0 && (
+            <Card title={`Parcelas (${(c.plots as Json[]).length})`}>
+              {(c.plots as Json[]).map((pl) => <div key={pl.site} className="mb-2"><p className="text-[11px] font-mono text-neutral-400">{pl.site}</p>{(pl.plants as Json[]).map((p, i) => <Plant key={i} p={p} />)}{!(pl.plants as Json[]).length && <p className="text-[12px] text-neutral-500">vacía</p>}</div>)}
+            </Card>
+          )}
+          <Card title="NFT">
+            <div className="flex flex-wrap gap-2 text-[12.5px]">{(c.nfts as Json[]).map((n) => <span key={n.kind} className="px-2 py-1 rounded bg-white/5">{n.kind}: <b>{n.n}</b>{n.escrow ? ` (${n.escrow} en el mercado o el puente)` : ''}</span>)}{!(c.nfts as Json[]).length && <span className="text-neutral-500">Ninguno.</span>}</div>
+          </Card>
+          {(c.errors as Json[]).length > 0 && (
+            <Card title="Errores que le salieron">
+              <ul className="text-[12px] divide-y divide-white/5">{(c.errors as Json[]).map((e, i) => <li key={i} className="py-1"><span className="text-neutral-500 mr-2">{ago(e.ts)}</span><span className="font-mono text-rose-200">{e.name}</span> <span className="text-neutral-500">· {e.device}</span></li>)}</ul>
+            </Card>
+          )}
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card title="Últimas acciones">
+              <ul className="text-[12px] divide-y divide-white/5 max-h-[360px] overflow-auto">{(c.activity as Json[]).map((e, i) => <li key={i} className="py-1 flex gap-2"><span className="w-20 shrink-0 text-neutral-500">{ago(e.ts)}</span><span className="text-neutral-200">{EVENT[e.event] ?? e.event.replace(/^game_/, '')}</span>{e.detail && <span className="text-neutral-500 truncate">{e.detail}</span>}</li>)}</ul>
+            </Card>
+            <Card title="Movimientos de $FLORA">
+              <ul className="text-[12px] divide-y divide-white/5 max-h-[360px] overflow-auto">{(c.ledger as Json[]).map((l, i) => <li key={i} className="py-1 flex gap-2"><span className="w-20 shrink-0 text-neutral-500">{ago(l.ts)}</span><span className="flex-1 truncate text-neutral-300">{l.ref || l.kind}</span><span className={`font-mono ${l.delta > 0 ? 'text-lime-300' : 'text-pink-300'}`}>{l.delta > 0 ? '+' : ''}{fmt(l.delta)}</span><span className="w-20 text-right font-mono text-neutral-500">{fmt(l.balance)}</span></li>)}</ul>
+            </Card>
+          </div>
+        </>)}
+      </aside>
+    </div>
+  );
+};
+
+type Tab = 'resumen' | 'embudo' | 'jugadores' | 'economia' | 'cliente' | 'servidor';
+const TABS: Array<[Tab, string]> = [['resumen', 'Resumen'], ['embudo', 'Primeros pasos'], ['jugadores', 'Jugadores'], ['economia', 'Economía'], ['cliente', 'Lado del jugador'], ['servidor', 'Servidor']];
 
 export const AdminPanel: React.FC = () => {
   const [tab, setTab] = useState<Tab>('resumen');
@@ -104,6 +191,10 @@ export const AdminPanel: React.FC = () => {
   const [players, setPlayers] = useState<Json[] | null>(null);
   const [econ, setEcon] = useState<Json | null>(null);
   const [client, setClient] = useState<Json | null>(null);
+  const [fun, setFun] = useState<Json | null>(null);
+  const [funDays, setFunDays] = useState(0);
+  const [card, setCard] = useState<number | null>(null);
+  const closeCard = React.useCallback(() => setCard(null), []);
   const [denied, setDenied] = useState<number | null>(null);
   const [updated, setUpdated] = useState(0);
   const [live, setLive] = useState(true);
@@ -125,18 +216,19 @@ export const AdminPanel: React.FC = () => {
     return () => { alive = false; window.clearInterval(id); };
   }, [live]);
   useEffect(() => {
-    if (tab !== 'jugadores' && tab !== 'economia' && tab !== 'cliente') return;
+    if (tab !== 'jugadores' && tab !== 'economia' && tab !== 'cliente' && tab !== 'embudo') return;
     let alive = true;
     const pull = async () => {
       if (document.hidden) return;
       if (tab === 'jugadores') { const r = await get('/api/admin/players'); if (alive && typeof r !== 'number') setPlayers(r.players); }
+      else if (tab === 'embudo') { const r = await get(`/api/admin/funnel?days=${funDays}`); if (alive && typeof r !== 'number') setFun(r); }
       else if (tab === 'cliente') { const r = await get('/api/admin/client'); if (alive && typeof r !== 'number') setClient(r); }
       else { const r = await get('/api/admin/economy'); if (alive && typeof r !== 'number') setEcon(r); }
     };
     void pull();
     const id = live ? window.setInterval(pull, 15000) : 0;
     return () => { alive = false; window.clearInterval(id); };
-  }, [tab, live]);
+  }, [tab, live, funDays]);
 
   const sorted = useMemo(() => {
     const list = (players ?? []).filter((p) => !hideDev || !p.dev);
@@ -226,13 +318,42 @@ export const AdminPanel: React.FC = () => {
               {groupFeed(ov.feed as Json[]).map((e, i) => (
                 <li key={i} className="flex items-center gap-3 py-1.5 text-[13px]">
                   <span className="w-20 shrink-0 font-mono text-[11px] text-neutral-500">{ago(e.ts, ov.now)}</span>
-                  <b className="text-white truncate max-w-[180px]">{e.name ?? '—'}</b>
+                  {e.id ? <button type="button" onClick={() => setCard(e.id)} className="font-bold text-white truncate max-w-[180px] hover:text-lime-300 hover:underline">{e.name ?? '—'}</button> : <b className="text-white">—</b>}
                   <span className="text-neutral-300">{EVENT[e.event] ?? e.event}{e.n > 1 && <b className="ml-1.5 text-lime-300">×{e.n}</b>}</span>
                 </li>
               ))}
             </ul>
           </Card>
         </>)}
+
+
+        {tab === 'embudo' && (!fun ? <p className="text-neutral-500 text-sm">Cargando…</p> : (<>
+          <Card title={`Hasta dónde llegan los jugadores nuevos (${fun.total} cuentas reales)`} aside={
+            <select value={funDays} onChange={(e) => { setFun(null); setFunDays(Number(e.target.value)); }} className="bg-black/40 border border-white/10 rounded-md px-2 py-1 text-[12px]">
+              <option value={0}>Todos</option><option value={7}>Registrados en 7 días</option><option value={30}>En 30 días</option><option value={90}>En 90 días</option>
+            </select>}>
+            <div className="space-y-2">
+              {(fun.steps as Json[]).map((st, i, arr) => {
+                const base = st.eligible || 1; const w = (st.n / base) * 100;
+                const prev = i > 0 ? arr[i - 1] : null; const lost = prev && st.id !== 'd7' ? prev.n - st.n : 0;
+                return (
+                  <div key={st.id} className="grid grid-cols-[180px_1fr_120px] items-center gap-3 text-[13px]">
+                    <span className="text-neutral-300">{i + 1}. {st.label}</span>
+                    <span className="h-6 rounded-md bg-white/5 overflow-hidden relative"><i className="block h-full rounded-md" style={{ width: `${Math.max(w, st.n ? 2 : 0)}%`, background: `hsl(${95 - i * 9} 70% 55%)` }} /><b className="absolute inset-y-0 left-2 flex items-center text-[12px] text-[#0a0716]">{st.n ? `${Math.round(w)} %` : ''}</b></span>
+                    <span className="font-mono text-right">{st.n}/{st.eligible}{lost > 0 && <span className="text-rose-300"> −{lost}</span>}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[11.5px] text-neutral-500 mt-3">En rojo, cuántos se quedaron en el paso anterior. «Una semana después» solo cuenta a quienes se registraron hace 7 días o más. No incluye cuentas dev.</p>
+          </Card>
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card title="Dónde quedó el tutorial"><Dist rows={(fun.tutorial as Json[]).map((r) => ({ k: String(r.k), n: Number(r.n) }))} prefix="" /></Card>
+            <Card title="Se registraron y nunca jugaron">
+              {(fun.stuck as Json[]).length ? <ul className="text-[13px] divide-y divide-white/5">{(fun.stuck as Json[]).map((p) => <li key={p.id} className="py-1 flex justify-between"><button type="button" onClick={() => setCard(p.id)} className="font-bold text-white hover:text-lime-300 hover:underline">{p.name}</button><span className="text-neutral-400">registrado {ago(p.created, ov.now)}</span></li>)}</ul> : <p className="text-[13px] text-emerald-300">Todos los registrados llegaron a jugar. ✓</p>}
+            </Card>
+          </div>
+        </>))}
 
         {tab === 'jugadores' && (
           <Card title={`Jugadores (${sorted.length})`} aside={
@@ -255,7 +376,7 @@ export const AdminPanel: React.FC = () => {
                     {sorted.map((p) => (
                       <tr key={p.id} className="border-b border-white/5 hover:bg-white/[0.03]">
                         <td className="py-1.5 pr-4 font-mono text-neutral-500">{p.id}</td>
-                        <td className="pr-4 font-semibold text-white">{p.name}{p.founder ? <span className="ml-1 text-amber-300">👑{p.founder}</span> : null}{p.dev && <span className="ml-1.5 text-[10px] px-1.5 rounded bg-sky-500/20 text-sky-300">dev</span>}{p.admin && <span className="ml-1 text-[10px] px-1.5 rounded bg-lime-500/20 text-lime-300">admin</span>}{p.banned && <span className="ml-1 text-[10px] px-1.5 rounded bg-rose-500/20 text-rose-300">bloqueada</span>}</td>
+                        <td className="pr-4 font-semibold text-white"><button type="button" onClick={() => setCard(p.id)} className="hover:text-lime-300 hover:underline">{p.name}</button>{p.founder ? <span className="ml-1 text-amber-300">👑{p.founder}</span> : null}{p.dev && <span className="ml-1.5 text-[10px] px-1.5 rounded bg-sky-500/20 text-sky-300">dev</span>}{p.admin && <span className="ml-1 text-[10px] px-1.5 rounded bg-lime-500/20 text-lime-300">admin</span>}{p.banned && <span className="ml-1 text-[10px] px-1.5 rounded bg-rose-500/20 text-rose-300">bloqueada</span>}</td>
                         <td className="pr-4">{p.online ? <span className="text-emerald-300">● en línea</span> : Date.now() - p.last < 86400_000 ? <span className="text-neutral-300">hoy</span> : Date.now() - p.last < 7 * 86400_000 ? <span className="text-amber-200">esta semana</span> : <span className="text-rose-300">inactivo</span>}</td>
                         <td className="pr-4 text-neutral-300">{ago(p.last)}</td>
                         <td className="pr-4 text-neutral-400">{new Date(p.created).toLocaleDateString('es-CR')}</td>
@@ -388,6 +509,7 @@ export const AdminPanel: React.FC = () => {
           </div>
         </>)}
       </main>
+      {card !== null && <PlayerCard id={card} onClose={closeCard} />}
     </div>
   );
 };
