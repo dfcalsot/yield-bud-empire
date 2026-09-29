@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import {initLang} from './i18n';
+import {initTelemetry} from './utils/telemetry';
 import {AppErrorBoundary, reloadOnceForNewBuild} from './components/AppErrorBoundary.tsx';
 
 // Vite fires this when a lazy chunk of an older build no longer exists on the server: take the new build
@@ -50,6 +51,9 @@ function Root() {
   if (showLab && PlantLab) return <Suspense fallback={null}><PlantLab /></Suspense>;
   return <App />;
 }
+
+// errores, tiempo de carga y pantallas para el panel de operadores (solo si el servidor la tiene encendida)
+initTelemetry();
 
 // el idioma (y su diccionario) se carga antes de dibujar, para que no aparezca un instante en el idioma equivocado
 void initLang().finally(() => createRoot(document.getElementById('root')!).render(

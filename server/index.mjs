@@ -272,6 +272,7 @@ route('GET', '/api/auth/config', () => ({
   inviteOnly: cfg.inviteOnly,
   devLinks: cfg.devLinks,
   captcha: { type: 'pow', bits: cfg.powBits },
+  telemetry: process.env.TELEMETRY_ENABLED === '1',
 }));
 
 route('GET', '/api/auth/challenge', (ctx) => {
@@ -563,7 +564,7 @@ export const economy = installEconomy({ db, route, HttpError, sessionAccount, au
 export const wallet = installWallet({ db, route, HttpError, sessionAccount, audit, limit, readJson });
 export const game = installGame({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy, sendMail, sign: (s) => hmac(SECRET, s), publicUrl: cfg.publicUrl, harvestMail: process.env.HARVEST_MAIL !== '0' });
 export const bridge = await installBridge({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy, cfg, env: process.env });
-export const panel = installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile: path.join(cfg.dataDir, 'accounts.db') });
+export const panel = installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile: path.join(cfg.dataDir, 'accounts.db'), readJson, telemetry: process.env.TELEMETRY_ENABLED === '1' });
 export const founder = await installFounder({ db, route, HttpError, sessionAccount, audit, limit, readJson, env: process.env, sendMail });
 
 /* ───────────────────────────── server ───────────────────────────── */

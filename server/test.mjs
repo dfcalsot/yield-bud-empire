@@ -826,6 +826,18 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   ok('panel: economía (circulante, libro, NFT)', ec.status === 200 && typeof ec.json.circulating === 'number' && ec.json.days.length === 14 && Array.isArray(ec.json.nfts));
   ok('panel: cuenta las peticiones del servidor', panel && typeof panel.observe === 'function');
 
+  // telemetría del navegador: apagada no guarda nada; encendida guarda solo tipos conocidos y recorta lo largo
+  const before = db.prepare('SELECT COUNT(*) AS n FROM client_events').get().n;
+  const off = await call('POST', '/api/telemetry', { jar: PN.jar, ip: PN.ip, body: { events: [{ kind: 'error', name: 'x' }] } });
+  ok('telemetría: apagada no guarda nada', off.status === 200 && off.json.off === true && db.prepare('SELECT COUNT(*) AS n FROM client_events').get().n === before);
+  panel.telemetry = true;
+  const on = await call('POST', '/api/telemetry', { jar: PN.jar, ip: PN.ip, body: { device: 'celular Android Chrome', build: 'b1', events: [{ kind: 'error', name: 'TypeError: boom', detail: 'y'.repeat(5000) }, { kind: 'view', name: 'cultivo' }, { kind: 'perf', name: 'load', ms: 2300 }, { kind: 'hack', name: 'z' }] } });
+  const rows = db.prepare('SELECT * FROM client_events WHERE account_id = ?').all(PN.id);
+  ok('telemetría: encendida guarda errores, pantallas y carga (y descarta lo desconocido)', on.json.n === 3 && rows.length === 3 && rows.every((r) => r.detail.length <= 600));
+  const cl = await call('GET', '/api/admin/client', { jar: PA.jar, ip: PA.ip });
+  ok('telemetría: el panel la muestra', cl.status === 200 && cl.json.errors[0]?.name === 'TypeError: boom' && cl.json.views[0]?.name === 'cultivo' && cl.json.perf[0]?.p50 === 2300);
+  ok('telemetría: la pestaña del panel no la ve una cuenta normal', (await call('GET', '/api/admin/client', { jar: PN.jar, ip: PN.ip })).status === 404);
+  panel.telemetry = false;
   limiter.m.clear();   // the two accounts above count against the per-minute sign-up budget of the sections below
 }
 // ── cuentas de desarrollador: juegan con su saldo de prueba, pero nada real sale con $FLORA

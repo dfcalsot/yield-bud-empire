@@ -95,14 +95,15 @@ const Dist: React.FC<{ rows: Array<{ k: string; n: number }>; prefix: string }> 
   );
 };
 
-type Tab = 'resumen' | 'jugadores' | 'economia' | 'servidor';
-const TABS: Array<[Tab, string]> = [['resumen', 'Resumen'], ['jugadores', 'Jugadores'], ['economia', 'Economía'], ['servidor', 'Servidor']];
+type Tab = 'resumen' | 'jugadores' | 'economia' | 'cliente' | 'servidor';
+const TABS: Array<[Tab, string]> = [['resumen', 'Resumen'], ['jugadores', 'Jugadores'], ['economia', 'Economía'], ['cliente', 'Lado del jugador'], ['servidor', 'Servidor']];
 
 export const AdminPanel: React.FC = () => {
   const [tab, setTab] = useState<Tab>('resumen');
   const [ov, setOv] = useState<Json | null>(null);
   const [players, setPlayers] = useState<Json[] | null>(null);
   const [econ, setEcon] = useState<Json | null>(null);
+  const [client, setClient] = useState<Json | null>(null);
   const [denied, setDenied] = useState<number | null>(null);
   const [updated, setUpdated] = useState(0);
   const [live, setLive] = useState(true);
@@ -124,11 +125,12 @@ export const AdminPanel: React.FC = () => {
     return () => { alive = false; window.clearInterval(id); };
   }, [live]);
   useEffect(() => {
-    if (tab !== 'jugadores' && tab !== 'economia') return;
+    if (tab !== 'jugadores' && tab !== 'economia' && tab !== 'cliente') return;
     let alive = true;
     const pull = async () => {
       if (document.hidden) return;
       if (tab === 'jugadores') { const r = await get('/api/admin/players'); if (alive && typeof r !== 'number') setPlayers(r.players); }
+      else if (tab === 'cliente') { const r = await get('/api/admin/client'); if (alive && typeof r !== 'number') setClient(r); }
       else { const r = await get('/api/admin/economy'); if (alive && typeof r !== 'number') setEcon(r); }
     };
     void pull();
@@ -312,6 +314,46 @@ export const AdminPanel: React.FC = () => {
               </Card>
             </div>
           </div>
+        </>))}
+
+
+        {tab === 'cliente' && (!client ? <p className="text-neutral-500 text-sm">Cargando…</p> : (<>
+          {!client.enabled && (
+            <div className="rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-[13px] text-amber-100">
+              La telemetría del juego está <b>apagada</b>: los navegadores de los jugadores todavía no envían nada. Se enciende con <code className="font-mono">TELEMETRY_ENABLED=1</code> en <code className="font-mono">.env</code>, después de publicar la línea de privacidad.
+            </div>
+          )}
+          <div className="grid lg:grid-cols-3 gap-4">
+            <Card title="Errores del juego por día (7 d)"><Bars data={(client.days as Json[]).map((d) => ({ label: d.d.slice(5), v: d.n }))} color="#fb7185" /></Card>
+            <Card title="Tiempo de carga (7 d)">
+              <table className="w-full text-[12.5px]"><thead className="text-neutral-400 text-left"><tr className="border-b border-white/10"><th className="py-1.5">Equipo</th><th className="text-right">Cargas</th><th className="text-right">Mediana</th><th className="text-right">Lento (90 %)</th></tr></thead>
+                <tbody>{(client.perf as Json[]).map((r) => <tr key={r.device} className="border-b border-white/5"><td className="py-1">{r.device}</td><td className="text-right font-mono">{r.n}</td><td className="text-right font-mono">{(r.p50 / 1000).toFixed(1)} s</td><td className={`text-right font-mono ${r.p90 > 8000 ? 'text-amber-300' : ''}`}>{(r.p90 / 1000).toFixed(1)} s</td></tr>)}</tbody></table>
+              {!(client.perf as Json[]).length && <p className="text-[12px] text-neutral-500 mt-2">Sin datos todavía.</p>}
+            </Card>
+            <Card title="Equipos de los jugadores (7 d)"><Dist rows={(client.devices as Json[]).map((d) => ({ k: d.device, n: d.n }))} prefix="" /></Card>
+          </div>
+          <Card title="Errores que ven los jugadores (7 d)" aside={<span className="text-[11px] text-neutral-500">uno por error distinto y visita</span>}>
+            {(client.errors as Json[]).length ? (
+              <div className="overflow-auto"><table className="w-full text-[12.5px]">
+                <thead className="text-neutral-400 text-left"><tr className="border-b border-white/10"><th className="py-1.5 pr-3">Error</th><th className="text-right pr-3">Veces</th><th className="text-right pr-3">Jugadores</th><th className="pr-3">Último</th><th className="pr-3">Equipos</th><th>Dónde</th></tr></thead>
+                <tbody>{(client.errors as Json[]).map((e) => (
+                  <tr key={e.name} className="border-b border-white/5 align-top">
+                    <td className="py-1.5 pr-3 font-mono text-rose-200 max-w-[360px] break-words">{e.name}</td><td className="text-right pr-3 font-mono">{e.n}</td><td className="text-right pr-3 font-mono">{e.players}</td>
+                    <td className="pr-3 whitespace-nowrap text-neutral-400">{ago(e.last, ov.now)}</td><td className="pr-3 text-neutral-400 max-w-[200px]">{e.devices}</td><td className="font-mono text-[11px] text-neutral-500 max-w-[420px] break-words">{e.detail}</td>
+                  </tr>))}</tbody>
+              </table></div>
+            ) : <p className="text-[13px] text-emerald-300">Ningún error reportado. ✓</p>}
+          </Card>
+          <Card title="Pantallas más usadas (7 d)" aside={<span className="text-[11px] text-neutral-500">veces que se abrió cada una · jugadores distintos</span>}>
+            {(() => { const rows = client.views as Json[]; const max = Math.max(1, ...rows.map((r) => r.n)); return rows.length ? (
+              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-1">{rows.map((r) => (
+                <div key={r.name} className="flex items-center gap-2 text-[12.5px]">
+                  <span className="w-32 shrink-0 font-mono text-neutral-300 truncate">{r.name}</span>
+                  <span className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden"><i className="block h-full rounded-full bg-sky-400/80" style={{ width: `${(r.n / max) * 100}%` }} /></span>
+                  <span className="w-20 text-right font-mono">{fmt(r.n)} · {r.players}👤</span>
+                </div>))}</div>
+            ) : <p className="text-[12px] text-neutral-500">Sin datos todavía.</p>; })()}
+          </Card>
         </>))}
 
         {tab === 'servidor' && (<>

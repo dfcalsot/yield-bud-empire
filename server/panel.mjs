@@ -11,18 +11,24 @@ const MIN = 60_000, DAY = 86400_000;
 const pct = (arr, p) => { if (!arr.length) return 0; const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; };
 const dayKey = (ts) => new Date(ts).toISOString().slice(0, 10);
 
-export function installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile }) {
+export function installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile, readJson, telemetry = false }) {
   db.exec(`
 CREATE TABLE IF NOT EXISTS metrics_minute (ts INTEGER PRIMARY KEY, req INTEGER NOT NULL, e4 INTEGER NOT NULL, e5 INTEGER NOT NULL,
   p50 INTEGER NOT NULL, p95 INTEGER NOT NULL, online INTEGER NOT NULL, rss INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS client_events (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, account_id INTEGER, kind TEXT NOT NULL,
+  name TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '', device TEXT NOT NULL DEFAULT '', build TEXT NOT NULL DEFAULT '', ms INTEGER);
+CREATE INDEX IF NOT EXISTS idx_client_events ON client_events(kind, ts);
 `);
   const q = {
     flags: db.prepare('SELECT flags FROM accounts WHERE id = ?'),
     putMin: db.prepare('INSERT OR REPLACE INTO metrics_minute (ts, req, e4, e5, p50, p95, online, rss) VALUES (?,?,?,?,?,?,?,?)'),
     sweepMin: db.prepare('DELETE FROM metrics_minute WHERE ts < ?'),
     minutes: db.prepare('SELECT * FROM metrics_minute WHERE ts >= ? ORDER BY ts'),
+    putEvent: db.prepare('INSERT INTO client_events (ts, account_id, kind, name, detail, device, build, ms) VALUES (?,?,?,?,?,?,?,?)'),
+    sweepEvents: db.prepare('DELETE FROM client_events WHERE ts < ?'),
   };
   const started = Date.now();
+  const api = { telemetry };   // `telemetry` can be switched at run time (the tests do)
 
   /* ───────────── the server's own numbers ───────────── */
   let bucket = { ts: Math.floor(Date.now() / MIN) * MIN, req: 0, e4: 0, e5: 0, ms: [] };
@@ -35,7 +41,7 @@ CREATE TABLE IF NOT EXISTS metrics_minute (ts INTEGER PRIMARY KEY, req INTEGER N
     if (!b.req && !onlineNow(now)) return;
     try { q.putMin.run(b.ts, b.req, b.e4, b.e5, Math.round(pct(b.ms, 0.5)), Math.round(pct(b.ms, 0.95)), onlineNow(now), Math.round(process.memoryUsage().rss / 1048576)); } catch { /* */ }
   }
-  const timer = setInterval(() => { flush(); try { q.sweepMin.run(Date.now() - 30 * DAY); } catch { /* */ } }, MIN);
+  const timer = setInterval(() => { flush(); try { q.sweepMin.run(Date.now() - 30 * DAY); q.sweepEvents.run(Date.now() - 30 * DAY); } catch { /* */ } }, MIN);
   timer.unref?.();
   /** called by the server for every request, once it is answered */
   function observe(pathname, status, ms) {
@@ -172,10 +178,47 @@ CREATE TABLE IF NOT EXISTS metrics_minute (ts INTEGER PRIMARY KEY, req INTEGER N
     return all(`SELECT a.ts, a.event, a.account_id AS id, c.username AS name FROM audit a LEFT JOIN accounts c ON c.id = a.account_id WHERE ${FEED} ORDER BY a.ts DESC LIMIT ?`, limitN);
   }
 
+
+  /* ───────────── telemetry from the players' browsers (off until TELEMETRY_ENABLED=1) ─────────────
+   * What the game sends, in small batches: its own errors (message, where, which build), how long the first load took, and which
+   * screen is open. With the account id when signed in (for support), never the IP, the full user agent, or anything typed. */
+  const KINDS = new Set(['error', 'view', 'perf']);
+  const clip = (v, n) => String(v ?? '').replace(/[\u0000-\u001f]/g, ' ').slice(0, n);
+  route('POST', '/api/telemetry', async (ctx) => {
+    if (!api.telemetry) return { ok: true, off: true };
+    limit(ctx, `tele:${ctx.ipHash}`, 60, MIN);
+    const a = sessionAccount(ctx);
+    const b = await readJson(ctx.req, 16 * 1024);
+    const list = Array.isArray(b.events) ? b.events.slice(0, 20) : [];
+    const device = clip(b.device, 40), build = clip(b.build, 40), now = Date.now();
+    let n = 0;
+    for (const e of list) {
+      if (!e || !KINDS.has(e.kind)) continue;
+      const ms = Number.isFinite(e.ms) ? Math.max(0, Math.min(600_000, Math.round(e.ms))) : null;
+      q.putEvent.run(now, a?.id ?? null, e.kind, clip(e.name, 160), clip(e.detail, 600), device, build, ms); n++;
+    }
+    return { ok: true, n };
+  });
+
+  function clientSide(now) {
+    const since = now - 7 * DAY;
+    const errors = all(`SELECT name, detail, COUNT(*) AS n, COUNT(DISTINCT account_id) AS players, MAX(ts) AS last, GROUP_CONCAT(DISTINCT device) AS devices, MAX(build) AS build
+      FROM client_events WHERE kind = 'error' AND ts >= ? GROUP BY name ORDER BY last DESC LIMIT 40`, since);
+    const errDay = {}; for (const r of all("SELECT ts FROM client_events WHERE kind = 'error' AND ts >= ?", since)) errDay[dayKey(r.ts)] = (errDay[dayKey(r.ts)] ?? 0) + 1;
+    const days = Array.from({ length: 7 }, (_, i) => dayKey(now - (6 - i) * DAY)).map((d) => ({ d, n: errDay[d] ?? 0 }));
+    const perfRows = all("SELECT ms, device FROM client_events WHERE kind = 'perf' AND name = 'load' AND ts >= ? AND ms IS NOT NULL", since);
+    const byDev = {}; for (const r of perfRows) (byDev[r.device.split(' ')[0] || '?'] ??= []).push(r.ms);
+    const perf = Object.entries(byDev).map(([device, ms]) => ({ device, n: ms.length, p50: Math.round(pct(ms, 0.5)), p90: Math.round(pct(ms, 0.9)) }));
+    const devices = all("SELECT device, COUNT(DISTINCT COALESCE(account_id, -id)) AS n FROM client_events WHERE kind = 'perf' AND ts >= ? GROUP BY device ORDER BY n DESC LIMIT 12", since);
+    const views = all("SELECT name, COUNT(*) AS n, COUNT(DISTINCT account_id) AS players FROM client_events WHERE kind = 'view' AND ts >= ? GROUP BY name ORDER BY n DESC", since);
+    return { enabled: api.telemetry, errors, days, perf, devices, views };
+  }
+
   route('GET', '/api/admin/me', (ctx) => { const a = admin(ctx); return { ok: true, name: a.username }; });
   route('GET', '/api/admin/overview', (ctx) => { admin(ctx); const now = Date.now(); return { ...overview(now), health: health(now), feed: feed(40) }; });
   route('GET', '/api/admin/players', (ctx) => { admin(ctx); return { players: players(Date.now()) }; });
   route('GET', '/api/admin/economy', (ctx) => { admin(ctx); return economy(Date.now()); });
+  route('GET', '/api/admin/client', (ctx) => { admin(ctx); return clientSide(Date.now()); });
 
-  return { observe, isAdmin };
+  return Object.assign(api, { observe, isAdmin });
 }

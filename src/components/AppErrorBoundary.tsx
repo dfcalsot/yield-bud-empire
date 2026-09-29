@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { t } from '../i18n';
+import { reportError } from '../utils/telemetry';
 
 const STALE_RE = /dynamically imported module|Loading chunk|Importing a module script failed|MIME type|Unable to preload CSS/i;
 const KEY = 'cf_reload_at';
@@ -24,6 +25,7 @@ export class AppErrorBoundary extends Component<{ children: React.ReactNode }, {
   static getDerivedStateFromError(error: Error) { return { error }; }
   componentDidCatch(error: Error) {
     console.error('Yield Bud Empire: error no controlado', error);
+    reportError(error, 'pantalla de error');
     if (STALE_RE.test(String(error?.message))) reloadOnceForNewBuild();
   }
   render() {
