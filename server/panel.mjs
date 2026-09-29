@@ -416,5 +416,5 @@ CREATE INDEX IF NOT EXISTS idx_client_events ON client_events(kind, ts);
   route('GET', '/api/admin/security', (ctx) => { admin(ctx); return security(Date.now()); });
   route('GET', '/api/admin/funnel', (ctx) => { admin(ctx); const d = Number(ctx.url.searchParams.get('days')); return funnel(Date.now(), [7, 30, 90].includes(d) ? d : 0); });
 
-  return Object.assign(api, { observe, isAdmin });
+  return Object.assign(api, { observe, isAdmin, guard: admin });
 }

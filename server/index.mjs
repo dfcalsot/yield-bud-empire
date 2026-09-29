@@ -15,6 +15,7 @@ import { installGame } from './game.mjs';
 import { installBridge } from './bridge.mjs';
 import { installFounder } from './founder.mjs';
 import { installPanel } from './panel.mjs';
+import { installChainPanel } from './panel-chain.mjs';
 import { createAlerts } from './alerts.mjs';
 import { createPrereg } from './prereg.mjs';
 import { installWallet } from './wallet.mjs';
@@ -569,6 +570,8 @@ export const game = installGame({ db, route, HttpError, sessionAccount, audit, l
 export const bridge = await installBridge({ db, route, HttpError, sessionAccount, audit, limit, readJson, econ: economy, cfg, env: process.env });
 export const panel = installPanel({ db, route, HttpError, sessionAccount, limit, seenAt, dbFile: path.join(cfg.dataDir, 'accounts.db'), readJson, telemetry: process.env.TELEMETRY_ENABLED === '1', alerts, audit, publicUrl: cfg.publicUrl });
 export const founder = await installFounder({ db, route, HttpError, sessionAccount, audit, limit, readJson, env: process.env, sendMail });
+// the panel's Solana section: read-only questions to the chain (wallets, payments, a transaction, where a relic is)
+installChainPanel({ db, route, HttpError, guard: panel.guard, limit, bridge, founder });
 
 /* ───────────────────────────── server ───────────────────────────── */
 

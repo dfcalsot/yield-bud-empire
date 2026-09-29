@@ -861,6 +861,9 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   const sc = await call('GET', '/api/admin/security', { jar: PA.jar, ip: PA.ip });
   ok('seguridad: conteos, días, marcadas y redes compartidas', sc.status === 200 && sc.json.days.length === 30 && typeof sc.json.counts.login_fail.d30 === 'number' && Array.isArray(sc.json.shared) && !JSON.stringify(sc.json).includes('ip_hash'));
   ok('seguridad: una cuenta normal no la ve', (await call('GET', '/api/admin/security', { jar: PN.jar, ip: PN.ip })).status === 404);
+  // sección Solana del panel: solo admins; lo mal formado se rechaza sin tocar la red
+  ok('solana: una cuenta normal recibe 404', (await call('GET', '/api/admin/chain/status', { jar: PN.jar, ip: PN.ip })).status === 404 && (await call('GET', '/api/admin/chain/tx?sig=x', { jar: PN.jar, ip: PN.ip })).status === 404);
+  ok('solana: firma o dirección mal formada → 400', (await call('GET', '/api/admin/chain/tx?sig=hola', { jar: PA.jar, ip: PA.ip })).json.error === 'bad_signature' && (await call('GET', '/api/admin/chain/nft?asset=0OIl', { jar: PA.jar, ip: PA.ip })).json.error === 'bad_address');
   // acciones de admin desde el panel: invitaciones, regalo, bloqueo; nunca para una cuenta normal, nunca contra un admin
   {
     const A = (body, P = PA) => call('POST', '/api/admin/action', { jar: P.jar, ip: P.ip, body });

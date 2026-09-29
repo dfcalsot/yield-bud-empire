@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, Ban, BarChart3, Coins, Copy, Footprints, Gift, Menu, MonitorSmartphone, Pause, Play, Server, ShieldAlert, Ticket, Users, Wrench, X } from 'lucide-react';
+import { Activity, Ban, BarChart3, Coins, Copy, Footprints, Gift, Link2, Menu, MonitorSmartphone, Pause, Play, Server, ShieldAlert, Ticket, Users, Wrench, X } from 'lucide-react';
 
 /**
  * The operators' panel (`/#panel`): players, progress, economy and the server, refreshed every few seconds. Only accounts flagged
@@ -364,12 +364,108 @@ const ActionsView: React.FC = () => {
   );
 };
 
-type Tab = 'resumen' | 'embudo' | 'jugadores' | 'economia' | 'cliente' | 'seguridad' | 'servidor' | 'acciones';
+/** read-only questions to the Solana chain (server/panel-chain.mjs): wallets, collected USDC, a transaction, where a relic is */
+const short = (a?: string | null) => (a ? `${a.slice(0, 4)}…${a.slice(-4)}` : '—');
+const ask = async (path: string): Promise<Json> => {
+  try { const r = await fetch(path, { credentials: 'same-origin' }); const j = await r.json().catch(() => ({})); return r.ok ? j : { error: j.error === 'bad_signature' ? 'Esa firma no tiene el formato de Solana.' : j.error === 'bad_address' ? 'Esa dirección no tiene el formato de Solana.' : j.error === 'chain_unavailable' ? `La red no respondió (${j.detail ?? ''}). Prueba de nuevo.` : `No se pudo (${j.error ?? r.status}).` }; }
+  catch { return { error: 'Sin conexión con el servidor.' }; }
+};
+const Ext: React.FC<{ href?: string | null; children: React.ReactNode }> = ({ href, children }) => (href ? <a href={href} target="_blank" rel="noreferrer" className="text-sky-300 hover:underline">{children}</a> : <>{children}</>);
+const SolanaView: React.FC = () => {
+  const [st, setSt] = useState<Json | null>(null);
+  const [sig, setSig] = useState(''); const [tx, setTx] = useState<Json | null>(null); const [txBusy, setTxBusy] = useState(false);
+  const [asset, setAsset] = useState(''); const [wallet, setWallet] = useState(''); const [nft, setNft] = useState<Json | null>(null); const [nftBusy, setNftBusy] = useState(false);
+  const load = async () => { setSt(null); setSt(await ask('/api/admin/chain/status')); };
+  useEffect(() => { void load(); }, []);
+  const input = 'w-full rounded-lg bg-black/40 border border-white/15 px-2.5 py-2 text-white font-mono text-[12.5px]';
+  const F = st?.founder ?? {}, B = st?.bridge ?? {};
+  return (
+    <div className="space-y-4">
+      {!st ? <p className="text-neutral-500 text-sm">Consultando la red…</p> : st.error ? <p className="text-rose-300 text-sm">{st.error}</p> : (<>
+        <div className="grid lg:grid-cols-2 gap-4">
+          <Card title={`Billetera de cobros · Pack de Fundador (${F.network})`} aside={<button type="button" onClick={load} className="text-[11px] px-2 py-1 rounded bg-white/5 hover:bg-white/10">Actualizar</button>}>
+            {F.receiver ? (<>
+              <p className="text-[12px] text-neutral-400 mb-2">Dirección <Ext href={F.explorer}><span className="font-mono">{short(F.receiver)}</span></Ext>{F.network !== 'mainnet' && <span className="ml-2 text-amber-200">red de prueba: el USDC no es real</span>}</p>
+              <div className="grid grid-cols-2 gap-2"><Kpi label="USDC en la billetera" value={F.usdc === undefined ? '—' : fmt(F.usdc)} tone="text-lime-300" /><Kpi label="SOL (para comisiones)" value={F.sol === undefined || F.sol === null ? '—' : F.sol.toFixed(3)} /></div>
+            </>) : <p className="text-[13px] text-neutral-400">Sin billetera de cobros configurada.</p>}
+          </Card>
+          <Card title={`Billetera del puente de reliquias (${B.network})`}>
+            {B.vault ? (<>
+              <p className="text-[12px] text-neutral-400 mb-2">Dirección <Ext href={B.explorer}><span className="font-mono">{short(B.vault)}</span></Ext> · colección <span className="font-mono">{short(B.collection)}</span></p>
+              <div className="grid grid-cols-2 gap-2"><Kpi label="SOL para acuñar y mover reliquias" value={B.sol === undefined || B.sol === null ? '—' : B.sol.toFixed(3)} tone={B.sol !== null && B.sol < 0.05 ? 'text-rose-300' : 'text-white'} hint="Cada reliquia que sale a Solana gasta un poco de SOL" /><Kpi label="Estado del puente" value={B.enabled ? 'Encendido' : 'Apagado'} tone={B.enabled ? 'text-emerald-300' : 'text-neutral-400'} /></div>
+              {B.sol !== null && B.sol < 0.05 && <p className="text-[12px] text-rose-200 mt-2">Queda poco SOL: recárgala antes de que un envío falle.</p>}
+            </>) : <p className="text-[13px] text-neutral-400">El puente no tiene billetera todavía.</p>}
+          </Card>
+        </div>
+        {(st.errors as string[])?.length > 0 && <p className="text-[12px] text-amber-200">Algunas consultas fallaron: {(st.errors as string[]).join(' · ')}</p>}
+        <div className="grid lg:grid-cols-3 gap-4">
+          <Card title="USDC cobrado por mes (pedidos entregados)">
+            {(F.months as Json[])?.length ? <table className="w-full text-[12.5px]"><thead className="text-neutral-400 text-left"><tr className="border-b border-white/10"><th className="py-1">Mes</th><th className="text-right">Packs</th><th className="text-right">USDC</th></tr></thead>
+              <tbody>{(F.months as Json[]).map((m) => <tr key={m.month} className="border-b border-white/5"><td className="py-1 font-mono">{m.month}</td><td className="text-right font-mono">{m.n}</td><td className="text-right font-mono text-lime-300">{fmt(m.usdc)}</td></tr>)}</tbody></table>
+              : <p className="text-[12px] text-neutral-500">Todavía no hay packs entregados.</p>}
+            <p className="text-[11px] text-neutral-500 mt-2">Para el contador: sale de los pedidos entregados; cada uno tiene su transacción en la cadena.</p>
+          </Card>
+          <Card title="Últimos pagos que llegaron a la billetera de cobros" className="lg:col-span-2">
+            {(F.payments as Json[])?.length ? <ul className="text-[12.5px] divide-y divide-white/5">{(F.payments as Json[]).map((p) => (
+              <li key={p.sig} className="py-1.5 flex flex-wrap items-center gap-x-3">
+                <span className="w-24 text-neutral-500">{p.ts ? ago(p.ts) : '—'}</span>
+                <Ext href={p.explorer}><span className="font-mono">{short(p.sig)}</span></Ext>
+                <b className={`font-mono ${p.usdc > 0 ? 'text-lime-300' : 'text-neutral-400'}`}>{p.usdc === null ? '—' : `${p.usdc > 0 ? '+' : ''}${p.usdc} USDC`}</b>
+                {!p.ok && <span className="text-rose-300">falló</span>}
+                <span className="text-neutral-400">{p.order ? `pedido #${p.order.id} · ${p.order.player} · ${p.order.status}` : 'sin pedido asociado'}</span>
+              </li>))}</ul> : <p className="text-[12px] text-neutral-500">Sin movimientos todavía.</p>}
+          </Card>
+        </div>
+      </>)}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card title="¿Se confirmó esta transacción?">
+          <form onSubmit={async (e) => { e.preventDefault(); setTxBusy(true); setTx(await ask(`/api/admin/chain/tx?sig=${encodeURIComponent(sig.trim())}`)); setTxBusy(false); }} className="flex gap-2">
+            <input value={sig} onChange={(e) => setSig(e.target.value)} placeholder="Firma de la transacción (la que el jugador copió de su billetera)" className={input} />
+            <button type="submit" disabled={!sig.trim() || txBusy} className="px-3 rounded-lg bg-lime-300 text-[#14210a] text-sm font-bold disabled:opacity-40">{txBusy ? '…' : 'Buscar'}</button>
+          </form>
+          {tx && (tx.error ? <p className="text-rose-300 text-[13px] mt-3">{tx.error}</p> : !tx.found ? <p className="text-amber-200 text-[13px] mt-3">No existe en {(tx.networks as string[]).join(' ni en ')}. Revisa que la firma esté completa y que sea de la red correcta.</p> : (
+            <div className="mt-3 space-y-2 text-[12.5px]">
+              <p><b className={tx.status === 'falló' ? 'text-rose-300' : 'text-emerald-300'}>{tx.status === 'finalized' ? '✓ Confirmada (final)' : tx.status === 'confirmed' ? '✓ Confirmada' : tx.status === 'falló' ? '✗ Falló' : tx.status}</b> · {tx.network} · {tx.ts ? new Date(tx.ts).toLocaleString('es-CR') : ''} · comisión {tx.fee} SOL · <Ext href={tx.explorer}>ver en el explorador</Ext></p>
+              {tx.error && <p className="text-rose-200 font-mono text-[11.5px]">{tx.error}</p>}
+              <p className="text-neutral-400">Firmó: <span className="font-mono">{short(tx.signer)}</span></p>
+              {(tx.tokenChanges as Json[]).length > 0 && <ul className="rounded-lg bg-black/25 p-2">{(tx.tokenChanges as Json[]).map((c, i) => <li key={i} className="flex justify-between"><span className="font-mono">{short(c.owner)}</span><b className={`font-mono ${c.delta > 0 ? 'text-lime-300' : 'text-pink-300'}`}>{c.delta > 0 ? '+' : ''}{c.delta} {c.token}</b></li>)}</ul>}
+              {(tx.solChanges as Json[]).length > 0 && <ul className="rounded-lg bg-black/25 p-2">{(tx.solChanges as Json[]).map((c, i) => <li key={i} className="flex justify-between"><span className="font-mono">{short(c.account)}</span><b className={`font-mono ${c.delta > 0 ? 'text-lime-300' : 'text-pink-300'}`}>{c.delta > 0 ? '+' : ''}{c.delta} SOL</b></li>)}</ul>}
+              {tx.order ? <p className="text-emerald-200">Es el pago del pedido #{tx.order.id} de {tx.order.player} · estado: {tx.order.status}</p>
+                : tx.job ? <p className="text-emerald-200">Es un envío del puente (#{tx.job.id}, {tx.job.dir}) de {tx.job.player} · estado: {tx.job.status}</p>
+                : <p className="text-neutral-400">No está asociada a ningún pedido ni envío del juego.</p>}
+            </div>
+          ))}
+        </Card>
+        <Card title="¿Dónde está esta reliquia NFT?">
+          <form onSubmit={async (e) => { e.preventDefault(); setNftBusy(true); setNft(await ask(`/api/admin/chain/nft?asset=${encodeURIComponent(asset.trim())}&wallet=${encodeURIComponent(wallet.trim())}`)); setNftBusy(false); }} className="space-y-2">
+            <input value={asset} onChange={(e) => setAsset(e.target.value)} placeholder="Dirección del NFT" className={input} />
+            <div className="flex gap-2"><input value={wallet} onChange={(e) => setWallet(e.target.value)} placeholder="Billetera que dice el jugador (opcional)" className={input} />
+              <button type="submit" disabled={!asset.trim() || nftBusy} className="px-3 rounded-lg bg-lime-300 text-[#14210a] text-sm font-bold disabled:opacity-40">{nftBusy ? '…' : 'Buscar'}</button></div>
+          </form>
+          {nft && (nft.error && !nft.asset ? <p className="text-rose-300 text-[13px] mt-3">{nft.error}</p> : (
+            <div className="mt-3 space-y-1.5 text-[12.5px]">
+              {!nft.found ? <p className="text-amber-200">No existe ese NFT en la red del puente.{nft.error ? ` (${nft.error})` : ''}</p> : (<>
+                <p><b className="text-white">{nft.name}</b> · <Ext href={nft.explorer}>ver en el explorador</Ext></p>
+                <p>Está en: <span className="font-mono">{short(nft.owner)}</span> {nft.inVault && <span className="text-sky-200">(la bóveda del puente: está dentro del juego)</span>}</p>
+                {nft.matches !== null && <p className={nft.matches ? 'text-emerald-300' : 'text-rose-300'}>{nft.matches ? '✓ Sí está en la billetera que dice el jugador.' : '✗ No está en esa billetera.'}</p>}
+                {nft.collection && nft.ourCollection && <p className={nft.collection === nft.ourCollection ? 'text-neutral-400' : 'text-rose-300'}>{nft.collection === nft.ourCollection ? 'Es de la colección oficial de reliquias.' : 'Ojo: NO es de la colección oficial de reliquias.'}</p>}
+              </>)}
+              {nft.job ? <p className="text-neutral-400">En el juego: envío #{nft.job.id} ({nft.job.dir}) de {nft.job.player} · {nft.job.status}{nft.job.wallet ? ` · a ${short(nft.job.wallet)}` : ''}</p> : <p className="text-neutral-500">No hay envíos del puente con ese NFT.</p>}
+            </div>
+          ))}
+        </Card>
+      </div>
+      <p className="text-[11.5px] text-neutral-500">Solo consulta la red: nada de esta sección firma ni mueve fondos.</p>
+    </div>
+  );
+};
+
+type Tab = 'resumen' | 'embudo' | 'jugadores' | 'economia' | 'solana' | 'cliente' | 'seguridad' | 'servidor' | 'acciones';
 /** the side menu, by section (it replaced a single crowded row of tabs) */
 const NAV: Array<{ group: string; items: Array<[Tab, string, React.FC<{ className?: string }>]> }> = [
   { group: 'General', items: [['resumen', 'Resumen', BarChart3], ['embudo', 'Primeros pasos', Footprints]] },
   { group: 'Jugadores', items: [['jugadores', 'Jugadores', Users], ['seguridad', 'Seguridad', ShieldAlert]] },
-  { group: 'Economía', items: [['economia', 'Economía', Coins]] },
+  { group: 'Economía', items: [['economia', 'Economía', Coins], ['solana', 'Solana', Link2]] },
   { group: 'Técnico', items: [['cliente', 'Lado del jugador', MonitorSmartphone], ['servidor', 'Servidor', Server]] },
   { group: 'Gestión', items: [['acciones', 'Acciones', Wrench]] },
 ];
@@ -503,6 +599,7 @@ export const AdminPanel: React.FC = () => {
         </div>
       <div className="p-4 sm:p-6 lg:px-8 max-w-[1400px] mx-auto space-y-4">
         {tab === 'acciones' && <ActionsView />}
+        {tab === 'solana' && <SolanaView />}
         {tab === 'resumen' && (<>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
             <Kpi label="En línea ahora (5 min)" value={P.online} tone="text-emerald-300" />
