@@ -6,6 +6,8 @@ const MIN = 60_000, HOUR = 60 * MIN;
 const TOPICS = new Set(['bug', 'pago', 'reliquias', 'cuenta', 'sugerencia', 'otro']);
 const STATUSES = new Set(['nuevo', 'en_curso', 'resuelto']);
 const MAX_IMG = 700 * 1024;
+/** the support inbox (Hostinger): shown to players, and where a reply to a support email lands */
+export const SUPPORT_EMAIL = 'support@yieldbudempire.com';
 
 /** a screenshot as a data URL: only PNG, JPEG or WebP, checked by its first bytes (not by what the browser says) */
 function readImage(dataUrl) {
@@ -22,8 +24,8 @@ function readImage(dataUrl) {
 }
 
 const MAIL = {
-  es: (name, id, body, url) => [`Respuesta de soporte · caso #${id} · Yield Bud Empire`, `Hola, ${name}:\n\nTe respondimos en tu caso #${id}:\n\n${body}\n\nPuedes seguir la conversación dentro del juego, en «Ayuda»: ${url}\n\nEl equipo de Yield Bud Empire`],
-  en: (name, id, body, url) => [`Support reply · case #${id} · Yield Bud Empire`, `Hi ${name},\n\nWe answered your case #${id}:\n\n${body}\n\nYou can keep the conversation going inside the game, under «Help»: ${url}\n\nThe Yield Bud Empire team`],
+  es: (name, id, body, url) => [`Respuesta de soporte · caso #${id} · Yield Bud Empire`, `Hola, ${name}:\n\nTe respondimos en tu caso #${id}:\n\n${body}\n\nPuedes seguir la conversación dentro del juego, en «Ayuda» (${url}), o responder este correo.\n\nEl equipo de Yield Bud Empire`],
+  en: (name, id, body, url) => [`Support reply · case #${id} · Yield Bud Empire`, `Hi ${name},\n\nWe answered your case #${id}:\n\n${body}\n\nYou can keep the conversation going inside the game, under «Help» (${url}), or reply to this email.\n\nThe Yield Bud Empire team`],
 };
 
 export function installSupport({ db, route, HttpError, sessionAccount, guard, limit, readJson, audit, alerts, sendMail, publicUrl = '' }) {
@@ -59,7 +61,7 @@ CREATE INDEX IF NOT EXISTS idx_support_msgs ON support_messages(ticket_id, id);
   /* ───────────── the player ───────────── */
   route('GET', '/api/support/mine', (ctx) => {
     const a = who(ctx);
-    return { tickets: q.mine.all(a.id).map((t) => ({ ...t, unread: !!t.unread_player })), unread: q.unreadMine.get(a.id).n, email: 'support@yieldbudempire.com' };
+    return { tickets: q.mine.all(a.id).map((t) => ({ ...t, unread: !!t.unread_player })), unread: q.unreadMine.get(a.id).n, email: SUPPORT_EMAIL };
   });
   route('GET', '/api/support/ticket', (ctx) => {
     const a = who(ctx);
@@ -155,7 +157,8 @@ CREATE INDEX IF NOT EXISTS idx_support_msgs ON support_messages(ticket_id, id);
     // the answer by email too, in the player's language (the game shows it as well)
     const p = db.prepare('SELECT username, email, lang FROM accounts WHERE id = ?').get(t.account_id);
     let mailed = false;
-    if (p?.email && b.email !== false) { try { mailed = !!(await sendMail(p.email, ...MAIL[p.lang === 'en' ? 'en' : 'es'](p.username, t.id, body, publicUrl))); } catch { /* the answer is in the game anyway */ } }
+    if (p?.email && b.email !== false) { try { const [subj, text] = MAIL[p.lang === 'en' ? 'en' : 'es'](p.username, t.id, body, publicUrl);
+      mailed = !!(await sendMail(p.email, subj, text, { replyTo: SUPPORT_EMAIL })); } catch { /* the answer is in the game anyway */ } }
     return { ok: true, mailed };
   });
   route('POST', '/api/admin/support/status', async (ctx) => {

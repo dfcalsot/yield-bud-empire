@@ -163,11 +163,12 @@ const audit = (event, accountId, ipHash, detail = '') => { try { q.audit.run(Dat
 /* ───────────────────────────── mail ───────────────────────────── */
 
 let transporter = null;
-async function sendMail(to, subject, text) {
+/** `opts.replyTo`: where the player's answer goes if they reply to the email (support answers point to the support inbox) */
+async function sendMail(to, subject, text, opts = {}) {
   try {
     if (cfg.smtpUrl) {
       if (!transporter) { const nm = await import('nodemailer'); transporter = nm.default.createTransport(cfg.smtpUrl); }
-      await transporter.sendMail({ from: cfg.mailFrom, to, subject, text });
+      await transporter.sendMail({ from: cfg.mailFrom, to, subject, text, ...(opts.replyTo ? { replyTo: opts.replyTo } : {}) });
       return true;
     }
   } catch (e) { console.error('mail error:', e.message); }
