@@ -76,7 +76,7 @@ const PayPanel: React.FC<{ order: FounderOrder; network: string; onDone: () => v
         </div>
         {step && <p className="text-[11px] font-mono text-emerald-300 flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" />{step}</p>}
         {err && <p className="text-[11px] font-mono text-red-300">{err}</p>}
-        <p className="text-[10.5px] font-mono text-neutral-500 leading-relaxed">{t('El pago va directo a la billetera de WOLI CBD S.A. en Solana. El juego lo detecta solo y entrega el pack; no hace falta vincular tu billetera. Si pagas y cierras esta página, el pack llega igual.')}</p>
+        <p className="text-[10.5px] font-mono text-neutral-500 leading-relaxed">{t('El pago va directo a la billetera del equipo de diseño de Yield Bud Empire en Solana. El juego lo detecta solo y entrega el pack; no hace falta vincular tu billetera. Si pagas y cierras esta página, el pack llega igual.')}</p>
       </div>
     </div>
   );
