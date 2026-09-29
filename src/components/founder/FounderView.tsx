@@ -58,7 +58,7 @@ const PayPanel: React.FC<{ order: FounderOrder; network: string; onDone: () => v
   };
 
   if (status === 'underpaid' || status === 'refund_needed') {
-    return <div className="hud-panel p-4 text-sm text-amber-200">{status === 'underpaid' ? t('El pago llegó incompleto. Escríbenos a info@yieldbudempire.com con tu usuario y te lo devolvemos.') : t('Tu pago llegó cuando ya no quedaban packs. Te lo devolvemos a la misma billetera: escríbenos a info@yieldbudempire.com si tienes dudas.')}</div>;
+    return <div className="hud-panel p-4 text-sm text-amber-200">{status === 'underpaid' ? t('El pago llegó incompleto. Escríbenos a support@yieldbudempire.com con tu usuario y te lo devolvemos.') : t('Tu pago llegó cuando ya no quedaban packs. Te lo devolvemos a la misma billetera: escríbenos a support@yieldbudempire.com si tienes dudas.')}</div>;
   }
   return (
     <div className="hud-panel p-4 sm:p-5 grid gap-5 md:grid-cols-[auto_minmax(0,1fr)] items-center">
