@@ -3,7 +3,7 @@ import { GROW_ROOMS_CONFIG } from '../data/initialData';
 import type { GrowStage, PestKind, PlantInGrow, RegionId, Strain } from '../types';
 import { BALANCE as B, LIGHT_FRACTION } from './balance';
 import { hash01 } from './hash';
-import { averageLight, REGION_BY_ID, terroirOf, type PlotRatings, type SiteConditions } from './terroir';
+import { siteConditions, terroirOf, type PlotRatings, type SiteConditions } from './terroir';
 import { phGrowthFactor } from './nutrition';
 import { t as tr, k, localize } from '../i18n/core';
 
@@ -168,14 +168,34 @@ export function etaSeconds(p: PlantInGrow, env: SimEnv): number {
   return (100 - readSim(p).progress) / rate;
 }
 
-/** ETA of a plant on a plot at the average daily sunshine (at night the instant rate would read "never"). */
-export function plotEtaSeconds(p: PlantInGrow, region: RegionId, ratings: PlotRatings): number {
-  const r = REGION_BY_ID[region];
-  const sc: SiteConditions = { region, ratings, weather: 'sunny', tempC: r.temp, rh: r.rh, daylight: true, light: 1, rainPerHour: 0, stormLoss: 0 };
-  return etaSeconds(p, {
-    autoWater: false, autoClimate: false, facilityBonus: 1, co2Ppm: 420, lightOn: 1, getRoomTarget: () => undefined,
-    siteCond: sc, lightMul: averageLight(ratings), ambient: { tempC: r.temp, rh: r.rh },
-  });
+/**
+ * ETA of a plant on a plot, honest: a copy of the plant is grown hour by hour through the real weather of the coming days (the
+ * forecast is deterministic, sim/terroir.ts), nights and cold snaps included, as if the player keeps it watered, fed and free of
+ * pests. Cached per plant and hour, so the card can ask on every render.
+ */
+const plotEtaCache = new Map<string, number>();
+export function plotEtaSeconds(p: PlantInGrow, region: RegionId, ratings: PlotRatings, nowMs: number = Date.now()): number {
+  if (p.stage === 'ready_harvest') return 0;
+  const key = `${p.id ?? p.plantedAt}|${region}|${Math.floor(readSim(p).progress * 4)}|${Math.floor(nowMs / 3600e3)}`;
+  const hit = plotEtaCache.get(key);
+  if (hit !== undefined) return hit;
+  let cur: PlantInGrow = { ...p, siteId: p.siteId ?? 'eta' };
+  let eta = Infinity;
+  for (let h = 0; h < 24 * 20; h++) {
+    const ms = nowMs + h * 3600e3;
+    const sc = siteConditions(region, ratings, ms);
+    cur = advanceWorld([cur], 3600, { autoWater: false, autoClimate: false, facilityBonus: 1, co2Ppm: 420, lightOn: 1, getRoomTarget: () => undefined, clockMs: ms, site: () => sc })[0];
+    if (cur.stage === 'ready_harvest') { eta = (h + 1) * 3600; break; }
+    const s = readSim(cur);
+    if (s.moisture < 50 || s.ec < ecOkAt(s.progress) + 0.2 || cur.pest) {
+      // the visible fields too: readSim only trusts `sim` while it matches them
+      const moisture = Math.max(s.moisture, 85), ec = Math.max(s.ec, 2.1);
+      cur = { ...cur, pest: undefined, soilMoisture: moisture, ecLevel: ec, sim: { ...s, moisture, ec } };
+    }
+  }
+  if (plotEtaCache.size > 500) plotEtaCache.clear();
+  plotEtaCache.set(key, eta);
+  return eta;
 }
 
 /** Hours until the substrate falls below `threshold` (no watering). */

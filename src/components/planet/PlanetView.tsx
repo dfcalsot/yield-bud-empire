@@ -1,5 +1,6 @@
 import React, { Component, Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { Coins, Flame, MapPin, Sprout } from 'lucide-react';
+import { Coins, Flame, GraduationCap, MapPin, Sprout } from 'lucide-react';
+import { ScreenTour, tourSeen, type TourStep } from '../guide/ScreenTour';
 import { ListNftButton } from '../market/ListNft';
 import { useGame } from '../../context/GameContext';
 import { Npc, useNpcSay, type Mood } from '../npc/Npc';
@@ -12,7 +13,7 @@ import { isThirsty } from '../../sim/engine';
 import type { OwnedPlot, RegionId } from '../../types';
 import { LandCard } from '../LandCard';
 import { byRarityThenRating, landCardOf } from '../../utils/land';
-import { t as tr } from '../../i18n';
+import { t as tr, k } from '../../i18n';
 import { sceneArt3d, useNpcArt3d } from '../npc/art3d';
 
 const useNow = (ms: number) => {
@@ -44,6 +45,17 @@ const SKIN_KEY = 'ybe_map_skin';
 const readSkin = (): MapSkin => { try { const v = localStorage.getItem(SKIN_KEY); return v === 'parchment' || v === 'classic' ? v : 'monti'; } catch { return 'monti'; } };
 const readGlobe = () => { try { return webglOk && localStorage.getItem(GLOBE_KEY) === '1'; } catch { return false; } };
 
+/** Chrono's walk-through of the planet (components/guide/ScreenTour.tsx) */
+const MAP_TOUR: TourStep[] = [
+  { title: k('Cultivar afuera'), say: k('Aquí cultivas en tierras propias: 36 plantas por tierra, con sol y clima de verdad. Una tierra bien sembrada cosecha muchísimo más que la sala.') },
+  { anchor: 'pl-map', title: k('1. El planeta'), say: k('Siete regiones, cada una con su clima: sol, lluvia, frío y calor que cambian cada día (el mismo para todos). Toca una región para verla.') },
+  { anchor: 'pl-region', title: k('2. La región'), say: k('Su clima, el pronóstico de 4 días y su landrace nativa: la genética que mejor rinde aquí, hasta +30 % de cosecha. Compra sus semillas antes de sembrar.') },
+  { anchor: 'pl-offers', title: k('3. Tierras a la venta'), say: k('Cada tierra tiene nota de agua, sol y suelo: más nota, más cosecha. Ojo: cada tierra que ya tienes hace que la siguiente cueste 25 % más. Elige bien.') },
+  { anchor: 'pl-mylands', title: k('4. Tus tierras'), say: k('Aquí aparecen las tuyas, con las plantas listas (🌾) y las plagas (🐛). Tócala para entrar a sembrar y cuidar.') },
+  { anchor: 'pl-tools', title: k('5. Ayuda'), say: k('¿Muchas plantas? Un jardinero riega, abona y trata plagas también en tus tierras mientras no estás.') },
+  { anchor: 'pl-guide', title: k('¡A cultivar!'), say: k('Con la genética de su región y buen cuidado, una tierra está lista en 3 a 7 días. Si lo olvidas, toca «Guía de Chrono».') },
+];
+
 /** The Planet: world map, the seven regions, the plots you own and Tomás, the farmer who guides you. */
 export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (cat?: string) => void }> = ({ onOpenSeedBank, onOpenMarket }) => {
   const { plots, plotsForSale, buyPlot, floraBalance, solBalance, seedBank, ufoCaught } = useGame();
@@ -52,6 +64,11 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
   const [region, setRegion] = useState<RegionId | null>(null);
   const [hover, setHover] = useState<RegionId | null>(null);
   const [plotId, setPlotId] = useState<string | null>(null);
+  // Chrono's walk-through of the planet (the first time, and from the «Guía de Chrono» button); it picks a region so the region
+  // steps have something to show
+  const [tour, setTour] = useState(false);
+  useEffect(() => { if (tourSeen('outdoor-map')) return; const id = window.setTimeout(() => setTour(true), 900); return () => window.clearTimeout(id); }, []);
+  useEffect(() => { if (tour && !region) setRegion((plots[0]?.region as RegionId | undefined) ?? 'south_america'); }, [tour]); // eslint-disable-line react-hooks/exhaustive-deps
   /** the map zooms into the region of the plot you open (origin in % of the map) before the plot screen replaces it */
   const [globe, setGlobe] = useState<boolean>(readGlobe);
   const [skin, setSkin] = useState<MapSkin>(readSkin);
@@ -150,7 +167,8 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
               </div>
               <button onClick={nextSkin} className="mk-panel px-2.5 py-1.5 text-amber-200 cursor-pointer hover:border-amber-400/60" title={tr('Cambia el estilo del mapa · ahora: {v0}', { v0: SKIN_LABEL[skin] })} data-testid="skin-toggle">{SKIN_LABEL[NEXT_SKIN[skin]]}</button>
               {webglOk && <button onClick={toggleGlobe} className="mk-panel px-2.5 py-1.5 text-sky-200 cursor-pointer hover:border-sky-400/60" title={tr('Cambia entre el mapa plano y un globo 3D (usa más GPU)')}>{globe ? tr('🗺️ Mapa plano') : tr('🌐 Globo 3D')}</button>}
-              <button onClick={() => onOpenMarket('service')} className="mk-panel px-2.5 py-1.5 text-emerald-200 cursor-pointer hover:border-emerald-400/60" title={tr('Grow Market → Servicios de vivero')}>{tr('🧑‍🌾 Contratar jardinero')}</button>
+              <button onClick={() => setTour(true)} data-tour="pl-guide" className="mk-panel px-2.5 py-1.5 text-amber-200 cursor-pointer hover:border-amber-400/60 inline-flex items-center gap-1"><GraduationCap className="w-3.5 h-3.5" />{tr('Guía de Chrono')}</button>
+              <button onClick={() => onOpenMarket('service')} data-tour="pl-tools" className="mk-panel px-2.5 py-1.5 text-emerald-200 cursor-pointer hover:border-emerald-400/60" title={tr('Grow Market → Servicios de vivero')}>{tr('🧑‍🌾 Contratar jardinero')}</button>
               <button onClick={onOpenSeedBank} className="mk-panel px-2.5 py-1.5 text-emerald-200 cursor-pointer hover:border-emerald-400/60" title={tr('Banco de semillas')}>{tr('🌱 Semillas')}</button>
               <button onClick={() => setCurrency((c) => (c === 'FLORA' ? 'SOL' : 'FLORA'))} className="mk-panel px-2.5 py-1.5 text-neutral-200 cursor-pointer hover:border-amber-400/50" title={tr('Cambiar moneda de pago')}>
                 {currency === 'FLORA' ? <Flame className="inline w-3.5 h-3.5 text-amber-300" /> : <Coins className="inline w-3.5 h-3.5 text-purple-300" />} <b className={currency === 'FLORA' ? 'text-amber-200' : 'text-purple-200'}><Bump value={currency === 'FLORA' ? floraBalance.toLocaleString() : String(solBalance)} /></b> {currency === 'FLORA' ? '$FLORA' : 'SOL'}
@@ -160,12 +178,13 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
         </div>
 
         <NpcMissions npc="farmer" onSay={say2} />
+        <ScreenTour id="outdoor-map" steps={MAP_TOUR} open={tour && !plot} onClose={() => setTour(false)} />
 
         {plot ? (
           <div className="pl-plot-in"><PlotScreen plot={plot} nowMs={now} onBack={() => setPlotId(null)} onOpenSeedBank={onOpenSeedBank} onSpeak={say2} /></div>
         ) : (
           <>
-            <div className="rounded-2xl overflow-hidden border border-sky-400/20 shadow-[0_0_40px_-20px_rgba(56,189,248,0.6)]">
+            <div className="rounded-2xl overflow-hidden border border-sky-400/20 shadow-[0_0_40px_-20px_rgba(56,189,248,0.6)]" data-tour="pl-map">
               <div className={`pl-zoomwrap ${zoom ? 'pl-zooming' : ''}`} style={zoom ? { transformOrigin: `${zoom.ox}% ${zoom.oy}%` } : undefined}>
               {(() => {
                 const flat = <WorldMap owned={owned} ready={readyByRegion} selected={region} onSelect={(id) => { setRegion(id); const rr = REGION_BY_ID[id]; say2(`${rr.emoji} ${rr.name}: ${rr.climate}. ${rr.blurb}`); }} onHover={setHover} nowMs={now} skin={skin} onUfoCaught={(reg) => { const xp = ufoCaught(); if (xp > 0) { say2(tr('¡Un ovni sobre {reg}! Me saludó y me dejó {xp} XP. Dicen que abducen vacas… y plantas.', { reg, xp }), 'happy'); } else say2(tr('El ovni ya se fue de gira: hoy no te da más XP, pero sigue saludando.'), 'idle'); }} />;
@@ -181,7 +200,7 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
 
             {r && sale ? (
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] shop-swap" key={r.id}>
-                <div className="hud-panel p-4 space-y-3">
+                <div className="hud-panel p-4 space-y-3" data-tour="pl-region">
                   <div className="flex items-center gap-3">
                     <span className="text-4xl leading-none">{r.emoji}</span>
                     <div><h2 className="font-serif text-xl font-black text-white leading-tight">{tr(r.name)}</h2><div className="text-[10.5px] font-mono uppercase tracking-wider" style={{ color: r.color }}>{r.climate}</div></div>
@@ -196,7 +215,7 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
                   <div className="grid grid-cols-4 gap-1.5">
                     {forecast.map((f, i) => (
                       <div key={i} className="rounded-md border border-neutral-800 bg-neutral-950/60 px-1 py-1 text-center">
-                        <div className="text-[9px] font-mono text-neutral-500">{i === 0 ? 'hoy' : i === 1 ? tr('mañana') : `+${i} d`}</div>
+                        <div className="text-[9px] font-mono text-neutral-500">{i === 0 ? tr('hoy') : i === 1 ? tr('mañana') : `+${i} d`}</div>
                         <div className="text-lg leading-none">{f.emoji}</div><div className="text-[8.5px] font-mono text-neutral-300 truncate">{tr(f.label)}</div>
                       </div>
                     ))}
@@ -211,7 +230,7 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
                   )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3" data-tour="pl-offers">
                   <div className="flex items-baseline justify-between">
                     <h3 className="font-serif text-sm font-bold tracking-[0.14em] uppercase text-sky-200 flex items-center gap-2"><MapPin className="w-4 h-4" />{' '}{tr('Parcelas a la venta')}</h3>
                     <span className="text-[10px] font-mono text-neutral-400">{tr('quedan {left} de {supply}', { left: sale.left, supply: r.supply })}</span>
@@ -248,7 +267,7 @@ export const PlanetView: React.FC<{ onOpenSeedBank: () => void; onOpenMarket: (c
                   <h3 className="font-serif text-sm font-bold tracking-[0.14em] uppercase text-amber-200">{tr('Mis tierras NFT')}{' '}<span className="font-mono text-[11px] text-neutral-400">{plots.length}</span></h3>
                   <button type="button" onClick={() => onOpenMarket?.('land')} className="text-[11px] font-mono text-sky-200 underline underline-offset-2 cursor-pointer hover:text-white">{tr('Comprar más en el Mercado →')}</button>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="my-lands">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="my-lands" data-tour="pl-mylands">
                   {[...plots].map((p) => ({ p, c: landCardOf({ ...p }) })).sort((x, y) => byRarityThenRating(x.c, y.c)).map(({ p, c }) => {
                     const ready = p.plants.filter((x) => x.stage === 'ready_harvest').length;
                     const sick = p.plants.filter((x) => x.pest).length;

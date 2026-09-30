@@ -750,7 +750,7 @@ const GameView: React.FC<GameViewProps> = ({ view, account, online, act, send, n
     waterPlot: (plotId, all = false) => { act('waterPlot', { plotId, all }); },
     feedPlot: (plotId) => { act('feedPlot', { plotId }); },
     harvestPlot: (plotId) => { act('harvestPlot', { plotId }); },
-    plotEta: (plot, plant) => plotEtaSeconds(plant, plot.region, plot.ratings),
+    plotEta: (plot, plant) => plotEtaSeconds(plant, plot.region, plot.ratings, now),
     removeMales: (plotId) => { act('removeMales', { plotId }); },
     avatars, chestPity: snap.avatarPity, showNotification, openChest,
     equipAvatar: (designId) => { act('equipAvatar', { designId }); },

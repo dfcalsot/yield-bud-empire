@@ -3,7 +3,7 @@
  * 7 days at most, whatever the weather; on the most foreign land it takes a little longer (that and the smaller harvest are the
  * terroir's price). Real weather, day and night, over several start dates.
  */
-import { advanceWorld } from '../src/sim/engine';
+import { advanceWorld, plotEtaSeconds } from '../src/sim/engine';
 import { REGIONS, siteConditions, plotOffer, regionDistance } from '../src/sim/terroir';
 import { INITIAL_SEED_BANK, LANDRACE_SEEDS } from '../src/data/initialData';
 const strains = [...LANDRACE_SEEDS, ...INITIAL_SEED_BANK].map((s: any) => s.strainTemplate).filter((s: any) => s?.origin);
@@ -33,5 +33,14 @@ for (const st of uniq) {
 ok('en su tierra, con cuidado básico, ninguna genética pasa de 7 días', homeMax <= 7.05, `(máx ${homeMax.toFixed(1)} d)`);
 ok('en la tierra más ajena tarda algo más, pero termina en menos de 10 días', awayMax > homeMax - 0.5 && awayMax < 10, `(máx ${awayMax.toFixed(1)} d)`);
 ok('afuera no es instantáneo: la más rápida tarda al menos 3 días', homeMin >= 3, `(mín ${homeMin.toFixed(1)} d)`);
+
+// the estimate the plot card shows is honest: it matches what the plant really takes, real weather included
+for (const st of uniq.slice(0, 4)) {
+  const off = plotOffer(st.origin, 5); const t0 = Date.UTC(2026, 8, 1) + 7 * 86400e3;
+  const fresh: any = { strain: st, siteId: 'x', plantedAt: 0, stage: 'seed', progressPercent: 0, health: 100, soilMoisture: 80, temperatureC: 24, relativeHumidity: 60, vpdKpa: 1, ppfdLightIntensity: 900, luxLumens: 0, co2Ppm: 420, currentRoom: 'vegetative', lightSchedule: '24/0', ecLevel: 1.6, phLevel: 6.2, nutrientBrand: 'x', trichomeMaturity: { clear: 100, milky: 0, amber: 0 }, lastWatered: 0, lastFed: 0, estimatedDryYieldGrams: 60 };
+  const est = plotEtaSeconds(fresh, st.origin, off.ratings, t0) / 86400;
+  const real = run(st, st.origin, 7);
+  ok(`la estimación de la parcela es honesta (${st.name.slice(0, 14)})`, Math.abs(est - real) <= 0.6, `(dice ${est.toFixed(1)} d · tarda ${real.toFixed(1)} d)`);
+}
 console.log(failed ? `\n${failed} FALLOS` : '\nTodo OK');
 process.exit(failed ? 1 : 0);
