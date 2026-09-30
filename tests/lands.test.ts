@@ -1,4 +1,4 @@
-import { LAND_RARITY_RANK, landRarity, type LandRarity } from '../src/sim/lands';
+import { LAND_RARITY_RANK, landPrice, landRarity, type LandRarity } from '../src/sim/lands';
 import { REGIONS, plotOffer } from '../src/sim/terroir';
 
 let failed = 0;
@@ -21,6 +21,11 @@ ok('mejor nota nunca cuesta menos (misma región)', REGIONS.every((r) => {
 }));
 ok('la oferta es determinista', JSON.stringify(plotOffer('jamaica', 7)) === JSON.stringify(plotOffer('jamaica', 7)));
 ok('el rango de rareza ordena', LAND_RARITY_RANK.legendary > LAND_RARITY_RANK.epic && LAND_RARITY_RANK.epic > LAND_RARITY_RANK.rare && LAND_RARITY_RANK.rare > LAND_RARITY_RANK.common);
+
+// price: ×10 on 2026-09-30, and every land already owned makes the next one 25 % dearer
+const prices = all.map((o) => o.priceFlora);
+ok('una tierra cuesta entre ~2 000 y ~8 000 $FLORA', Math.min(...prices) >= 2000 && Math.max(...prices) <= 8000, `(${Math.min(...prices)}–${Math.max(...prices)})`);
+ok('la segunda cuesta 25 % más y la duodécima 3,75× la primera', landPrice(4000, 0) === 4000 && landPrice(4000, 1) === 5000 && landPrice(4000, 11) === 15000);
 
 console.log(failed === 0 ? '\nALL OK' : `\n${failed} FAILED`);
 process.exit(failed ? 1 : 0);

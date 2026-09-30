@@ -366,10 +366,11 @@ CREATE TABLE IF NOT EXISTS saves (account_id INTEGER PRIMARY KEY REFERENCES acco
       const taken = new Set(q.takenLands.all().map((r) => r.id));
       const offer = L.landOffers(m[1], taken).offers.find((o) => o.id === offerId);
       need(offer, 'plot_taken');
-      debit(id, offer.priceFlora, 'land', offer.name, now);
+      const cost = L.landPrice(offer.priceFlora, nftRows(id, 'land').length);
+      debit(id, cost, 'land', offer.name, now);
       const land = { id: offer.id, region: offer.region, index: offer.index, name: offer.name, ratings: offer.ratings, landRating: offer.landRating, mintedAt: now };
       try { q.putNft.run(land.id, id, 'land', JSON.stringify(land), now); } catch { throw new HttpError(409, 'plot_taken'); }
-      return { plot: land, cost: offer.priceFlora };
+      return { plot: land, cost };
     },
 
     avatar_chest({ id, now, p }) {

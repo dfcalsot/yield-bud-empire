@@ -164,7 +164,9 @@ for (const [cyc, lo, hi] of [[40, 2.9, 3.6], [65, 3.8, 4.6], [90, 4.8, 5.6]] as 
   };
   const d0 = findDay('jamaica', 'sunny');
   const night = advanceWorld([outdoor('jamaica', { id: 'n' })], 3600, gardenerEnv('jamaica', d0, 8))[0];
-  ok('parcela: de noche la planta no crece', night.sim!.progress < 0.001, `(progreso ${night.sim!.progress.toFixed(4)})`);
+  // at noon local time (Jamaica is UTC−5: 17:00 UTC) the same hour of sun grows it much more than a night hour on stores
+  const noon = advanceWorld([outdoor('jamaica', { id: 'd' })], 3600, gardenerEnv('jamaica', d0, 17))[0];
+  ok('parcela: de noche crece poco (lo que guardó de día), mucho menos que al sol', night.sim!.progress > 0 && night.sim!.progress < noon.sim!.progress * 0.5, `(noche ${night.sim!.progress.toFixed(4)} · día ${noon.sim!.progress.toFixed(4)})`);
   const dayHome = advanceWorld([outdoor('jamaica', { id: 'h' })], 2 * 86400, gardenerEnv('jamaica', d0))[0];
   const dayFar = advanceWorld([outdoor('afghanistan', { id: 'f' })], 2 * 86400, gardenerEnv('jamaica', d0))[0];
   ok('parcela: la landrace de la región crece más que la de un clima ajeno', dayHome.sim!.progress > dayFar.sim!.progress * 1.2, `(${dayHome.sim!.progress.toFixed(1)} % vs ${dayFar.sim!.progress.toFixed(1)} % en 2 d)`);

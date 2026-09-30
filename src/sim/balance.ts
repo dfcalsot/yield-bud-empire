@@ -6,6 +6,14 @@ export const BALANCE = {
   /** a full seed→harvest cycle takes between these many real days (per genetic) */
   cycleDaysMin: 3,
   cycleDaysMax: 5,
+  /** outdoor plots: overall pace against a room, and how much a plant keeps growing at night on what it stored by day
+   *  (0 = not at all). Tuned so a harvest outdoors takes 7 days at most with basic care, whatever the land (tests/lands-pace). */
+  plotSpeed: 1.8,
+  plotNightGrowth: 0.4,
+  /** outdoors a grey day still lets through diffuse light (a floor to the day's light), and cold slows a plant without all but
+   *  stopping it (a floor to the temperature factor) */
+  plotDayFloor: 1.1,
+  plotColdFloor: 0.6,
   /** genetics data uses cycleDurationSeconds in this range (see initialData.ts) */
   strainCycleMin: 40,
   strainCycleMax: 90,

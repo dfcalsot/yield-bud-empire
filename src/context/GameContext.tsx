@@ -12,6 +12,7 @@ import { playWaterSound, playHarvestChime, playBurnSound, playClickSound, playLe
 import type { Materials } from '../sim/forge';
 import { etaSeconds, maleCount, pestCount, plotEtaSeconds, powerDraw } from '../sim/engine';
 import { plotOffer, type PlotOffer } from '../sim/terroir';
+import { landPrice } from '../sim/lands';
 import type { AvatarDesign, ChestId, OwnedAvatar, PityMap } from '../sim/avatars';
 import { DESIGN_BY_ID } from '../sim/avatars';
 import { burnRateOfSale, saleRevenue, type Depth } from '../sim/economy';
@@ -629,7 +630,9 @@ const GameView: React.FC<GameViewProps> = ({ view, account, online, act, send, n
   const shopPrice = (flora: number) => Math.round(flora * (1 - staffMods.shopDiscount));
   const plotsForSale = (region: RegionId): { offers: PlotOffer[]; left: number } => {
     const o = snap.offers?.[region];
-    return o ? { offers: o.ids.map((id) => plotOffer(region, Number(id.split('-').pop()))), left: o.left } : { offers: [], left: 0 };
+    // the price the server will charge: every land already owned makes the next one dearer (sim/lands.ts)
+    const withPrice = (x: PlotOffer): PlotOffer => { const f = landPrice(x.priceFlora, plots.length); return { ...x, priceFlora: f, priceSol: Number((f / 1000).toFixed(3)) }; };
+    return o ? { offers: o.ids.map((id) => withPrice(plotOffer(region, Number(id.split('-').pop())))), left: o.left } : { offers: [], left: 0 };
   };
   const quoteSale = (productId: string) => {
     const prod = s.products.find((p) => p.id === productId);

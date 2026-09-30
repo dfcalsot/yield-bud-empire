@@ -26,32 +26,32 @@ export interface Region {
   lat: number;
   /** landrace strain native to this region (see initialData) */
   landrace: string;
-  /** price of an average plot ($FLORA) */
+  /** price of an average plot ($FLORA; ×10 on 2026-09-30: a plot of 36 plants cost less than the second grow room) */
   price: number;
   /** how many plots exist in total */
   supply: number;
 }
 
 export const REGIONS: Region[] = localize<Region[]>([
-  { id: 'afghanistan', name: k('Afganistán'), short: k('Afg'), emoji: '⛰️', climate: k('Montaña árida'), color: '#f59e0b', lon: 67, lat: 34, landrace: 'hindu_kush', price: 380, supply: 40,
+  { id: 'afghanistan', name: k('Afganistán'), short: k('Afg'), emoji: '⛰️', climate: k('Montaña árida'), color: '#f59e0b', lon: 67, lat: 34, landrace: 'hindu_kush', price: 3800, supply: 40,
     temp: 22, swing: 12, rh: 35, rain: 0.08, base: { water: 55, sunlight: 98, soil: 86 },
     blurb: k('Valles secos a gran altura, días cálidos y noches frías. Cuna de las indicas: resina densa, poca lluvia.') },
-  { id: 'mexico', name: k('México'), short: k('Mex'), emoji: '🌵', climate: k('Semiárido cálido'), color: '#f97316', lon: -102, lat: 23, landrace: 'acapulco_gold', price: 350, supply: 40,
+  { id: 'mexico', name: k('México'), short: k('Mex'), emoji: '🌵', climate: k('Semiárido cálido'), color: '#f97316', lon: -102, lat: 23, landrace: 'acapulco_gold', price: 3500, supply: 40,
     temp: 27, swing: 8, rh: 45, rain: 0.18, base: { water: 60, sunlight: 96, soil: 82 },
     blurb: k('Sierra soleada y seca. Aquí nació el Acapulco Gold; mucho sol, riego atento.') },
-  { id: 'jamaica', name: k('Jamaica'), short: k('Jam'), emoji: '🏝️', climate: k('Isla tropical'), color: '#22c55e', lon: -77, lat: 18, landrace: 'lambs_bread', price: 520, supply: 40,
+  { id: 'jamaica', name: k('Jamaica'), short: k('Jam'), emoji: '🏝️', climate: k('Isla tropical'), color: '#22c55e', lon: -77, lat: 18, landrace: 'lambs_bread', price: 5200, supply: 40,
     temp: 28, swing: 4, rh: 78, rain: 0.4, base: { water: 92, sunlight: 82, soil: 90 },
     blurb: k('Calor húmedo constante y suelos ricos. Lluvias frecuentes: cuidado con el moho.') },
-  { id: 'central_america', name: k('Centroamérica'), short: k('Cam'), emoji: '🌴', climate: k('Tropical húmedo'), color: '#ef4444', lon: -85, lat: 12, landrace: 'panama_red', price: 420, supply: 40,
+  { id: 'central_america', name: k('Centroamérica'), short: k('Cam'), emoji: '🌴', climate: k('Tropical húmedo'), color: '#ef4444', lon: -85, lat: 12, landrace: 'panama_red', price: 4200, supply: 40,
     temp: 27, swing: 5, rh: 75, rain: 0.5, base: { water: 95, sunlight: 72, soil: 86 },
     blurb: k('Selva y aguaceros. Panama Red crece aquí como en casa; el sol es el recurso escaso.') },
-  { id: 'south_america', name: k('Sudamérica'), short: k('Sam'), emoji: '🦙', climate: k('Andino templado'), color: '#eab308', lon: -74, lat: 4, landrace: 'colombian_gold_strain', price: 560, supply: 40,
+  { id: 'south_america', name: k('Sudamérica'), short: k('Sam'), emoji: '🦙', climate: k('Andino templado'), color: '#eab308', lon: -74, lat: 4, landrace: 'colombian_gold_strain', price: 5600, supply: 40,
     temp: 22, swing: 9, rh: 60, rain: 0.3, base: { water: 82, sunlight: 88, soil: 94 },
     blurb: k('Laderas templadas de suelo fértil, el clima más equilibrado. Colombian Gold, dulce y luminosa.') },
-  { id: 'africa', name: k('África'), short: k('Afr'), emoji: '🦁', climate: k('Sabana'), color: '#a3e635', lon: 28, lat: -10, landrace: 'durban_poison', price: 340, supply: 40,
+  { id: 'africa', name: k('África'), short: k('Afr'), emoji: '🦁', climate: k('Sabana'), color: '#a3e635', lon: 28, lat: -10, landrace: 'durban_poison', price: 3400, supply: 40,
     temp: 29, swing: 9, rh: 50, rain: 0.2, base: { water: 58, sunlight: 97, soil: 78 },
     blurb: k('Sabana abierta con sol a raudales y estaciones de lluvia. Durban Poison, sativa enérgica.') },
-  { id: 'asia', name: k('Asia'), short: k('Asi'), emoji: '🐘', climate: k('Monzón tropical'), color: '#38bdf8', lon: 101, lat: 15, landrace: 'thai_stick', price: 450, supply: 40,
+  { id: 'asia', name: k('Asia'), short: k('Asi'), emoji: '🐘', climate: k('Monzón tropical'), color: '#38bdf8', lon: 101, lat: 15, landrace: 'thai_stick', price: 4500, supply: 40,
     temp: 28, swing: 5, rh: 80, rain: 0.45, base: { water: 90, sunlight: 76, soil: 84 },
     blurb: k('Monzones y humedad. Thai Stick, sativa alta que agradece el calor pero teme al moho.') },
 ], ['name', 'short', 'climate', 'blurb']);

@@ -325,11 +325,16 @@ es = await state(E5);
 ok('sueldos: sin saldo el asistente deja de trabajar (sin deuda)', es.snapshot.flora >= 0 && es.snapshot.staff.find((x) => x.id === hire.id).paidThrough === 0 ? es.snapshot.flora === 5 : es.snapshot.flora < 5);
 
 // lands: unique, scarce, priced by the server
-const E7 = await mkPlayer(7); await state(E7); setFlora(E7, 5000);
+const E7 = await mkPlayer(7); await state(E7); setFlora(E7, 50000);
 const offerId = (await state(E7)).snapshot.offers.jamaica.ids[0];
+const firstPrice = sim.terroir.plotOffer('jamaica', Number(offerId.split('-').pop())).priceFlora;
 const lp = await intent(E7, 'buy_plot', { offerId });
-ok('tierra: se compra al precio de la oferta y pasa a ser del jugador', lp.status === 200 && lp.json.snapshot.plots.length === 1 && lp.json.snapshot.plots[0].id === offerId && lp.json.snapshot.flora < 5000);
-const E8 = await mkPlayer(8); await state(E8); setFlora(E8, 5000);
+ok('tierra: se compra al precio de la oferta y pasa a ser del jugador', lp.status === 200 && lp.json.snapshot.plots.length === 1 && lp.json.snapshot.plots[0].id === offerId && lp.json.snapshot.flora === 50000 - sim.lands.landPrice(firstPrice, 0), `(precio ${sim.lands.landPrice(firstPrice, 0)})`);
+const offer2 = (await state(E7)).snapshot.offers.jamaica.ids[0];
+const base2 = sim.terroir.plotOffer('jamaica', Number(offer2.split('-').pop())).priceFlora;
+const lp2 = await intent(E7, 'buy_plot', { offerId: offer2 });
+ok('tierra: la segunda cuesta 25 % más (el precio sube con cada tierra que ya tienes)', lp2.status === 200 && lp2.json.result.cost === sim.lands.landPrice(base2, 1) && lp2.json.result.cost > base2, `(${base2} → ${lp2.json.result.cost})`);
+const E8 = await mkPlayer(8); await state(E8); setFlora(E8, 50000);
 ok('tierra: es única, otro jugador ya no puede comprarla', (await intent(E8, 'buy_plot', { offerId })).json.error === 'plot_taken');
 ok('tierra: la oferta desaparece del mercado de todos', !(await state(E8)).snapshot.offers.jamaica.ids.includes(offerId));
 ok('tierra: un id inventado o ya vendido antes de abrir se rechaza', (await intent(E8, 'buy_plot', { offerId: 'plot-jamaica-1' })).json.error === 'plot_taken' && (await intent(E8, 'buy_plot', { offerId: 'plot-mars-3' })).status === 400);

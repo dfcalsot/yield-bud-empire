@@ -148,11 +148,16 @@ export function growthPerSecond(p: PlantInGrow, env: SimEnv): number {
   const sc = env.siteCond;
   const terroirF = sc ? terroirOf(p.strain.origin, sc.region, sc.ratings).growth : 1;
   const t = env.ambient?.tempC;
-  const tempF = t === undefined ? 1 : t < 8 ? 0.15 : t < 16 ? 0.6 : t > 36 ? 0.4 : t > 32 ? 0.8 : 1;
-  const lightF = env.lightMul !== undefined ? env.lightMul : (env.lightOn > 0 ? 1 : 0);
+  const tempRaw = t === undefined ? 1 : t < 8 ? 0.15 : t < 16 ? 0.6 : t > 36 ? 0.4 : t > 32 ? 0.8 : 1;
+  const tempF = sc ? Math.max(tempRaw, B.plotColdFloor) : tempRaw;
+  // outdoors: a grey day still gives diffuse light, and at night a plant still grows a little on the day's stores
+  const lightF = sc
+    ? Math.max(env.lightMul ?? 0, (sc.daylight ? B.plotDayFloor : B.plotNightGrowth) * (sc.ratings.sunlight / 100))
+    : env.lightMul !== undefined ? env.lightMul : (env.lightOn > 0 ? 1 : 0);
+  const plotF = sc ? B.plotSpeed : 1;
   // indoors, the phase grows best in its own room (sim/phases.ts); outdoor plots have no rooms
   const roomF = env.equip && !roomFits(stageOf(s.progress), p.currentRoom) ? ROOM_MISFIT : 1;
-  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * ppfdF * feedF * phF * pestF * terroirF * tempF * lightF * roomF;
+  return (100 / cycleSecondsOf(p.strain)) * env.facilityBonus * vpdF * moistureF * ecF * healthF * co2F * ppfdF * feedF * phF * pestF * terroirF * tempF * lightF * roomF * plotF;
 }
 
 /** Seconds left until harvest at the current rate (Infinity if stalled). */

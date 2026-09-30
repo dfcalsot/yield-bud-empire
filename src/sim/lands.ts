@@ -36,3 +36,10 @@ export function landOffers(region: RegionId, takenIds: ReadonlySet<string>): { o
   return { offers, left };
 }
 export const allRegions = (): RegionId[] => REGIONS.map((r) => r.id);
+
+/**
+ * Every land a grower already owns makes the next one 25 % dearer (the 12th costs 3.75× the first), so a big estate is a long-term
+ * goal and not one afternoon's shopping. The server charges this and the screens show it (GameContext.plotsForSale).
+ */
+export const LAND_PRICE_STEP = 0.25;
+export const landPrice = (basePrice: number, owned: number): number => Math.round((basePrice * (1 + LAND_PRICE_STEP * Math.max(0, owned))) / 50) * 50;
