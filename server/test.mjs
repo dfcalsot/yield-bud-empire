@@ -459,6 +459,7 @@ ok('desvincular libera la billetera para vincularla de nuevo (o a otra cuenta)',
 
 // ── operator gifts: a chest that credits once
 const G1 = await mkPlayer(30), G2 = await mkPlayer(31); await state(G1); await state(G2);
+db.prepare('DELETE FROM gifts WHERE account_id IN (?, ?)').run(G1.id, G2.id);   // without their welcome chests: this section checks the operator's own gift
 const giftRow = db.prepare('INSERT INTO gifts (account_id, amount, note, created_at) VALUES (?,?,?,?)').run(G1.id, 2_000_000, 'prueba', Date.now());
 const gid = Number(giftRow.lastInsertRowid);
 const gs = await state(G1);
@@ -861,6 +862,11 @@ ok('términos: se guarda la versión y la fecha aceptadas', ir.status === 200 &&
   const sc = await call('GET', '/api/admin/security', { jar: PA.jar, ip: PA.ip });
   ok('seguridad: conteos, días, marcadas y redes compartidas', sc.status === 200 && sc.json.days.length === 30 && typeof sc.json.counts.login_fail.d30 === 'number' && Array.isArray(sc.json.shared) && !JSON.stringify(sc.json).includes('ip_hash'));
   ok('seguridad: una cuenta normal no la ve', (await call('GET', '/api/admin/security', { jar: PN.jar, ip: PN.ip })).status === 404);
+  // cofre de bienvenida: cada cuenta nueva recibe uno de 50 000 $FLORA (sin abrir: se acredita cuando lo abre)
+  {
+    const g = db.prepare('SELECT amount, opened_at, note FROM gifts WHERE account_id = ?').all(PA.id);
+    ok('bienvenida: la cuenta nueva tiene su cofre de 50 000 sin abrir', g.length === 1 && g[0].amount === 50000 && g[0].opened_at === null && JSON.parse(g[0].note).en.includes('welcome'));
+  }
   // soporte: el jugador abre un caso desde el juego, el admin lo ve con contexto y responde; nadie ve casos ajenos
   {
     limiter.m.clear();

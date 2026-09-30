@@ -160,6 +160,20 @@ const ipHashOf = (ip) => crypto.createHmac('sha256', ipSalt).update(String(ip)).
 export const alerts = createAlerts({ db });
 const audit = (event, accountId, ipHash, detail = '') => { try { q.audit.run(Date.now(), event, accountId ?? null, ipHash ?? null, String(detail).slice(0, 200)); } catch { /* */ } alerts.onAudit(event, accountId, detail); };
 
+/**
+ * A welcome chest for every new account (it shows up in the game and credits the $FLORA when opened). WELCOME_FLORA sets the
+ * amount (0 turns it off). An account flagged as one of several from the same network gets none, so nobody farms it.
+ */
+const WELCOME_FLORA = Math.max(0, Math.floor(Number(process.env.WELCOME_FLORA ?? 50000)) || 0);
+const WELCOME_NOTE = JSON.stringify({ es: 'Regalo de bienvenida del equipo de Yield Bud Empire. ¡Gracias por jugar la alfa!', en: 'A welcome gift from the Yield Bud Empire team. Thanks for playing the alpha!' });
+function welcomeGift(accountId) {
+  if (!WELCOME_FLORA || !accountId) return;
+  try {
+    if (/multi_account_ip/.test(q.byId.get(accountId)?.flags ?? '')) return;
+    db.prepare('INSERT INTO gifts (account_id, amount, note, created_at) VALUES (?,?,?,?)').run(accountId, WELCOME_FLORA, WELCOME_NOTE, Date.now());
+    audit('welcome_gift', accountId, null, String(WELCOME_FLORA));
+  } catch (e) { console.error('welcome gift:', e.message); }
+}
 /* ───────────────────────────── mail ───────────────────────────── */
 
 let transporter = null;
@@ -373,6 +387,7 @@ route('POST', '/api/auth/register', async (ctx) => {
   q.setTerms.run(termsOf(b.termsVersion) || 'sin-version', Date.now(), id);
   if (langOf(b.lang)) setLangStmt.run(b.lang, id);
   suspicious(ctx, id);
+  welcomeGift(id);
   const token = rand(32);
   q.addToken.run(hashToken(token), id, 'verify', Date.now() + 24 * 3600_000);
   const sent = await sendMail(email, ...mailIn('verify', b.lang, username, linkFor('verify', token)));
@@ -557,6 +572,7 @@ function finishOAuth(ctx, name, data, fail, rawInvite, terms) {
     q.setTerms.run(terms, Date.now(), accountId);
     q.addIdentity.run(name, subject, accountId, Date.now());
     suspicious(ctx, accountId);
+    welcomeGift(accountId);
     audit(`signup_${name}`, accountId, ctx.ipHash);
   }
   issueSession(ctx, accountId);
