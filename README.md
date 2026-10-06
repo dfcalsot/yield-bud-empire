@@ -1,6 +1,31 @@
 # Yield Bud Empire — el juego
 
-Juego de cultivo en el navegador (React + Vite) con un servicio de cuentas y juego en Node (`server/`). Lo publica el repositorio de despliegue.
+## English Overview
+
+Yield Bud Empire is a next-generation cultivation simulation game, playable in the browser and on
+mobile, built on the Solana blockchain. It blends immersive agricultural simulation — focused on
+growing cannabis and premium hemp — with a deflationary, strict, and sustainable in-game economy.
+
+Players start as independent growers under a totally free model (Free-to-Play / F2P) and evolve from
+a basic home setup into master growers. The full game logic runs server-side (Node.js); the browser
+is a client that predicts actions for responsiveness and syncs with the authoritative server state.
+Relics (rare in-game items) can bridge out to Solana as Metaplex Core NFTs and back, with daily and
+lifetime caps to keep the economy controlled.
+
+### Running locally
+
+Requirements: Node.js 22 or newer.
+
+1. `npm install`
+2. Start the accounts/game service: `npm run auth` (port 3020)
+3. Start the game: `npm run dev` (port 3000; `/api` proxies to the service)
+
+Server tests: `npm run auth:test`. Type and i18n check: `npm run lint`.
+
+The rest of this README (architecture, i18n workflow, Solana bridge details) is written in Spanish
+for the development team; translations are welcome via PR.
+
+---
 
 ## Correr en local
 
